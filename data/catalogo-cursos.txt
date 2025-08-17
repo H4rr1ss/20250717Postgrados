@@ -1,0 +1,28 @@
+02|00|24|24.001|Formulación y Evaluación de proyectos|CURSO
+02|00|11|11.002|Formulación y Evaluación de Proyectos|CURSO
+02|00|16|16.002|Formulación y Evaluación de Proyectos|CURSO
+02|00|24|24.002|Gerencia de Innovación Emprendimiento y calidad del proyecto|CURSO
+02|00|11|11.003|Principios Jurídicos y Legales|CURSO
+02|00|16|16.003|Principios Jurídicos y Legales|CURSO
+02|00|24|24.003|Liderazgo organizacional|CURSO
+02|00|24|24.004|Planeación estratégica|CURSO
+02|00|11|11.005|Teoría del Ambiente I|CURSO
+02|00|10|10.006|Teoría de la Restauración de Monumentos|CURSO
+02|00|24|24.008|Mercadeo estratégico|CURSO
+02|00|11|11.009|Fundamentos de Planificación|CURSO
+02|00|24|24.009|Gerencia de la comunicación y el recurso humano del proyecto|CURSO
+02|00|24|24.010|Gerencia del costo y riesgo en el Proyecto|CURSO
+02|00|24|24.011|Gerencia de tiempo e integración en el Proyecto|CURSO
+02|00|10|10.014|Urbanismo e Historia de la Arquitectura de Guatemala I|CURSO
+02|00|10|10.018|Inventario y Catalogación Bienes Culturales|CURSO
+02|00|10|10.026|Arqueología|CURSO
+02|00|10|10.034|Urbanismo e Historia de Arquitectura de Guatemala II|CURSO
+02|00|14|14.090|Teorías e Historia de los Procesos de Urbanización|CURSO
+02|00|14|14.091|Medio Físico-Natural y Aptitud del Suelo|CURSO
+02|00|14|14.093|Instrumentos de la Ordenación Territorial Urbana|CURSO
+02|00|14|14.094|Génesis y Tendencias de la Planificación Urbana|CURSO
+02|00|14|14.097|Ecología Urbana y Políticas Territoriales Sostenibles|CURSO
+02|00|16|16.108|Historia del Diseño del Paisaje|CURSO
+02|00|16|16.109|Teoría del Diseño del Paisaje|CURSO
+02|00|80|80.80.01|Métodos y Técnicas de Investigación|CURSO
+02|00|80|80.80.02|Teoría de la Especialidad|CURSO

@@ -1,0 +1,232 @@
+<?php
+
+use Eep\Form\UserIdForm as UF;
+use Eep\Form\AssignmentForm as AF;
+
+$this->headTitle('Cursos Asignados');
+if (isset($form)) {
+    $form->prepare(); //EDIT USER FORM
+}
+$role = $this->layout()->role;
+?>
+<div class="col-md-12">
+    <div class="panel panel-<?= ($role->hasAdminRole()||$role->hasUdicaRole()) ? 'green' : 'blue' ?>">
+        <div class="panel-heading">
+            Listado de Cursos Asignados
+        </div>
+        <div class="panel-body pan">
+            <div class="form-body pal">
+                <?php
+                if (isset($form)):
+                    ?>
+                    <?= $this->form()->openTag($form) ?> 
+                    <div class="row">
+                        <div class="col-md-3"></div>    
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UF::USER)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($form->get(UF::USER)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(UF::USER)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <br/>
+                            <?= $this->formElement($form->get(UF::SUBMIT)) ?>
+                        </div>
+                        <div class="col-md-3"></div>
+                    </div>
+                    <?= $this->form()->closeTag($form) ?> 
+                    <?php
+                endif;
+                ?>
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                <?= (isset($form)) ? '<hr/>' : '' ?>
+                <?= $this->partial('eep/msg', ['msg' => $userMsg ?? null]) ?>
+                <?php
+                if (isset($coursesByCareer)):
+                    foreach ($coursesByCareer as $careerName => $courses):
+                        ?>
+                        <h3><?= $careerName ?></h3>
+                        <div class="overflow-x">
+                            <table class="table table-hover table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">Cód.</th>
+                                        <th class="text-center">Curso</th>
+                                        <th class="text-center">Sección</th>
+                                        <th class="text-center">Lab</th>
+                                        <th class="text-center">Mes Cursado</th>
+                                        <th class="text-center">Fecha Asignación</th>
+                                        <th class="text-center">No. Orden</th>
+                                        <th class="text-center">No. Boleta</th>
+                                        <th class="text-center">Costo (Q.)</th>
+                                        <th class="text-center">Nota</th>
+                                        <th class="text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
+                                    <?php
+                                    $totalSum = 0;
+                                    foreach ($courses as $data):
+                                        $tt = $data['timetable'];
+                                        $order = $data['order'];
+                                        $userCode = $data['userCode'];
+                                        if ($order->getCodOrden() != -1) {
+                                            $totalSum += $tt->getPrecio();
+                                        }
+                                        ?>
+                                        <tr class="text-center" <?= $tt->getValida() ? '' : 'style="color:#b52727;"' ?>>
+                                            <td><?= $tt->getCodCurso() ?> </td>
+                                            <td class="text-left">
+
+                                                <?php
+                                                if (!$tt->getValida()):
+                                                    ?>
+                                                    <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                                            data-content="Esta asignación fue invalidada por no estar inscrito en el ciclo correspondiente"
+                                                            class="btn-danger" data-original-title="" title="">
+                                                        <i class="fa fa-info"></i>
+                                                    </button>&nbsp;
+                                                    <?php
+                                                endif;
+                                                ?>
+                                                <?= $tt->getNombreCurso() ?>
+                                                <?php
+                                                if ($tt->getValida() && !$tt->isOfficial()):
+                                                    ?>
+                                                    <button type="button" data-container="body" data-toggle="popover" data-placement="right" 
+                                                            data-content=
+                                                            "Está pendiente la inscripción en Registro y Estadística para validar la asignación. Inscríbete para que estos cursos no sean invalidados al finalizar el periodo de inscripciones." 
+                                                            class="btn-danger" data-original-title="" title="">
+                                                        P
+                                                    </button>
+                                                    <?php
+                                                endif;
+                                                ?>
+                                            </td>
+                                            <td><?= $tt->getSeccion() ?> </td>
+                                            <td>
+                                                <font color ="<?= $tt->getLaboratorio() == true ? 'green' : 'gray' ?>">
+                                                <i class="fa fa-<?= $tt->getLaboratorio() == true ? 'check' : 'close' ?>"></i>
+                                                </font>
+                                            </td>
+                                            <td><?= AF::MONTHS[$tt->getMes()] . ' ' . date('Y', strtotime($tt->getFechaInicio())) ?> </td>
+                                            <td><?= date('d/m/Y', strtotime($tt->getFechaAsignacion())) ?> </td>
+                                            <td><?= $order->getCodOrden() ?> </td>
+                                            <td><?= $order->getCodBoleta() ?> </td>
+                                            <td class="text-right"><?= ($order->getCodOrden() != -1) ? number_format($tt->getPrecio(), 2) : '(migración)' ?> </td>
+                                            <td>
+                                                <?php
+                                                if ($tt->getCodEstadoNota() >= Eep\Service\AssignmentManager::ENTRY_COMPLETED):
+                                                    ?>
+                                                    <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                                            data-content="<img src='img/loading.gif'/>"
+                                                            timetable="<?= $tt->getCode() ?>"
+                                                            user="<?= $userCode ?>"
+                                                            class="btn btn-info btn-xs finalGrade" data-original-title="" title="" data-html="true" 
+                                                            >
+                                                                <?= $tt->getNotaFinal() ?>
+                                                    </button>
+                                                    <?php
+                                                else:
+                                                    echo '(pendiente)';
+                                                endif;
+                                                ?>
+                                            </td>
+                                            <td><?= $tt->getEstadoNota() ?> </td>
+                                        </tr>
+                                        <?php
+                                    endforeach;
+                                    ?>
+
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="8" class="text-right"><b>Suma</b></th>
+                                        <th class="text-right"><b><?= number_format($totalSum, 2) ?></b></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <?php
+                        endforeach;
+                        ?>
+                    </div>
+                    <?php
+                endif;
+                ?>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    function setDetail(element, detail) {
+        html = "";
+        Object.keys(detail).forEach(function (blockCode) {
+            blockName = detail[blockCode]['blockName'];
+            blockValue = detail[blockCode]['blockValue'];
+            grade = detail[blockCode]['grade'];
+            blockValue = blockValue === null || isNaN(blockValue) ? '-' : blockValue * 1;
+            grade = grade === null || isNaN(grade) ? '-' : grade * 1;
+            html += `${blockName}: <b>${grade}/${blockValue}</b><br/>`;
+        });
+        console.log("setting data");
+        element.attr('data-content', html);
+        element.popover('show');
+    }
+
+    function popoverError(element, error) {
+        element.attr('data-content', '<font color="red">' + error + "</font>");
+        element.popover('show');
+    }
+
+    $(".finalGrade").click(function () {
+        //IF POPOVER IS VISIBLE REQUEST
+        if (!$(this).data('bs.popover').tip().hasClass('in')) {
+            $(this).attr('data-content', "<img src='img/loading.gif'/>");
+            //$(this).popover('show');
+            userCode = $(this).attr('user');
+            timetableCode = $(this).attr('timetable');
+            button = $(this);
+            if (userCode && timetableCode) {
+                $.ajax({
+                    url: "<?= $this->url('grades', ['action' => 'gradeDetail']) ?>",
+                    type: 'POST',
+                    dataType: 'json',
+                    async: true,
+                    timeout: 10000,
+                    data: {
+                        timetableCode: timetableCode,
+                        userCode: userCode
+                    },
+                    success: function (data) {
+                        console.log("sucess");
+                        users = null;
+                        if (!data.hasOwnProperty('status')) {
+                            popoverError(button, 'No se obtuvo una respuesta correcta de la búsqueda de estudiantes');
+                        } else {
+                            if (!data.status) {
+                                popoverError(button, data.error);
+                            } else {
+                                setDetail(button, data.gradeDetail);
+                            }
+                        }
+                    },
+                    error: function (xmlhttprequest, textstatus, message) {
+                        console.log("error");
+                        if (textstatus === "timeout") {
+                            popoverError(button, 'Tiempo de espera de solicitud agotado');
+                        } else {
+                            popoverError(button, 'Error en solicitud: ' + message);
+                        }
+                    }
+                });
+            } else {
+                popoverError(button, 'Datos de solicitud incorrectos');
+            }
+        }
+    });
+</script>

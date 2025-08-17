@@ -1,0 +1,429 @@
+<?php
+
+use Eep\Form\CategorizeTimetableForm as CTF;
+use Eep\Form\TimetableForm as TF;
+use Eep\ValueObject\Message;
+
+$this->headTitle('Calendarización de Horarios');
+$categoryForm->prepare();
+if (isset($timetableForm)) {
+    $timetableForm->prepare();
+}
+if (isset($deleteForm)) {
+    $deleteForm->prepare();
+}
+if (isset($editForm)) {
+    $editForm->prepare();
+}
+?>
+<div class="col-lg-4">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Categorización</div>
+        <div class="panel-body pan">
+            <?= $this->form()->openTag($categoryForm) ?>
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <?= $this->formLabel($categoryForm->get(CTF::ACADEMIC_DEGREE)) ?>
+                            <?= $this->formElement($categoryForm->get(CTF::ACADEMIC_DEGREE)) ?>
+                            <font color="red"> <?= $this->formElementErrors($categoryForm->get(CTF::ACADEMIC_DEGREE)) ?> </font>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <?= $this->formLabel($categoryForm->get(CTF::CAREER)) ?>
+                            <?= $this->formElement($categoryForm->get(CTF::CAREER)) ?>
+                            <font color="red"> <?= $this->formElementErrors($categoryForm->get(CTF::CAREER)) ?> </font>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <?= $this->formLabel($categoryForm->get(CTF::COHORT)) ?>
+                            <?= $this->formElement($categoryForm->get(CTF::COHORT)) ?>
+                            <font color="red"> <?= $this->formElementErrors($categoryForm->get(CTF::COHORT)) ?> </font>
+                        </div>
+                    </div>
+                </div>
+                <?= $this->partial('eep/msg', ['msg' => isset($categoryMsg) ? $categoryMsg : null]) ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <div class="form-group">
+                    <?= $this->formElement($categoryForm->get(CTF::SUBMIT)) ?>
+                </div>
+            </div>
+            <?= $this->form()->closeTag($categoryForm) ?>
+        </div>
+    </div>
+</div>
+<?php
+if (isset($timetableForm)):
+    ?>
+
+    <div class="col-lg-8">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                <?= isset($pensumCode) ? ($pensumCode == CTF::UPG_COURSE_CODE ? 'Pensum de Cursos de Actualización - ' : "Pensum $pensumCode - " ) : '' ?>Detalle del Horario de Curso
+            </div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($timetableForm) ?>
+                <div class="form-body pal">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">                                
+                                <?php
+                                if ($timetableForm->getType() == TF::TYPE_EDIT) {
+                                    echo $this->formElement($timetableForm->get(TF::COURSE));
+                                    $course = TF::HIDDEN_COURSE;
+                                } else {
+                                    $course = TF::COURSE;
+                                }
+                                ?>
+                                <?= $this->formLabel($timetableForm->get($course)) ?>
+                                <?= $this->formElement($timetableForm->get($course)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get($course)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::SECTION)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::SECTION)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::SECTION)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::COORDINATOR)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::COORDINATOR)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::COORDINATOR)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::PROFESSOR)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::PROFESSOR)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::PROFESSOR)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::START_TIME)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-start"></i>
+                                    <?= $this->formElement($timetableForm->get(TF::START_TIME)) ?>
+                                </div>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::START_TIME)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::FINISH_TIME)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-end"></i>
+                                    <?= $this->formElement($timetableForm->get(TF::FINISH_TIME)) ?>
+                                </div>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::FINISH_TIME)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::START_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar-o"></i>
+                                    <?= $this->formElement($timetableForm->get(TF::START_DATE)) ?>
+                                </div>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::START_DATE)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::FINISH_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar"></i>
+                                    <?= $this->formElement($timetableForm->get(TF::FINISH_DATE)) ?>
+                                </div>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::FINISH_DATE)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::DAYS)) ?>
+                                <div class="checkbox">
+                                    <?= $this->formElement($timetableForm->get(TF::DAYS)) ?>
+                                    <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::DAYS)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::COURSE_TYPE)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::COURSE_TYPE)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::COURSE_TYPE)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::LOCATION)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::LOCATION)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::LOCATION)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::ROOM)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::ROOM)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::ROOM)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::ROOM_SPACE)) ?>
+                                <?= $this->formElement($timetableForm->get(TF::ROOM_SPACE)) ?>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::ROOM_SPACE)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="checkbox">
+                                <div class="form-group">
+                                    <?= $this->formElement($timetableForm->get(TF::LABORATORY)) ?>                                
+                                    <?= $this->formLabel($timetableForm->get(TF::LABORATORY)) ?>
+                                    <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::LABORATORY)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($timetableForm->get(TF::GRADING_LIMIT_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar-o"></i>
+                                    <?= $this->formElement($timetableForm->get(TF::GRADING_LIMIT_DATE)) ?>
+                                </div>
+                                <font color="red"> <?= $this->formElementErrors($timetableForm->get(TF::GRADING_LIMIT_DATE)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <?= $this->partial('eep/msg', ['msg' => $timetableMsg ?? null]) ?>
+                    <?php
+                    if ($timetableForm->getType() == TF::TYPE_EDIT):
+                        $ttElement = $timetableForm->get(TF::TIMETABLE_CODE);
+                        if (count($ttElement->getMessages()) > 0) {
+                            $ttErrorMsg = new Message('Código de Horario Erróneo', $this->formElementErrors($ttElement), Message::RED);
+                            echo $this->partial('eep/msg', ['msg' => $ttErrorMsg]);
+                        }
+                    endif;
+                    ?>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?php
+                    if ($timetableForm->getType() == TF::TYPE_EDIT):
+                        ?>
+
+                        <a href="<?= $this->url('timetable', ['action' => 'categorize']) ?>" class = "btn btn-danger">
+                            Cancelar
+                        </a>
+                        <!--HIDDEN VALUE FOR THE TIMETABLE CODE-->
+                        <?= $this->formElement($timetableForm->get(TF::TIMETABLE_CODE)) ?>
+                        <?php
+                    endif;
+                    ?>
+                    <?= $this->formElement($timetableForm->get(TF::SUBMIT)) ?>
+                </div>
+                <?= $this->form()->closeTag($timetableForm) ?>
+            </div>
+        </div>
+    </div>
+    <?php
+endif;
+?>
+
+
+<?php if (isset($timetables)): ?>
+    <div class="col-lg-12">
+        <div class="panel panel-violet">
+            <div class="panel-heading">Horarios de cursos:  <?= $categoryForm->getSelectedCareerName() ?> - Cohorte <?= $categoryForm->getSelectedCohort() ?></div>
+            <div class="panel-body">
+                <?= $this->partial('eep/msg', ['msg' => $actionMsg ?? null]) ?>
+                <div class="overflow-x">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Cód. Horario</th>
+                                <th>Cód. Cur.</th>
+                                <th>Curso</th>
+                                <th>Sección</th>
+                                <th>Tipo</th>
+                                <th>Lab.</th>
+                                <th>Cupo</th>
+                                <th>Hora Inicio</th>
+                                <th>Hora Fin</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                                <th>Límite de calificación</th>
+                                <th>Notas completadas</th>
+                                <th>Lugar</th>
+                                <th>Días</th>
+                                <th>Catedrático</th>
+                                <th>Coordinador</th>
+                                <th colspan="2" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            foreach ($timetables as $timetable):
+                                if ($timetable->getFechaNotasCompletadas() != null) {
+                                    //$class = 'class = "active"';
+//                                    $class = 'class = "bg-grey"';
+                                    $class = 'style = " background-color: #e8e8e8 !important;"';
+                                } else {
+                                    $class = '';
+                                }
+                                ?>
+                                <tr <?= $class ?>>
+                                    <td><?= $timetable->getCode() ?></td>
+                                    <td><?= $timetable->getCodCurso() ?></td>
+                                    <td><?= $timetable->getAliasCurso() ?></td>
+                                    <td><?= $timetable->getSeccion() ?></td>
+                                    <td><?= $timetable->getTipoCurso() ?></td>
+                                    <td>
+                                        <font color ="<?= $timetable->getLaboratorio() == true ? 'green' : 'red' ?>">
+                                        <i class="fa fa-<?= $timetable->getLaboratorio() == true ? 'check' : 'close' ?>"></i>
+                                        </font>
+                                    </td>
+                                    <td><?= $timetable->getCupo() ?></td>
+                                    <td><?= date("H:i", strtotime($timetable->getHoraInicio())) ?></td>
+                                    <td><?= date("H:i", strtotime($timetable->getHoraFin())) ?></td>
+                                    <td><?= date("d/m/Y", strtotime($timetable->getFechaInicio())) ?></td>
+                                    <td><?= date("d/m/Y", strtotime($timetable->getFechaFin())) ?></td>
+                                    <td><?= date("d/m/Y", strtotime($timetable->getFechaLimiteCalificacion())) ?></td>
+                                    <td><?= (strtotime($timetable->getFechaNotasCompletadas()) == false) ? '(Pendiente)' : date("d/m/Y", strtotime($timetable->getFechaNotasCompletadas())) ?></td>
+                                    <td><?= $timetable->getUbicacion() ?></td>
+                                    <td>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getLunes() ? 'success' : 'default' ?>">L</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getMartes() ? 'success' : 'default' ?>">M</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getMiercoles() ? 'success' : 'default' ?>">X</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getJueves() ? 'success' : 'default' ?>">J</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getViernes() ? 'success' : 'default' ?>">V</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getSabado() ? 'success' : 'default' ?>">S</span>
+                                        <span style="float:left;" class="label label-sm label-<?= $timetable->getDomingo() ? 'success' : 'default' ?>">D</span>
+                                    </td>
+                                    <td><?= $timetable->getCatedratico() ?></td>
+                                    <td><?= $timetable->getCoordinador() ?></td>
+                                    <td>
+                                        <?php
+                                        //$notOverDate = strtotime($timetable->getFechaFin()) >= strtotime(date('Y-m-d'));
+                                        $notOverDate = $timetable->getFechaNotasCompletadas() == null;
+                                        if ($editForm != null && ($notOverDate || $this->isDirectorLogged)):
+                                            echo $this->form()->openTag($editForm);
+                                            $element = $editForm->get(TF::TIMETABLE_CODE);
+                                            $element->setValue($timetable->getCode());
+                                            echo $this->formElement($element);
+                                            echo $this->formElement($editForm->get(TF::SUBMIT));
+                                            echo $this->form()->closeTag($editForm);
+                                        endif;
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        if ($deleteForm != null):
+                                            echo $this->form()->openTag($deleteForm);
+                                            $element = $deleteForm->get(TF::TIMETABLE_CODE);
+                                            $element->setValue($timetable->getCode());
+                                            echo $this->formElement($element);
+                                            echo $this->formElement($deleteForm->get(TF::SUBMIT));
+                                            echo $this->form()->closeTag($deleteForm);
+                                        endif;
+                                        ?>
+                                    </td>
+                                </tr>
+                                <?php
+                            endforeach;
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<script type="text/javascript">
+    var tree = <?= $categoryForm->getJsTree() ?>;
+
+    var father = "#<?= CTF::ACADEMIC_DEGREE ?>";
+    var son = "#<?= CTF::CAREER ?>";
+
+    $(father).change(function () {
+        selected = $(father).val();
+        career = tree[selected];
+        options = "";
+        for (var key in career) {
+            options = options + "<option value=\"" + key + "\">" + career[key] + "</option>";
+        }
+        $(son).html(options);
+        if (selected == <?= CTF::UPG_COURSE_CODE ?>) {
+            $("#<?= CTF::COHORT ?>").val("<?= CTF::UPG_COURSE_COHORT ?>");
+        }
+    }
+    );
+    $(father).trigger("change");
+<?php
+if ($categoryForm->hasData()):
+    ?>
+        $(father).val("<?= $categoryForm->getSelectedDegree() ?>");
+        $(father).trigger("change");
+        $(son).val("<?= $categoryForm->getSelectedCareer() ?>");
+    <?php
+endif;
+?>
+</script>
+
+
+
+<?php
+if (!empty($timetableForm)):
+    ?>
+
+    <script type="text/javascript">
+        var tree2 = <?= $timetableForm->getJsTree() ?>;
+
+        var father2 = "#<?= TF::LOCATION ?>";
+        var son2 = "#<?= TF::ROOM ?>";
+        $(father2).change(function () {
+            selected = $(father2).val();
+            career = tree2[selected];
+            options = "";
+            for (var key in career) {
+                options = options + "<option value=\"" + key + "\">" + career[key] + "</option>";
+            }
+            $(son2).html(options);
+        }
+        );
+        $(father2).trigger("change");
+    <?php
+    if ($timetableForm->hasData()):
+        ?>
+            $(father2).val(<?= $timetableForm->getSelectedLocation() ?>);
+            $(father2).trigger("change");
+            $(son2).val(<?= $timetableForm->getSelectedRoom() ?>);
+        <?php
+    endif;
+    ?>
+    </script>
+
+    <?php
+endif;
+?>

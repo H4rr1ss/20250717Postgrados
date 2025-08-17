@@ -1,0 +1,383 @@
+<?php
+
+use Eep\Form\AssignmentForm as AF;
+use Eep\Form\AssignmentTypeForm as ATF;
+
+$this->headTitle('Asignación de Cursos');
+
+$form->prepare();
+if ($form->getType() == ATF::TYPE_STUDENT_REGULAR):
+    echo '<div class="col-lg-1">&nbsp;</div>'; //CENTERING
+    $space = 10;
+else:
+    $space = 12;
+endif;
+?>
+<div class="col-md-<?= $space ?>">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-blue">
+                <div class="panel-heading">
+                    Selección de Cursos para Generación de Órdenes de Pago</div>
+                <div class="panel-body">
+                    <?= $this->form()->openTag($form) ?>
+                    <div class="row">
+                        <div class="form-body pal">
+                            <?php
+                            switch ($form->getType()):
+                                case ATF::TYPE_EXTEMP:
+                                case ATF::TYPE_EXTRA:
+                                    $actSize = 2;
+                                    $subsectionSize = 1;
+                                    $courseSize = 5;
+                                    $sectionSize = 3;
+                                    ?>
+                                    <div class="col-md-<?= $actSize ?>">
+                                        <div class="form-group">
+                                            <?= $this->formLabel($form->get(AF::ACT_RECORD)) ?>
+                                            <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                                    data-content="Al no seleccionar acta, estás asegurando que la asignación no requiere de aprobación del Consejo Académico ni de algún procedimiento concerniente a un acta." 
+                                                    class="btn-danger" data-original-title="" title="" id="warning-button" style="display: none;">
+                                                <i class="fa fa-warning"></i>
+                                            </button>
+                                            <?= $this->formElement($form->get(AF::ACT_RECORD)) ?>
+                                            <font color="red"><?= $this->formElementErrors($form->get(AF::ACT_RECORD)) ?></font>
+                                            <?= $this->formElement($form->get(AF::HAS_ACT)) ?>
+                                            <?= $this->formLabel($form->get(AF::HAS_ACT)) ?>
+                                            <font color="red"><?= $this->formElementErrors($form->get(AF::HAS_ACT)) ?></font>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-<?= $subsectionSize ?>">
+                                        <div class="form-group">
+                                            <?= $this->formLabel($form->get(AF::ACT_SUBSECTION)) ?>
+                                            <?= $this->formElement($form->get(AF::ACT_SUBSECTION)) ?>
+                                            <font color="red"><?= $this->formElementErrors($form->get(AF::ACT_SUBSECTION)) ?></font>
+                                        </div>
+                                    </div>
+                                    <?php
+                                    break;
+                                case ATF::TYPE_REGULAR:
+                                case ATF::TYPE_STUDENT_REGULAR:
+                                default:
+                                    $courseSize = 8;
+                                    $sectionSize = 3;
+                                    break;
+                            endswitch;
+                            ?>
+                            <div class="col-md-<?= $courseSize ?>">
+                                <div class="form-group">
+                                    <?= $this->formLabel($form->get(AF::COURSES)) ?>
+                                    <?= $this->formElement($form->get(AF::COURSES)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(AF::COURSES)) ?></font>
+                                </div>
+                            </div>
+                            <div class="col-md-<?= $sectionSize ?>">
+                                <div class="form-group">
+                                    <?= $this->formLabel($form->get(AF::SECTION)) ?>
+                                    <?= $this->formElement($form->get(AF::SECTION)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(AF::SECTION)) ?></font>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center">
+                                <br>
+                                <?= $this->formElement($form->get(AF::ADD_TIMETABLE)) ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?= $this->partial('eep/msg', ['msg' => $userMsg ?? null]) ?>
+                    <hr />
+                    <?= $this->partial('eep/msg', ['msg' => $formMsg ?? null]) ?>
+                    <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                    <div class="row">
+                        <?php
+                        if ($form->getType() == ATF::TYPE_STUDENT_REGULAR):
+                            $space = 12;
+                        else:
+                            $space = 10;
+                            echo '<div  class="col-md-' . ((12 - $space) / 2) . '"></div>'; //CENTERING
+                        endif;
+                        ?>
+                        <div class="form-body pal col-md-<?= $space ?>" id="assignmentDiv">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Curso</th>
+                                        <th class="text-center">Sección</th>
+                                        <th class="text-center">Costo (Q.)</th>
+                                        <th class="text-center">Eliminar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="<?= AF::TABLE ?>">
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        <th class="text-center">TOTAL</th>
+                                        <th id="<?= AF::TOTAL ?>" class="success text-center">
+                                            0.00
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions pal">
+                    <div class="col-md-7">
+                        <label>
+                            <ul>
+                                <li>
+                                    Si generas la orden de pago hoy, tienes hasta el <font color="#cc0000"><strong>
+                                        <ins id="<?= AF::LIMIT   ?>">(agrega un curso)</ins>
+                                    </strong></font> para pagarla.
+                                </li>
+                                <li>
+                                    Puedes descargar la orden de pago en cualquier momento en la sección de <a class="title" href="<?= $this->url('treasury', ['action', 'orderListing']) ?>">Órdenes de Pago Generadas</a>.
+                                </li>
+                                <li>
+                                    <strong>Si no encuentras un curso</strong> que sí está en el listado de cursos disponibles
+                                    es porque ya tienes una orden de pago creada con ese curso o la fecha de asignación para ese curso ya culminó.
+                                    (<a class="title" href="<?= $this->url('treasury', ['action', 'orderListing']) ?>">Ver Ordenes de Pago</a>).
+                                    Si es porque ya tienes una orden de pago que incluya ese horario, elimina la orden de pago si deseas incluir ese horario de curso en otra orden de pago.
+                                </li>
+                                <li>
+                                    La fecha del último día de pago es la fecha más próxima de la última fecha de asignación de los cursos seleccionados para asignación.
+                                </li>
+                            </ul>
+                        </label>
+                    </div>
+                    <?php
+                    if ($form->getType() != AF::TYPE_STUDENT_REGULAR):
+                        echo $this->formElement($form->get(AF::ASSIGNMENT_TYPE));
+                        echo $this->formElement($form->get(AF::USER));
+                        echo $this->formElement($form->get(AF::USER_CODE));
+                        echo $form->has(AF::YEAR) ? $this->formElement($form->get(AF::YEAR)) : '';
+                    endif;
+                    ?>
+                    <div class="col-md-5 text-right">
+                        <?= $this->formElement($form->get(AF::SUBMIT)) ?>
+                    </div>
+                </div>
+                <?= $this->form()->closeTag($form) ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    var tree = <?= $form->getJsTree() ?>;
+    var tableElement = "#<?= AF::TABLE ?>";
+    var totalElement = "#<?= AF::TOTAL ?>";
+    var limitElement = "#<?= AF::LIMIT ?>";
+    var addButton = "#<?= AF::ADD_TIMETABLE ?>";
+    var generateButton = "#<?= AF::SUBMIT ?>";
+    var sections = "#<?= AF::SECTION ?>";
+    var courses = "#<?= AF::COURSES ?>";
+    var timetablesElement = "<?= AF::TIMETABLES ?>";
+    var preselectedElements = <?= $form->getJsTimetables() ?>;
+    var limitDates = {};
+    $(addButton).attr('disabled', 'true');
+
+    //MONEY FORMATTING
+    const quetzalFormat = (x) => {
+        var parts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        if (parts.length === 1) {
+            parts[1] = "00";
+        } else {
+            if (parts[1].length === 1) {
+                parts[1] = parts[1] + "0";
+            } else {
+                parts[1] = parts[1].substr(0, 2);
+            }
+        }
+        return parts.join(".");
+    }
+
+    function formatDate(date) {
+        var monthNames = [
+            "Enero", "Febrero", "Marzo",
+            "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre",
+            "Octubre", "Noviembre", "Diciembre"
+        ];
+        var day = date.getDate();
+        var monthIndex = date.getMonth();
+        var year = date.getFullYear();
+
+        return day + ' del ' + monthNames[monthIndex] + ' del ' + year;
+    }
+
+    //DYNAMIC SECTION CHANGE
+    $(courses).change(function () {
+        selected = $(courses).val();
+        options = "";
+        sectionsObj = tree[selected]['sections'];
+        Object.keys(sectionsObj).forEach(function (timetableCode) {
+            options += `<option value="${timetableCode}">${sectionsObj[timetableCode]['section']}</option>\n`;
+        });
+        $(sections).html(options);
+    });
+
+    //UPDATE COURSE AND SECTIONS
+    function updateData() {
+        //CLEANING DATA
+        coursesOptions = "";
+        tableRows = "";
+        totalAmmount = 0;
+        //ADDING DATA
+        Object.keys(tree).forEach(function (courseCode) {
+            courseData = tree[courseCode];
+            selected = courseData['selected'];
+            if (selected === false) {
+                coursesOptions += `<option value="${courseCode}">${courseCode} - ${tree[courseCode]['name']}</option>\n`;
+            } else {
+                sectionsData = courseData['sections'];
+                for (ttCode in sectionsData) {//GETS THE OBJECT KEYS
+                    selectedTimetable = sectionsData[ttCode]['selected'];
+                    if (selectedTimetable === true) {
+                        courseName = tree[courseCode]['name'];
+                        section = tree[courseCode]['sections'][ttCode]['section'];
+                        price = tree[courseCode]['sections'][ttCode]['price'];
+                        limitDate = tree[courseCode]['sections'][ttCode]['limit'];
+                        totalAmmount += parseInt(price);
+                        tableRows += `
+                        <tr id="${ttCode}">
+                            <td>
+                                ${courseCode}
+                            </td>
+                            <td>
+                                ${courseName}
+                            </td>
+                            <td class="text-center">
+                                ${section}
+                            </td>
+                            <td class="text-center">
+                                ${quetzalFormat(price)}
+                            </td>
+                            <td class="text-center">
+                                <input type="hidden" name="${timetablesElement}[]" value="${ttCode}">
+                              <button type="button" value="${ttCode}" course="${courseCode}" date="${limitDate}" class="btn btn-red remove-assignment">
+                                  <i class="fa fa-minus"></i>
+                              </button>
+                            </td>
+                        </tr>\n`;
+                    }
+                }
+            }
+        });
+        //SETTING DATA
+        $(courses).html(coursesOptions);
+        $(totalElement).html(quetzalFormat(totalAmmount));
+        $(tableElement).html(tableRows);//find('tbody:last').append(tableRows);
+        //ENABLING OR DISABLING OF ADD COURSE BUTTON
+        if (coursesOptions === "") {
+            $(addButton).attr('disabled', 'true');
+            $(sections).html("");
+        } else {
+            $(addButton).removeAttr('disabled');
+            $(courses).trigger('change');
+        }
+        //UPDATING LAST PAYMENT DAY
+        defaultValue = `(agrega un curso)`;
+        min = defaultValue;
+        jQuery.each(limitDates, function () {
+            date = new Date(this + "T06:00:00Z");//FOR -6 TIMEZONE CONVERTION
+            if (min === `(agrega un curso)`) {
+                min = new Date(date);
+            } else {
+                if (date.getTime() < min.getTime()) {
+                    min = date;
+                }
+            }
+        });
+        if (min != defaultValue) {
+            min = formatDate(min);
+        }
+        $(limitElement).html(min);
+    }
+
+    function addTimetable(courseCode, ttCode) {
+        //CHANGING TREE COURSE STATE
+        tree[courseCode]['selected'] = true;
+        tree[courseCode]['sections'][ttCode]['selected'] = true;
+        limitDate = tree[courseCode]['sections'][ttCode]['limit'];
+        limitDates[ttCode] = limitDate;
+    }
+
+    //ADDING SECTION
+    $(addButton).click(function () {
+        courseCode = $(courses).val();
+        ttCode = $(sections).val();
+        addTimetable(courseCode, ttCode);
+        updateData();
+    });
+
+    //DELETING SECTION
+    $('#assignmentDiv').on('click', '.remove-assignment', function () {
+        //GET DELETING DATA
+        timetableCode = $(this).attr("value");
+        courseCode = $(this).attr("course");
+        //CHANGING TREE DATA
+        tree[courseCode]['selected'] = false;
+        tree[courseCode]['sections'][timetableCode]['selected'] = false;
+        delete limitDates[timetableCode];
+        //UPDATE EVERYTHING
+        updateData();
+    });
+
+    function addPreselectedElements() {
+        Object.keys(preselectedElements).forEach(function (index) {
+            tt = preselectedElements[index];
+            //SEARCHING
+            try {
+                Object.keys(tree).forEach(function (courseCode) {
+                    timetables = tree[courseCode]['sections'];
+                    Object.keys(timetables).forEach(function (timetableCode) {
+                        //window.alert(`${timetableCode} comparando con ${tt}`);
+                        if (timetableCode == tt) {
+                            addTimetable(courseCode, timetableCode);
+                            throw BreakException;
+                        }
+                    });
+                });
+            } catch (e) {
+            }
+
+        });
+        updateData();
+    }
+    addPreselectedElements();
+    //$.when($(courses).trigger("change")).then(function () {
+    //});
+</script>
+<?php
+if ($form->getType() == AF::TYPE_EXTEMP || $form->getType() == AF::TYPE_EXTRA):
+    ?>
+
+    <script type="text/javascript">
+        var hasActElement = '#<?= AF::HAS_ACT ?>';
+        var actElement = '#<?= AF::ACT_RECORD ?>';
+        var subsectionElement = '#<?= AF::ACT_SUBSECTION ?>';
+        var toggle = <?= $form->get(AF::HAS_ACT)->getValue() == 'no' ? 'false' : 'true' ?>;
+        $(hasActElement).on('ifClicked', function (event) {
+            if (toggle === false) {
+                $(actElement).removeAttr("disabled");
+                $(subsectionElement).removeAttr("disabled");
+                $("#warning-button").hide();
+            } else {
+                $(actElement).attr("disabled", "disabled");
+                $(subsectionElement).attr("disabled", "disabled");
+                $("#warning-button").show();
+            }
+            $("#warning-button").click();
+            toggle = !toggle;
+        });
+    </script>
+    <?php
+endif;
+?>

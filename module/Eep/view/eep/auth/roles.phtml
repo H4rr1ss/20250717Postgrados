@@ -1,0 +1,159 @@
+<?php
+
+use Eep\Form\RoleForm as RF;
+use Eep\Entity\Role;
+
+$this->headTitle('Roles');
+$roleForm->prepare();
+$queryForm->prepare();
+$deleteForm->prepare();
+$editForm->prepare();
+?>
+<div id="general-level" class="tab-pane fade in active">
+    <div class="col-lg-5">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Asignar Rol
+            </div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($roleForm) ?>
+                <div class="form-body pal">
+                    <div class="row">
+                        <div class="col-lg-5">
+                            <div class="form-group">
+                                <?= $this->formLabel($roleForm->get(RF::ROLE)) ?>
+                                <?= $this->formElement($roleForm->get(RF::ROLE)) ?>
+                                <font color="red"><?= $this->formElementErrors($roleForm->get(RF::ROLE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="form-group">
+                                <?= $this->formLabel($roleForm->get(RF::USER)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($roleForm->get(RF::USER)) ?>
+                                    <font color="red"><?= $this->formElementErrors($roleForm->get(RF::USER)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($roleForm->get(RF::START_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar-o"></i>
+                                    <?= $this->formElement($roleForm->get(RF::START_DATE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($roleForm->get(RF::START_DATE)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($roleForm->get(RF::FINISH_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar"></i>
+                                    <?= $this->formElement($roleForm->get(RF::FINISH_DATE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($roleForm->get(RF::FINISH_DATE)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?= $this->partial('eep/msg', ['msg' => isset($newMsg) ? $newMsg : null]) ?>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?php
+                    if ($roleForm->getType() == RF::TYPE_EDIT):
+                        echo $this->formElement($roleForm->get(RF::USER_ROLE_CODE));
+                        ?>
+                        <a href="<?= $this->url('auth', ['action' => 'roles']) ?>" class = "btn btn-danger">
+                            Cancelar
+                        </a>
+                        <?php
+                    endif;
+                    ?>
+                    <?= $this->formElement($roleForm->get(RF::SUBMIT)) ?>
+                </div>
+                <?= $this->form()->closeTag($roleForm) ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Roles de Usuario
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <?= $this->form()->openTag($queryForm) ?>
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <?= $this->formLabel($queryForm->get(RF::USER)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-calendar"></i>
+                                <?= $this->formElement($queryForm->get(RF::USER)) ?>
+                                <font color="red"><?= $this->formElementErrors($queryForm->get(RF::USER)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <br/>
+                        <?= $this->formElement($queryForm->get(RF::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($queryForm) ?>
+                </div>
+                <hr/>
+                <?= $this->partial('eep/msg', ['msg' => $deleteMsg ?? null]) ?>
+                <?= $this->partial('eep/msg', ['msg' => $actionMsg ?? null]) ?>
+                <?php
+                if (isset($roles)):
+                    ?>
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Rol</th>
+                                <th class="text-center">Fecha Inicio</th>
+                                <th class="text-center">Fecha Fin</th>
+                                <th class="text-center" colspan="2">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            if (!empty($roles)):
+                                foreach ($roles as $role):
+                                    $startDate = date('d/m/Y', strtotime($role->getStartDate()));
+                                    $finishDate = (empty($role->getFinishDate()) ? '(Indefinido)' : date('d/m/Y', strtotime($role->getFinishDate())));
+                                    $deleteForm->setUserRoleCode($role->getUserRoleCode());
+                                    $editForm->setUserRoleCode($role->getUserRoleCode());
+                                    ?>
+                                    <tr>
+                                        <td class="text-center" style="vertical-align:middle;"><?= Role::getStr($role->getCode()) ?></td>
+                                        <td class="text-center" style="vertical-align:middle;"><?= $startDate ?></td>
+                                        <td class="text-center" style="vertical-align:middle;"><?= $finishDate ?></td>
+                                        <td class="text-right">
+                                            <?= $this->form()->openTag($editForm) ?>
+                                            <?= $this->formElement($editForm->get(RF::USER_ROLE_CODE)) ?>
+                                            <?= $this->formElement($editForm->get(RF::SUBMIT)) ?>
+                                            <?= $this->form()->closeTag($editForm) ?>
+                                        </td>
+                                        <td class="text-left">
+                                            <?= $this->form()->openTag($deleteForm) ?>
+                                            <?= $this->formElement($deleteForm->get(RF::USER_ROLE_CODE)) ?>
+                                            <?= $this->formElement($deleteForm->get(RF::SUBMIT)) ?>
+                                            <?= $this->form()->closeTag($deleteForm) ?>
+                                        </td>
+                                    </tr>
+                                    <?php
+                                endforeach;
+                            endif;
+                            ?>
+                        </tbody>
+                    </table>
+                    <?php
+                endif;
+                ?>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,204 @@
+<?php
+ob_start();
+
+use Eep\Entity\Order as O;
+use Eep\Service\AssignmentManager as AM;
+
+if (strlen(strval($order->getIdPersona())) > 9){
+    $idPersona = "999999999";
+    $cui = $order->getIdPersona();
+} else {
+    $idPersona = $order->getIdPersona();
+    $cui = "";
+}
+
+
+if (!empty($order)):
+    ?>
+    <table style='border: 1px solid #000000; padding: 5px; border-radius: 5px;' align=center>
+        <tr>
+            <td colspan='4' align='left'><img src='<?= $this->serverUrl() ?>/img/logos/logo_color_usac2.png' width='200'></td>
+            <td align='right'>&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan='5' align='center'><h2>Orden de Pago</h2></td>
+        </tr>
+        <tr>
+            <td>No.</td>
+            <td width='400' colspan='2'> <?= $order->getCodOrden() ?></td>
+            <td>&nbsp;</td>
+            <td align='center' rowspan='15' style='border-left: 1px solid #000000'>
+                <table>
+                    <tr>
+                        <td align='center' colspan='2'><b>Para uso exclusivo del banco</b></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>Orden de pago:&nbsp;</td>
+                        <td align='left'> <?= $order->getCodOrden() ?></td>
+                    </tr>
+                    <tr>
+    <!--                        <td align='right'>Carn&eacute;:&nbsp;</td>-->
+                        <td align='right'>Estudiante:&nbsp;</td>
+                        <td align='left'> <?= $idPersona ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>Total a pagar:&nbsp;</td>
+                        <td align='left'> <?= $order->getMontoTotal() ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>C&oacute;digo unidad:&nbsp;</td>
+                        <td align='left'> <?= $order->getUnidad() ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>C&oacute;digo de ext.:&nbsp;</td>
+                        <td align='left'> <?= $order->getExtension() ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>C&oacute;digo de carrera:&nbsp;</td>
+                        <td align='left'> <?= $order->getCodCarrera() == O::CURSO_ACTUALIZACION ? '00' : $order->getCodCarrera() ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>Fecha de Emisión:&nbsp;</td>
+                        <td align='left'> <?= date('Ymd', strtotime($order->getFechaGeneracion())) ?></td>
+                    </tr>
+                    <tr>
+                        <td align='right'>Rubro de pago:&nbsp;</td>
+                        <td align='left'>102</td>
+                    </tr>
+                    <tr>
+                        <td align='right'>Llave:&nbsp;</td>
+                        <td align='left'> <?= $order->getLlave() ?></td>
+                    </tr>
+                    <tr>
+                        <td align='center' colspan="2">Puede efectuar su pago en cualquier <br>
+                            agencia o banca virtual de BANRURAL<br> (ATX-253), GyT Continental o BANTRAB.</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>Carn&eacute;:&nbsp;</td>
+            <td> <?= $idPersona ?></td>
+        </tr>
+        <tr>
+            <td>Nombre:</td>
+            <td> <?= $order->getNombreUsuario() ?></td>
+        </tr>
+        <tr>
+            <td>Facultad:</td>
+            <td>Facultad de Arquitectura</td>
+        </tr>
+        <tr>
+            <td>Extension:&nbsp;</td>
+            <td> <?= $order->getExtension() == 0 ? 'Plan Diario' : $order->getExtension() ?></td>
+        </tr>
+        <tr>
+            <td>Carrera:</td>
+            <td> <?= $order->getNombreCarrera() ?></td>
+        </tr>
+        <tr>
+            <td colspan='3' align='center'><u>Detalle de Pago</u></td>
+        </tr>
+
+        <?php
+        $type = $order->getCodTipoOrden();
+        if ($type == O::INSCRIPTION):
+            ?>
+            <tr>
+                <td align='right' colspan='2'>Inscripción</td>
+                <td align='right'>Q. <?= $order->getMontoTotal() ?></td>
+            </tr>
+            <?php
+        elseif ($type == O::ASSIGNMENT):
+            $detail = $order->getDetail();
+            if (empty($detail)):
+                ?>
+                <tr>
+                    <td align='right' colspan='2'><font color='red'>(Detalle no encontrado)</font></td>
+                </tr>
+                <?php
+            else:
+                foreach ($detail AS $d):
+                    if (!isset($minDate)) {
+                        $minDate = strtotime($d->getFechaInicio());
+                    } else {
+                        $date = strtotime($d->getFechaInicio());
+                        if ($date < $minDate) {
+                            $minDate = $date;
+                        }
+                    }
+                    $courseCode = $d->getCodCurso();
+                    $courseName = $d->getNombreCurso();
+                    $section = $d->getSeccion();
+                    $subtotal = $d->getSubtotal();
+                    ?>
+                    <tr>
+                        <td align='right' colspan='2'><?= "$courseCode $courseName  <b>$section</b>" ?></td>
+                        <td align='right'>Q. <?= $subtotal ?></td>
+                    </tr>
+                    <?php
+                endforeach;
+            endif;
+        else:
+            ?>
+            <tr>
+                <td align='center' colspan='2'><font color='red'>(Indefinido)</font></td>
+            </tr>
+        <?php
+        endif;
+        ?>
+        <tr>
+            <td align='right' colspan='2'>Total a Pagar:</td>
+            <td align='right'><b>Q. <?= $order->getMontoTotal() ?></b></td>
+        </tr>
+    </table>
+    <div style="text-align: center;">
+        ** <b>El documento es válido hasta el día <font color="blue"><?= date('d/m/Y', strtotime("+ $orderValidityDays days", strtotime($order->getFechaGeneracion()))) ?> </font> </b>  **
+    </div>
+    <br/>
+    <div style="text-align: center;">
+        <?php
+        if ($type == O::ASSIGNMENT) {
+            if (isset($asgType)) {
+                $extraMsg = '';
+                if ($asgType == AM::CA_EXTEMPORARY) {
+                    $date = strtotime($order->getFechaGeneracion());
+                    $days = $extDays;
+                    $extraMsg = ' (asignación extemporánea)';
+                } elseif ($asgType == AM::CA_EXTRAORDINARY) {
+//                $date = strtotime(??);
+//                $days = ?;
+                    $date = strtotime($order->getFechaGeneracion());
+                    $days = $extDays;
+                    $extraMsg = ' (asignación extraordinaria - cohorte diferente)';
+                } else {
+                    $date = $minDate; //['fecha_inicio'];
+                    $days = $regularDays;
+                }
+
+                $limit = date('d/m/Y', strtotime("+ $days weekdays", $date));
+                echo '<b>IMPORTANTE:</b>El último día de asignación es <font color="blue"><i>' . $limit . " </i></font>$extraMsg. <br>";
+                echo '<font color="blue"><i>No</i></font> pagues esta orden si la eliminaste en la plataforma o si ya no es válida.<br>';
+            } else {
+                echo '<b>No<br/> se pudo determinar la fecha límite para el pago de esta orden de pago.'
+                . '<i>' . 'Consulte a la Escuela de Estudios de Postgrados' . '</i>.';
+            }
+        } else {
+            echo '<b>IMPORTANTE:</b> Paga esta boleta cuanto antes para que puedas inscribirte dentro del periodo habilitado por el Departamento de Registro y Estadística. Después de pagarla <font color="blue">recuerda continuar con los pasos indicados</font> en la <a href="http://rye.usac.edu.gt/index.php?posg=1">Plataforma de Registro y Estadística</a> para completar tu inscripción';
+        }
+        ?>
+    </div>
+    <?php
+else:
+    echo "Orden no obtenida";
+endif;
+
+/* if ($orden[rubro] == 63){
+  echo "<div style='margin-top: 5px; margin-left: 150px; text-align: center; width: 60%; color: red;'>
+  El plazo m&aacute;ximo para realizar el pago de esta orden es de 72 horas,
+  si usted no confirma el pago en este plazo su preasignaci&oacute;n se dar&aacute; de baja
+  y no podr&aacute; confirmar el pago en el Banco. Por favor realizar el pago en BANRURAL o G&T Continental
+
+  </div>";
+  } */
+?>

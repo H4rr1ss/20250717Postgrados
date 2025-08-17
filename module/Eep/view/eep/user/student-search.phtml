@@ -1,0 +1,219 @@
+<?php
+
+use Eep\Form\StudentSearchForm as SSF;
+use Eep\Form\EditUserForm;
+use Eep\Service\InscriptionManager as IM;
+use Eep\Service\UserManager as UM;
+
+$form->prepare();
+$this->headTitle('Búsqueda de Estudiantes');
+?>
+
+<div class="col-lg-9">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Datos del usuario
+        </div>
+        <div class="panel-body pan">
+            <?= $this->form()->openTag($form) ?>
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(SSF::SEARCH_TYPE)) ?>
+                            <div class="radio">
+                                <?= $this->formElement($form->get(SSF::SEARCH_TYPE)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(SSF::SEARCH_TYPE)) ?></font>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(SSF::USER)) ?>
+                            <?= $this->formElement($form->get(SSF::USER)) ?>
+                            <font color="red"><?= $this->formElementErrors($form->get(SSF::USER)) ?></font>
+                        </div>
+                    </div>
+                </div>
+                <?= $this->partial('eep/msg', ['msg' => isset($msg) ? $msg : null]) ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <?= $this->formElement($form->get(SSF::SUBMIT)) ?>
+            </div>
+            <?= $this->form()->closeTag($form) ?>
+        </div>
+    </div>
+</div>
+<?php
+if (isset($users)):
+    ?>
+
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">Listado de usuarios</div>
+            <div class="panel-body">
+                <?php
+                if (!isset($includeInscription) || !$includeInscription):
+                    ?>
+                    <ul>
+                        <li style="color: red;">
+                            <p style="color:black;">
+                                Se muestra un máximo de <?= UM::SEARCH_RESULT_LIMIT ?> resultados
+                            </p>
+                        </li>
+                    </ul>
+                    <?php
+                endif;
+                ?>
+                <div class="overflow-x">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código de Usuario</th>
+                                <th><i class="fa fa-female"></i>/<i class="fa fa-male"></i></th>
+                                <?php
+                                if (isset($includeInscription) && $includeInscription):
+                                    ?>
+                                    <th>Estado Inscripción</th>
+                                    <?php
+                                endif;
+                                ?>
+                                <th>CUI/Pasaporte</th>
+                                <th>Reg. Acad.</th>
+                                <th>Reg. Pers.</th>
+                                <th>Nombres</th>
+                                <th>Apellidos</th>   
+                                <th>Teléfono</th>
+                                <th>Correo</th>                        
+                                <th>País</th>
+                                <th>Fecha Nac.</th>
+                                <th>Grado Acad. Actual</th>
+                                <th>Detalle</th>                        
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            foreach ($users as $user):
+                                $isMale = $user->getSexo() == 'H'; //IS MALE
+                                $birthDate = date('d/m/Y', strtotime($user->getFechaNacimiento()));
+                                $labInfo = $user->getInfoLaboral();
+                                ?>
+
+                                <tr>
+                                    <td><?= $user->getCode() ?></td>
+                                    <td><i class="fa fa-<?= $isMale ? "" : "fe" ?>male" style="color:<?= $isMale ? "blue" : "palevioletred" ?>;"></i></td>
+
+                                    <?php
+                                    if (isset($includeInscription) && $includeInscription):
+                                        $status = $user->getInscriptionStatus();
+                                        if ($status === null) {
+                                            $inscriptionStatus = '(desconocido)';
+                                            $color = 'active';
+                                        } else {
+                                            switch ($status) {
+                                                case IM::COMPLETE_INSCRIPTION:
+                                                    $inscriptionStatus = 'Inscrito (Con Orden)';
+                                                    $color = 'success';
+                                                    break;
+                                                case IM::MULTIPLE_CARRER_ASSIGNED:
+                                                    $inscriptionStatus = '<font color="#660000">Error - Múltiples Carreras</font>';
+                                                    $color = 'danger';
+                                                    break;
+                                                case IM::ERROR:
+                                                    $inscriptionStatus = '<font color="#660000">Error</font>';
+                                                    $color = 'danger';
+                                                    break;
+                                                case IM::NOT_INSCRIBED:
+                                                    $inscriptionStatus = 'No inscrito';
+                                                    $color = 'danger';
+                                                    break;
+                                                case IM::ORDER_PENDING:
+                                                    $inscriptionStatus = 'Inscrito';
+                                                    $color = 'warning';
+                                                    break;
+                                                case IM::NOT_ASSIGNED_CAREER:
+                                                    $inscriptionStatus = '(Sin Carrera)';
+                                                    $color = '';
+                                                    break;
+                                                case IM::INCORRECT_CAREER:
+                                                    $inscriptionStatus = '<font color="#660000">(Carrera errónea)</font>';
+                                                    $color = 'danger';
+                                                    break;
+                                                case IM::DEFAULTER_STUDENT:
+                                                    $inscriptionStatus = '<font color="#660000">Moroso</font>';
+                                                    $color = 'danger';
+                                                    break;
+                                                default:
+                                                    $inscriptionStatus = 'Indefinido';
+                                                    $color = 'active';
+                                                    break;
+                                            }
+                                        }
+                                        ?>
+                                        <td class="<?= $color ?>"><?= $inscriptionStatus ?></td>
+                                        <?php
+                                    endif;
+                                    ?>
+
+                                    <td><?= (!empty($user->getCui())) ? $user->getCui() : ($user->getPasaporte() == null ? '' :$user->getPasaporte()) ?></td>
+                                    <td><?= (!empty($user->getRegistroAcademico())) ? $user->getRegistroAcademico() : "(pendiente)" ?></td>
+                                    <td><?= (!empty($user->getRegistroPersonal())) ? $user->getRegistroPersonal() : "(no tiene)" ?></td>
+                                    <td><?= $user->getNombres() ?></td>
+                                    <td><?= $user->getApellidos() ?></td>
+                                    <td><?= $user->getTelefono() ?></td>
+                                    <td><?= $user->getCorreo() ?></td>
+                                    <td><?= $user->getPais() ?></td>
+                                    <td><?= $birthDate ?></td>
+                                    <td><?= $user->getGradoAcademico() ?></td>
+                                    <td class="text-center">
+                                        <form action="<?= $this->url('user', ['action' => 'editUser']) ?>" method="post">
+                                            <?php
+                                            if ($labInfo != null):
+                                                $data = (!empty($labInfo->getHoraInicio())) ? "Hora \nInicio: <strong> " . $labInfo->getHoraInicio() . ".</strong><br/>" : "";
+                                                $data .= (!empty($labInfo->getHoraFin())) ? "Hora Fin: <strong> " . $labInfo->getHoraFin() . ".</strong><br/>" : "";
+                                                $data .= (!empty($labInfo->getUbicacion())) ? "Ubicación: <strong> " . $labInfo->getUbicacion() . ".</strong><br/>" : "";
+                                                $days = [
+                                                    'lunes' => $labInfo->getLunes(),
+                                                    'martes' => $labInfo->getMartes(),
+                                                    'miercoles' => $labInfo->getMiercoles(),
+                                                    'jueves' => $labInfo->getJueves(),
+                                                    'viernes' => $labInfo->getViernes(),
+                                                    'sábado' => $labInfo->getSabado(),
+                                                    'domingo' => $labInfo->getDomingo()
+                                                ];
+                                                $data .= "Días: ";
+                                                $realDayNames = [];
+                                                foreach ($days as $dayName => $value) {
+                                                    if ($value != null && $value == true) {
+                                                        $realDayNames[] = $dayName;
+                                                    }
+                                                }
+                                                $data .= "<strong>" . ((count($realDayNames) > 0) ? implode(", ", $realDayNames) : "No especificado") . ".</strong>";
+                                                ?>
+                                                <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                                        data-content="<?= $data ?>" 
+                                                        class="btn btn-orange" data-original-title="" data-html="true" title="" >
+                                                    <i class="fa fa-suitcase"></i>
+                                                </button>
+                                                <?php
+                                            endif;
+                                            ?>
+
+                                            <button type="submit" name="<?= EditUserForm::USER_CODE_SUBMIT ?>" class="btn btn-blue" value="<?= $user->getCode() ?>">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php
+                            endforeach;
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+endif;
+?>

@@ -1,0 +1,86 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns0="http://siif/WSGeneracionOrdenPagoV2.wsdl/types/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://siif/WSGeneracionOrdenPagoV2.wsdl" name="WSGeneracionOrdenPagoV2" targetNamespace="http://siif/WSGeneracionOrdenPagoV2.wsdl">
+    <types>
+        <schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soap11-enc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="http://siif/WSGeneracionOrdenPagoV2.wsdl/types/" targetNamespace="http://siif/WSGeneracionOrdenPagoV2.wsdl/types/" elementFormDefault="qualified">
+            <element name="consultaOrdenPagoElement">
+                <complexType>
+                    <sequence>
+                        <element name="pxml" type="string" nillable="true"/>
+                    </sequence>
+                </complexType>
+            </element>
+            <element name="consultaOrdenPagoResponseElement">
+                <complexType>
+                    <sequence>
+                        <element name="result" type="string" nillable="true"/>
+                    </sequence>
+                </complexType>
+            </element>
+            <element name="generarOrdenPagoElement">
+                <complexType>
+                    <sequence>
+                        <element name="pxml" type="string" nillable="true"/>
+                    </sequence>
+                </complexType>
+            </element>
+            <element name="generarOrdenPagoResponseElement">
+                <complexType>
+                    <sequence>
+                        <element name="result" type="string" nillable="true"/>
+                    </sequence>
+                </complexType>
+            </element>
+        </schema>
+    </types>
+    <message name="WSGeneracionOrdenPagoV2_consultaOrdenPago">
+        <part name="parameters" element="tns0:consultaOrdenPagoElement"/>
+    </message>
+    <message name="WSGeneracionOrdenPagoV2_consultaOrdenPagoResponse">
+        <part name="parameters" element="tns0:consultaOrdenPagoResponseElement"/>
+    </message>
+    <message name="WSGeneracionOrdenPagoV2_generarOrdenPago">
+        <part name="parameters" element="tns0:generarOrdenPagoElement"/>
+    </message>
+    <message name="WSGeneracionOrdenPagoV2_generarOrdenPagoResponse">
+        <part name="parameters" element="tns0:generarOrdenPagoResponseElement"/>
+    </message>
+    <portType name="WSGeneracionOrdenPagoV2">
+        <operation name="consultaOrdenPago">
+            <input message="tns:WSGeneracionOrdenPagoV2_consultaOrdenPago"/>
+            <output message="tns:WSGeneracionOrdenPagoV2_consultaOrdenPagoResponse"/>
+        </operation>
+        <operation name="generarOrdenPago">
+            <input message="tns:WSGeneracionOrdenPagoV2_generarOrdenPago"/>
+            <output message="tns:WSGeneracionOrdenPagoV2_generarOrdenPagoResponse"/>
+        </operation>
+    </portType>
+    <binding name="WSGeneracionOrdenPagoV2SoapHttp" type="tns:WSGeneracionOrdenPagoV2">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <operation name="consultaOrdenPago">
+            <soap:operation soapAction="http://siif/WSGeneracionOrdenPagoV2.wsdl/consultaOrdenPago"/>
+            <!--<soap:operation soapAction="https://arquitectura.farusac.edu.gt/ws/WSGeneracionOrdenPagoSoapHttpPort.xml"/>-->
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        <operation name="generarOrdenPago">
+            <soap:operation soapAction="http://siif/WSGeneracionOrdenPagoV2.wsdl/generarOrdenPago"/>
+            <!--<soap:operation soapAction="https://arquitectura.farusac.edu.gt/ws/WSGeneracionOrdenPagoSoapHttpPort.xml"/>-->
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+    </binding>
+    <service name="WSGeneracionOrdenPagoV2">
+        <port name="WSGeneracionOrdenPagoV2SoapHttpPort" binding="tns:WSGeneracionOrdenPagoV2SoapHttp">
+            <soap:address location="https://siif.usac.edu.gt/WSGeneracionOrdenPagoV2/WSGeneracionOrdenPagoV2SoapHttpPort?WSDL"/>
+            <!--<soap:address location="https://arquitectura.farusac.edu.gt/ws/WSGeneracionOrdenPagoSoapHttpPort.xml"/>-->
+        </port>
+    </service>
+</definitions>

@@ -1,0 +1,170 @@
+<?php
+
+use Eep\Form\UpgCourseForm as UCF;
+use Eep\Entity\Role;
+
+$this->headTitle('Cursos de Actualización');
+$form->prepare();
+if (isset($courseList)) {
+    $deleteForm->prepare();
+    $editForm->prepare();
+}
+?>
+<div id="general-level" class="tab-pane fade in active">
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Curso de Actualización Profesional
+            </div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($form) ?>
+                <div class="form-body pal">
+                    <div class="row">
+                        <div class="col-lg-7">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UCF::NAME)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-book"></i>
+                                    <?= $this->formElement($form->get(UCF::NAME)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(UCF::NAME)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UCF::PRICE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-money"></i>
+                                    <?= $this->formElement($form->get(UCF::PRICE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(UCF::PRICE)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UCF::ALIAS)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-bookmark"></i>
+                                    <?= $this->formElement($form->get(UCF::ALIAS)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(UCF::ALIAS)) ?></font>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                        if ($form->getType() == UCF::TYPE_SAVE):
+                            ?>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <?= $this->formLabel($form->get(UCF::DESCRIPTION)) ?>
+                                    <?= $this->formElement($form->get(UCF::DESCRIPTION)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(UCF::DESCRIPTION)) ?></font>
+                                </div>
+                            </div>
+                            <?php
+                        endif;
+                        ?>
+                    </div>
+                    <?= $this->partial('eep/msg', ['msg' => isset($msg) ? $msg : null]) ?>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?php
+                    if ($form->getType() == UCF::TYPE_SAVE):
+                        echo $this->formElement($form->get(UCF::COURSE));
+                        ?>
+                        <a href="<?= $this->url('upgCourse', ['action' => 'view']) ?>" class = "btn btn-danger">
+                            Cancelar
+                        </a>
+                        <?php
+                    endif;
+                    ?>
+                    <?= $this->formElement($form->get(UCF::SUBMIT)) ?>
+                </div>
+                <?= $this->form()->closeTag($form) ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Listado de Cursos de Actualización Profesional y Precios
+            </div>
+            <div class="panel-body">
+                <?= $this->partial('eep/msg', ['msg' => $listMsg ?? null]) ?>
+                <?php
+                if (isset($coursesList)):
+                    ?>
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Código</th>
+                                <th class="text-center">Nombre</th>
+                                <th class="text-center">Alias</th>
+                                <th class="text-center">
+                                    Descripción
+                                    <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                            data-content=
+                                            "Esta descripción detalla la justificación del cambio de precio anterior al actual." 
+                                            class="btn-info" data-original-title="" title="">
+                                        <i class="fa fa-info"></i>
+                                    </button>
+                                </th>
+                                <th class="text-center">Precio Actual (Q.)</th>
+                                <th class="text-center" colspan="1">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            if (!empty($coursesList)):
+                                foreach ($coursesList as $course):
+                                    $courseCode = $course['cod_curso'];
+                                    $name = $course['nombre'];
+                                    $alias = $course['alias'];
+                                    $price = number_format($course['precio'], 2);
+                                    $description = $course['descripcion'] ?? '';
+                                    $deleteForm->setCourseCode($courseCode);
+                                    $editForm->setCourseCode($courseCode);
+                                    ?>
+                                    <tr>
+                                        <td style="vertical-align:middle;"><?= $courseCode ?></td>
+                                        <td style="vertical-align:middle;"><?= $name ?></td>
+                                        <td style="vertical-align:middle;"><?= $alias ?></td>
+                                        <td style="vertical-align:middle;"><?= $description ?></td>
+                                        <td class="text-right" style="vertical-align:middle;"><?= $price ?></td>
+                                        <td>
+                                            <table align="center">
+                                                <tr>
+                                                    <td class="text-right">
+                                                        <?= $this->form()->openTag($editForm) ?>
+                                                        <?= $this->formElement($editForm->get(UCF::COURSE)) ?>
+                                                        <?= $this->formElement($editForm->get(UCF::SUBMIT)) ?>
+                                                        <?= $this->form()->closeTag($editForm) ?>
+                                                    </td>
+                                                    <td>
+                                                        &nbsp;
+                                                    </td>
+                                                    <td class="text-left">
+                                                        <?= $this->form()->openTag($deleteForm) ?>
+                                                        <?= $this->formElement($deleteForm->get(UCF::COURSE)) ?>
+                                                        <?= $this->formElement($deleteForm->get(UCF::SUBMIT)) ?>
+                                                        <?= $this->form()->closeTag($deleteForm) ?>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <?php
+                                endforeach;
+                            endif;
+                            ?>
+                        </tbody>
+                    </table>
+                    <?php
+                endif;
+                ?>
+
+            </div>
+        </div>
+    </div>
+</div>

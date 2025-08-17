@@ -1,0 +1,292 @@
+
+<?php
+$this->headTitle('Oficialización Manual');
+
+use Eep\Form\ManualEntryForm as MF;
+
+if (!empty($form)) {
+    $form->prepare();
+}
+?>
+<div class="col-lg-12">
+    <div class="panel panel-green">
+        <div class="panel-heading">Ingreso Manual de Notas Finales</div>
+        <div class="panel-body pan">
+            <?php
+            if (empty($form)):
+                ?>
+                <div class="form-body pal">
+                    <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                </div>
+                <?php
+            else:
+                echo $this->form()->openTag($form);
+                ?>
+                <div class="form-body pal">
+                    <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::FINAL_GRADE_TYPE)) ?>
+                                <?= $this->formElement($form->get(MF::FINAL_GRADE_TYPE)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::FINAL_GRADE_TYPE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::ACADEMIC_REGISTRY)) ?>
+                                <?= $this->formElement($form->get(MF::ACADEMIC_REGISTRY)) ?>
+                                <font id="userAjaxMsg" color="red"> <?= $this->formElementErrors($form->get(MF::ACADEMIC_REGISTRY)) ?></font>
+                                <?= $this->formElement($form->get(MF::USER_CODE)) ?>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="form-group">
+                                <label class="control-label" for="userName">Nombre</label>
+                                <label type="text" id="userName" class="form-control">
+                                </label>
+                                <font id="userNameError" color="red"></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::PENSUM)) ?>
+                                <?= $this->formElement($form->get(MF::PENSUM)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::PENSUM)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::COURSE)) ?>
+                                <?= $this->formElement($form->get(MF::COURSE)) ?>
+                                <font id="courseAjaxMsg"color="red"> <?= $this->formElementErrors($form->get(MF::COURSE)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::SECTION)) ?>
+                                <!--                                <button type="button" data-container="body" data-toggle="popover" data-placement="top" class="btn-primary" data-original-title="" title="" 
+                                                                            data-content="Parametros generales para suficiencias o equivalencias">
+                                                                        <i class="fa fa-info"></i>
+                                                                    </button>  -->
+                                <?= $this->formElement($form->get(MF::SECTION)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::SECTION)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::BALLOT)) ?>
+                                <?= $this->formElement($form->get(MF::BALLOT)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::BALLOT)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::ACT)) ?>
+                                <?= $this->formElement($form->get(MF::ACT)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::ACT)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::DESCRIPTION)) ?>
+                                <?= $this->formElement($form->get(MF::DESCRIPTION)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::DESCRIPTION)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::PONDER_TYPE)) ?>
+                                <br/>
+                                <?= $this->formElement($form->get(MF::PONDER_TYPE)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::PONDER_TYPE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label" for="grade">
+                                    Nota
+                                </label>
+                                <div class="form-group">
+                                    <?= $this->formElement($form->get(MF::GRADE)) ?>
+                                    <div id="<?= MF::CHECK_GRADE ?>">
+                                        <?= $this->formElement($form->get(MF::CHECK_GRADE)) ?>
+                                        <?= $this->formLabel($form->get(MF::CHECK_GRADE)) ?>
+                                    </div>
+                                </div>
+                                <font color="red">
+                                <?= $this->formElementErrors($form->get(MF::GRADE)) ?>
+                                <?= $this->formElementErrors($form->get(MF::CHECK_GRADE)) ?>
+                                </font>
+                            </div>
+                            <?php
+                            $checkApprovalPondering = $form->get(MF::PONDER_TYPE)->getValue();
+                            if ($checkApprovalPondering) {
+                                $element = '"#' . MF::GRADE . '"';
+                            } else {
+                                $element = '"#' . MF::CHECK_GRADE . '"';
+                            }
+                            ?>
+                            <script type="text/javascript">
+                                $(<?= $element ?>).hide();
+                            </script>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(MF::DATE)) ?>
+                                <button type="button" data-container="body" data-toggle="popover" data-placement="top" class="btn-primary" data-original-title="" title="" 
+                                        data-content="Esta fecha designará el año, semestre y mes mostrado en la constancia de cursos. Ingresar la fecha en que se abrió la asignatura cursada.">
+                                    <i class="fa fa-info"></i>
+                                </button>   
+                                <br/>
+                                <?= $this->formElement($form->get(MF::DATE)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(MF::DATE)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?= $this->formElement($form->get(MF::SUBMIT)) ?>
+                </div>
+                <?php
+                echo $this->form()->closeTag($form);
+            endif;
+            ?>
+        </div>
+    </div>
+</div>
+<style type="text/css">
+    .ui-autocomplete-loading {
+        background: white url("/img/loading.gif") right center no-repeat;
+    }
+</style>
+<script sr
+<script type='text/javascript'>
+    $("[name=Tipo_Ponderacion]").on('ifChanged', function (event) {
+        if (this.value == 0) {
+            $("#<?= MF::GRADE ?>").hide();
+            $("#<?= MF::CHECK_GRADE ?>").show();
+        } else {
+            $("#<?= MF::GRADE ?>").show();
+            $("#<?= MF::CHECK_GRADE ?>").hide();
+        }
+    });
+
+    function populateCourses(courses) {
+        html = "";
+        Object.keys(courses).forEach(function (courseCode) {
+            html += `<option value="${courseCode}">${courses[courseCode]}</option>`;
+        });
+        $("#<?= MF::COURSE ?>").html(html);
+    }
+
+    $("#<?= MF::PENSUM ?>").change(function () {
+        $.ajax({
+            url: "<?= $this->url('official', ['action' => 'getCourses']) ?>",
+            type: 'POST',
+            dataType: 'json',
+            async: true,
+            timeout: 10000,
+            data: {
+                pensumCode: $(this).val()
+            },
+            success: function (data) {
+                users = null;
+                if (!data.hasOwnProperty('status')) {
+                    $("#courseAjaxMsg").text('No se obtuvo una respuesta correcta de la búsqueda de estudiantes');
+                } else {
+                    if (!data.status) {
+                        $("#courseAjaxMsg").text(data.error);
+                    } else {
+                        populateCourses(data.courses);
+                    }
+                }
+            },
+            error: function (xmlhttprequest, textstatus, message) {
+                if (textstatus === "timeout") {
+                    $("#courseAjaxMsg").text("Tiempo de espera de solicitud agotado");
+                } else {
+                    $("#courseAjaxMsg").text("Error en solicitud: " + message);
+                }
+            }
+        });
+    });
+    var enterProtection = false;
+    $("#<?= MF::ACADEMIC_REGISTRY ?>").keyup(function () {
+        if (!enterProtection) {
+            $("#userName").text("");
+            $("#<?= MF::USER_CODE ?>").val(null);
+            $("#<?= MF::PENSUM ?>").html('<option>(Indique un estudiante)</option>');
+            $("#<?= MF::COURSE ?>").html('<option>(Seleccione una carrera)</option>');
+        } else {
+            enterProtection = false;
+        }
+    });
+    $(function () {
+        function update(item) {
+            $("#userName").text(item.name);
+            $("#<?= MF::USER_CODE ?>").val(item.userCode);
+            pensums = item.pensums;
+            html = "";
+            Object.keys(pensums).forEach(function (pensumCode) {
+                html += `<option value="${pensumCode}">${pensums[pensumCode]}</option>`;
+            });
+            $("#<?= MF::PENSUM ?>").html(html);
+            $("#<?= MF::PENSUM ?>").trigger("change");
+        }
+
+        $("#<?= MF::ACADEMIC_REGISTRY ?>").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: "<?= $this->url('official', ['action' => 'getStudents']) ?>",
+                    type: 'POST',
+                    dataType: 'json',
+                    async: true,
+                    timeout: 10000,
+                    data: {
+                        userId: request.term
+                    },
+                    success: function (data) {
+                        users = null;
+                        if (!data.hasOwnProperty('status')) {
+                            $("#userAjaxMsg").text('No se obtuvo una respuesta correcta de la búsqueda de estudiantes');
+                        } else {
+                            if (!data.status) {
+                                $("#userAjaxMsg").text(data.error);
+                            } else {
+                                users = data.users;
+                                $("#userAjaxMsg").text("");
+                            }
+                        }
+                        response(users);
+                    },
+                    error: function (xmlhttprequest, textstatus, message) {
+                        console.log(xmlhttprequest);
+                        if (textstatus === "timeout") {
+                            $("#userAjaxMsg").text("Tiempo de espera de solicitud agotado");
+                        } else {
+                            $("#userAjaxMsg").text("Error en solicitud: " + message + ".");
+                        }
+                        response();
+                    }
+                });
+            },
+            minLength: 2,
+            select: function (event, ui) {
+                update(ui.item); // + ui.item.value + " aka " + ui.item.id);
+                enterProtection = true;
+                (async () => {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    enterProtection = false;
+                })();
+            }
+        });
+    }
+    );
+    </script>

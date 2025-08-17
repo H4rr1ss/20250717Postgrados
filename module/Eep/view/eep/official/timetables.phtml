@@ -1,0 +1,144 @@
+
+<?php
+
+use Eep\Form\CareerYearForm as CYF;
+use Eep\Service\GeneralManager as GM;
+
+$this->headTitle('Oficialización de Horarios');
+$form->prepare();
+?>
+<div class="col-lg-12">
+    <div class="panel panel-green">
+        <div class="panel-heading">Horarios por Año y Carrera</div>
+        <div class="panel-body pal">
+            <?= $this->form()->openTag($form) ?>
+            <div class="form-body">
+                <div class="row">
+                    <div class="col-md-2"></div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(CYF::YEAR)) ?>
+                            <?= $this->formElement($form->get(CYF::YEAR)) ?>
+                            <font color="red">
+                            <?= $this->formElementErrors($form->get(CYF::YEAR)) ?>
+                            </font>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(CYF::CAREER)) ?>
+                            <?= $this->formElement($form->get(CYF::CAREER)) ?>
+                            <font color="red">
+                            <?= $this->formElementErrors($form->get(CYF::CAREER)) ?>
+                            </font>
+                        </div>
+                    </div>
+                    <div class="col-md-1 text-center">
+                        <br/>
+                        <?= $this->formElement($form->get(CYF::SUBMIT)) ?>
+                    </div>
+                </div>
+            </div>
+            <?= $this->form()->closeTag($form) ?>
+            <hr/>
+            <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            <?php
+            if (!empty($data)):
+                ksort($data);
+                foreach ($data as $month => $tts):
+                    $monthName = GM::MONTHS[$month];
+                    ?>            
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h3><?= $monthName ?></h3>
+                            <div class="overflow-x">
+                                <table class="table table-hover table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">Pensum</th>
+                                            <th class="text-center">Cohorte</th>
+                                            <th class="text-center">Código</th>
+                                            <th class="text-center">Nombre Curso</th>
+                                            <th class="text-center">Sección</th>
+                                            <th class="text-center">Catedrático</th>
+                                            <th class="text-center">Notas<br>Oficializadas</th>
+                                            <th class="text-center" colspan="2">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        foreach ($tts as $tData):
+                                            $timetable = $tData['timetable'];
+                                            $totalGrades = $tData['totalGrades'];
+                                            $officialized = $tData['officialized'];
+                                            ?>
+                                            <tr>
+                                                <td class="text-center" style="vertical-align:middle;"><?= $timetable->getCodPensum() ?></td>
+                                                <td class="text-center" style="vertical-align:middle;"><?= date('d/m/Y', strtotime($timetable->getFechaCohorte())) ?></td>
+                                                <td class="text-center" style="vertical-align:middle;"><?= $timetable->getCodCurso() ?></td>
+                                                <td style="vertical-align:middle;"><?= $timetable->getNombreCurso() ?></td>
+                                                <td class="text-center" style="vertical-align:middle;"><?= $timetable->getSeccion() ?></td>
+                                                <td class="text-center" style="vertical-align:middle;"><?= $timetable->getCatedratico() ?></td>
+                                                <td class="text-center <?= $totalGrades == 0 ? 'danger' : ($officialized == $totalGrades ? 'success' : 'warning') ?>" style="vertical-align:middle;font-size: 16px">
+                                                    <font color="<?= $totalGrades == 0 ? 'darkred' : ($officialized == $totalGrades ? 'green' : '#ff6100') ?>">
+                                                    <?= $officialized . ' / ' . $totalGrades ?>
+                                                    </font>
+                                                </td>
+                                                <?php
+                                                if ($timetable->getActCode() != null) {
+                                                    $actionWidth = 1;
+                                                } else {
+                                                    $actionWidth = 2;
+                                                }
+                                                ?>
+
+                                                <td colspan="<?= $actionWidth ?>" align="center">
+
+                                                    <!--GRADES DETAIL-->
+                                                    <a href="<?=
+                                                    $this->url('official', [
+                                                        'action' => 'detail',
+                                                        'timetableCode' => $timetable->getCode()
+                                                    ])
+                                                    ?>" 
+                                                       class="btn btn-primary">
+                                                        Detalle
+                                                    </a>
+                                                </td>
+                                                <?php
+                                                //SEE ACT
+                                                if ($timetable->getActCode() != null):
+                                                    ?>
+                                                    <td align="center">
+                                                        <a href="<?=
+                                                        $this->url('official', [
+                                                            'action' => 'act'
+                                                                ], [
+                                                            'query' => [
+                                                                'act' => $timetable->getActCode()
+                                                            ]
+                                                        ])
+                                                        ?>" 
+                                                           target="_blank" rel="noopener noreferrer" class="btn btn-orange">
+                                                            Acta Oficial
+                                                        </a>
+                                                    </td>
+                                                    <?php
+                                                endif;
+                                                ?>
+                                            </tr>
+                                            <?php
+                                        endforeach;
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
+                endforeach;
+            endif;
+            ?>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,59 @@
+<?php
+$this->headTitle('Iniciar Sesión');
+
+use Eep\Form\LoginForm;
+
+$form->prepare();
+?>
+<div class="col-lg-4"></div>
+<div class="col-lg-4">
+    <div class="panel panel-blue">
+        <div class="panel-heading">
+            Inicio de Sesión</div>
+        <div class="panel-body pan">
+            <!--            <form action="#">-->
+            <?= $this->form()->openTag($form) ?>
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="input-icon">
+                                <i class="fa fa-user"></i>
+                                <!--<input id="inputFirstName" type="text" placeholder="CUI" class="form-control" /> !-->
+                                <?= $this->formElement($form->get(LoginForm::USER)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(LoginForm::USER)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="input-icon">
+                                <i class="fa fa-key"></i>
+<!--                                    <input id="inputLastName" type="password" placeholder="Contraseña" class="form-control" />-->
+                                <?= $this->formElement($form->get(LoginForm::PASS)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(LoginForm::PASS)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <?= $this->formElement($form->get('remember_me')) ?>
+                            <?= $this->formLabel($form->get('remember_me')) ?>
+                            <?= $this->formElement($form->get(LoginForm::REDIRECT)) ?>
+                        </div>
+                    </div>
+                </div>
+                <?php echo $this->partial('eep/msg', ['msg' => isset($this->message) ? $this->message : null]); ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <?= $this->formElement($form->get(LoginForm::SIGN_IN)) ?>
+            </div>
+            <!--            </form>-->
+            <?= $this->form()->closeTag($form) ?>
+        </div>
+    </div>
+</div>

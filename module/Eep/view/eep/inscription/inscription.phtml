@@ -1,0 +1,47 @@
+<?php
+$this->headTitle('Orden de Inscripción');
+?>
+<div class="col-lg-7">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Generación de Orden de Pago de Inscripción de Estudiante de Primer Año</div>
+        <div class="panel-body pan">
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <h3>Información</h3>
+
+                            <ul>
+                                <li>
+                                    Únicamente los <b>estudiantes de primer ingreso no inscritos</b> pueden generar esta orden de pago.
+                                </li>
+                                <li>
+                                    Si eres de primer ingreso, genera la orden de pago y <b>págala lo antes posible</b> y termina los pasos de inscripción en 
+                                    <a href="http://rye.usac.edu.gt/index.php?posg=1">
+                                        la página del Departamento de Registro y Estadística
+                                    </a>.
+                                </li>
+                                <li>
+                                    Después de generar acá la orden de pago, <b>puedes volverla a descargar</b> en el menú de <a href="<?= $this->url('treasury', ['action' => 'orderListing']) ?>"> Órdenes de Pago</a>.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <?php echo $this->partial('eep/msg', ['msg' => isset($msg) ? $msg : null]); ?>
+            </div>
+            <?php
+            if (isset($enable) && $enable):
+                ?>
+                <div class="form-actions text-right pal">
+                    <a href="<?= $this->url('inscription', ['action' => 'generateOrder']) ?>" class = "btn btn-blue">
+                        <i class="fa fa-sticky-note"></i>Generar orden de pago de inscripción
+                    </a>
+                </div>
+                <?php
+            endif;
+            ?>
+        </div>
+    </div>
+</div>

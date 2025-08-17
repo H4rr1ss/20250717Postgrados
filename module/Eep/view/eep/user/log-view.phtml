@@ -1,0 +1,153 @@
+<?php
+
+use Eep\Form\LogForm as LF;
+use Eep\Service\LogManager as LM;
+use Eep\Entity\Role;
+
+$this->headTitle('Bitácora');
+$form->prepare();
+$role = $this->layout()->role;
+$deeperDetail = $role->isProgramador() || $role->isUdicaProgramador() || $role->isUdicaJefe();
+?>
+<div class="col-lg-10">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Detalle de búsqueda
+        </div>
+        <div class="panel-body pan">
+            <?= $this->form()->openTag($form) ?>
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(LF::USER)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-user"></i>
+                                <?= $this->formElement($form->get(LF::USER)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(LF::USER)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(LF::START_DATE)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-calendar-o"></i>
+                                <?= $this->formElement($form->get(LF::START_DATE)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(LF::START_DATE)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(LF::FINISH_DATE)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-calendar"></i>
+                                <?= $this->formElement($form->get(LF::FINISH_DATE)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(LF::FINISH_DATE)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <?= $this->formElement($form->get(LF::SEARCH)) ?>
+            </div>
+            <?= $this->form()->closeTag($form) ?>
+        </div>
+    </div>
+</div>
+<?php
+if (isset($logs)):
+    ?>
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Registro de Sucesos de Estudiante
+                <button type="button" 
+                        data-container="body" 
+                        data-toggle="popover" 
+                        data-placement="right" 
+                        data-content="Únicamente se muestra un máximo de <?= LM::LOG_LIMIT_ROWS ?> registros" 
+                        class="btn btn-green">
+                    <i class="fa fa-info"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                <?= $this->partial('eep/msg', ['msg' => $userDetail ?? null]) ?>
+                <div class="overflow-x">
+                    <table class="table table-hover table-condensed table-bordered">
+                        <thead>
+                            <tr>
+                                <?php
+                                if ($deeperDetail):
+                                    ?>
+                                    <th class="text-center">Correlativo</th>
+                                    <th class="text-center">IP</th>
+                                    <?php
+                                endif;
+                                ?>
+                                <th class="text-center">Tiempo</th>
+                                <th class="text-center">Acción</th>
+                                <th class="text-center">Operacion</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            foreach ($logs as $log):
+                                $time = date('d/m/Y H:i:s', strtotime($log['tiempo']));
+                                $action = $log['accion'];
+                                $status = $log['estado'];
+                                $detail = $log['detalle'] ?? '';
+                                $statusCode = $log['cod_estado'];
+                                $operation = $log['operacion'];
+                                switch ($statusCode) {
+                                    case LM::SUCCESS:
+                                        $color = 'success';
+                                        break;
+                                    case LM::ERROR:
+                                        $status = "<font color=\"red\">$status</font>";
+                                    case LM::FAILURE:
+                                        $color = 'danger';
+                                        break;
+                                    case LM::WARNING:
+                                        $color = 'warning';
+                                        break;
+                                    case LM::UNDEFINED_STATE:
+                                        $color = 'active';
+                                        break;
+                                    default:
+                                        $color = '';
+                                }
+                                ?>
+                                <tr>
+                                    <?php
+                                    if ($deeperDetail):
+                                        ?>
+                                        <td class="text-center"><?= $log['cod_bitacora'] ?></td>
+                                        <td class="text-center"><?= $log['ip'] ?></td>
+                                        <?php
+                                    endif;
+                                    ?>
+                                    <td>  <?= $time ?></td>
+                                    <td>  <?= $action ?></td>
+                                    <td>  <?= $operation ?></td>
+                                    <td  class="text-center <?= $color ?>"><?= $status ?></td>
+                                    <td><?= $detail ?></td>
+                                </tr>
+                                <?php
+                            endforeach;
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php
+endif;
+?>

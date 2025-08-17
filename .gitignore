@@ -1,0 +1,18 @@
+# Composer
+/vendor/
+
+# Config local (credenciales)
+/config/autoload/*.local.php
+
+# Cache, logs, temp
+/data/cache/
+\data/logs/
+\data/tmp/
+
+# IDEs
+/.idea/
+/.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

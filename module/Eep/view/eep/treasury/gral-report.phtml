@@ -1,0 +1,308 @@
+<?php
+
+use Eep\Form\GralReportForm as GRF;
+use Eep\Entity\Table as T;
+
+$this->headTitle('Reporte General');
+$form->prepare();
+?>
+<div id="general-level" class="tab-pane fade in active">
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Filtrar consulta
+            </div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($form) ?> 
+                <div class="form-body pal">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::ACADEMIC_DEGREE)) ?>
+                                <?= $this->formElement($form->get(GRF::ACADEMIC_DEGREE)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(GRF::ACADEMIC_DEGREE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::PENSUM)) ?>
+                                <?= $this->formElement($form->get(GRF::PENSUM)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(GRF::PENSUM)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::COHORT)) ?>
+                                <?= $this->formElement($form->get(GRF::COHORT)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(GRF::COHORT)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::START_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar-o"></i>
+                                    <?= $this->formElement($form->get(GRF::START_DATE)) ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::FINISH_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar"></i>
+                                    <?= $this->formElement($form->get(GRF::FINISH_DATE)) ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group text-center">
+                                <br>
+                                <?= $this->formElement($form->get(GRF::UPDATE)) ?>
+                            </div>
+                            <div id="updateMessages" style="color: red;">
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::COURSE)) ?>
+                                <?= $this->formElement($form->get(GRF::COURSE)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(GRF::COURSE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(GRF::SECTION)) ?>
+                                <?= $this->formElement($form->get(GRF::SECTION)) ?>
+                                <font color="red"><?= $this->formElementErrors($form->get(GRF::SECTION)) ?></font>
+                            </div>
+                        </div>                            
+                    </div>
+                    <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?= $this->formElement($form->get(GRF::SUBMIT)) ?>
+                </div>
+                <?= $this->form()->closeTag($form) ?> 
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+if (isset($report)):
+    ?>
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading"><?= $report->getTitle() ?></div>
+            <div class="panel-body">
+                <div class="overflow-x">
+                    <table class="table table-bordered table-hover <?= ($report->getStrippedTable() ? 'table-striped' : '') ?>">
+                        <thead>
+                            <tr>
+                                <?php
+                                foreach ($report->getHeaders() as $header):
+                                    ?>
+                                    <th class="text-center"><?= $header ?></th>
+                                    <?php
+                                endforeach;
+                                ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $alignment = $report->getAlignment();
+                            $rows = $report->getRows();
+                            $rowsLength = count($rows);
+                            for ($rowIndex = 0; $rowIndex < $rowsLength; $rowIndex++) :
+                                $row = $rows[$rowIndex];
+                                $color = $report->getColor($rowIndex);
+                                ?>
+                                <tr <?= empty($color) ? '' : "class=\"$color\"" ?>>
+                                    <?php
+                                    $length = count($row);
+                                    for ($index = 0; $index < $length; $index++):
+                                        ?>
+                                        <td<?= (isset($alignment[$index]) && $alignment[$index] != T::LEFT) ? ' class = "' . $alignment[$index] . '"' : '' ?>>
+                                            <?= $row[$index] ?>
+                                        </td>
+                                        <?php
+                                    endfor;
+                                    ?>
+                                </tr>
+                                <?php
+                            endfor;
+                            ?>
+                        </tbody>
+                        <tfoot>
+                            <?php
+                            foreach ($report->getFooters() as $footerData):
+                                $footers = $footerData['data'];
+                                $clases = $footerData['clases'];
+                                ?>
+                                <tr>
+                                    <?php
+                                    $footerLength = count($footers);
+                                    $tableWidth = count($report->getHeaders());
+                                    $colspan = $tableWidth - $footerLength + 1;
+                                    for ($fIndex = 0; $fIndex < count($footers); $fIndex++):
+                                        $footer = $footers[$fIndex];
+                                        if ($footer != null):
+                                            ?>
+                                            <th<?= ($colspan != null) ? " colspan=\"$colspan\"" : '' ?> class="<?= isset($clases) ? $clases[$fIndex] : '' ?> text-right">
+                                                <i>
+                                                    <strong>
+                                                        <?= $footer ?>
+                                                    </strong>
+                                                </i>
+                                            </th>
+                                            <?php
+                                            $colspan = null;
+                                        endif;
+                                    endfor;
+                                    ?>
+                                </tr>
+                                <?php
+                            endforeach;
+                            ?>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>    
+    <?php
+endif;
+?>
+
+
+<script type="text/javascript">
+    //DEGREE AND CAREER DYNAMIC CHANGE
+    var tree = <?= $form->getJsCareerDegreeTree() ?>;
+    var degreeElement = "#<?= GRF::ACADEMIC_DEGREE ?>";
+    var pensumElement = "#<?= GRF::PENSUM ?>";
+    var clearSelectionClass = ".<?= GRF::CLEAR_COURSE_SELECTION ?>";
+    var clearDataClass = ".<?= GRF::CLEAR_DATA_CLASS ?>";
+    $(degreeElement).change(function () {
+        selected = $(degreeElement).val();
+        career = tree[selected];
+        options = "";
+        $.each(career, function (key, value) {
+            options = options + "<option value=\"" + key + "\">" + value + "</option>";
+        });
+        $(pensumElement).html(options);
+        $(pensumElement).val("");
+    });
+    $(degreeElement).trigger("change");
+    //PENSUM - COHORT DYNAMIC CHANGE
+    var tree2 = <?= $form->getJsPensumCohortTree() ?>;
+    var cohortElement = "#<?= GRF::COHORT ?>";
+    $(pensumElement).change(function () {
+        selected = $(pensumElement).val();
+        cohort = tree2[selected];
+        options = "";
+        $.each(cohort, function (key, value) {
+            options = options + "<option value=\"" + key + "\">" + value + "</option>";
+        });
+//        for (var key in cohort) {
+//            options = options + "<option value=\"" + key + "\">" + cohort[key] + "</option>";
+//        }
+        $(cohortElement).html(options);
+        if (selected != "<?= GRF::UPG_COURSE_CODE ?>") {
+            $(cohortElement).val("");
+        }
+    });
+    $(pensumElement).trigger("change");
+<?php
+if ($form->hasData()):
+    ?>
+        $(degreeElement).val("<?= $form->getDegree() ?>");
+        $(degreeElement).trigger("change");
+        $(pensumElement).val("<?= $form->getCareer() ?>");
+        $(pensumElement).trigger("change");
+        $(cohortElement).val("<?= $form->getCohort() ?>");
+    <?php
+endif;
+?>
+
+    //COURSES-SECTIONS DYNAMIC CHANGE
+    var tree3 = {"": {"": "<?= GRF::EMPTY_OPTION_LABEL ?>"}};
+    var courseElement = "#<?= GRF::COURSE ?>";
+    var sectionElement = "#<?= GRF::SECTION ?>";
+    $(courseElement).change(function () {
+        selected = $(courseElement).val();
+        sections = tree3[selected];
+        options = "";
+//        $.each(sections, function (key, value) {
+//            options = options + "<option value=\"" + key + "\">" + value + "</option>";
+//        });
+        for (var key in sections) {
+            options = options + "<option value=\"" + key + "\">" + sections[key] + "</option>";
+        }
+        $(sectionElement).html(options);
+        $(sectionElement).val("");
+    });
+    $(courseElement).trigger("change");
+    //AJAX REQUEST
+
+//    $(document).ready(function () {
+    $("#<?= GRF::UPDATE ?>").on("click", function (event) {
+        pensumName = $(pensumElement).attr('name');
+        pensumValue = $(pensumElement).val();
+        cohortName = $(cohortElement).attr('name');
+        cohortValue = $(cohortElement).val();
+        startDateName = $("[id='<?= GRF::START_DATE ?>'").attr('name');
+        startDateValue = $("[id='<?= GRF::START_DATE ?>'").val();
+        finishDateName = $("[id='<?= GRF::FINISH_DATE ?>'").attr('name');
+        finishDateValue = $("[id='<?= GRF::FINISH_DATE ?>'").val();
+        data = {};
+        data[pensumName] = pensumValue;
+        data[cohortName] = cohortValue;
+        data[startDateName] = startDateValue;
+        data[finishDateName] = finishDateValue;
+        $.ajax({
+            url: '/treasury/ajaxGetCoursesTimetables',
+            type: 'POST',
+            dataType: 'json',
+            async: true,
+            data: data,
+            success: function (response, status) {
+                if (response.status == false) {
+                    $("#updateMessages").html(response.message);
+                } else {
+                    $("#updateMessages").html("");
+                    options = "";
+                    data = response.data;
+                    $.each(data.courses, function (key, value) {
+                        options = options + "<option value=\"" + key + "\">" + value + "</option>";
+                    });
+                    $(courseElement).html(options);
+                    options = "";
+                    $.each(data.sections, function (key, value) {
+                        console.log("Seccion " + key + ": " + value);
+                        options = options + "<option value=\"" + key + "\">" + value + "</option>";
+                    });
+                    $(sectionElement).html(options);
+                    $(courseElement).val("");
+                    $(sectionElement).val("");
+                    tree3 = data.tree;
+                    $(clearDataClass).removeAttr('disabled');
+                }
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                alert('No se pudo realizar la consulta');
+            }
+        });
+    });
+    //});
+
+    $(clearSelectionClass).change(function () {
+        $(clearDataClass).html("<option><?= GRF::EMPTY_OPTION_LABEL ?></option>");
+        $(clearDataClass).attr('disabled', 'disabled');
+    });
+
+</script>

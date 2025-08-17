@@ -1,0 +1,608 @@
+<?php
+ob_start();
+
+function basico($numero) {
+    $valor = array('cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez',
+        'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte',
+        'veintiuno', 'veintidós', 'veintitrés', 'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve');
+    return $valor[$numero];
+}
+
+function decenas($n) {
+    $decenas = array(30 => 'treinta', 40 => 'cuarenta', 50 => 'cincuenta', 60 => 'sesenta',
+        70 => 'setenta', 80 => 'ochenta', 90 => 'noventa', 100 => 'cien');
+    if ($n <= 29) {
+        return basico($n);
+    }
+    $x = $n % 10;
+    if ($x == 0) {
+        return $decenas[$n];
+    } else {
+        return $decenas[$n - $x] . ' y ' . basico($x);
+    }
+}
+
+function num_letras($n) {
+    switch (true) {
+        case ( $n >= 0 && $n <= 29) :
+            return basico($n);
+        case ( $n >= 30 && $n <= 100) :
+            return decenas($n);
+    }
+}
+
+function mesALetras($mes){
+    switch ($mes) {
+        case 1:
+            return "ENERO";
+        case 2:
+            return "FEBRERO";
+        case 3:
+            return "MARZO";
+        case 4:
+            return "ABRIL";
+        case 5:
+            return "MAYO";
+        case 6:
+            return "JUNIO";
+        case 7:
+            return "JULIO";
+        case 8:
+            return "AGOSTO";
+        case 9:
+            return "SEPTIEMBRE";
+        case 10:
+            return "OCTUBRE";
+        case 11:
+            return "NOVIEMBRE";
+        case 12:
+            return "DICIEMBRE";
+        default:
+            return "Indefinido";
+    }
+}
+
+if (!empty($data)):
+    $timetable = $data['timetable'];
+    ?>
+    <style type="text/css">
+        #capa_superior {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            height: 100px;
+            width: 100%;
+            background-color: #0B3861;
+        }
+
+        #texto_14 {
+            font-size: 14px;
+            font-family: FreeSans;
+        }
+
+        #texto_12 {
+            font-size: 12px;
+            font-family: FreeSans;
+            text-transform: uppercase;
+            word-break: normal;
+        }
+
+        #texto_10 {
+            font-size: 10px;
+            font-family: FreeSans;						
+        }
+
+        #td_borde {
+            border: 1px solid #BDBDBD;
+            border-radius: 3px;
+            vertical-align: middle;            
+        }
+
+        #logo_usac {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            float: left;				
+        }
+
+        #logo_arq {
+            position: absolute;
+            top: 10px;
+            margin-right: 10px;
+            float: right;						
+        }
+
+        #tabla_actafinal_coordinador {
+            position: absolute;
+            bottom: 200px;
+            left: 20px;
+        }
+
+        #num_pagina {
+            position: absolute; 
+            bottom: 15px;
+            right: 165px;
+            font-size: 12px;
+        }
+    </style>		
+
+    <page backtop="30mm" backbottom="10mm" backleft="20px" backright="20px" pageset="new"> 
+        <page_header>
+            <img id='logo_usac' src='public/img/logos/logousac.jpg' width='200' align='left'>
+            <img id='logo_arq' src='public/img/logos/logo_color_usac2.png' width='170' align='right'>
+            <div style='position: absolute; width: 50%; left: 25%; top: 6%; text-align: center'>
+                <font id='texto_14'><b>CORRELATIVO EEP <?= $data['actCode'] ?></b></font><br>
+                <font id='texto_14'><b>ACTA OFICIAL DE NOTAS</b></font><br>
+                <font id='texto_14'><b>AÑO <?= $timetable->getAnio() ?> - <?= mesALetras($timetable->getMes()) ?></b></font><br>
+                <font id='texto_14'><b>ESCUELA DE ESTUDIOS DE POSTGRADO</b></font><br>
+                <font id='texto_10'><b>UNIDAD DE INFORMÁTICA Y CONTROL ACADEMICO</b></font><br>
+            </div>
+        </page_header>
+        <page_footer>
+            <table style="width: 100%; border: none;font-size: 12px;">
+                <tr>
+                    <td style="width: 80%; text-align: left;background-color: white;">
+                        Verificador:
+                        <?php
+                        $hashData = $data;
+                        $hashData['timetable'] = [
+                            'professor' => $timetable->getCatedratico(),
+                            'courseName' => $timetable->getNombreCurso(),
+                            'courseCode' => $timetable->getCodCurso(),
+                            'section' => $timetable->getSeccion(),
+                        ];
+                        $principal = $data['principal'];
+                        $hashData['principal'] = [
+                            'gender' => $principal->getSexo(),
+                            'names' => $principal->getNombres(),
+                            'apellidos' => $principal->getApellidos(),
+                        ];
+                        echo hash("sha256", json_encode($hashData));
+                        unset($hashData);
+                        ?>
+                    </td>
+                    <td style="width: 20%; text-align: right;background-color: white;">
+                        Form. UICA-A03 P&aacute;gina [[page_cu]]/[[page_nb]]
+                    </td>
+                </tr>
+            </table>
+        </page_footer>
+        <table id='tabla_actafinal' align='center'>
+            <tr>
+                <td colspan='7' align='right'><font id='texto_14'><b>Fecha Impresi&oacute;n:</b></font></td>
+                <td colspan='1'><font id='texto_14'><?= date('Y-m-d H:i:s') ?></font></td>
+            </tr>
+            <tr>
+                <td colspan='2' align='right'><font id='texto_14'><b>Asignatura:</b></font></td>
+                <td colspan='4'><font id='texto_14'><?= $timetable->getNombreCurso() ?></font></td>
+                <td colspan='1' align='right'><font id='texto_14'><b>C&oacute;digo de Curso:</b></font></td>
+                <td colspan='1'><font id='texto_14'><?= $timetable->getCodCurso() ?></font></td>
+            </tr>
+            <tr>
+                <td colspan='2' align='right'><font id='texto_14'><b>Seccion:</b></font></td>
+                <td colspan='5'><font id='texto_14'><?= $timetable->getSeccion() ?></font></td>
+            </tr>
+            <tr>
+                <td colspan='2' align='right'><font id='texto_14'><b>Docente:</b></font></td>
+                <td colspan='5'><font id='texto_14' style='text-transform: capitalize'><?= $timetable->getCatedratico() ?></font></td>
+            </tr>
+
+
+
+
+
+            <tr>
+                <td colspan='2' align='right'><font id='texto_14'><b><?= $data['grade'] ?>:</b></font></td>
+                <td colspan='6'><font id='texto_14'><?= $data['career'] ?></font></td>
+            </tr>
+
+
+
+            <tr>
+                <td colspan='6' align='right'><br><br><br><font id='texto_14'><b>f:</b></font></td>
+                <td colspan='2' align='center'><br><br><br><br><hr style='border: 0.5px solid #000000;'>
+                    <font style='text-transform: capitalize; font-size: 11px;'><?= $timetable->getCatedratico() ?></font></td>
+            </tr>
+            <tr>
+                <td colspan='11' align='center'><hr></td>
+            </tr>
+            <tr>
+                <td align='center' id='td_borde' width='20'><font id='texto_10'><b>No.</b></font></td>
+                <td align='center' id='td_borde' width='50'><font id='texto_10'><b>Registro<br>Académico</b></font></td>
+                <td align='center' id='td_borde' width='490'><font id='texto_10'><b>Estudiante</b></font></td>
+                <td align='center' id='td_borde' width='50'><font id='texto_10'><b>No. <br> Recibo</b></font></td>
+                <td align='center' id='td_borde' width='20'><font id='texto_10'><b>NSP</b></font></td>
+                <td align='center' id='td_borde' width='50'><font id='texto_10'><b>Nota <br> Final<br>100</b></font></td>
+                <td align='center' id='td_borde' width='110'><font id='texto_10'><b>En Letras</b></font></td>
+                <td align='center' id='td_borde' width='100'><font id='texto_10'><b>OBSERVACIONES</b></font></td>
+            </tr>
+            <?php
+            $users = $data['users'];
+//            $users = [];
+//            for ($index = 0; $index < 15; $index++) {
+//                $users = array_merge($users, array_values($data['users']));
+//            }
+            uasort($users, function($a, $b) {
+                $aVal = $a['user']->getRegistroAcademico();
+                $bVal = $b['user']->getRegistroAcademico();
+                if ($aVal == $bVal) {
+                    return 0;
+                }
+                return $aVal > $bVal ? 1 : -1;
+            });
+            $count = 0;
+            foreach ($users as $userData):
+                $user = $userData['user'];
+                ?>
+                <tr>
+                    <td align='center' id='td_borde'><font id='texto_12'><?= ++$count ?></font></td>
+                    <td id='td_borde'><font id='texto_12'><?= $user->getRegistroAcademico() ?></font></td>
+                    <td id='td_borde'><font id='texto_12'> <?= $user->getNombreCompleto() ?? ($user->getApellidos() . ' ' . $user->getNombres()) ?> </font></td>
+                    <td id='td_borde'><font id='texto_12'><?= $userData['payCode'] ?></font></td>
+                    <td align='center' id='td_borde'><font id='texto_10'><?= $userData['attendance'] ? '' : 'NSP' ?></font></td>
+        <!--                    <td align='center' id='td_borde'><font id='texto_12'>0</font></td>
+                    <td align='center' id='td_borde'><font id='texto_12'>70</font></td>
+                    <td align='center' id='td_borde'><font id='texto_12'>30</font></td>-->
+                    <td align='center' id='td_borde'><font id='texto_12'><?= $userData['finalGrade'] ?></font></td>
+                    <td id='td_borde'><font id='texto_10' style='text-transform: uppercase'><?= num_letras($userData['finalGrade'] * 1) ?></font></td>
+                    <td id='td_borde' align='center'><font id='texto_10'>
+                        <?php
+                        if ($userData['finalGrade'] * 1 < $data['minApprove'] * 1) {
+                            echo 'REPROBADO.';
+                        } else {
+                            echo 'APROBADO.';
+                        }
+                        ?>
+                        </font></td>
+                </tr>
+                <?php
+            endforeach;
+            ?>
+
+        </table>
+    </page>
+
+    <!--STATS-->
+    <page pageset="old"> 
+        <table align='center' style="position:absolute;top: 80px;">
+            <tr>
+                <td colspan='7' align=center><font id='texto_14'><b>Estadisticas Generales de la Asignatura</b></font></td>
+            </tr>
+            <tr>
+                <td id='td_borde' align='center' width='200'><font id='texto_10'><b>Variable</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>No. <br> Estudiantes</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Porcentajes</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Nota <br> Media</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Nota <br> M&aacute;xima</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Nota <br> M&iacute;nima</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Desviacion <br> estandar</b></font></td>
+            </tr>
+            <?php
+            $approved = [
+                'count' => 0,
+                'mean' => 0,
+                'max' => 0,
+                'min' => 100,
+                'std' => 0,
+                'grades' => []
+            ];
+            $reproved = $approved;
+            $attended = 0;
+            foreach ($users as $userData) {
+                $grade = $userData['finalGrade'] ?? 0;
+                $attended += $userData['attendance'] ? 1 : 0;
+                if ($grade * 1 < $data['minApprove'] * 1) {
+                    $array = &$reproved;
+                } else {
+                    $array = &$approved;
+                }
+                $array['grades'][] = $grade;
+                $array['mean'] += $grade;
+                $array['count'] += 1;
+                if ($array['max'] < $grade) {
+                    $array['max'] = $grade;
+                }
+                if ($array['min'] > $grade) {
+                    $array['min'] = $grade;
+                }
+            }
+            $totalUsers = $approved['count'] + $reproved['count'];
+            $wholeMean = round(($approved['mean'] + $reproved['mean']) / $totalUsers, 2);
+            $approved['mean'] = round($approved['mean'] / $approved['count'], 2);
+            $reproved['mean'] = round($reproved['mean'] / $reproved['count'], 2);
+            if ($approved['count'] == 0) {
+                $approved['max'] = '-';
+                $approved['min'] = '-';
+                $approved['mean'] = '-';
+            }
+            if ($reproved['count'] == 0) {
+                $reproved['max'] = '-';
+                $reproved['min'] = '-';
+                $reproved['mean'] = '-';
+            }
+
+            function desv($vs) {
+                if (count($vs) == 0) {
+                    return '-';
+                }
+                $mean = 0;
+                foreach ($vs as $v) {
+                    $mean += $v * 1;
+                }
+                $mean = $mean / count($vs);
+                $desv = 0;
+                foreach ($vs as $v) {
+                    $desv += pow($v - $mean, 2);
+                }
+                return round(sqrt($desv / count($vs)), 2);
+            }
+            ?>
+            <tr>
+                <td id='td_borde'><font id='texto_10'><b>Aprobados</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $approved['count'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= round(100 * $approved['count'] / $totalUsers, 2) ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $approved['mean'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $approved['max'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $approved['min'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= desv($approved['grades']) ?></font></td>
+            </tr>
+            <tr>
+                <td id='td_borde'><font id='texto_10'><b>Reprobados</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $reproved['count'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= round(100 * $reproved['count'] / $totalUsers, 2) ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $reproved['mean'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $reproved['max'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $reproved['min'] ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= desv($reproved['grades']) ?></font></td>
+            </tr>
+            <tr>
+                <td id='td_borde' align='center'><font id='texto_10'><b>NO PRESENTES <br> (NSP)</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $totalUsers - $attended ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= round(100 * ($totalUsers - $attended) / $totalUsers, 2) ?></font></td>
+            </tr>
+    <!--            <tr>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Notas sin Zona<br> Minima (SZM)</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+            </tr>
+            <tr>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Notas con Zona <br> Minima</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+            </tr>
+            <tr>
+                <td id='td_borde' align='center'><font id='texto_10'><b>Estudiantes <br> Des-asignados</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>Num</font></td>
+            </tr>-->
+            <tr>
+                <td id='td_borde'><font id='texto_10'><b>Total</b></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $totalUsers ?></font></td>
+                <td id='td_borde' align='center'><font id='texto_12'>100</font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= $wholeMean ?></font></td>
+                <td><font id='texto_12'>&nbsp;</font></td>
+                <td><font id='texto_12'>&nbsp;</font></td>
+                <td id='td_borde' align='center'><font id='texto_12'><?= desv(array_merge($approved['grades'], $reproved['grades'])) ?></font></td>
+            </tr>
+        </table>
+        <br>
+        <table id='tabla_actafinal_coordinador' border='0'>
+            <tr>
+                <?php
+                ?>
+                <td align='right'><font id='texto_14'><b>Director<?= ($principal->getSexo() == 'H') ? '' : 'a' ?>:</b></font></td>
+                <td width='300'><?= $principal->getNombres() . ' ' . $principal->getApellidos() ?></td>
+
+                <td align='right'><font id='texto_14'><b>f:</b></font></td>
+                <td width='200'><br><hr style='border: 0.5px solid #000000;'></td>
+            </tr>
+        </table>
+
+
+    </page>
+
+
+    <!--GRADE DETAILS-->
+    <page pageset="old">
+
+        <style type="text/css">
+    <?php ?>
+            #td_borde2 {
+                border: 1px solid #CCCCCC;
+                padding: 2px;
+            }
+
+            #firma {
+                position: relative;
+                height: 50px;
+                font-size: 12px;
+                /*border: 3px solid #73AD21;*/
+            }
+                                                                                                                                                                                                                                                                                                                                    
+            .rotate {
+                position: absolute;
+                font-size: 9px;
+                margin-top: 135px;
+                padding-top: 4px;
+                white-space: nowrap;
+                text-transform: capitalize;
+                width: 100;
+                rotate: 90;
+            }
+
+        </style>
+        <?php
+        $margin = '20px';
+        ?>
+        <?php
+        $blocks = $data['blocks'];
+        uasort($blocks, function($a, $b) {
+            $aVal = $a['blockCode'];
+            $bVal = $b['blockCode'];
+            if ($aVal == $bVal) {
+                return 0;
+            }
+            return $aVal > $bVal ? 1 : -1;
+        });
+        //CHECKING LONGEST NAME
+        $nameLength = 0;
+        $lastNameLength = 0;
+        foreach ($users as $user) {
+            $user = $user['user'];
+            $aux = strlen($user->getNombres());
+            if ($aux > $nameLength) {
+                $nameLength = $aux;
+            }
+            $aux = strlen($user->getApellidos());
+            if ($aux > $lastNameLength) {
+                $lastNameLength = $aux;
+            }
+        }
+
+        //CHECKING NUMBER OF BLOCK LINES
+        function getBlockLines($blocks, $blockLines) {
+            $count = 0;
+            foreach ($blocks as $block) {
+                $name = $block['name'];
+                //19 CHARACTERS LONG FIT IN THE BLOCK NAME
+                //NAME MIGHT BE TRUNCATED IF BLOCKS DOESN'T FIT
+                $nameLines = array_slice(explode('&&', wordwrap($name, 19, '&&', true)), 0, $blockLines);
+                $count += count($nameLines) * 10 + 5; //5 FOR PADDING, 10 FOR EACH ROW
+            }
+            return $count;
+        }
+
+        $maxPonderNameLinesLength = 5; //5 IS THE PONDER BLOCK NAME MAX LINES LENGTH BECAUSE 50 IS THE MAX NUMBER OF CHARACTERS FOR THE NAME AND WITH THE NAME WRAP, ONLY 5 LINES MAXIMUM CAN BE REACHED
+        $charsLines = (int) (15 * ($nameLength + $lastNameLength + 1) / 4); //4 LETTERS MAKE ONE PONDER BLOCK NAME LINE. 15 IS THE APROX SIZE OF A ROW
+        $blockNumber = getBlockLines($blocks, $maxPonderNameLinesLength);
+        $maxWidth = 700; //MAXIMUM WIDTH
+        if (($charsLines + $blockNumber) > $maxWidth) {//NAME WIDTH + BLOCKS WIDTH MUST FIT
+            $showNames = false;
+            if ($blockNumber > $maxWidth) {
+                //IF SHOWING PONDERBLOCKS WITHOUT NAMES ARE NOT ENOUGH FOR FITTING IN THE SHEET
+                //THE PONDERBLOCK NAME LENGHT WILL BE SHRINKED
+                if (count($blocks) > 40) {
+                    //IF THERE ARE MORE THAN 40 BLOCKS, SOME BLOCKS JUST WON'T FIT SO THE LENGHT
+                    //IS SHRINKED THE MOST POSSIBLE - 29 CHARACTERS, 1 BLOCK NAME ROW
+                    $maxPonderNameLinesLength = 1;
+                } else {
+                    //PONDERBLOCK NAMES CAN BE SHRINK CERTAIN VALUE TO JUST FIT IN THE SHEET
+                    for ($length = $maxPonderNameLinesLength; $length >= 1; $length--) {
+                        $maxPonderNameLinesLength = $length;
+                        if (getBlockLines($blocks, $length) <= $maxWidth) {
+                            break;
+                        } else {
+                            
+                        }
+                    }
+                }
+            }
+        } else {
+            $showNames = true;
+        }
+        ?>
+        <table border='0' width='100%' style='margin-left: <?= $margin ?>;'
+               style="height: fit-content"
+               cellpadding="0" cellspacing="0"
+               >
+            <tr>
+                <td id='td_borde2' align='center' rowspan=2 height='100'>#</td>
+                <td id='td_borde2' align='center' rowspan=2>Registro<br>Académico</td>
+                <?php
+                if ($showNames) :
+                    ?>
+                    <td id='td_borde2' align='center' rowspan=2>Estudiante</td>
+                    <?php
+                endif;
+                $counter3 = 0;
+                foreach ($blocks as $block):
+                    $nameLines = explode('&&', wordwrap($block['name'], 19, '&&', true));
+                    $blockNames = array_slice($nameLines, 0, $maxPonderNameLinesLength);
+                    ?>
+                    <td id='td_borde2' height='100' <?= (($counter3++ % 2 == 0 ) ? "bgcolor='#F2F2F2'" : '') ?> 
+                        style="
+                        vertical-align: middle;
+                        width: <?= count($blockNames) * 10 ?>px;
+                        "
+                        >
+                        <div class='rotate'>
+                            <?php
+                            echo implode('<br>', $blockNames);
+                            ?>
+                        </div>
+                    </td>
+                    <?php
+                endforeach;
+                ?>
+                <td id='td_borde2' align='center' style="vertical-align: middle;width: 15px;">
+                    <div class="rotate" style="font-size: 12px">
+                        Nota Final
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <?php
+                $counter4 = 0;
+                foreach ($blocks as $block):
+                    ?>
+                    <td id='td_borde2' width=10 align='center' <?= (($counter4++ % 2 == 0 ) ? "bgcolor='#F2F2F2'" : '') ?>><font style='font-size: 10px'><?= $block['value'] ?></font></td>
+                    <?php
+                endforeach;
+                ?>
+                <td id='td_borde2' width=10 align='center'><font style='font-size: 10px'>100</font></td>
+            </tr>
+            <?php
+            $counter = 0;
+            foreach ($users as $userData):
+                $user = $userData['user'];
+                ?>
+                <tr>
+                    <td id='td_borde2' align='center'><font style='font-size: 10px'><?= ++$counter ?></font></td>
+                    <td id='td_borde2' align='center'><font style='font-size: 10px'><?= $user->getRegistroAcademico() ?></font></td>
+
+                    <?php
+                    if ($showNames):
+                        ?>
+                        <td id='td_borde2'><font style='font-size: 10px;'><?= $user->getNombreCompleto() ?? ($user->getApellidos() . ' ' . $user->getNombres()) ?></font></td>
+                        <?php
+                    endif;
+                    $counter2 = 0;
+                    foreach ($blocks as $block):
+                        ?>
+                        <td id='td_borde2' align='center' <?= (($counter2++ % 2 == 0) ? "bgcolor='#F2F2F2'" : '') ?>><font style='font-size: 10px'><?= $userData['grades'][$block['blockCode']] ?? '--' ?></font></td>
+                        <?php
+                    endforeach;
+                    ?>
+                    <td id='td_borde2' align='center'><font style='font-size: 10px'><?= $userData['finalGrade'] ?? '0' ?></font></td>
+                </tr>
+                <?php
+            endforeach;
+            ?>
+
+        </table>
+        <!--THIS TABLE EMULTAES THE PROFESSOR SIGN HEIGHT. IF THERE'S NO SPACE FOR THE SIGN, A NEW PAGE WILL BE CREATED
+                SO THE SIGN BELOW WILL BE IN A NEW PAGE-->
+        <table id='firma'>
+            <tr>
+                <td style="height: 100%;">
+                </td>
+            </tr>
+        </table>
+        <div style="position: absolute;bottom:0px;left: 0px">
+            <b>Catedrático: </b><?= $timetable->getCatedratico() ?>&nbsp;&nbsp;&nbsp;&nbsp; <b>f.</b>______________________________
+        </div>
+    </page>
+    <?php
+else:
+    echo "Datos del Acta no obtenidos";
+endif;
+
+/* if ($orden[rubro] == 63){
+  echo "<div style='margin-top: 5px; margin-left: 150px; text-align: center; width: 60%; color: red;'>
+  El plazo m&aacute;ximo para realizar el pago de esta orden es de 72 horas,
+  si usted no confirma el pago en este plazo su preasignaci&oacute;n se dar&aacute; de baja
+  y no podr&aacute; confirmar el pago en el Banco. Por favor realizar el pago en BANRURAL o G&T Continental
+
+  </div>";
+  } */
+?>

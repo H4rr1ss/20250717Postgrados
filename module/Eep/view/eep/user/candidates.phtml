@@ -1,0 +1,374 @@
+<?php
+
+use Eep\Form\CandidateForm;
+use Eep\Form\FileCandidatesForm;
+
+$this->headTitle('Aspirantes');
+
+$fileForm->prepare(); //DOWNLOAD FILE FORM
+$candidateForm->prepare(); //CANDIDATE FORM
+?>
+<div class="row">
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Ingreso Masivo</div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($fileForm) ?> 
+                <div class="form-body pal">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="inputName" class="control-label">
+                                    Abrir plantilla
+                                    <button type="button" 
+                                            data-container="body" 
+                                            data-toggle="popover" 
+                                            data-placement="top" 
+                                            data-content="Al momento de guardar el archivo, guardarlo como tipo CSV (.csv)" 
+                                            class="btn-info">
+                                        <i class="fa fa-info"></i>
+                                    </button>
+                                </label>
+    <!--                            <a href="<?= ""//$this->url('user', ['action' => 'downloadTemplate'])                     ?>" class="btn btn-primary">
+                                    Descargar Formato
+                                </a>-->
+                                <!--                                <a href="https://spreadsheets.google.com/feeds/download/spreadsheets/Export?key=1qPS5C_d2TrMqsYyF1bkO8Z8GllVhYmIhn57iMIHOmm4&exportFormat=xlsx" -->
+                                <a href="https://docs.google.com/spreadsheets/d/1qPS5C_d2TrMqsYyF1bkO8Z8GllVhYmIhn57iMIHOmm4"
+                                   target="_blank" rel="noopener noreferrer" class="form-control btn btn-primary">
+                                    Abrir plantilla
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="inputName" class="control-label">
+                                    Archivo con aspirantes a cargar
+                                </label>
+                                <?= $this->formElement($fileForm->get(FileCandidatesForm::FILE)) ?>
+                                <font color="red"><?= $this->formElementErrors($fileForm->get(FileCandidatesForm::FILE)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if ($this->fileMsg != null): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <div class="note note-<?= $this->fileMsg->getType() ?>">
+                                        <h4 class="box-heading">
+                                            <?= $this->fileMsg->getTitle(); ?>
+                                        </h4>
+                                        <p>
+                                            <?= $this->fileMsg->getMessage(); ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <h3>Importante</h3>
+                    <ul>
+                        <li>Al agregar a un estudiante, se le asignará la carrera indicada. Esta asignación no podrá ser revocada por lo que la correcta selección es de suma importancia.</li>
+                        <li>Los datos ingresados deben ser doblemente corroborados antes de agregarlos al sistema.</li>
+                        <li>Los datos de identificación (CUI o Pasaporte), la nacionalidad, el sexo y fecha de nacimiento no serán editables posteriormente.</li>
+                    </ul>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?= $this->formElement($fileForm->get(FileCandidatesForm::SUBMIT)) ?>
+                </div>
+                <?= $this->form()->closeTag($fileForm) ?> 
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-1"></div>
+</div>
+<div class="row">
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Ingreso Individual</div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($candidateForm) ?> 
+                <div class="form-body pal">
+                    <?php if ($this->candidateMsg != null): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <div class="note note-<?= $this->candidateMsg->getType() ?>">
+                                        <h4 class="box-heading">
+                                            <?= $this->candidateMsg->getTitle(); ?>
+                                        </h4>
+                                        <p>
+                                            <?= $this->candidateMsg->getMessage(); ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::NAMES)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::NAMES)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::NAMES)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::LAST_NAMES)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::LAST_NAMES)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::LAST_NAMES)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::EMAIL)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-envelope"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::EMAIL)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::EMAIL)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::PHONE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-phone"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::PHONE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::PHONE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::CUI)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-id-card-o"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::CUI)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::CUI)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::BIRTH_DATE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-birthday-cake"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::BIRTH_DATE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::BIRTH_DATE)) ?> </font>
+                                </div>                                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($candidateForm->get(CandidateForm::PASSPORT)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-globe"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::PASSPORT)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::PASSPORT)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::GENDER)) ?>
+                                </label>
+                                <div class="radio">
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::GENDER)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::GENDER)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::NATIONALITY)) ?>
+                                </label>
+                                <?= $this->formElement($candidateForm->get(CandidateForm::NATIONALITY)) ?>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::NATIONALITY)) ?> </font>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::COHORT)) ?>
+                                </label>
+                                <?= $this->formElement($candidateForm->get(CandidateForm::COHORT)) ?>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::COHORT)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">                                
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::ACADEMIC_DEGREE)) ?>
+                                </label>
+                                <?= $this->formElement($candidateForm->get(CandidateForm::ACADEMIC_DEGREE)) ?>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::ACADEMIC_DEGREE)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::CAREER)) ?>
+                                </label>
+                                <?= $this->formElement($candidateForm->get(CandidateForm::CAREER)) ?>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::CAREER)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row"> 
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::ACTUAL_DEGREE)) ?>
+                                </label>
+                                <div class="input-icon">
+                                    <i class="fa fa-university"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::ACTUAL_DEGREE)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::ACTUAL_DEGREE)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="checkbox">
+                                    <label>
+                                        <?= $this->formElement($candidateForm->get(CandidateForm::CURRENTLY_WORKS)) ?>
+                                        <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::CURRENTLY_WORKS)) ?> </font>
+                                        &nbsp; <?= $this->formLabel($candidateForm->get(CandidateForm::CURRENTLY_WORKS)) ?>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::WORK_PLACE)) ?>
+                                </label>
+                                <div class="input-icon">
+                                    <i class="fa fa-map-marker"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::WORK_PLACE)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::WORK_PLACE)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::START_TIME)) ?>
+                                </label>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-start"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::START_TIME)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::START_TIME)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::FINISH_TIME)) ?>
+                                </label>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-end"></i>
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::FINISH_TIME)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::FINISH_TIME)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label">
+                                    <?= $this->formLabel($candidateForm->get(CandidateForm::DAYS)) ?>
+                                </label>
+                                <br/>
+                                <div class="checkbox">
+                                    <!--<label style="white-space: nowrap;">
+                                                                                            <input tabindex="1" type="checkbox" class="input-inline"/>
+                                                                                            &nbsp; Lunes
+                                                                                        </label>-->
+                                    <?= $this->formElement($candidateForm->get(CandidateForm::DAYS)) ?>
+                                    <font color="red"><?= $this->formElementErrors($candidateForm->get(CandidateForm::DAYS)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <h3>Importante</h3>
+                    <ul>
+                        <li>Al agregar a un estudiante, se le asignará la carrera indicada. Esta asignación no podrá ser revocada por lo que la correcta selección es de suma importancia.</li>
+                        <li>Los datos ingresados deben ser doblemente corroborados antes de agregarlos al sistema.</li>
+                        <li>Los datos de identificación (CUI o Pasaporte), la nacionalidad, el sexo y fecha de nacimiento no serán editables posteriormente.</li>
+                    </ul>
+                </div>
+                <div class="form-actions text-right pal">
+                    <?= $this->formElement($candidateForm->get(CandidateForm::SIGN_IN)) ?>
+                </div>
+                <?= $this->form()->closeTag($candidateForm) ?> 
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-1"></div>
+</div>
+<script type="text/javascript">
+    var tree = <?= $candidateForm->getJsTree() ?>;
+
+    var father = "#<?= CandidateForm::ACADEMIC_DEGREE ?>";
+    var son = "#<?= CandidateForm::CAREER ?>";
+    var cohort = "#<?= CandidateForm::COHORT ?>";
+
+    $(father).change(function () {
+        selected = $(father).val();
+        career = tree[selected];
+        options = "";
+        for (var key in career) {
+            options = options + "<option value=\"" + key + "\">" + career[key] + "</option>";
+        }
+        $(son).html(options);
+        if (selected == <?= CandidateForm::UPD_COURSE_CODE ?>) {
+            $(cohort).val("<?= CandidateForm::UPG_COURSE_COHORT ?>");
+        }
+    });
+    $(father).trigger("change");
+<?php
+if ($candidateForm->hasData()):
+    ?>
+        $(father).val(<?= $candidateForm->getSelectedDegree() ?>);
+        $(father).trigger("change");
+        $(son).val(<?= $candidateForm->getSelectedCareer() ?>);
+        $(son).trigger("change");
+    <?php
+endif;
+?>
+</script>

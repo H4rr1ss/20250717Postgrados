@@ -1,0 +1,241 @@
+<?php
+
+use Eep\Form\UserIdForm as UF;
+use Eep\Form\DeleteIdForm as DF;
+use Eep\Entity\Order as O;
+
+$this->headTitle('Órdenes de Pago');
+if (isset($form)) {
+    $form->prepare(); //EDIT USER FORM
+}
+if (isset($deleteForm)) {
+    $deleteForm->prepare();
+}
+$admin = $this->layout()->role->hasAdminRole();
+?>
+
+<div class="col-md-12">
+    <div class="panel panel-<?= ($admin) ? 'green' : 'blue' ?>">
+        <div class="panel-heading">
+            Listado de Órdenes de Pago</div>
+        <div class="panel-body pan">
+            <div class="form-body pal">
+                <?php
+                if (isset($form)):
+                    ?>
+                    <?= $this->form()->openTag($form) ?> 
+                    <div class="row">
+                        <div class="col-md-3"></div>    
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UF::USER)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($form->get(UF::USER)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(UF::USER)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <br/>
+                            <?= $this->formElement($form->get(UF::SUBMIT)) ?>
+                        </div>
+                        <div class="col-md-3"></div>
+                    </div>
+                    <?= $this->form()->closeTag($form) ?> 
+                    <?php
+                endif;
+                ?>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <h3>Información</h3>
+                            <ul>
+                                <li>
+                                    El estado <b>inactivo</b> de una orden de pago significa que la orden venció o que fue eliminada.
+                                </li>
+                                <li>
+                                    No debes pagar una orden de pago inactiva.
+                                </li>
+                                <li>
+                                    Si pagas una orden de pago inactiva:
+                                    <ul>
+                                        <li>
+                                            La orden te aparecerá como pagada pero la asignación no se habrá realizado.
+                                        </li>
+                                        <li>
+                                            Debes eliminar las órdenes de pago pendientes por pagar que incluyan cursos que estén en la orden de pago pagada para evitar pagar dos veces el mismo curso.
+                                        </li>
+                                        <li>
+                                            Para asignar el curso deberás avocarte a la Dirección de la Escuela de Estudios de Postgrados para realizar una asignación extemporánea.
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                <hr/>
+                <?= $this->partial('eep/msg', ['msg' => $userMsg ?? null]) ?>
+                <?= $this->partial('eep/msg', ['msg' => $orderMsg ?? null]) ?>
+                <?php
+                if (isset($ordersByCareer)):
+                    foreach ($ordersByCareer as $careerName => $orders):
+                        ?>
+                        <h3>
+                            <?= $careerName ?>
+                        </h3>
+                        <div class="overflow-x">
+                            <table class="table table-bordered table-hover table-condensed">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">No. Orden</th>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">No. Boleta</th>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">Fecha Creación</th>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">Fecha Pago</th>
+                                        <th colspan="4" class="text-center" style="vertical-align:middle;">Cursos</th>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">Monto (Q.)</th>
+                                        <th rowspan="2" class="text-center" style="vertical-align:middle;">Acciones</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-center">Cód.</th>
+                                        <th class="text-center">Nombre del Curso</th>
+                                        <th class="text-center">Sec.</th>
+                                        <th class="text-center">Subtotal (Q.)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $totalSum = 0;
+                                    foreach ($orders as $order):
+                                        $orderType = $order->getCodTipoOrden();
+                                        $deleteForm->setValue($order->getCodOrden());
+                                        $detail = $order->getDetail();
+                                        $rows = count($detail) == 0 ? 1 : count($detail);
+                                        $active = $order->getActiva();
+                                        $payed = $order->getPagada();
+                                        if ($payed == true) {
+                                            $colorType = 'success';
+                                        } else {
+                                            if ($active == true) {
+                                                $colorType = 'warning';
+                                            } else {
+                                                $colorType = 'active';
+                                            }
+                                        }
+                                        ?>
+
+                                        <tr class="<?= $colorType ?> text-center">
+                                            <td rowspan="<?= $rows ?>" style="vertical-align:middle;">
+                                                <?php
+                                                echo $order->getCodOrden();
+                                                if (!empty($order->getDescripcion())):
+                                                    ?>
+                                                    &nbsp;
+                                                    <button type="button" data-container="body" data-toggle="popover" data-placement="top" 
+                                                            data-content="<?= $order->getDescripcion() ?>" 
+                                                            class="btn-warning" data-original-title="" data-html="true" title="">
+                                                        <i class="fa fa-info"></i>
+                                                    </button>
+                                                    <?php
+                                                endif;
+                                                ?>
+                                            </td>
+                                            <td rowspan="<?= $rows ?>" style="vertical-align:middle;"><?= $order->getCodBoleta() ?? '(Pendiente)' ?></td>
+                                            <td rowspan="<?= $rows ?>" style="vertical-align:middle;"><?= empty($order->getFechaGeneracion()) ? '(Pendiente)' : date('d/m/Y', strtotime($order->getFechaGeneracion())) ?></td>
+                                            <td rowspan="<?= $rows ?>" style="vertical-align:middle;"><?= empty($order->getFechaPago()) ? '(Pendiente)' : date('d/m/Y', strtotime($order->getFechaPago())) ?></td>
+                                            <?php
+                                            if ($orderType == O::ASSIGNMENT):
+                                                $d = array_pop($detail);
+                                                if ($d == null):
+                                                    echo '<td></td>';
+                                                    echo '<td></td>';
+                                                    echo '<td></td>';
+                                                else:
+                                                    ?>
+                                                    <td style="vertical-align:middle;" class="text-center"><?= $d->getCodCurso() ?></td>
+                                                    <td style="vertical-align:middle;" class="text-left"><?= $d->getNombreCurso() ?></td>
+                                                    <td style="vertical-align:middle;" class="text-center"><?= $d->getSeccion() ?></td>
+                                                    <td style="vertical-align:middle;" class="text-right" ><?= number_format($d->getSubtotal(), 2) ?></td>
+                                                <?php
+                                                endif;
+                                            else:
+                                                ?>
+                                                <td colspan="4" style="vertical-align:middle;" class="text-center"> Inscripción </td>
+                                            <?php
+                                            endif;
+                                            if ($order->getPagada() == true) {
+                                                $totalSum += $order->getMontoTotal();
+                                            }
+                                            ?>
+                                            <td rowspan="<?= $rows ?>" class="text-right" style="vertical-align:middle;"><?= number_format($order->getMontoTotal(), 2) ?></td>
+                                            <td rowspan="<?= $rows ?>"  style="vertical-align:middle;">
+                                                <?php
+                                                if ($payed):
+                                                    ?>
+                                                    <font color="green">
+                                                    <i class="fa fa-check-circle"></i>
+                                                    </font>
+                                                    <?php
+                                                else:
+                                                    if (!$active):
+                                                        ?>
+                                                        <font color="gray">
+                                                        <i class="fa fa-clock-o"></i>
+                                                        Inactiva
+                                                        </font>
+                                                        <?php
+                                                    else:
+                                                        $assignmentOrder = $order->getCodTipoOrden() == O::ASSIGNMENT;
+                                                        if ($assignmentOrder):
+                                                            echo $this->form()->openTag($deleteForm);
+                                                            echo $this->formElement($deleteForm->get(DF::DELETE_ID));
+                                                        endif;
+                                                        ?>
+                                                        <a href="<?= $this->url('order', ['id' => $order->getCodOrden()]) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-green"><i class="fa fa-download"></i></a>
+                                                        <?php
+                                                        if ($assignmentOrder):
+                                                            echo $this->formElement($deleteForm->get(DF::SUBMIT));
+                                                            echo $this->form()->closeTag($deleteForm);
+                                                        endif;
+                                                    endif;
+                                                endif;
+                                                ?>
+                                            </td>
+                                        </tr>
+                                        <?php
+                                        while (($d = array_pop($detail)) != null):
+                                            ?>
+                                            <tr class="<?= $colorType ?>">
+                                                <td style="vertical-align:middle;" class="text-center"><?= $d->getCodCurso() ?></td>
+                                                <td style="vertical-align:middle;"><?= $d->getNombreCurso() ?></td>
+                                                <td style="vertical-align:middle;" class="text-center"><?= $d->getSeccion() ?></td>
+                                                <td style="vertical-align:middle;" class="text-right" ><?= number_format($d->getSubtotal(), 2) ?></td>
+                                            </tr>
+                                            <?php
+                                        endwhile;
+                                    endforeach;
+                                    ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="8" class="text-right"><b>Suma de Órdenes Pagadas</b></th>
+                                        <th class="text-right"><b><?= number_format($totalSum, 2) ?></b></th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <?php
+                    endforeach;
+                endif;
+                ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+

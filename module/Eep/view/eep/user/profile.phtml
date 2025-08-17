@@ -1,0 +1,220 @@
+<?php
+
+use Eep\Form\ProfileForm as PF;
+
+$this->headTitle('Perfil');
+$this->userForm->prepare();
+$user = $userForm->getUser();
+$role = $this->layout()->getVariable('role');
+?>
+<div class="col-lg-12">
+    <div class ="row">
+        <div class="col-lg-5">
+            <div class="panel panel-<?= ($user->getSexo() == 'H') ? 'blue' : 'pink'//($this->layout()->userType == 'admin') ? 'green' : 'blue'                                                                            ?>">
+                <div class="panel-heading">
+                    Datos personales</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($userForm) ?>
+                    <div class="form-body pal">
+                        <div class="form-group">
+                            <label for="inputName" class="col-md-2 control-label">
+                                Nombres</label>
+                            <div class="col-md-10">
+                                <div class="input-icon right text-center">
+                                    <i class="fa fa-user"></i>
+                                    <label class="form-control">
+                                        <?= $user->getNombres() ?>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="inputName" class="col-md-2 control-label">
+                                Apellidos</label>
+                            <div class="col-md-10">
+                                <div class="input-icon right text-center">
+                                    <i class="fa fa-user"></i>
+                                    <label class="form-control">
+                                        <?= $user->getApellidos() ?>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <?php if (!empty($user->getCui())): ?>
+                            <div class="form-group">
+                                <label for="inputName" class="col-md-2 control-label">
+                                    CUI</label>
+                                <div class="col-md-10">
+                                    <div class="input-icon right text-center">
+                                        <i class="fa fa-id-card-o"></i>
+                                        <label class="form-control">
+                                            <?= $user->getCui() ?>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>   
+                        <?php if (!empty($user->getPasaporte())): ?>
+                            <div class="form-group">
+                                <label for="inputName" class="col-md-2 control-label">
+                                    Pasaporte</label>
+                                <div class="col-md-10">
+                                    <div class="input-icon right text-center">
+                                        <i class="fa fa-globe"></i>
+                                        <label class="form-control">
+                                            <?= $user->getPasaporte() ?>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>   
+                        <?php if (!empty($user->getRegistroAcademico())): ?>
+                            <div class="form-group">
+                                <label for="inputName" class="col-md-4 control-label">
+                                    Reg. académico
+                                </label>
+                                <div class="col-md-8">
+                                    <div class="input-icon right text-center">
+                                        <i class="fa fa-id-badge"></i>
+                                        <label class="form-control">
+                                            <?= $user->getRegistroAcademico() ?>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>                            
+                        <?php if (!empty($user->getRegistroPersonal())): ?>
+                            <div class="form-group">
+                                <label for="inputName" class="col-md-4 control-label">
+                                    Reg. personal</label>
+                                <div class="col-md-8">
+                                    <div class="input-icon right text-center">
+                                        <i class="fa fa-id-badge"></i>
+                                        <label class="form-control">
+                                            <?= $user->getRegistroPersonal() ?>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="form-group">
+                            <label for="inputName" class="col-md-3 control-label">
+                                Fecha Nac.</label>
+                            <div class="col-md-9">
+                                <div class="input-icon right text-center">
+                                    <i class="fa fa-birthday-cake"></i>
+                                    <label class="form-control">
+                                        <?= date("d/m/Y", strtotime($user->getFechaNacimiento())) ?>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <?= $this->formLabel($userForm->get(PF::PHONE)) ?>
+                            <div class="col-md-10">
+                                <div class="input-icon right">
+                                    <i class="fa fa-phone"></i>
+                                    <?= $this->formElement($userForm->get(PF::PHONE)) ?>    
+                                </div>
+                                <font color = "red"><?= $this->formElementErrors($userForm->get(PF::PHONE)) ?></font>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <?= $this->formLabel($userForm->get(PF::EMAIL)) ?>
+                            <div class="col-md-10">
+                                <div class="input-icon right">
+                                    <i class="fa fa-envelope"></i>
+                                    <?= $this->formElement($userForm->get(PF::EMAIL)) ?>
+                                </div>
+                                <font color = "red"><?= $this->formElementErrors($userForm->get(PF::EMAIL)) ?></font>
+                            </div>
+                        </div>
+                        <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>   
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <div class="row">
+                            <div class="text-right pal">
+                                <?= $this->formElement($userForm->get(PF::SUBMIT)) ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?= $this->form()->closeTag($userForm) ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="panel">
+                <div class="panel-heading">
+                    Notificaciones</div>
+                <div class="panel-body pan">
+                    <div class="form-body pal">
+                        <div id="note-tab" class="tab-pane">
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <?php
+                                    if (!empty($notifications)):
+                                        foreach ($notifications as $note):
+                                            echo $this->partial('eep/msg', ['msg' => isset($note) ? $note : null]);
+                                        endforeach;
+                                    endif;
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php if (!empty($role) && $role->isDirector()): ?>
+            <div class="col-lg-7">
+                <div class="panel panel-green">
+                    <div class="panel-heading">
+                        Finalización de Inscripciones
+                    </div>
+                    <div class="panel-body pan">
+                        <div class="form-body pal">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <ul>
+                                        <li>
+                                            Esta culminación de inscripción <b>invalidará</b> todas las asignaciones realizadas en este año por los estudiantes que sean de primer año de su carrera y que no estén inscritos en el año vigente.
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <?= $this->partial('eep/msg', ['msg' => $timeOverMsg ?? null]) ?>   
+                        </div>
+                        <div class="form-actions text-right pal">
+                            <div class="row">
+                                <div class="text-right pal">
+                                    <form method="post" action="<?= $this->url('user', ['action' => 'inscriptionTimeOver']) ?>">
+                                        <div class="input-group">
+                                            <button id="btnEnabler" type="button" class="btn btn-primary" value="enable">
+                                                <i id="btnEnablerIcon" class="fa fa-check-square-o"></i>
+                                            </button>
+                                            <input id="second-period-over" type="submit" disabled="true" name="second-period-over" class="btn btn-danger" value="Culminar Inscripciones">
+                                            <script type="text/javascript">
+                                                var toggleLock = true;
+                                                $('#btnEnabler').click(function () {
+                                                    if (toggleLock) {
+                                                        $("#second-period-over").removeAttr("disabled");
+                                                        $('#btnEnablerIcon').prop('class', 'fa fa-lock');
+                                                    } else {
+                                                        $("#second-period-over").attr("disabled", "disabled");
+                                                        $('#btnEnablerIcon').prop('class', 'fa fa-check-square-o');
+                                                    }
+                                                    toggleLock = !toggleLock;
+                                                });
+                                            </script>
+                                        </div>
+                                    </form>
+                                </div>                                          
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>

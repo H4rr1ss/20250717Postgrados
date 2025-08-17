@@ -1,0 +1,199 @@
+<?php
+
+use Eep\Form\EditUserForm as EUF;
+
+$this->headTitle('Editar Usuario');
+$form->prepare(); //EDIT USER FORM
+?>
+<div class="col-lg-1"></div>
+<div class="col-lg-10">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Datos del estudiante
+        </div>
+        <div class="panel-body pan">
+            <?= $this->form()->openTag($form) ?> 
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="control-label">
+                                Nombres
+                            </label>
+                            <div class="input-icon text-center">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formLabel($form->get(EUF::NAMES)) ?>
+                            </div>
+                            <!--<font color="red">?= $this->formElementErrors($form->get(EUF::WORK_PLACE)) ?> </font>-->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="control-label">
+                                Apellidos
+                            </label>
+                            <div class="input-icon text-center">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formLabel($form->get(EUF::LAST_NAMES)) ?>
+                            </div>
+                            <!--<font color="red">?= $this->formElementErrors($form->get(EUF::WORK_PLACE)) ?> </font>-->
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="control-label">
+                                CUI/Pasaporte
+                            </label>
+                            <div class="input-icon text-center">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formLabel($form->get(EUF::CUI_PASSPORT)) ?>
+                            </div>
+                            <!--<font color="red">?= $this->formElementErrors($form->get(EUF::WORK_PLACE)) ?> </font>-->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="control-label">
+                                <?php
+                                $user = $form->getUser();
+                                if (empty($user->getRegistroPersonal())) {
+                                    echo "Registro académico";
+                                } else {
+                                    echo "Registro de personal";
+                                }
+                                ?>
+                            </label>
+                            <div class="input-icon text-center">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formLabel($form->get(EUF::ACADEMIC_REGISTRY)) ?>
+                            </div>
+                            <!--<font color="red">?= $this->formElementErrors($form->get(EUF::WORK_PLACE)) ?> </font>-->
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(EUF::EMAIL)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formElement($form->get(EUF::EMAIL)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(EUF::EMAIL)) ?> </font>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(EUF::PHONE)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formElement($form->get(EUF::PHONE)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(EUF::PHONE)) ?> </font>
+                        </div>
+                    </div>
+                </div>
+                <div class="row"> 
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(EUF::ACTUAL_DEGREE)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-map-marker"></i>
+                                <?= $this->formElement($form->get(EUF::ACTUAL_DEGREE)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(EUF::ACTUAL_DEGREE)) ?> </font>
+                        </div>
+                    </div>
+                </div>
+                <hr/>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label>
+                                    <?= $this->formElement($form->get(EUF::CURRENTLY_WORKS)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(EUF::CURRENTLY_WORKS)) ?> </font>
+                                    &nbsp; <?= $this->formLabel($form->get(EUF::CURRENTLY_WORKS)) ?>
+                                </label>
+                            </div>                            
+                        </div>
+                    </div>
+                </div>
+                <div class = "hide-in-select">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(EUF::WORK_PLACE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-map-marker"></i>
+                                    <?= $this->formElement($form->get(EUF::WORK_PLACE)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(EUF::WORK_PLACE)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(EUF::START_TIME)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-start"></i>
+                                    <?= $this->formElement($form->get(EUF::START_TIME)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(EUF::START_TIME)) ?> </font>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(EUF::FINISH_TIME)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-hourglass-end"></i>
+                                    <?= $this->formElement($form->get(EUF::FINISH_TIME)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(EUF::FINISH_TIME)) ?> </font>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(EUF::DAYS)) ?>
+                                <br/>
+                                <div class="checkbox">
+                                    <?= $this->formElement($form->get(EUF::DAYS)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(EUF::DAYS)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?= $this->partial('eep/msg', ['msg' => isset($msg) ? $msg : null]) ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <a href="<?= $this->url('user', ['action' => 'studentSearch']) ?>" class = "btn btn-danger">
+                    Cancelar
+                </a>
+                <?= $this->formElement($form->get(EUF::USER_CODE_SUBMIT)) ?>
+            </div>
+            <?= $this->form()->closeTag($form) ?> 
+        </div>
+    </div>
+</div>
+<div class="col-lg-1"></div>
+
+<script type="text/javascript">
+    var toggleLock = false;
+    $('#<?= EUF::CURRENTLY_WORKS ?>').on('ifClicked', function (e) {
+        if (toggleLock) {
+            $(".hide-in-select").show();
+        } else {
+            $(".hide-in-select").hide();
+        }
+        toggleLock = !toggleLock;
+    });
+<?php
+if ($form->get(EUF::CURRENTLY_WORKS)->getValue() == 'no') {
+    echo "$('#" . EUF::CURRENTLY_WORKS . "').trigger('ifClicked');";
+}
+?>
+</script>

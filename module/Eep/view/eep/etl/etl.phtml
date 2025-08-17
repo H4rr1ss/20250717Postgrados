@@ -1,0 +1,225 @@
+<?php
+
+use Eep\Form\FileCandidatesForm;
+
+$this->headTitle('ETL');
+if (isset($professorForm)) {
+    $professorForm->prepare();
+}
+if (isset($studentForm)) {
+    $studentForm->prepare();
+}
+if (isset($timetableForm)) {
+    $timetableForm->prepare();
+}
+if (isset($orderForm)) {
+    $orderForm->prepare();
+}
+if (isset($assignmentForm)) {
+    $assignmentForm->prepare();
+}
+?>
+
+<h1>Carga de Datos</h1>
+
+<?php echo $this->partial('eep/msg', ['msg' => isset($msg) ? $msg : null]); ?>
+
+<div class="row">
+    <?php
+    if (isset($professorForm)):
+        ?>
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Profesores</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($professorForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($professorForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($professorForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($professorForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($professorForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+    <?php
+    if (isset($studentForm)):
+        ?>
+
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Estudiantes</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($studentForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($studentForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($studentForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($studentForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($studentForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+    <?php
+    if (isset($timetableForm)):
+        ?>
+
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Horarios</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($timetableForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($timetableForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($timetableForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($timetableForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($timetableForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+    <?php
+    if (isset($assignmentForm)):
+        ?>
+
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Asignaciones</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($assignmentForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($assignmentForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($assignmentForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($assignmentForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($assignmentForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+    <?php
+    if (isset($orderForm)):
+        ?>
+
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Órdenes de Pago</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($orderForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($orderForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($orderForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($orderForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($orderForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+    <?php
+    if (isset($studentInscriptionsForm)):
+        ?>
+
+        <div class="col-lg-4">
+            <div class="panel panel-green">
+                <div class="panel-heading">
+                    Carga de Inscripciones de Estudiantes</div>
+                <div class="panel-body pan">
+                    <?= $this->form()->openTag($studentInscriptionsForm) ?> 
+                    <div class="form-body pal">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="inputName" class="control-label">
+                                        Archivo con aspirantes a cargar
+                                    </label>
+                                    <?= $this->formElement($studentInscriptionsForm->get(FileCandidatesForm::FILE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($studentInscriptionsForm->get(FileCandidatesForm::FILE)) ?> </font>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions text-right pal">
+                        <?= $this->formElement($studentInscriptionsForm->get(FileCandidatesForm::SUBMIT)) ?>
+                    </div>
+                    <?= $this->form()->closeTag($studentInscriptionsForm) ?> 
+                </div>
+            </div>
+        </div>
+        <?php
+    endif;
+    ?>
+</div>

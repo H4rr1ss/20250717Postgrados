@@ -1,0 +1,178 @@
+<?php
+$this->headTitle('Cursos Oficializados');
+
+use Eep\Service\GeneralManager as GM;
+use Eep\Form\UserIdForm as UF;
+?>
+<div class="col-lg-12">
+    <div class="panel panel-<?= ($searchAvailable ? 'green' : 'blue') ?>">
+        <div class="panel-heading">Cursos Oficializados por Carrera</div>
+        <div class="panel-body pan">
+            <div class="form-body pal">
+                <?php
+                if ($searchAvailable && !empty($form)):
+                    $form->prepare();
+                    ?>
+                    <?= $this->form()->openTag($form) ?> 
+                    <div class="row">
+                        <div class="col-md-3"></div>    
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(UF::USER)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-user"></i>
+                                    <?= $this->formElement($form->get(UF::USER)) ?>
+                                </div>
+                                <font color="red"><?= $this->formElementErrors($form->get(UF::USER)) ?></font>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <br/>
+                            <?= $this->formElement($form->get(UF::SUBMIT)) ?>
+                        </div>
+                    </div>
+                    <?= $this->form()->closeTag($form) ?> 
+                    <?= $this->partial('eep/msg', ['msg' => $userMsg ?? null]) ?>
+                    <hr>
+                    <?php
+                endif;
+                ?>
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                <?php
+                if (!empty($data)):
+                    foreach ($data as $careerCode => $careerData):
+                        ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h3><?= "($careerCode) " . $careerData['name'] . ' - Pénsum ' . $careerData['pensumCode'] ?></h3>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Cohorte</label>
+                                    <label class="form-control text-center">
+                                        <?php
+                                        $cohort = strtotime($careerData['cohort']);
+                                        echo GM::MONTHS[date('m', $cohort) * 1] . ' ' . date('Y', $cohort);
+                                        ?>
+                                    </label>                                
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>
+                                        Promedio
+                                        <button type="button" data-container="body" data-toggle="popover" data-placement="top" class="btn-primary" data-original-title="" title=""
+                                                data-content="Promedio de cursos aprobados del pénsum cód. <?= $careerData['pensumCode'] ?> que no han sido dados de baja por mejora de nota">
+                                            <i class="fa fa-info"></i>
+                                        </button>
+                                    </label>
+                                    <label class="form-control text-center">
+                                        <?= round($careerData['average'], 2) ?>
+                                    </label>                                
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>
+                                        Créditos
+                                        <button type="button" data-container="body" data-toggle="popover" data-placement="top" class="btn-primary" data-original-title="" title=""
+                                                data-content="Créditos de cursos aprobados del pénsum cód. <?= $careerData['pensumCode'] ?> que no han sido dados de baja por mejora de nota">
+                                            <i class="fa fa-info"></i>
+                                        </button>
+                                    </label>
+                                    <label class="form-control text-center">
+                                        <?= $careerData['credits'] ?>
+                                    </label>                                
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>
+                                        Cursos aprobados
+                                        <button type="button" data-container="body" data-toggle="popover" data-placement="top" class="btn-primary" data-original-title="" title=""
+                                                data-content="Conteo de cursos aprobados del pénsum cód. <?= $careerData['pensumCode'] ?>">
+                                            <i class="fa fa-info"></i>
+                                        </button>
+                                    </label>
+                                    <label class="form-control text-center">
+                                        <?php
+                                        $counter = 0;
+                                        foreach ($careerData['courses'] as $courseData) {
+                                            if ($courseData['aprobado'] == true && $courseData['cod_pensum'] == $careerData['pensumCode']) {
+                                                $counter++;
+                                            }
+                                        }
+                                        echo $counter;
+                                        ?>
+                                    </label>                                
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="overflow-x">
+                                    <table class="table table-hover table-bordered table-condensed" style="width: 100%">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Pensum</th>
+                                                <th class="text-center">Cód. curso</th>
+                                                <th class="text-center">Nombre de curso</th>
+                                                <th class="text-center">Fecha Oficilización</th>
+                                                <th class="text-center">Fecha del Curso</th>
+                                                <th class="text-center">Créditos</th>
+                                                <th class="text-center">Nota</th>
+                                                <th class="text-center">Estado</th>
+                                                <?php
+                                                if ($searchAvailable):
+                                                    ?>
+                                                    <th class="text-center">Tipo</th>
+                                                    <?php
+                                                endif;
+                                                ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
+                                            foreach ($careerData['courses'] as $courseData):
+                                                ?>
+                                                <tr <?= $courseData['cod_pensum'] != $careerData['pensumCode'] ? 'style="color:grey;"' : '' ?>>
+                                                    <td class="text-center"><?= $courseData['cod_pensum'] ?></td>
+                                                    <td class="text-center"><?= $courseData['cod_curso'] ?></td>
+                                                    <td><?= $courseData['nombre'] ?></td>
+                                                    <td class="text-center"><?= date('d/m/Y', strtotime($courseData['fecha_oficializacion'])) ?></td>
+                                                    <td class="text-center"><?= date('m/Y', strtotime($courseData['fecha_cursado'])) ?></td>
+                                                    <td class="text-center"><?= $courseData['creditos'] ?></td>
+                                                    <td class="text-center <?= $courseData['aprobado'] ? 'success' : 'danger' ?>">
+                                                        <?= $courseData['ponderado_con_nota'] ? $courseData['nota'] : ($courseData['aprobado'] ? 'Aprobado' : 'Reprobado') ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?= $courseData['estado'] ?>
+                                                    </td>
+                                                    <?php
+                                                    if ($searchAvailable):
+                                                        ?>
+                                                        <td class="text-center">
+                                                            <?= $courseData['tipo'] ?>
+                                                        </td>
+                                                        <?php
+                                                    endif;
+                                                    ?>
+                                                </tr>
+                                                <?php
+                                            endforeach;
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                    endforeach;
+                endif;
+                ?>
+            </div>
+        </div>
+    </div>
+</div>

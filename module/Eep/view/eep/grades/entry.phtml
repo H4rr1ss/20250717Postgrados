@@ -1,0 +1,407 @@
+
+<?php
+
+use Eep\Controller\GP;
+use Eep\Form\GradesEntryForm as GF;
+use Eep\ValueObject\Message;
+use Eep\Entity\Order as O;
+
+$this->headTitle('Ingreso de Notas');
+$role = $this->layout()->role;
+?>
+<div class="col-lg-12">
+    <!--
+    GRADES ENTRY PERIOD:    BLUE  (panel-blue)
+    REVISION PERIOD:       VIOLET (panel-violet)
+    LOCKED:                GRAY (panel-grey)
+    ACT CREATED:           NONE ()
+    -->
+    <?php
+    if ($timetable == null) {
+        //ERROR
+        $panelColor = 'panel-red';
+    } else {
+
+        if (!isset($revisionDays)) {
+            $revisionDays = 14;
+        }
+        $today = strtotime(date('Y-m-d'));
+        $revisionLimitDate = strtotime($timetable->getFechaLimiteCalificacion() . " +$revisionDays days");
+        //PERIODS
+        $lockedUpdates = strtotime($timetable->getFechaLimiteCalificacion()) < $today && $timetable->getFechaNotasCompletadas() == null;
+        $isRevisionPeriod = $timetable->getFechaNotasCompletadas() != null && $revisionLimitDate >= $today;
+        //BUTTONS
+        $completeGradesAvaiable = $timetable->getCodCatedratico() == $this->identity() && strtotime($timetable->getFechaFin()) <= $today && $timetable->getFechaNotasCompletadas() == null && strtotime($timetable->getFechaLimiteCalificacion()) >= $today;
+        $saveChangesAvailable = $timetable->getCodCatedratico() == $this->identity() && //THE USER IS THE PROFESSOR
+                strtotime($timetable->getFechaInicio()) <= $today && //TIMETABLE HAS STARTED
+                (
+                strtotime($timetable->getFechaLimiteCalificacion()) >= $today || //GRADING IS STILL AVAILABLE
+                $isRevisionPeriod //REVISION PERIOD IS AVAILABLE
+                );
+        $generateActAvailable = $role->isDirector() && $timetable->getFechaGeneracionActa() == null &&
+                $revisionLimitDate < $today && $timetable->getFechaNotasCompletadas() != null &&
+                $timetable->getCodPensum() != O::CURSO_ACTUALIZACION; //NOT UPDATING COURSE
+
+        if (($timetable->getCodCatedratico() != $this->identity())) {
+            //JUST ADMIN VIEW
+            if ($lockedUpdates) {
+                $panelColor = 'panel-grey';
+            } elseif ($revisionLimitDate < $today && $timetable->getFechaGeneracionActa() == null) {
+                $panelColor = 'panel-orange';
+                $info[] = 'La generación de acta oficial está habilitada y pendiente de realizar';
+                $info[] = 'El acta oficial de notas incluirá a todas las personas que están inscritas correctamente';
+            } elseif ($timetable->getFechaGeneracionActa() != null) {
+                $panelColor = '';
+            } else {
+                $panelColor = 'panel-green';
+            }
+        } elseif (($revisionLimitDate < $today && $timetable->getFechaNotasCompletadas() != null)) {
+            //ACT CREATED
+            //IF EEP DIRECTOR IS PROFESSOR OF THIS TIMETABLE:
+            if ($role->isDirector() && $timetable->getFechaGeneracionActa() == null && $timetable->getCodPensum() != O::CURSO_ACTUALIZACION) {
+                $panelColor = 'panel-orange';
+                $info[] = 'La generación de acta oficial está habilitada y pendiente de realizar';
+                $info[] = 'El acta oficial de notas incluirá a todas las personas que están inscritas correctamente';
+            } else {
+                $panelColor = '';
+            }
+        } elseif ($lockedUpdates) {
+            //MODIFICATIONS LOCKED
+            $panelColor = 'panel-grey';
+        } elseif ($isRevisionPeriod) {
+            //REVISION PERIOD
+            $panelColor = 'panel-violet';
+            $info[] = 'Estás en el periodo de revisión de notas. Puedes realizar cambios solicitados por los estudiantes después de su correspondiente revisión';
+            $info[] = 'El periodo de revisión de notas concluye el <b>' . date('d/m/Y', $revisionLimitDate) . '</b>';
+            $info[] = "La nota mínima de aprobación es de <b> $minToApproval pts.</b>";
+        } else {
+            //GRADES ENTRY AVAILABLE
+            $panelColor = 'panel-blue';
+            if ($completeGradesAvaiable) {
+                $info[] = 'Termina de ingresar todas las notas para que puedas dar clic en <b>"Completar Ingreso"</b> y que los estudiantes puedan ver sus notas.';
+            }
+            $info[] = 'Tienes hasta el ' . date('d/m/Y', strtotime($timetable->getFechaLimiteCalificacion())) . ' para ingresar las notas de los estudiantes.';
+        }
+        $info[] = "La nota mínima de aprobación es de <b> $minToApproval pts.</b>";
+    }
+    ?>
+    <div class="panel <?= $panelColor ?>">
+        <div class="panel-heading">
+            <?php
+            if ($timetable != null) {
+                echo $timetable->getNombreCurso() . ', sección ' . $timetable->getSeccion() . '. Cohorte ' . ($timetable->getFechaCohorte() == null ? '(CA)' : date('d/m/Y', strtotime($timetable->getFechaCohorte()))) . '. Impartido en ' . GP::MONTHS[$timetable->getMes()] . '/' . $timetable->getAnio();
+            } else {
+                echo 'Ingreso de Notas - Sin horario';
+            }
+            ?>
+        </div>
+        <?php
+        if ($timetable != null && $grades != null):
+            if ($saveChangesAvailable):
+                ?>
+
+                <form action="<?= $this->url('grades', ['action' => 'entry', 'timetableCode' => $timetable->getCode()]) ?>" method="post" >
+                    <?php
+                endif;
+                ?>
+                <div class="panel-body">
+                    <br>
+                    <?php
+                    if (!empty($info)):
+                        ?>
+                        <div class="col-lg-12">
+                            <?= $this->partial('eep/msg', ['msg' => new Message('Información', $info, Message::BLUE)]) ?>
+                        </div>
+                        <?php
+                    endif;
+                    ?>
+                    <div class="col-lg-12">
+                        <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="pal">
+                                <div class="overflow-x" id="tableDiv">
+                                    <table class="table table-bordered table-striped table-condensed table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Inscrito</th>
+                                                <th class="text-center">CUI/Pasaporte</th>
+                                                <th class="text-center">Reg. Acad.</th>
+                                                <th class="text-center">Nombres</th>
+                                                <th class="text-center">Apellidos</th>
+                                                <th class="text-center">Asistencia<br>(80% min)</th>
+                                                <?php
+                                                foreach ($blocks as $block) :
+                                                    ?>
+                                                    <th class="text-center">
+                                                        <?= $block['nombre'] ?>
+                                                        <br/>
+                                                        <?= '(' . $block['valor'] . ' pts)' ?>
+                                                    </th>
+                                                    <?php
+                                                endforeach;
+                                                ?>
+                                                <th class="text-center">Nota Final</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="grades">
+                                            <?php
+                                            //SORTING BY ACADEMIC REGISTRY
+                                            uasort($grades, function($a, $b) {
+                                                $aVal = $a['user']->getRegistroAcademico() * 1;
+                                                $bVal = $b['user']->getRegistroAcademico() * 1;
+                                                if ($aVal == $bVal) {
+                                                    return 0;
+                                                }
+                                                return $aVal > $bVal ? 1 : -1;
+                                            });
+                                            foreach ($grades as $data):
+                                                $user = $data['user'];
+                                                ?>
+                                                <tr class="<?= $data['valid'] ? '' : 'danger' ?>">
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font color="<?= $user->getInscriptionStatus() != null ? 'green' : 'red' ?>">
+                                                        <span class="fa fa-<?= $user->getInscriptionStatus() != null ? 'check' : 'close' ?>"></span>
+                                                        </font>
+                                                        <?php
+                                                        if (!$data['valid']):
+                                                            ?>
+                                                            <button type="button" data-container="body" data-toggle="popover" data-placement="right" 
+                                                                    data-content=
+                                                                    "Asignación invalidada por falta de inscripción" 
+                                                                    class="btn-danger" data-original-title="" title="">
+                                                                <i class="fa fa-ban"></i>
+                                                            </button>  
+                                                            <?php
+                                                        endif;
+                                                        ?>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <?= $user->getCui() != null ? $user->getCui() : ($user->getPasaporte() != null ? $user->getPasaporte() : '-') ?>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <?= $user->getRegistroAcademico() != null ? $user->getRegistroAcademico() : '(pendiente)' ?>
+                                                    </td>
+                                                    <td style="vertical-align:middle;">
+                                                        <?= $user->getNombres() ?>
+                                                    </td>
+                                                    <td style="vertical-align:middle;">
+                                                        <?= $user->getApellidos() ?>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <?php
+                                                        $asistencia = ($data['asistencia_cumplida'] == 1);
+                                                        if ($saveChangesAvailable):
+                                                            ?>
+                                                            <input type="hidden" name="<?= GF::ATTENDANCE . '[' . $user->getCode() . ']' ?>" value="0">
+                                                            <input userCode="<?= $user->getCode() ?>" value="1" name="<?= GF::ATTENDANCE . '[' . $user->getCode() . ']' ?>" class="attendance" type="checkbox" <?= ($asistencia) ? 'checked' : '' ?> />
+                                                            <?php
+                                                        else:
+                                                            ?>
+                                                            <font color="<?= $asistencia ? 'darkgreen' : 'darkred' ?>">
+                                                            <span class="fa fa-<?= $asistencia ? 'check' : 'close' ?>"></span>
+                                                            </font>
+                                                        <?php
+                                                        endif;
+                                                        ?>
+                                                    </td>
+                                                    <?php
+                                                    foreach ($data['grades'] as $blockCode => $gradeData):
+                                                        $grade = $gradeData["grade"];
+                                                        $error = $gradeData["error"] ?? null;
+                                                        ?>
+                                                        <td class="text-center">
+                                                            <div class="input-group">
+                                                                <?php
+                                                                //PREPARYING HISTORY
+                                                                $history = $gradeData["history"];
+                                                                $texts = [];
+                                                                foreach ($history as $change) {
+                                                                    $nota = $change->n;
+                                                                    $tiempo = date('d/m/y H:i:s', $change->t * 1);
+                                                                    $texts[] = "$tiempo - <b>$nota pts.</b>" . ($change->r ? ' (revision)' : '');
+                                                                }
+
+                                                                if ($saveChangesAvailable):
+                                                                    ?>
+                                                                    <input type="text" class="user_<?= $user->getCode() ?> grade form-control" style="width: 65px;"
+                                                                           id="<?= $user->getCode() . '_' . $blockCode ?>"  name="<?= GF::BLOCK . '[' . $user->getCode() . '][' . $blockCode . ']' ?>"
+                                                                           userCode="<?= $user->getCode() ?>" blockCode="<?= $blockCode ?>" value="<?= $grade ?>"                                                       
+                                                                           <?= $asistencia ? '' : 'readonly="readonly"' ?> />
+                                                                           <?php
+                                                                       else:
+                                                                           echo $grade;
+                                                                       endif;
+                                                                       if (!empty($texts)):
+                                                                           ?>
+                                                                    <span class="input-group-btn">
+                                                                        <button type="button" data-container="body" data-toggle="popover" data-placement="left"  data-original-title="" title="" data-html="true"
+                                                                                class="btn-white <?= $saveChangesAvailable ? 'btn' : '' ?>"
+                                                                                data-content="<?= "<b>Historial de Cambios</b><br/>" . implode("<br/>", $texts) ?>"
+                                                                                <?= empty($texts) ? 'disabled="disabled"' : '' ?>
+                                                                                >
+                                                                            <i class="fa fa-history">
+                                                                            </i>
+                                                                        </button>
+                                                                    </span>
+                                                                    <?php
+                                                                endif;
+                                                                ?>
+                                                            </div>
+                                                            <font color="red" id="<?= $user->getCode() . '_' . $blockCode ?>Error"><?= $error ?></font>
+                                                        </td>
+                                                        <?php
+                                                    endforeach;
+                                                    ?>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font id="nota_final_<?= $user->getCode() ?>" color="<?= ($minToApproval != null && $data['nota_final'] != null) ? ($data['nota_final'] >= $minToApproval ? 'green' : 'red') : 'black' ?>" >
+                                                        <?= $data['nota_final'] == null ? '-' : round($data['nota_final'], 2) ?>
+                                                        </font>
+                                                    </td>
+                                                </tr>
+                                                <?php
+                                            endforeach;
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions text-right pal">
+                    <div class="form-group">
+
+                        <!--FINISH GRADES ENTRY BUTTON-->
+                        <?php
+                        if ($completeGradesAvaiable):
+                            ?>
+                            <div class="btn-group" id="completeEntryDiv">
+                                <button id="btnEnabler" type="button" class="btn btn-primary" value="enable">
+                                    <i id="btnEnablerIcon" class="fa fa-check-square-o"></i>
+                                </button>
+                                <a id="complete" href="<?=
+                                $this->url('grades', [
+                                    'action' => 'complete',
+                                    'timetableCode' => $timetable->getCode()
+                                ])
+                                ?>" 
+                                   class="btn btn-success" disabled = "disabled">
+                                    Completar ingreso
+                                </a>
+                                <script type="text/javascript">
+                                    var toggleLock = true;
+                                    $('#btnEnabler').click(function () {
+                                        if (toggleLock) {
+                                            $("#complete").removeAttr("disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-lock');
+                                        } else {
+                                            $("#complete").attr("disabled", "disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-check-square-o');
+                                        }
+                                        toggleLock = !toggleLock;
+                                    });
+                                </script>
+                            </div>
+
+
+
+                            <?php
+                        endif;
+                        ?>
+
+                        <!-- VIEW OFICIAL ACT BUTTON-->
+                        <?php
+                        if ($timetable->getActCode() != null):
+                            ?>
+
+                            <a href="<?=
+                            $this->url('official', [
+                                'action' => 'act'], [
+                                'query' => [
+                                    'act' => $timetable->getActCode()
+                                ]
+                            ])
+                            ?>" 
+                               target="_blank" rel="noopener noreferrer" class="btn btn-orange">
+                                Ver Acta Oficial
+                            </a>
+                            <?php
+                        endif;
+                        ?>
+
+
+                        <!-- GENERATE OFICIAL ACT BUTTON-->
+                        <?php
+                        if ($generateActAvailable):
+                            ?>
+                            <div class="btn-group">
+                                <button id="btnEnabler" type="button" class="btn btn-primary" value="enable">
+                                    <i id="btnEnablerIcon" class="fa fa-check-square-o"></i>
+                                </button>
+                                <a id="generateAct" href="<?=
+                                $this->url('grades', [
+                                    'action' => 'generateAct',
+                                    'timetableCode' => $timetable->getCode()
+                                ])
+                                ?>" 
+                                   class="btn btn-danger" disabled="disabled">
+                                    Generar Acta Oficial
+                                </a>
+                                <script type="text/javascript">
+                                    var toggleLock = true;
+                                    $('#btnEnabler').click(function () {
+                                        if (toggleLock) {
+                                            $("#generateAct").removeAttr("disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-lock');
+                                        } else {
+                                            $("#generateAct").attr("disabled", "disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-check-square-o');
+                                        }
+                                        toggleLock = !toggleLock;
+                                    });
+                                </script>
+                            </div>
+                            <?php
+                        endif;
+                        ?>
+
+                        <!-- SAVE CHANGES BUTTON-->
+                        <?php
+                        if ($saveChangesAvailable):
+                            ?>
+                            <button type="submit" id="submit" class="btn btn-primary">
+                                Guardar cambios
+                            </button>
+                            <?php
+                        endif;
+                        ?>
+                    </div>
+                </div>
+
+                <?php
+                if ($saveChangesAvailable):
+                    ?>
+                </form>
+                <script type="text/javascript">
+                    history.pushState(null, null, "<?= $this->url('grades', ['action' => 'view', 'timetableCode' => $timetable->getCode()]) ?>");
+                    var blocks = <?= json_encode($blocks) ?>;
+                    var grades = <?= json_encode($grades) ?>;
+                    var minToApproval = <?= $minToApproval ?? null ?>;
+                </script>
+                <script type="text/javascript" src="<?= $this->basePath('/js/gradesTable.js') ?>"></script>
+                <?php
+            endif;
+            ?>
+            <?php
+        else:
+            ?>
+            <div class="panel-body pal">
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            </div>
+        <?php
+        endif;
+        ?>
+    </div>
+</div>

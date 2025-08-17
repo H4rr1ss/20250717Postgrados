@@ -1,0 +1,180 @@
+<?php
+$this->headTitle('Cursos Impartidos');
+$role = $this->layout()->role;
+?>
+<div class="col-lg-12">
+    <div class="panel panel-<?= $role->hasAdminRole() ? 'green' : 'blue' ?>">
+        <div class="panel-heading">Cursos Impartidos</div>
+        <div class="panel-body pal">
+
+            <form method="post">
+                <div class="form-body">
+                    <div class="row">
+                        <div class="col-md-4"></div>
+                        <div class="col-md-3">
+
+
+                            <div class="form-group">
+                                <label class="control-label">
+                                    Año
+                                </label>
+                                <select name="year" id="year" class="form-control">
+
+                                    <?php
+                                    $curYear = intval(date('Y'));
+                                    for ($year = $curYear; $year >= 2018; $year--) {
+                                        if ($year == $selectedYear) {
+                                            echo "<option value=\"$year\" selected>$year</option>";
+                                        } else {
+                                            echo "<option value=\"$year\">$year</option>";
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                                <?php
+                                if (!empty($yearError)):
+                                    echo '<font color = "red">';
+                                    echo "$yearError";
+                                    echo '</font>';
+                                endif;
+                                ?>
+                            </div>
+                        </div>
+                        <div class="col-lg-1 text-center">
+                            <br/>
+                            <input type="submit" name="submit" class="btn btn-primary" value="Buscar" style="vertical-align:middle;"> 
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <hr/>
+            <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            <?php
+            if (!empty($timetables)):
+                foreach ($timetables as $career):
+                    ?>            
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h3><?= $career['careerName'] ?></h3>
+                            <div class="overflow-x">
+                                <table class="table table-hover table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">Cód.</th>
+                                            <th class="text-center">Curso</th>
+                                            <th class="text-center">Sección</th>
+                                            <th class="text-center">Cohorte</th>
+                                            <th class="text-center">Fecha Inicio</th>
+                                            <th class="text-center">Fecha Fin</th>
+                                            <th class="text-center">Límite Ingreso de Notas</th>
+                                            <th class="text-center">Fecha Notas Completadas</th>
+                                            <?php
+                                            if ($role->hasAdminRole()):
+                                                echo '<th class="text-center">Catedrático</th>';
+                                            endif;
+                                            ?>
+                                            <th colspan="6" class="text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        foreach ($career['timetables'] as $tt):
+                                            ?>
+                                            <tr <?= $tt['cod_usuario_coordinador'] == $this->identity() ? 'class = "text-info"':'' ?> >
+                                                <td style="vertical-align:middle;"><?= $tt['cod_curso'] ?></td>
+                                                <td style="vertical-align:middle;"><?= $tt['nombre_curso'] ?></td>
+                                                <td style="vertical-align:middle;"><?= $tt['seccion'] ?></td>
+                                                <td style="vertical-align:middle;"><?= empty($tt['fecha_cohorte']) ? '(CA)' : date('d/m/Y', strtotime($tt['fecha_cohorte'])) ?></td>
+                                                <td style="vertical-align:middle;"><?= date('d/m/Y', strtotime($tt['fecha_inicio'])) ?></td>
+                                                <td style="vertical-align:middle;"><?= date('d/m/Y', strtotime($tt['fecha_fin'])) ?></td>
+                                                <td style="vertical-align:middle;"><?= date('d/m/Y', strtotime($tt['fecha_limite_calificacion'])) ?></td>
+                                                <td style="vertical-align:middle;"><?= empty($tt['fecha_notas_completadas']) ? '(pendiente)' : date('d/m/Y', strtotime($tt['fecha_notas_completadas'])) ?></td>
+
+                                                <?php
+                                                if ($role->hasAdminRole()):
+                                                    ?>
+                                                    <td style="vertical-align:middle;"><?= $tt['nombres'] . ' ' . $tt['apellidos'] ?></td>
+                                                    <?php
+                                                endif;
+                                                ?>
+                                                <?php
+                                                $showPondering = $tt['fecha_generacion_acta'] == null && $tt['cod_usuario_catedratico'] == $this->identity();
+                                                $showAct = !empty($tt['cod_acta_oficial']);
+                                                $actionWidth = 1;
+                                                if ($showPondering):
+                                                    $actionWidth++;
+                                                endif;
+                                                if ($showAct):
+                                                    $actionWidth++;
+                                                endif;
+                                                $actionWidth = 6 / $actionWidth;
+                                                ?>
+
+                                                <td colspan="<?= $actionWidth ?>">
+
+                                                    <?php
+                                                    //PONDERING
+                                                    if ($showPondering):
+                                                        ?>
+                                                        <a href="<?=
+                                                        $this->url('grades', [
+                                                            'action' => 'ponder',
+                                                            'timetableCode' => $tt['cod_horario']
+                                                        ])
+                                                        ?>" 
+                                                           class="btn btn-green">
+                                                            Ponderación
+                                                        </a>
+                                                    </td>
+                                                    <td colspan="<?= $actionWidth ?>">
+                                                        <?php
+                                                    endif;
+                                                    //NOTES
+                                                    ?>
+                                                    <a href="<?=
+                                                    $this->url('grades', [
+                                                        'action' => 'view',
+                                                        'timetableCode' => $tt['cod_horario']
+                                                    ])
+                                                    ?>" 
+                                                       class="btn btn-primary">
+                                                        Notas
+                                                    </a>
+                                                    <?php
+                                                    //SEE ACT
+                                                    if ($showAct):
+                                                        ?>
+                                                    </td>
+                                                    <td colspan="<?= $actionWidth ?>">
+                                                        <a href="<?=
+                                                        $this->url('official', [
+                                                            'action' => 'act'
+                                                                ], [
+                                                            'query' => [
+                                                                'act' => $tt['cod_acta_oficial']
+                                                            ]
+                                                        ])
+                                                        ?>" 
+                                                           target="_blank" rel="noopener noreferrer" class="btn btn-orange">
+                                                            Acta Oficial
+                                                        </a>
+                                                        <?php
+                                                    endif;
+                                                    ?>
+                                                </td>
+                                            </tr>
+                                            <?php
+                                        endforeach;
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
+                endforeach;
+            endif;
+            ?>
+        </div>
+    </div>
+</div>

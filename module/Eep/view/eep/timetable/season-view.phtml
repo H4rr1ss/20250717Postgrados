@@ -1,0 +1,33 @@
+<?php
+$this->headTitle('Temporadas');
+?>
+<div class="col-lg-6">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Descarga de Temporadas
+            <button type="button" 
+                    data-container="body" 
+                    data-toggle="popover" 
+                    data-placement="right" 
+                    data-content="Las temporadas son archivos descargables que se ingresan en el SIIF para indicarle para qué secciones se permitirán hacer órdenes de pago. Después de realizar creación y modificación de horarios, se deben cargar estos archivos al SIIF." 
+                    class="btn btn-green">
+                <i class="fa fa-info"></i>
+            </button>
+        </div>
+        <div class="panel-body pan">
+            <form action="#">
+                <div class="form-body pal">
+                    <?= $this->partial('eep/msg', ['msg' => $downloadMsg ?? null]) ?>
+                    <div class="row">
+                        <div class="col-md-12 text-right">
+                            <a href="<?= $this->url('timetable', ['action' => 'downloadSeason']) ?>" class = "btn btn-primary">
+                                <i class="fa fa-cloud-download"></i>
+                                Descargar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

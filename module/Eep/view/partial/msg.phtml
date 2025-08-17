@@ -1,0 +1,20 @@
+<?php
+if (!empty($msg) && get_class($msg) == Eep\ValueObject\Message::class):
+    ?>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                <div class="note note-<?= $msg->getType() ?>">
+                    <h4 class="box-heading">
+                        <?= $msg->getTitle(); ?>
+                    </h4>
+                    <p>
+                        <?= $msg->getMessage(); ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+endif;
+?>

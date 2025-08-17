@@ -1,0 +1,451 @@
+
+<?php
+$this->headTitle('Detalle de Oficialización');
+$role = $this->layout()->role;
+
+use Eep\Service\GeneralManager as GM;
+use Eep\Service\AssignmentManager as A;
+use Eep\Form\PostActStudentsForm as PF;
+
+$role = $this->layout()->role;
+$postFormVisible = false;
+?>
+<div class="col-lg-12">
+    <div class="panel panel-<?= $timetable == null ? 'red' : 'green' ?>">
+        <div class="panel-heading">
+            <?php
+            if ($timetable == null) {
+                echo 'Sin Horario';
+            } else {
+                $courseCode = $timetable->getCodCurso();
+                $pensumCode = $timetable->getCodPensum();
+                $courseName = $timetable->getNombreCurso();
+                $section = $timetable->getSeccion();
+                $month = GM::MONTHS[$timetable->getMes()];
+                $year = $timetable->getAnio();
+                echo "Pénsum $pensumCode. Cód. $courseCode - '$courseName'. Sección '$section' - $month $year";
+            }
+            ?>
+        </div>
+        <?php
+        if ($timetable != null):
+            ?>
+
+            <div class="panel-body pal">
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+                <?php
+                if (!empty($blocks)):
+                    ?>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <h3>Información</h3>
+                            <ul>
+                                <li>
+                                    Si un estudiante no está en el acta oficial de notas, puede ser agregado al acta de postgrados según entrega la papelería la Escuela de Estudios de Postgrado.
+                                </li>
+                                <li>
+                                    Para agregar estudiantes a un acta de postgrados, presione el botón 
+                                    <button type="button" class="btn-green">
+                                        <i class="fa fa-plus"></i>
+                                    </button>
+                                    . Aparecerá en el cuadro "Oficialización por Acta de Postgrado".
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-7">
+                            <h3>Significado de Colores de Fila</h3>
+                            <table class="table table-hover table-bordered table-condensed">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">
+                                            Color
+                                        </th>
+                                        <th>
+                                            Significado
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="success text-center" style="color: green">Verde</td> 
+                                        <td>Nota oficializada</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="danger text-center" style="color: darkred">Rojo</td> 
+                                        <td>Asignación invalidada por inscripcion fuera de tiempo</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="info text-center" style="color: blue">Azul</td> 
+                                        <td>En acta oficial, pendiente de aprobar de recibido</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="active text-center" style="color: grey">Gris</td> 
+                                        <td>Sin acta asociada y sin oficializar</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="overflow-x">
+                                <table class="table table-hover table-bordered table-condensed" style="width: 100%">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" style="vertical-align:middle;">Inscrito<br><?= $timetable->getAnio() ?></th>
+                                            <th class="text-center" style="vertical-align:middle;">Registro<br>Académico</th>
+                                            <th class="text-center" style="vertical-align:middle;">Cui /<br>Pasaporte</th>
+                                            <th class="text-center" style="vertical-align:middle;">Nombres</th>
+                                            <th class="text-center" style="vertical-align:middle;">Apellidos</th>
+                                            <th class="text-center" style="vertical-align:middle;">Asistencia</th>
+                                            <?php
+                                            ksort($blocks);
+                                            foreach ($blocks as $block):
+                                                ?>
+                                                <th class="text-center" style="vertical-align:middle;">
+                                                    <!--width: 50px;word-wrap: break-word;">-->
+                                                    <?= $block['nombre'] ?><br>
+                                                    (<?= $block['valor'] ?>)
+                                                </th>
+                                                <?php
+                                            endforeach;
+                                            ?>
+                                            <th class="text-center" style="vertical-align:middle;">Nota<br>Final</th>
+                                            <th class="text-center" style="vertical-align:middle;">Estado<br>Nota</th>
+                                            <th class="text-center" style="vertical-align:middle;">En Acta<br>Oficial</th>
+                                            <th class="text-center" style="vertical-align:middle;">Nota<br>Oficial</th>
+                                            <th class="text-center" style="vertical-align:middle;">Acta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        if ($data != null):
+                                            foreach ($data as $userCode => $userData):
+                                                $user = $userData['user'];
+                                                $grades = $userData['grades'];
+                                                $officialGradeData = $userData['officialGrade'];
+                                                if ($userData['postActAvailable'] && $role->isUdicaOperador()) {
+                                                    $postFormVisible = true;
+                                                }
+                                                if ($userData['gradeStatusCode'] == A::OFFICIALIZED_NOTE) {
+                                                    $class = 'success';
+                                                    $fontColor = 'darkgreen';
+                                                } elseif ($userData['officialAct'] != null) {
+                                                    $class = 'info';
+                                                    $fontColor = 'darkblue';
+                                                } elseif ($userData['valid'] == false) {
+                                                    $class = 'danger';
+                                                    $fontColor = 'darkred';
+                                                } else {
+                                                    $class = 'active';
+                                                    $fontColor = 'default';
+                                                }
+                                                ?>
+                                                <tr class="<?= $class ?>" style="color: <?= 'default'//$fontColor      ?>">
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font color="<?= $user->getInscriptionStatus() != null ? 'green' : 'red' ?>">
+                                                        <span class="fa fa-<?= $user->getInscriptionStatus() != null ? 'check' : 'close' ?>"></span>
+                                                        </font>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;"><?= $user->getRegistroAcademico() ?></td>
+                                                    <td style="vertical-align:middle;text-align: center;"><?= $user->getCui() ?? ($user->getPasaporte() ?? '') ?></td>
+                                                    <td style="vertical-align:middle;"><?= $user->getNombres() ?></td>
+                                                    <td style="vertical-align:middle;"><?= $user->getApellidos() ?></td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font color="<?= $userData['attendance'] ? 'green' : 'red' ?>">
+                                                        <span class="fa fa-<?= $userData['attendance'] ? 'check' : 'close' ?>"></span>
+                                                        </font>
+                                                    </td>
+                                                    <?php
+                                                    foreach ($blocks as $blockCode => $block):
+                                                        ?>
+                                                        <td style="vertical-align:middle;text-align: center;">
+                                                            <?= $grades[$blockCode] ?? '--' ?>
+                                                        </td>
+                                                        <?php
+                                                    endforeach;
+                                                    ?>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font color="<?= $userData['gradeStatusCode'] >= A::ENTRY_COMPLETED ? ($minToApproval > ($userData['finalGrade'] ?? 0) ? 'red' : 'green') : 'black' ?>">
+                                                        <?= $userData['finalGrade'] ?? 0 ?>
+                                                        </font>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <button type="button" data-container="body" data-toggle="popover" data-placement="left"  data-original-title="" title="" data-html="true"
+                                                                class="btn-<?php
+                                                                switch ($userData['gradeStatusCode']):
+                                                                    case A::NO_NOTE:
+                                                                        echo 'white';
+                                                                        break;
+                                                                    case A::PARCIAL_ENTRY:
+                                                                        echo 'dark';
+                                                                        break;
+                                                                    case A::ENTRY_COMPLETED:
+                                                                        echo 'green';
+                                                                        break;
+                                                                    case A::ACT_CREATED:
+                                                                        echo 'blue';
+                                                                        break;
+                                                                    case A::OFFICIALIZED_NOTE:
+                                                                        echo 'success';
+                                                                        break;
+                                                                endswitch;
+                                                                ?>"
+                                                                data-content="<?= $userData['gradeStatus'] ?>"
+                                                                >
+                                                                    <?= $userData['gradeStatusCode'] ?>
+                                                        </button>
+                                                    </td>
+                                                    <td style="vertical-align:middle;text-align: center;">
+                                                        <font color="<?= $userData['officialAct'] != null ? 'green' : 'gray' ?>">
+                                                        <span class="fa fa-<?= $userData['officialAct'] != null ? 'check' : 'close' ?>"></span>
+                                                        </font>
+                                                    </td>
+                                                    <td style="vertical-align:middle;">
+                                            <center>
+                                                <?php
+                                                if ($userData['officialGrade'] == null):
+                                                    echo '--';
+                                                else:
+                                                    $ofGrade = $userData['officialGrade'];
+                                                    $corrections = $ofGrade['correctionDetail'];
+                                                    if (!empty($corrections)):
+                                                        $texts = [];
+                                                        foreach ($corrections as $correction) {
+                                                            $texts[] = date('d/m/Y', strtotime($correction['fecha_correccion'])) . ": <strike>$correction[nota_previa]</strike> → $correction[nota_nueva]";
+                                                        }
+                                                        ?>
+                                                        <button type="button" data-container="body" data-toggle="popover" data-placement="left"  data-original-title="" title="" data-html="true"
+                                                                class="btn-<?= $ofGrade['approved'] ? 'success' : 'red' ?>"
+                                                                data-content="<?= "<b>Correcciones</b><br/>" . implode("<br/>", $texts) ?>"
+                                                                <?= empty($texts) ? 'disabled="disabled"' : '' ?>
+                                                                >
+                                                                    <?= $ofGrade['grade'] ?? ($ofGrade['approved'] ? 'Aprobado' : 'Reprobado') ?>
+                                                        </button>
+                                                        <?php
+                                                    else:
+                                                        ?>
+                                                        <font color="<?= $ofGrade['approved'] ? 'green' : 'red' ?>">
+                                                        <?= $ofGrade['grade'] ?? ($ofGrade['approved'] ? 'Aprobado' : 'Reprobado') ?>
+                                                        </font>
+                                                    <?php
+                                                    endif;
+                                                endif;
+                                                ?>
+                                            </center>
+                                            </td>
+                                            <td style="vertical-align:middle;text-align: center;">
+                                                <?php
+                                                if ($userData['officialAct'] != null) :
+
+                                                    echo $userData['officialAct'];
+                                                else:
+                                                    if ($userData['postAct'] != null):
+                                                        echo $userData['postAct'];
+                                                    else:
+                                                        if (!$userData['valid']):
+                                                            ?>
+                                                            <button type="button" data-container="body" data-toggle="popover" data-placement="left" 
+                                                                    data-content=
+                                                                    "Asignación invalidada por falta de inscripción" 
+                                                                    class="btn-danger btn" data-original-title="" title="">
+                                                                <i class="fa fa-ban"></i>
+                                                            </button>  
+                                                            <?php
+                                                        else:
+                                                            if ($user->getInscriptionStatus() != null):
+                                                                ?>
+                                                                <button type="button" id="<?= $userCode ?>" class="btn btn-green add" userCode="<?= $userCode ?>">
+                                                                    <i class="fa fa-plus"></i>
+                                                                </button>
+                                                                <?php
+                                                            endif;
+                                                        endif;
+                                                    endif;
+                                                endif;
+                                                ?>
+                                            </td>
+                                            </tr>
+                                            <?php
+                                        endforeach;
+                                    endif;
+                                    ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
+                endif;
+                ?>
+                <div class="row">
+                    <div class="col-md-<?= $timetable->getFechaActaAprobada() == null && $role->isUdicaOperador() ? '6 text-right' : '12 text-center' ?> pal">
+                        <!-- VIEW OFICIAL ACT BUTTON-->
+                        <?php
+                        if ($timetable->getActCode() != null):
+                            ?>
+                            <a href="<?=
+                            $this->url('official', [
+                                'action' => 'act'], [
+                                'query' => [
+                                    'act' => $timetable->getActCode()
+                                ]
+                            ])
+                            ?>" 
+                               target="_blank" rel="noopener noreferrer" class="btn btn-<?= $timetable->getFechaActaAprobada() == null ? 'orange' : 'success' ?>">
+                                Ver Acta Oficial <?= $timetable->getFechaActaAprobada() == null ? '' : 'Aprobada' ?>
+                            </a>
+                            <?php
+                        else:
+                            ?>
+                            <button type="button" class="btn btn-orange" disabled="disabled">
+                                Acta No Creada
+                            </button>
+                        <?php
+                        endif;
+                        ?>
+                    </div>
+                    <?php
+                    if ($timetable->getFechaActaAprobada() == null && $role->isUdicaOperador() && $timetable->getActCode() != null):
+                        ?>
+                        <div class="col-md-6 pal text-left">
+                            <div class="btn-group">
+                                <button id="btnEnabler" type="button" class="btn btn-primary" value="enable">
+                                    <i id="btnEnablerIcon" class="fa fa-check-square-o"></i>
+                                </button>
+                                <a id="approve" href="<?=
+                                $this->url('official', [
+                                    'action' => 'receive',
+                                    'timetableCode' => $timetable->getCode()
+                                ])
+                                ?>" 
+                                   class="btn btn-primary" disabled = "disabled">
+                                    Aprobar Acta Oficial
+                                </a>
+                                <script type="text/javascript">
+                                    var toggleLock = true;
+                                    $('#btnEnabler').click(function () {
+                                        if (toggleLock) {
+                                            $("#approve").removeAttr("disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-lock');
+                                        } else {
+                                            $("#approve").attr("disabled", "disabled");
+                                            $('#btnEnablerIcon').prop('class', 'fa fa-check-square-o');
+                                        }
+                                        toggleLock = !toggleLock;
+                                    });
+                                </script>
+                            </div>
+                        </div>                
+                        <?php
+                    endif;
+                    ?>
+                </div>
+            </div>
+
+            <?php
+        endif;
+        ?>
+    </div>
+</div>
+<?php
+if ($timetable != null && !empty($blocks) && !empty($data) && $postFormVisible):
+    $form->prepare();
+    $form->setAttribute('action', $this->url('official', ['action' => 'addPostAct', 'timetableCode' => $timetable->getCode()]) . '#showPost');
+    ?>
+    <div class="col-lg-12" id="showPost">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Oficialización por Acta de Postgrado
+            </div>
+            <div class="panel-body pan">
+                <?= $this->form()->openTag($form) ?>
+                <div class="form-body pal">
+                    <?= $this->partial('eep/msg', ['msg' => $postMsg ?? null]) ?>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="overflow-x" id="tableDiv">
+                                <table class="table table-hover table-bordered table-striped" style="width: 100%">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" style="vertical-align:middle;">Registro<br>Académico</th>
+                                            <th class="text-center" style="vertical-align:middle;">Nombres</th>
+                                            <th class="text-center" style="vertical-align:middle;">Apellidos</th>
+                                            <th class="text-center" style="vertical-align:middle;">Nota Final</th>
+                                            <th class="text-center" style="vertical-align:middle;">Recibo</th>
+                                            <th class="text-center" style="vertical-align:middle;">Observacion</th>
+                                            <th class="text-center" style="vertical-align:middle;">Excluir</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id='postTBody'>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8"></div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(PF::ACT)) ?>
+                                <?= $this->formElement($form->get(PF::ACT)) ?>
+                                <font color="red"> <?= $this->formElementErrors($form->get(PF::ACT)) ?></font>
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+                <div class="form-actions text-right pal">
+                    <button type="submit" class="btn btn-primary" id='submitPostAct'>
+                        Oficializar las notas
+                    </button>
+                </div>
+                <?= $this->form()->closeTag($form) ?>
+            </div>
+        </div>
+    </div>
+    <?php
+endif;
+?>
+
+<?php
+$usersJs = 'null';
+if (!empty($data)) {
+    $obj = [];
+    $commentsValues = $form->get(PF::COMMENT)->getValue();
+    $usersValues = $form->get(PF::USERS)->getValue();
+    $formData = [];
+    if (!empty($usersValues) && !empty($commentsValues) && is_array($usersValues) && is_array($commentsValues)) {
+        if (count($usersValues) == count($commentsValues)) {
+            for ($index = 0; $index < count($usersValues); $index++) {
+                $formData[$usersValues[$index]] = $commentsValues[$index];
+            }
+        }
+    }
+    foreach ($data as $userCode => $userData) {
+        $user = $userData['user'];
+        if ($userData['postActAvailable'] == true) {
+            $obj[$userCode] = [
+                'names' => $user->getNombres(),
+                'lastNames' => $user->getApellidos(),
+                'acadReg' => $user->getRegistroAcademico(),
+                'finalGrade' => $userData['finalGrade'] ?? 0,
+                'ballot' => $userData['ballot'],
+                'added' => isset($formData[$userCode]),
+                'comment' => $formData[$userCode] ?? ''
+            ];
+            $usersJs = json_encode($obj);
+        }
+    }
+}
+?>
+<script type="text/javascript">
+    window.history.pushState("", "", "<?= $this->url('official', ['action' => 'detail', 'timetableCode' => ($timetable == null) ? null : $timetable->getCode()]) . ($form->hasValidated() || !empty($postMsg) ? '#showPost' : '') ?>");
+    addId = ".add";
+    submit = "#submitPostAct";
+    tableBody = "#postTBody";
+    userColumnId = "<?= PF::USERS ?>";
+    commentName = "<?= PF::COMMENT ?>";
+    users = <?= $usersJs ?>;
+</script>
+<script type="text/javascript" src="/js/postActUsers.js"></script>

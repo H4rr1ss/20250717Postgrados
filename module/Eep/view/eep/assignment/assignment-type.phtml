@@ -1,0 +1,120 @@
+<?php
+
+use Eep\Form\AssignmentTypeForm as ATF;
+use Eep\Form\AssignmentForm;
+
+$form->prepare();
+$this->headTitle('Asignación Administrativa');
+?>
+
+<div class="col-lg-10">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Datos Generales de Asignación
+        </div>
+        <div class="panel-body pan">
+            <?= $this->form()->openTag($form) ?>
+            <div class="form-body pal">
+                <div class="row">
+                    <div class="col-lg-5">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(ATF::USER)) ?>
+                            <?= $this->formElement($form->get(ATF::USER)) ?>
+                            <font color="red"><?= $this->formElementErrors($form->get(ATF::USER)) ?></font>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(ATF::ASSIGNMENT_TYPE)) ?>
+                            <div class="radio">
+                                <?= $this->formElement($form->get(ATF::ASSIGNMENT_TYPE)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(ATF::ASSIGNMENT_TYPE)) ?></font>
+                        </div>
+                    </div>
+                    <div class="col-md-2" id="<?= ATF::YEAR ?>" <?= ($form->get(ATF::ASSIGNMENT_TYPE)->getValue() != ATF::TYPE_EXTEMP) ? 'style="display: none;"' : '' ?> >
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(ATF::YEAR)) ?>
+                            <?= $this->formElement($form->get(ATF::YEAR)) ?>
+                            <font color="red"><?= $this->formElementErrors($form->get(ATF::YEAR)) ?></font>
+                        </div>
+                    </div>
+                </div>
+                <?= $this->partial('eep/msg', ['msg' => $assignedMsg ?? null]) ?>
+                <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            </div>
+            <div class="form-actions text-right pal">
+                <?= $this->formElement($form->get(ATF::SUBMIT)) ?>
+            </div>
+            <?= $this->form()->closeTag($form) ?>
+        </div>
+    </div>
+</div>
+<div class="col-lg-2">&nbsp;</div>
+
+<script type="text/javascript">
+    var selectElement = '[name=<?= ATF::ASSIGNMENT_TYPE ?>]';
+    $(selectElement).on('ifClicked', function (event) {
+        selectedType = this.value;
+        console.log(selectedType);
+        hideElement = "#<?= ATF::YEAR ?>";
+        if (selectedType == <?= ATF::TYPE_EXTEMP ?>) {
+            $(hideElement).show();
+        } else {
+            $(hideElement).hide();
+        }
+    });
+</script>
+
+<?php
+if (isset($payedTimetables) && count($payedTimetables) > 0):
+    ?>
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Horarios de Cursos Pagados y <u><b>No Asignados</b></u>
+            </div>
+            <div class="panel-body pan">
+                <div class="form-body pal">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Cód.</th>
+                                <th class="text-center">Curso</th>
+                                <th class="text-center">Sección</th>
+                                <th class="text-center">Mes del Curso</th>
+                                <th class="text-center">Fecha de Pago</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            foreach ($payedTimetables as $tt):
+                                ?>
+                                <tr class="text-center">
+                                    <td><?= $tt->getCodCurso() ?></td>
+                                    <td><?= $tt->getNombreCurso() ?></td>
+                                    <td><?= $tt->getSeccion() ?></td>
+                                    <td><?= AssignmentForm::MONTHS[$tt->getMes()] ?></td>
+                                    <td><?= date('d/m/Y', strtotime($tt->getFechaPago())) ?></td>
+                                </tr>
+                                <?php
+                            endforeach;
+                            ?>
+
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+endif;
+?>
+
+<?php
+if (!empty($asgForm)) {
+    echo $this->partial('eep/assignment/assignment', ['form' => $asgForm, 'msg' => $asgMsg ?? null, 'userMsg' => $userMsg ?? null, 'formMsg' => $formMsg ?? null]);
+}
+?>
