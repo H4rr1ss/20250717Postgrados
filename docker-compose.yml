@@ -1,7 +1,34 @@
-zf:
-  build: .
-  dockerfile: Dockerfile
-  ports:
-   - "8080:80"
-  volumes:
-   - .:/var/www
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+    environment:
+      - APACHE_DOCUMENT_ROOT=/var/www/public
+      # - DB_HOST=db
+      # - DB_NAME=db_postgrados
+      # - DB_USER=user
+      # - DB_PASSWORD=password
+      # - DB_ROOT_PASSWORD=rootpassword
+      # - SESSION_SAVE_PATH=/var/www/data/sessiones
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: db_postgrados
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      # - ./database:/docker-entrypoint-initdb.d
+volumes:
+  db_data:
