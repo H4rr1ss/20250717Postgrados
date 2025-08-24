@@ -386,6 +386,10 @@ return [
             'code' => 61,
             'view' => View::OFFICIAL_COURSES,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO, Role::UDICA_JEFE, Role::UDICA_OPERADOR, Role::UDICA_PROGRAMADOR, Role::ESTUDIANTE]
-        ]
+        ],
+        'recoverPassword' => [
+            'code' => 67,
+            'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
+        ],
     ],
 ];
