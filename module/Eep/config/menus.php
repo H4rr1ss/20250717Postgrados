@@ -143,4 +143,11 @@ return [//ICON, MENU text
         'icon' => 'fa-history',
         'text' => 'Bitácora',
         'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO, Role::UDICA_JEFE]],
+    View::FORMULARIO_ADMISION => [
+        'controller' => 'formulario-admision',
+        'action' => 'index',
+        'icon' => 'fa-file-text-o',
+        'text' => 'Formulario de Admisión',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+    ],
 ];

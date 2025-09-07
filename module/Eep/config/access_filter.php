@@ -15,6 +15,7 @@ use Eep\Controller\CohortController;
 use Eep\Controller\MassiveLoadController;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\FormularioAdmisionController;
 
 return [
     //FORMAT:
@@ -390,6 +391,28 @@ return [
         'recoverPassword' => [
             'code' => 67,
             'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
+        ],
+    ],
+    FormularioAdmisionController::class => [
+        'index' => [
+            'code' => 68,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'respuestas' => [
+            'code' => 69,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'editarRespuesta' => [
+            'code' => 70,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'crear' => [
+            'code' => 68,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
     ],
 ];

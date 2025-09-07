@@ -40,6 +40,8 @@ use Eep\Service\GradesManager;
 use Eep\Service\Factory\GradesManagerFactory;
 use Eep\Service\GeneralManager;
 use Eep\Service\Factory\GeneralManagerFactory;
+use Eep\Service\FormularioAdmisionManager;
+use Eep\Service\Factory\FormularioAdmisionManagerFactory;
 //PLUGIN
 use Eep\Controller\Plugin\PluginHandler;
 use Eep\Controller\Plugin\Factory\PluginHandlerFactory;
@@ -57,6 +59,8 @@ use Eep\Controller\MassiveLoadController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\FormularioAdmisionController;
+use Eep\Controller\Factory\FormularioAdmisionControllerFactory;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -74,6 +78,7 @@ return [
             MassiveLoadController::class => LazyControllerAbstractFactory::class,
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
+            FormularioAdmisionController::class => FormularioAdmisionControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -265,6 +270,20 @@ return [
                     ],
                 ],
             ],
+            'formulario-admision' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/formulario-admision[/:action][/:id]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [
@@ -286,6 +305,7 @@ return [
             SatuManager::class => SatuManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
+            FormularioAdmisionManager::class => FormularioAdmisionManagerFactory::class,
         ],
     ],
     'view_manager' => [

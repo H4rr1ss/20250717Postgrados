@@ -29,5 +29,6 @@ class View {
     const MANUAL_OFFICIALIZATION = 22;
     const OFFICIAL_COURSES = 23;
     const ORDERS_UPDATE = 24;
+    const FORMULARIO_ADMISION = 25;
 
 }
