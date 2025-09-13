@@ -4,15 +4,12 @@
 CREATE TABLE formulario_admision (
     id_formulario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    fecha_cohorte DATE NOT NULL,
     fecha_creacion datetime DEFAULT current_timestamp(),
     fecha_inicio_admision DATETIME NOT NULL,
     fecha_fin_admision DATETIME NOT NULL,
-    activo BOOLEAN DEFAULT TRUE,
+    activo tinyint(1) DEFAULT 1,
     creado_por INT,
 
-    CONSTRAINT unq_cohorte_activo UNIQUE (fecha_cohorte, activo),
-    FOREIGN KEY (fecha_cohorte) REFERENCES cohorte(fecha_cohorte),
     FOREIGN KEY (creado_por) REFERENCES usuario(id_usuario)
 );
 
@@ -26,7 +23,7 @@ CREATE TABLE campo_formulario (
     requerido BOOLEAN DEFAULT FALSE,
     orden_campo INT DEFAULT 0,
     activo BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (id_formulario) REFERENCES formulario_admision(id_formulario)
+    FOREIGN KEY (id_formulario) REFERENCES formulario_admision(id_formulario) ON DELETE CASCADE
 );
 
 CREATE TABLE aspirante (
@@ -45,7 +42,7 @@ CREATE TABLE respuesta_aspirante (
     aspirante_id INT NOT NULL,
     fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (aspirante_id) REFERENCES aspirante(id),
-    FOREIGN KEY (id_formulario) REFERENCES formulario_admision(id_formulario)
+    FOREIGN KEY (id_formulario) REFERENCES formulario_admision(id_formulario) ON DELETE CASCADE
 );
 
 -- Tabla adicional necesaria para las respuestas individuales por campo

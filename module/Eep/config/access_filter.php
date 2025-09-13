@@ -414,5 +414,15 @@ return [
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'archivar' => [
+            'code' => 71,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminar' => [
+            'code' => 72,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
     ],
 ];

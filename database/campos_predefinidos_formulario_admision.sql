@@ -43,9 +43,6 @@ BEGIN
     INSERT INTO campo_formulario (id_formulario, nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, activo) VALUES
     (formulario_id, 'motivo_estudio', 'Motivación para estudiar el postgrado', 'textarea', NULL, 1, 18, 1);
 
-    -- MOSTRAR RESULTADO
-    SELECT 
-        CONCAT('✅ Se crearon 18 campos predefinidos para el formulario ID: ', formulario_id) as resultado;
 END //
 
 DELIMITER ;
