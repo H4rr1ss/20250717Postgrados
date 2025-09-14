@@ -1,0 +1,143 @@
+<?php
+$this->headTitle('Formularios de Admisión');
+$role = $this->layout()->role;
+?>
+
+<div class="col-md-12">
+    <!-- Formularios Activos -->
+    <div class="panel panel-<?= ($role->hasAdminRole()) ? 'green' : 'blue' ?>">
+        <div class="panel-heading">
+            Formulario de Admisión Activo
+        </div>
+        <div class="panel-body">
+<?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+            <?= $this->partial('eep/msg', ['msg' => $activosMsg ?? null]) ?>
+            
+            <?php if (!empty($formulariosActivos)): ?>
+                <table class="table table-hover table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Formulario</th>
+                            <th class="text-center">Total Respuestas</th>
+                            <th class="text-center">Período de Actividad</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($formulariosActivos as $formulario): ?>
+                            <tr>
+                                <td> 
+                                    <strong><?= $this->escapeHtml($formulario->getNombre()) ?></strong>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-info"><?= $formulario->getTotalRespuestas() ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <small><?= $formulario->getPeriodoFormateado() ?></small>
+                                </td>
+                                <td class="text-center">
+                                    <?php if ($formulario->isEnPeriodoAdmision()): ?>
+                                        <span class="label label-success">Visible</span>
+                                    <?php else: ?>
+                                        <span class="label label-warning">No Visible</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex">
+                                        <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>" 
+                                        class="btn btn-primary btn-sm me-4" title="Ver Respuestas">
+                                            <i class="fa fa-users"></i> Ver Respuestas
+                                        </a>
+
+                                        <form method="POST"
+                                        action="<?= $this->url('formulario-admision', ['action' => 'archivar', 'id' => $formulario->getIdFormulario()]) ?>"
+                                        style="display: inline;">
+                                            <button type="submit" class="btn btn-warning btn-sm" 
+                                                    title="Archivar Formulario">
+                                                    Deshabilitar
+                                                <i class="fa fa-archive"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> No hay formularios activos en este momento.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Formularios Archivados -->
+    <div class="panel panel-default">
+                <div class="panel-heading">
+            <i class="fa fa-list"></i> Gestión de Formularios de Admisión
+            <div class="pull-right">
+                <a href="<?= $this->url('formulario-admision', ['action' => 'crear']) ?>" 
+                   class="btn btn-success btn-sm">
+                    <i class="fa fa-plus"></i> Crear Nuevo Formulario
+                </a>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+          <div class="panel-body">
+                <?= $this->partial('eep/msg', ['msg' => $archivadosMsg ?? null]) ?>
+                <div class="alert alert-warning">
+                    <strong>Importante:</strong> cuando elimines un formulario, no se podrá recuperar la información.
+                </div>
+            
+            <?php if (!empty($formulariosArchivados)): ?>
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Formulario</th>
+                            <th class="text-center">Total Respuestas</th>
+                            <th class="text-center">Período de Actividad</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($formulariosArchivados as $formulario): ?>
+                            <tr class="text-muted">
+                                <td><?= $this->escapeHtml($formulario->getNombre()) ?></td>
+                                <td class="text-center">
+                                    <span class="badge badge-default"><?= $formulario->getTotalRespuestas() ?></span>
+                                </td>
+                                <td class="text-center">
+                                    <small><?= $formulario->getPeriodoFormateado() ?></small>
+                                </td>
+                                <td class="text-center">
+                                    <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>" 
+                                       class="btn btn-default btn-sm" title="Ver Respuestas">
+                                        <i class="fa fa-eye"></i> Solo Lectura
+                                   </a>
+                                   <form method="POST" action="<?= $this->url('formulario-admision', ['action' => 'eliminar', 'id' => $formulario->getIdFormulario()]) ?>" style="display:inline; margin-left:5px;">
+                                       <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Formulario">
+                                           <i class="fa fa-trash"></i>
+                                       </button>
+                                   </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> No hay formularios archivados.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php if (isset($msg)): ?>
+<script type="text/javascript">
+    window.scrollTo(0, 0);
+</script>
+<?php endif; ?>
+
+
