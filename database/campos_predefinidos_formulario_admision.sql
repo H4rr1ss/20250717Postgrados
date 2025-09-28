@@ -43,6 +43,10 @@ BEGIN
     INSERT INTO campo_formulario (id_formulario, nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, activo) VALUES
     (formulario_id, 'motivo_estudio', 'Motivación para estudiar el postgrado', 'textarea', NULL, 1, 18, 1);
 
+    -- INFORMACIÓN ACADÉMICA ESPECÍFICA
+    INSERT INTO campo_formulario (id_formulario, nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, activo) VALUES
+    (formulario_id, 'maestria_solicitada', 'Maestría a la cual solicitar ingresar', 'select', 'Maestría en Diseño Arquitectónico,Diseño, planificación y manejo Ambiental,Restauración de Monumentos,Gestión para la reducción del riesgo,Desarrollo Urbano y territorio,Mercadeo para el diseño,Patrimonio Cultural para el desarrollo énfasis en Gestión y Conservación,Gerencia de Proyectos arquitectónicos,Enseñanza virtual de la Arquitectura y el Diseño,Diseño interactivo y digital,Especialización de Gestión de Riesgos,DOCTORADO (Con énfasis *Diseño Arquitectónico *Conservación del Patrimonio Cultural *Conservación del Medio Ambiente),Maestría Planificación y Diseño del Paisaje', 1, 19, 1);
+
 END //
 
 DELIMITER ;

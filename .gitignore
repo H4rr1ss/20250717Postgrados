@@ -12,6 +12,7 @@
 # IDEs
 /.idea/
 /.vscode/
+.env
 
 # Sistema operativo
 .DS_Store

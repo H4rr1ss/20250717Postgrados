@@ -222,17 +222,21 @@ class FormularioAdmisionController extends AbstractActionController {
             return $this->redirect()->toRoute('formulario-admision');
         }
         
-        // Obtener respuesta detallada
+        // Obtener respuesta detallada (solo campos)
         $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
         if (!$respuestaResult->get()) {
             $this->pg()->log($respuestaResult->getMsg(), LM::FAILURE, LM::READ);
             return $this->redirect()->toRoute('formulario-admision');
         }
-        $respuesta = $respuestaResult->getObj();
+        $respuestasCampos = $respuestaResult->getObj();
         
-        // Obtener información del formulario
-        $formularioResult = $this->formularioAdmisionManager->getFormulario($respuesta->getIdFormulario());
-        $formulario = $formularioResult->get() ? $formularioResult->getObj() : null;
+        // Obtener ID del formulario desde el primer campo (todos pertenecen al mismo formulario)
+        $idFormulario = !empty($respuestasCampos) ? $respuestasCampos[0]['id_formulario'] ?? null : null;
+        $formulario = null;
+        if ($idFormulario) {
+            $formularioResult = $this->formularioAdmisionManager->getFormulario($idFormulario);
+            $formulario = $formularioResult->get() ? $formularioResult->getObj() : null;
+        }
         
         $message = null;
         
@@ -248,7 +252,7 @@ class FormularioAdmisionController extends AbstractActionController {
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
         
         return new ViewModel([
-            'respuesta' => $respuesta,
+            'respuestasCampos' => $respuestasCampos,
             'formulario' => $formulario,
             'message' => $message
         ]);
