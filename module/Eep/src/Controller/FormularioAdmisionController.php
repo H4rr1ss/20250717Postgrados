@@ -302,4 +302,75 @@ class FormularioAdmisionController extends AbstractActionController {
             'message' => $message
         ]);
     }
+    /**
+     * VISTA PÚBLICA: Mostrar formulario activo para aspirantes
+     */
+    public function publicAction() {
+        // Usar layout minimal (sin sidebar ni menús)
+        $this->layout('layout/empty');
+        // Obtener el primer formulario activo
+        $activosResult = $this->formularioAdmisionManager->getFormulariosActivos();
+        $formularios = $activosResult->get() ? $activosResult->getObj() : [];
+        if (empty($formularios)) {
+            $msg = new Message('Info', 'No hay formularios de admisión disponibles en este momento.', Message::YELLOW);
+            $this->pg()->log($msg, LM::SUCCESS, LM::VIEW);
+            return new ViewModel(['message' => $msg]);
+        }
+        $formulario = $formularios[0];
+        // Obtener campos activos
+        $camposResult = $this->formularioAdmisionManager->getCamposFormulario($formulario->getIdFormulario());
+        $campos = $camposResult->get() ? $camposResult->getObj() : [];
+        $message = null;
+        // Manejar envío público
+        if ($this->getRequest()->isPost()) {
+            // Obtener datos y archivos enviados
+            $data = $this->params()->fromPost();
+            $files = $this->getRequest()->getFiles()->toArray();
+            $errors = [];
+            foreach ($campos as $campo) {
+                if ($campo->getRequerido()) {
+                    if ($campo->getTipoCampo() === 'archivo') {
+                        // Validar carga de archivo
+                        $fileInfo = $files[$campo->getNombreCampo()] ?? null;
+                        if (!$fileInfo || $fileInfo['error'] !== UPLOAD_ERR_OK) {
+                            $errors[] = $campo->getEtiqueta();
+                        }
+                    } else {
+                        if (empty($data[$campo->getNombreCampo()])) {
+                            $errors[] = $campo->getEtiqueta();
+                        }
+                    }
+                }
+            }
+            if (!empty($errors)) {
+                $message = new Message('Errores en el formulario', 'Faltan campos obligatorios: ' . implode(', ', $errors), Message::RED);
+                $this->pg()->log($message, LM::FAILURE, LM::CREATE);
+            } else {
+                // Guardar respuesta en la base de datos
+                $files = $this->getRequest()->getFiles()->toArray();
+                $result = $this->formularioAdmisionManager
+                    ->registrarRespuestaPublica(
+                        $formulario->getIdFormulario(),
+                        $campos,
+                        $data,
+                        $files
+                    );
+                if ($result->get()) {
+                    $message = new Message('Enviado', 'Formulario enviado correctamente', Message::GREEN);
+                    $this->pg()->log($message, LM::SUCCESS, LM::CREATE);
+                } else {
+                    // Limpiar etiquetas HTML de mensaje de error
+                    $message = new Message('Error', $result->getMsg(), Message::RED);
+                    $this->pg()->log($message, LM::FAILURE, LM::CREATE);
+                }
+             }
+        }
+        $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
+        return new ViewModel([
+            'formulario' => $formulario,
+            'campos'     => $campos,
+            'message'    => $message,
+        ]);
+    }
 }
+                    

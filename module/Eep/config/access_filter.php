@@ -399,30 +399,35 @@ return [
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'respuestas' => [
+    'respuestas' => [
             'code' => 69,
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'editarRespuesta' => [
+    'editarRespuesta' => [
             'code' => 70,
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'crear' => [
+    'crear' => [
             'code' => 68,
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'archivar' => [
+    'archivar' => [
             'code' => 71,
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'eliminar' => [
+    'eliminar' => [
             'code' => 72,
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'public' => [
+            'code' => 73,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::ALL]
         ],
     ],
 ];

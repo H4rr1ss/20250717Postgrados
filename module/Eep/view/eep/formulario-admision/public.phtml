@@ -1,0 +1,93 @@
+<?php
+$this->headTitle('Formulario de Admisión');
+?>
+<?php
+$now = new \DateTime();
+if (isset($formulario)) {
+    $start = new \DateTime($formulario->getFechaInicioAdmision());
+    $end   = new \DateTime($formulario->getFechaFinAdmision());
+    if ($now < $start || $now > $end) {
+        echo '<div class="col-md-8 col-md-offset-2">'
+   . '<div class="alert alert-warning text-center" style="padding-top:30px; padding-bottom:30px;">'
+   . 'El período de registro de admisiones se encuentra inactivo por el momento. Por favor intenta más tarde.'
+   . '</div></div>';
+        return;
+    }
+}
+?>
+<div class="col-md-8 col-md-offset-2">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3><?= $this->escapeHtml($formulario->getNombre()) ?></h3>
+            <small>Período: <?= $this->escapeHtml($formulario->getPeriodoFormateado()) ?></small>
+        </div>
+        <div class="panel-body">
+            <?php if (isset($message)): ?>
+                <div class="alert alert-info">
+                    <?= $message->getMessage() ?>
+                </div>
+            <?php endif; ?>
+            <form method="post" enctype="multipart/form-data" action="<?= $this->url('admisiones') ?>">
+                <?php foreach ($campos as $campo): ?>
+                    <div class="form-group">
+                        <label for="<?= $campo->getNombreCampo() ?>"><?= $this->escapeHtml($campo->getEtiqueta()) ?>
+                            <?php if ($campo->getRequerido()): ?><span class="text-danger">*</span><?php endif; ?>
+                        </label>
+                        <?php switch ($campo->getTipoCampo()):
+                            case 'texto': ?>
+                                <input type="text" class="form-control" 
+                                       name="<?= $campo->getNombreCampo() ?>" 
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'email': ?>
+                                <input type="email" class="form-control" 
+                                       name="<?= $campo->getNombreCampo() ?>" 
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'telefono': ?>
+                                <input type="tel" class="form-control" 
+                                       name="<?= $campo->getNombreCampo() ?>" 
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'fecha': ?>
+                                <input type="date" class="form-control" 
+                                       name="<?= $campo->getNombreCampo() ?>" 
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'textarea': ?>
+                                <textarea class="form-control" 
+                                          name="<?= $campo->getNombreCampo() ?>" 
+                                          id="<?= $campo->getNombreCampo() ?>"
+                                          <?= $campo->getRequerido() ? 'required' : '' ?>></textarea>
+                                <?php break;
+                            case 'select': ?>
+                                <select class="form-control" 
+                                        name="<?= $campo->getNombreCampo() ?>" 
+                                        id="<?= $campo->getNombreCampo() ?>"
+                                        <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                    <option value="">-- Seleccione --</option>
+                                    <?php foreach (explode(',', $campo->getOpciones()) as $opt): ?>
+                                        <option value="<?= $this->escapeHtml($opt) ?>"><?= $this->escapeHtml($opt) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php break;
+                            case 'archivo': ?>
+                                <input type="file" class="form-control" 
+                                       name="<?= $campo->getNombreCampo() ?>" 
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       accept="image/jpeg,image/png,image/gif"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <small class="form-text text-muted">Formatos permitidos: JPG, JPEG, PNG, GIF.</small>
+                                <?php break;
+                        endswitch; ?>
+                    </div>
+                <?php endforeach; ?>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </div>
+</div>

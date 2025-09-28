@@ -341,4 +341,79 @@ class FormularioAdmisionManager extends Manager {
         
         return $res;
     }
+    /**
+     * Registra la respuesta pública: crea aspirante, respuesta_aspirante y respuesta_campo
+     */
+    public function registrarRespuestaPublica($idFormulario, array $campos, array $data, array $files)
+    {
+        $res = new R();
+        $connection = $this->dbAdapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            // Verificar si aspirante ya existe por CUI
+            $aspTable = new TableGateway('aspirante', $this->dbAdapter);
+            $existingAspirante = $aspTable->select(['cui' => $data['cui'] ?? null])->current();
+            if ($existingAspirante) {
+                // Verificar si ya respondió a este formulario
+                $respCheck = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+                $count = $respCheck->select([
+                    'id_formulario' => $idFormulario,
+                    'aspirante_id'  => $existingAspirante['id'],
+                ])->count();
+                if ($count > 0) {
+                    $connection->rollback();
+                    $res->failure('Ya registró una respuesta. Si desea volver a enviar, comuníquese con el administrador.');
+                    return $res;
+                }
+                $aspiranteId = $existingAspirante['id'];
+            } else {
+                // Insertar nuevo aspirante
+                $aspData = [
+                    'cui' => $data['cui'] ?? null,
+                    'photo_dpi' => $files['photo_dpi']['name'] ?? null,
+                    'nombres' => $data['nombres'] ?? null,
+                    'apellidos' => $data['apellidos'] ?? null,
+                    'correo_electronico' => $data['correo_electronico'] ?? null,
+                    'telefono' => $data['telefono'] ?? null,
+                ];
+                $aspTable->insert($aspData);
+                $aspiranteId = $this->dbAdapter->getDriver()->getLastGeneratedValue();
+            }
+            // Insertar registro de respuesta
+            $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+            $respTable->insert([
+                'id_formulario' => $idFormulario,
+                'aspirante_id' => $aspiranteId,
+            ]);
+            $respuestaId = $this->dbAdapter->getDriver()->getLastGeneratedValue();
+            // Insertar cada campo de respuesta
+            $campoRespTable = new TableGateway('respuesta_campo', $this->dbAdapter);
+            foreach ($campos as $campo) {
+                $nombre = $campo->getNombreCampo();
+                if ($campo->getTipoCampo() === 'archivo') {
+                    $valorArchivo = $files[$nombre]['name'] ?? null;
+                    $campoRespTable->insert([
+                        'id_respuesta' => $respuestaId,
+                        'id_campo' => $campo->getIdCampo(),
+                        'archivo_adjunto' => $valorArchivo,
+                    ]);
+                } else {
+                    $valor = $data[$nombre] ?? null;
+                    $campoRespTable->insert([
+                        'id_respuesta' => $respuestaId,
+                        'id_campo' => $campo->getIdCampo(),
+                        'valor_respuesta' => $valor,
+                    ]);
+                }
+            }
+            $connection->commit();
+            $res->success();
+            $res->setObj($respuestaId);
+        } catch (\Exception $ex) {
+            $connection->rollback();
+            // Error genérico al registrar respuesta
+            $res->failure('Error al registrar respuesta: ' . $ex->getMessage());
+        }
+        return $res;
+    }
 }

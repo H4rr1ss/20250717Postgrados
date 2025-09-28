@@ -124,7 +124,7 @@ class Module {// implements ConfigProviderInterface{
             $authManager = $serviceManager->get(AuthManager::class);
             $menus = $authManager->getAuthMenus($layout->role, $controllerName, $actionName);
             if (!$event->getTarget()->getRequest()->isXmlHttpRequest()) {
-                $layout->setTemplate('eep/layout');
+                $layout->setTemplate('layout/layout');
                 $layout->setVariable("menus", $menus);
                 $layout->setVariable("role", $layout->role);
             }

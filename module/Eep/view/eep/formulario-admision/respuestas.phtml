@@ -13,8 +13,8 @@ $role = $this->layout()->role;
             </small>
         </div>
         <div class="panel-body">
-            <?= $this->partial('eep/msg', ['msg' => $message ?? null]) ?>
-            <?= $this->partial('eep/msg', ['msg' => $respuestasMsg ?? null]) ?>
+            <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
+            <?= $this->partial('partial/msg', ['msg' => $respuestasMsg ?? null]) ?>
             
             <!-- Botón Registrar Aspirantes -->
             <?php if (!empty($respuestas)): ?>
