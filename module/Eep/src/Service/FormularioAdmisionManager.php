@@ -199,7 +199,28 @@ class FormularioAdmisionManager extends Manager {
     public function getRespuestaDetallada($idRespuesta) {
         $res = new R();
         try {
-            // Obtener solo respuestas por campo directamente
+            // Obtener respuesta básica
+            $respuestaTable = new TableGateway(['r' => 'respuesta_aspirante'], $this->dbAdapter);
+            $select = $respuestaTable->getSql()->select();
+            
+            // JOIN con aspirante
+            $select->join(['a' => 'aspirante'], 'r.aspirante_id = a.id', 
+                         ['aspirante_cui' => 'cui', 'aspirante_nombres' => 'nombres', 
+                          'aspirante_apellidos' => 'apellidos', 'aspirante_correo_electronico' => 'correo_electronico',
+                          'aspirante_telefono' => 'telefono', 'aspirante_photo_dpi' => 'photo_dpi']);
+            
+            $select->where(['r.id_respuesta' => $idRespuesta]);
+            
+            $respuestaData = $respuestaTable->selectWith($select)->current();
+            
+            if (!$respuestaData) {
+                $res->failure('Respuesta no encontrada');
+                return $res;
+            }
+            
+            $respuesta = new RespuestaAspirante($respuestaData);
+            
+            // Obtener respuestas por campo
             $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
             $select = $camposTable->getSql()->select();
             
@@ -211,14 +232,10 @@ class FormularioAdmisionManager extends Manager {
             $select->order('cf.orden_campo ASC');
             
             $respuestasCampos = $camposTable->selectWith($select)->toArray();
-            
-            if (empty($respuestasCampos)) {
-                $res->failure('Respuesta no encontrada');
-                return $res;
-            }
+            $respuesta->setRespuestasCampos($respuestasCampos);
             
             $res->success();
-            $res->setObj($respuestasCampos);
+            $res->setObj($respuesta);
             
         } catch (\Exception $ex) {
             $res->failure('Error al obtener la respuesta detallada: ' . $ex->getMessage());
