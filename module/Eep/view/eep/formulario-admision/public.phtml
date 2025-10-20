@@ -15,6 +15,27 @@ if (isset($formulario)) {
     }
 }
 ?>
+
+<?php if (isset($message) && !isset($formulario)): ?>
+    <!-- Mostrar solo mensaje cuando no hay formulario disponible -->
+    <div class="col-md-8 col-md-offset-2">
+        <div class="alert alert-info text-center" style="padding-top:30px; padding-bottom:30px;">
+            <?= $message->getMessage() ?>
+        </div>
+    </div>
+    <?php return; ?>
+<?php endif; ?>
+
+<?php if (!isset($formulario)): ?>
+    <!-- Fallback si no hay formulario ni mensaje -->
+    <div class="col-md-8 col-md-offset-2">
+        <div class="alert alert-warning text-center" style="padding-top:30px; padding-bottom:30px;">
+            No hay formularios de admisión disponibles en este momento.
+        </div>
+    </div>
+    <?php return; ?>
+<?php endif; ?>
+
 <div class="col-md-8 col-md-offset-2">
     <div class="panel panel-default">
         <div class="panel-heading">
