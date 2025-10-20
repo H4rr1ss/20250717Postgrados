@@ -222,7 +222,7 @@ class FormularioAdmisionController extends AbstractActionController {
             return $this->redirect()->toRoute('formulario-admision');
         }
         
-        // Obtener respuesta detallada
+        // Obtener respuesta detallada (ahora solo campos)
         $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
         if (!$respuestaResult->get()) {
             $this->pg()->log($respuestaResult->getMsg(), LM::FAILURE, LM::READ);
@@ -230,9 +230,13 @@ class FormularioAdmisionController extends AbstractActionController {
         }
         $respuesta = $respuestaResult->getObj();
         
-        // Obtener información del formulario
-        $formularioResult = $this->formularioAdmisionManager->getFormulario($respuesta->getIdFormulario());
-        $formulario = $formularioResult->get() ? $formularioResult->getObj() : null;
+        // Obtener información del formulario - usamos un método en el manager
+        $formulario = null;
+        if (!empty($respuesta)) {
+            // Usar método existente para obtener el formulario por respuesta
+            $formularioResult = $this->formularioAdmisionManager->getFormularioPorRespuesta($idRespuesta);
+            $formulario = $formularioResult->get() ? $formularioResult->getObj() : null;
+        }
         
         $message = null;
         
