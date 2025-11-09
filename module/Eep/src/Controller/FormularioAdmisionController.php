@@ -240,13 +240,42 @@ class FormularioAdmisionController extends AbstractActionController {
         
         $message = null;
         
-        // Manejar edición de respuesta
+        // Manejar edición de respuesta - SOLO SI EL FORMULARIO ESTÁ ACTIVO
         if ($this->getRequest()->isPost()) {
-            $data = $this->params()->fromPost();
-            
-            // TODO: Implementar lógica de actualización de respuesta
-            // Por ahora solo mostrar mensaje
-            $message = new Message('Función en desarrollo', 'La edición de respuestas se implementará en el siguiente paso', Message::YELLOW);
+            // Validar que el formulario esté activo antes de procesar cambios
+            if ($formulario && !$formulario->getActivo()) {
+                $message = new Message('Formulario Inactivo', 
+                    'Este formulario está inactivo. No se pueden realizar cambios en las respuestas.', 
+                    Message::YELLOW);
+                $this->pg()->log($message, LM::FAILURE, LM::UPDATE);
+            } else {
+                $data = $this->params()->fromPost();
+                $files = $this->getRequest()->getFiles()->toArray();
+                
+                // Verificar qué botón se presionó
+                if (isset($data['guardar_cambios'])) {
+                    // Actualizar respuesta
+                    $result = $this->formularioAdmisionManager->actualizarRespuesta($idRespuesta, $data, $files);
+                    
+                    if ($result->get()) {
+                        $message = new Message('Cambios Guardados', 'Los cambios se guardaron correctamente', Message::GREEN);
+                        $this->pg()->log($message, LM::SUCCESS, LM::UPDATE);
+                        
+                        // Recargar datos actualizados
+                        $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
+                        $respuesta = $respuestaResult->get() ? $respuestaResult->getObj() : $respuesta;
+                    } else {
+                        $message = new Message('Error', $result->getMsg(), Message::RED);
+                        $this->pg()->log($message, LM::FAILURE, LM::UPDATE);
+                    }
+                } elseif (isset($data['aprobar_aspirante'])) {
+                    // TODO: Implementar lógica de aprobación
+                    $message = new Message('Función en desarrollo', 'La aprobación de aspirantes se implementará próximamente', Message::YELLOW);
+                } elseif (isset($data['rechazar_aspirante'])) {
+                    // TODO: Implementar lógica de rechazo
+                    $message = new Message('Función en desarrollo', 'El rechazo de aspirantes se implementará próximamente', Message::YELLOW);
+                }
+            }
         }
         
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);

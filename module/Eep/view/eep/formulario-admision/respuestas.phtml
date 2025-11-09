@@ -1,6 +1,9 @@
 <?php
 $this->headTitle('Respuestas del Formulario');
 $role = $this->layout()->role;
+
+// Determinar si el formulario está activo
+$formularioActivo = $formulario->getActivo();
 ?>
 
 <div class="col-md-12">
@@ -11,8 +14,21 @@ $role = $this->layout()->role;
             <small class="text-muted" style="color: #fff;">
                 (Período: <?= $formulario->getPeriodoFormateado() ?>)
             </small>
+            <?php if (!$formularioActivo): ?>
+                <span class="label label-warning pull-right" style="margin-top: 2px;">
+                    <i class="fa fa-lock"></i> INACTIVO
+                </span>
+            <?php endif; ?>
         </div>
         <div class="panel-body">
+            <?php if (!$formularioActivo): ?>
+                <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <strong>Atención:</strong> Este formulario está inactivo. 
+                    Las respuestas solo pueden ser visualizadas, no pueden ser editadas ni eliminadas.
+                </div>
+            <?php endif; ?>
+            
             <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
             <?= $this->partial('partial/msg', ['msg' => $respuestasMsg ?? null]) ?>
             
@@ -70,15 +86,24 @@ $role = $this->layout()->role;
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group">
-                                            <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
-                                               class="btn btn-primary btn-sm" title="Ver/Editar Respuesta">
-                                                <i class="fa fa-edit"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-danger btn-sm" 
-                                                    onclick="eliminarRespuesta(<?= $respuesta->getIdRespuesta() ?>)" 
-                                                    title="Eliminar Respuesta">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
+                                            <?php if ($formularioActivo): ?>
+                                                <!-- Formulario ACTIVO: Botón Editar -->
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                   class="btn btn-primary btn-sm" title="Editar Respuesta">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="eliminarRespuesta(<?= $respuesta->getIdRespuesta() ?>)" 
+                                                        title="Eliminar Respuesta">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <!-- Formulario INACTIVO: Solo Ver -->
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                   class="btn btn-info btn-sm" title="Ver Respuesta (Solo Lectura)">
+                                                    <i class="fa fa-eye"></i> Ver
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -93,8 +118,8 @@ $role = $this->layout()->role;
             <?php endif; ?>
             
             <div class="row">
-                <div class="col-md-12">
-                    <a href="<?= $this->url('formulario-admision') ?>" class="btn btn-default">
+                <div class="col-md-12 text-right">
+                    <a href="<?= $this->url('formulario-admision')?>" class="btn btn-default">
                         <i class="fa fa-arrow-left"></i> Volver a Formularios
                     </a>
                 </div>

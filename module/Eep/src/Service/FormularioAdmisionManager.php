@@ -154,32 +154,73 @@ class FormularioAdmisionManager extends Manager {
     // MÉTODOS PARA VISTA 2: Lista de respuestas
     
     /**
-     * Obtiene todas las respuestas de un formulario específico
+     * Obtiene todas las respuestas de un formulario específico desde respuesta_campo
      */
     public function getRespuestasFormulario($idFormulario) {
         $res = new R();
         try {
-            $table = new TableGateway(['r' => 'respuesta_aspirante'], $this->dbAdapter);
-            $select = $table->getSql()->select();
+            // Obtener todas las respuestas del formulario
+            $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+            $respuestas = $respTable->select(['id_formulario' => $idFormulario]);
             
-            // JOIN con aspirante para obtener datos básicos
-            $select->join(['a' => 'aspirante'], 'r.aspirante_id = a.id', 
-                         ['aspirante_cui' => 'cui', 'aspirante_nombres' => 'nombres', 
-                          'aspirante_apellidos' => 'apellidos', 'aspirante_correo_electronico' => 'correo_electronico',
-                          'aspirante_telefono' => 'telefono', 'aspirante_photo_dpi' => 'photo_dpi']);
+            $resultado = [];
             
-            $select->where(['r.id_formulario' => $idFormulario]);
-            $select->order('r.fecha_envio DESC');
-            
-            $result = $table->selectWith($select)->toArray();
-            
-            $respuestas = [];
-            foreach ($result as $row) {
-                $respuestas[] = new RespuestaAspirante($row);
+            foreach ($respuestas as $respuesta) {
+                $idRespuesta = $respuesta['id_respuesta'];
+                
+                // Obtener todos los campos de esta respuesta
+                $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
+                $select = $camposTable->getSql()->select();
+                
+                $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo', 
+                             ['nombre_campo', 'etiqueta', 'tipo_campo']);
+                
+                $select->where(['rc.id_respuesta' => $idRespuesta]);
+                
+                $campos = $camposTable->selectWith($select)->toArray();
+                
+                // Construir objeto con datos principales extraídos de campos
+                $datosRespuesta = [
+                    'id_respuesta' => $idRespuesta,
+                    'id_formulario' => $respuesta['id_formulario'],
+                    'fecha_envio' => $respuesta['fecha_envio'],
+                    'aspirante_cui' => '',
+                    'aspirante_nombres' => '',
+                    'aspirante_apellidos' => '',
+                    'aspirante_correo_electronico' => '',
+                    'aspirante_telefono' => '',
+                    'aspirante_photo_dpi' => '',
+                ];
+                
+                // Extraer datos principales de los campos
+                foreach ($campos as $campo) {
+                    switch ($campo['nombre_campo']) {
+                        case 'cui':
+                            $datosRespuesta['aspirante_cui'] = $campo['valor_respuesta'];
+                            break;
+                        case 'nombres':
+                            $datosRespuesta['aspirante_nombres'] = $campo['valor_respuesta'];
+                            break;
+                        case 'apellidos':
+                            $datosRespuesta['aspirante_apellidos'] = $campo['valor_respuesta'];
+                            break;
+                        case 'correo_electronico':
+                            $datosRespuesta['aspirante_correo_electronico'] = $campo['valor_respuesta'];
+                            break;
+                        case 'telefono':
+                            $datosRespuesta['aspirante_telefono'] = $campo['valor_respuesta'];
+                            break;
+                        case 'photo_dpi':
+                            $datosRespuesta['aspirante_photo_dpi'] = $campo['archivo_adjunto'];
+                            break;
+                    }
+                }
+                
+                $resultado[] = new RespuestaAspirante($datosRespuesta);
             }
             
             $res->success();
-            $res->setObj($respuestas);
+            $res->setObj($resultado);
             
         } catch (\Exception $ex) {
             $res->failure('No se pudieron obtener las respuestas del formulario: ' . $ex->getMessage());
@@ -249,6 +290,65 @@ class FormularioAdmisionManager extends Manager {
     }
     
     // MÉTODOS AUXILIARES
+    
+    /**
+     * Actualiza las respuestas de un formulario
+     */
+    public function actualizarRespuesta($idRespuesta, array $data, array $files = []) {
+        $res = new R();
+        $connection = $this->dbAdapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        
+        try {
+            $campoRespTable = new TableGateway('respuesta_campo', $this->dbAdapter);
+            
+            // Iterar sobre los datos enviados
+            foreach ($data as $key => $value) {
+                // Los campos vienen como "campo_ID"
+                if (strpos($key, 'campo_') === 0) {
+                    $idCampo = (int) str_replace('campo_', '', $key);
+                    
+                    // Actualizar el valor en respuesta_campo
+                    $campoRespTable->update(
+                        ['valor_respuesta' => $value],
+                        [
+                            'id_respuesta' => $idRespuesta,
+                            'id_campo' => $idCampo
+                        ]
+                    );
+                }
+            }
+            
+            // Manejar archivos si hay
+            if (!empty($files)) {
+                foreach ($files as $key => $fileInfo) {
+                    if (strpos($key, 'campo_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
+                        $idCampo = (int) str_replace('campo_', '', $key);
+                        
+                        // Aquí podrías mover el archivo y guardar el nombre
+                        $fileName = $fileInfo['name'];
+                        
+                        $campoRespTable->update(
+                            ['archivo_adjunto' => $fileName],
+                            [
+                                'id_respuesta' => $idRespuesta,
+                                'id_campo' => $idCampo
+                            ]
+                        );
+                    }
+                }
+            }
+            
+            $connection->commit();
+            $res->success('Respuesta actualizada correctamente');
+            
+        } catch (\Exception $ex) {
+            $connection->rollback();
+            $res->failure('Error al actualizar la respuesta: ' . $ex->getMessage());
+        }
+        
+        return $res;
+    }
     
     /**
      * Elimina una respuesta completa
