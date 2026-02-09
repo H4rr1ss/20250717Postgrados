@@ -1,0 +1,148 @@
+<?php
+$this->headTitle('Evaluación Docente en Línea');
+$role = $this->layout()->role;
+$cursosPendientes = $cursosPendientes ?? [];
+?>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">
+            Evaluación Docente en Línea
+        </h1>
+    </div>
+</div>
+
+<!-- Mensaje informativo -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i>
+            <strong>Sus respuestas son almacenadas de forma anónima y segura.</strong>
+            <p style="margin-top: 10px; margin-bottom: 0;">
+                La evaluación docente es un proceso importante para mejorar la calidad educativa. 
+                Por favor, evalúe de manera honesta y constructiva el desempeño de sus docentes.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de cursos -->
+<div class="row">
+    <?php if (!empty($cursosPendientes)): ?>
+        <?php foreach ($cursosPendientes as $curso): ?>
+            <div class="col-lg-4 col-md-6">
+                <div class="panel panel-default" style="border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 280px;">
+                    <div class="panel-heading" style="background-color: #f5f5f5; border-bottom: 2px solid #337ab7;">
+                        <h4 class="panel-title" style="font-weight: bold; color: #333;">
+                            <?= $this->escapeHtml($curso['nombre_curso']) ?>
+                        </h4>
+                    </div>
+                    <div class="panel-body" style="padding: 20px;">
+                        <p style="margin-bottom: 12px;">
+                            <strong>Sección <?= $this->escapeHtml($curso['seccion']) ?></strong>
+                        </p>
+                        
+                        <p style="margin-bottom: 12px; color: #666; font-size: 13px;">
+                            <?= $this->escapeHtml($curso['periodo']) ?>
+                        </p>
+                        
+                        <p style="margin-bottom: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                            <strong style="display: block; color: #333; margin-bottom: 5px;">Docente:</strong>
+                            <span style="color: #555;"><?= $this->escapeHtml($curso['nombre_docente']) ?></span>
+                        </p>
+                        
+                        <div class="text-center" style="margin-top: 20px;">
+                                     <a href="<?= $this->url('assignment', ['action' => 'assignment']) ?>?evaluar=<?= $this->escapeHtmlAttr($curso['id_curso_programado']) ?>" 
+                               class="btn btn-primary btn-block" 
+                               style="padding: 10px; font-size: 14px; font-weight: bold;">
+                                <i class="fa fa-edit"></i> EVALUAR
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <!-- Mensaje cuando no hay cursos pendientes -->
+        <div class="col-lg-12">
+            <div class="panel panel-default">
+                <div class="panel-body text-center" style="padding: 60px 20px;">
+                    <i class="fa fa-check-circle" style="font-size: 80px; color: #5cb85c; margin-bottom: 20px;"></i>
+                    <h3 style="color: #333; margin-bottom: 15px;">¡Todo al día!</h3>
+                    <p style="color: #666; font-size: 16px;">
+                        No tienes cursos pendientes de evaluación en este momento.
+                    </p>
+                    <p style="color: #999; font-size: 14px; margin-top: 10px;">
+                        Las evaluaciones estarán disponibles al finalizar cada período académico.
+                    </p>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
+
+<!-- Información adicional -->
+<div class="row" style="margin-top: 30px;">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <i class="fa fa-question-circle"></i> Información Importante
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h4 style="color: #337ab7;">
+                            <i class="fa fa-shield"></i> Confidencialidad
+                        </h4>
+                        <p style="font-size: 13px; color: #666;">
+                            Sus respuestas son completamente anónimas. Los docentes no podrán 
+                            identificar quién realizó cada evaluación.
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4 style="color: #337ab7;">
+                            <i class="fa fa-clock-o"></i> Tiempo de Evaluación
+                        </h4>
+                        <p style="font-size: 13px; color: #666;">
+                            Cada evaluación toma aproximadamente 5-10 minutos. Puede completarla 
+                            en una sola sesión o guardar su progreso.
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4 style="color: #337ab7;">
+                            <i class="fa fa-lightbulb-o"></i> Constructiva
+                        </h4>
+                        <p style="font-size: 13px; color: #666;">
+                            Sus comentarios ayudan a mejorar la calidad educativa. Sea honesto 
+                            pero respetuoso en sus evaluaciones.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos adicionales para mejorar la presentación */
+.panel-default {
+    transition: all 0.3s ease;
+}
+
+.panel-default:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.btn-primary:hover {
+    background-color: #286090;
+    border-color: #204d74;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .col-md-4 {
+        margin-bottom: 20px;
+    }
+}
+</style>

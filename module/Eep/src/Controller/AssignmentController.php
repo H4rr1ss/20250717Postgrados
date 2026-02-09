@@ -236,8 +236,68 @@ class AssignmentController extends AbstractActionController {
     }
 
     public function assignmentAction() {
-        //GETTING FORM
         $userCode = $this->identity();
+        $request = $this->getRequest();
+
+        // Detecta cuando el usuario hace submit del formulario de evaluación
+        if ($request->isPost() && $this->params()->fromPost('form_type') === 'evaluacion_docente') {
+            $this->flashMessenger()->addSuccessMessage('Evaluación enviada correctamente.');
+            return $this->redirect()->toRoute(
+                'assignment',
+                ['action' => 'assignment'],
+                ['query' => ['confirmacion' => 1]]
+            );
+        }
+
+        // Manejo de vistas por query parameters
+        if ($this->params()->fromQuery('confirmacion', null) !== null) {
+            $view = new ViewModel();
+            $view->setTemplate('eep/evaluacion-docente/confirmacion');
+            return $view;
+        }
+
+        if ($this->params()->fromQuery('historial', null) !== null) {
+            $view = new ViewModel([
+                'evaluacionesRealizadas' => $this->getEvaluationHistory()
+            ]);
+            $view->setTemplate('eep/evaluacion-docente/historial');
+            return $view;
+        }
+
+        $coursesForEvaluationRaw = $this->assignmentManager->getUserCourseStaff($userCode);
+        $formattedCourses = $this->formatEvaluationCourses($coursesForEvaluationRaw);
+
+        $courseIdToEvaluate = (int) $this->params()->fromQuery('evaluar', 0);
+        if ($courseIdToEvaluate > 0) {
+            $selectedCourse = null;
+            foreach ($formattedCourses as $course) {
+                if ((int) $course['id_curso_programado'] === $courseIdToEvaluate) {
+                    $selectedCourse = $course;
+                    break;
+                }
+            }
+
+            if ($selectedCourse === null) {
+                $this->flashMessenger()->addErrorMessage('El curso seleccionado para evaluar no es válido o ya no está disponible.');
+                return $this->redirect()->toRoute('assignment', ['action' => 'assignment']);
+            }
+
+            $view = new ViewModel([
+                'curso' => $selectedCourse,
+                'preguntas' => $this->getEvaluationQuestions()
+            ]);
+            $view->setTemplate('eep/evaluacion-docente/evaluar');
+            return $view;
+        }
+
+        if (!empty($formattedCourses)) {
+            $view = new ViewModel([
+                'cursosPendientes' => $formattedCourses
+            ]);
+            $view->setTemplate('eep/evaluacion-docente/index');
+            return $view;
+        }
+
         $result = $this->getAssignmentForm($userCode, AssignmentTypeForm::TYPE_STUDENT_REGULAR);
         if (!empty($result->getMsg())) {
             $formMsg = new Message('Observación de Asignación', $result);
@@ -481,6 +541,142 @@ class AssignmentController extends AbstractActionController {
         ]);
         $view->setTemplate('eep/assignment/assignment-type');
         return $view;
+    }
+
+    private function formatEvaluationCourses(array $coursesForEvaluation): array {
+        $periodFormat = function (?string $start, ?string $end, ?int $month, ?int $year): string {
+            if (!empty($start) && !empty($end)) {
+                $startDate = \DateTime::createFromFormat('Y-m-d', $start);
+                $endDate = \DateTime::createFromFormat('Y-m-d', $end);
+                if ($startDate instanceof \DateTime && $endDate instanceof \DateTime) {
+                    return sprintf(
+                        'Del %s al %s',
+                        $startDate->format('d/m/Y'),
+                        $endDate->format('d/m/Y')
+                    );
+                }
+            }
+            if ($month !== null && $year !== null) {
+                $months = [
+                    1 => 'Enero',
+                    2 => 'Febrero',
+                    3 => 'Marzo',
+                    4 => 'Abril',
+                    5 => 'Mayo',
+                    6 => 'Junio',
+                    7 => 'Julio',
+                    8 => 'Agosto',
+                    9 => 'Septiembre',
+                    10 => 'Octubre',
+                    11 => 'Noviembre',
+                    12 => 'Diciembre'
+                ];
+                $label = $months[$month] ?? null;
+                if ($label !== null) {
+                    return sprintf('%s de %d', $label, $year);
+                }
+            }
+            return 'Periodo no disponible';
+        };
+
+        $courses = [];
+        foreach ($coursesForEvaluation as $row) {
+            $courseId = (int) ($row['cod_horario'] ?? 0);
+            if ($courseId === 0 || isset($courses[$courseId])) {
+                continue;
+            }
+
+            $teacherName = trim(($row['nombres_catedratico'] ?? '') . ' ' . ($row['apellidos_catedratico'] ?? ''));
+            $teacherCode = $row['cod_usuario_catedratico'] ?? null;
+            if ($teacherName === '') {
+                $teacherName = trim(($row['nombres_coordinador'] ?? '') . ' ' . ($row['apellidos_coordinador'] ?? ''));
+                $teacherCode = $row['cod_usuario_coordinador'] ?? null;
+            }
+
+            $courses[$courseId] = [
+                'id_curso_programado' => $courseId,
+                'nombre_curso' => $row['nombre_curso'] ?? 'Curso sin nombre',
+                'seccion' => $row['seccion'] ?? '-',
+                'periodo' => $periodFormat(
+                    $row['fecha_inicio'] ?? null,
+                    $row['fecha_fin'] ?? null,
+                    isset($row['mes']) ? (int) $row['mes'] : null,
+                    isset($row['anio']) ? (int) $row['anio'] : null
+                ),
+                'nombre_docente' => $teacherName !== '' ? $teacherName : 'Docente no asignado',
+                'cod_docente' => $teacherCode
+            ];
+        }
+
+        return array_values($courses);
+    }
+
+    private function getEvaluationQuestions(): array {
+        return [
+            [
+                'categoria' => 'Dominio de la Materia',
+                'preguntas' => [
+                    ['id' => 1, 'texto' => 'Demuestra dominio y conocimiento profundo de la materia', 'tipo' => 'escala'],
+                    ['id' => 2, 'texto' => 'Relaciona los contenidos con situaciones prácticas y actuales', 'tipo' => 'escala'],
+                    ['id' => 3, 'texto' => 'Resuelve dudas con claridad y precisión', 'tipo' => 'escala'],
+                ],
+            ],
+            [
+                'categoria' => 'Metodología de Enseñanza',
+                'preguntas' => [
+                    ['id' => 4, 'texto' => 'Explica los temas de forma clara y comprensible', 'tipo' => 'escala'],
+                    ['id' => 5, 'texto' => 'Utiliza ejemplos y recursos didácticos apropiados', 'tipo' => 'escala'],
+                    ['id' => 6, 'texto' => 'Promueve la participación activa de los estudiantes', 'tipo' => 'escala'],
+                    ['id' => 7, 'texto' => 'Fomenta el pensamiento crítico y análisis', 'tipo' => 'escala'],
+                ],
+            ],
+            [
+                'categoria' => 'Evaluación',
+                'preguntas' => [
+                    ['id' => 8, 'texto' => 'Los criterios de evaluación son claros y justos', 'tipo' => 'escala'],
+                    ['id' => 9, 'texto' => 'Proporciona retroalimentación oportuna y constructiva', 'tipo' => 'escala'],
+                    ['id' => 10, 'texto' => 'Las evaluaciones son coherentes con lo enseñado', 'tipo' => 'escala'],
+                ],
+            ],
+            [
+                'categoria' => 'Actitud y Compromiso',
+                'preguntas' => [
+                    ['id' => 11, 'texto' => 'Muestra puntualidad y respeto por el horario de clase', 'tipo' => 'escala'],
+                    ['id' => 12, 'texto' => 'Demuestra entusiasmo y motivación por la enseñanza', 'tipo' => 'escala'],
+                    ['id' => 13, 'texto' => 'Está disponible para consultas y asesorías', 'tipo' => 'escala'],
+                    ['id' => 14, 'texto' => 'Trata a los estudiantes con respeto y equidad', 'tipo' => 'escala'],
+                ],
+            ],
+            [
+                'categoria' => 'Comentarios Adicionales',
+                'preguntas' => [
+                    ['id' => 15, 'texto' => 'Comentarios, sugerencias o aspectos a destacar del docente', 'tipo' => 'abierta'],
+                ],
+            ],
+        ];
+    }
+
+    private function getEvaluationHistory(): array {
+        return [
+            [
+                'id_evaluacion' => 1,
+                'nombre_curso' => 'Metodología de la Investigación',
+                'seccion' => 'A',
+                'periodo' => 'PRIMER SEMESTRE DEL 2025',
+                'nombre_docente' => 'Dr. Juan Carlos Pérez López',
+                'fecha_evaluacion' => '2025-06-15 14:30:00',
+                'estado' => 'completada',
+            ],
+            [
+                'id_evaluacion' => 2,
+                'nombre_curso' => 'Estadística Aplicada',
+                'seccion' => 'B',
+                'periodo' => 'PRIMER SEMESTRE DEL 2025',
+                'nombre_docente' => 'Dra. María Fernanda García',
+                'fecha_evaluacion' => '2025-06-18 10:15:00',
+                'estado' => 'completada',
+            ],
+        ];
     }
 
 }

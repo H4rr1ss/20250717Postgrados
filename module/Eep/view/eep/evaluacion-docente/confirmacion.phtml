@@ -1,0 +1,147 @@
+<?php
+$this->headTitle('Evaluación Enviada');
+$role = $this->layout()->role;
+?>
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('assignment', ['action' => 'assignment']) ?>">
+                    <i class="fa fa-star"></i> Evaluación Docente
+                </a>
+            </li>
+            <li class="active">Confirmación</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-success">
+            <div class="panel-body text-center" style="padding: 60px 20px;">
+                <!-- Ícono de éxito -->
+                <div style="margin-bottom: 30px;">
+                    <i class="fa fa-check-circle" style="font-size: 100px; color: #5cb85c;"></i>
+                </div>
+                
+                <!-- Mensaje principal -->
+                <h2 style="color: #333; margin-bottom: 20px; font-weight: bold;">
+                    ¡Evaluación Enviada Exitosamente!
+                </h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    Gracias por tomarte el tiempo de evaluar a tu docente. 
+                    Tus respuestas son muy valiosas para mejorar la calidad educativa de nuestra institución.
+                </p>
+                
+                <!-- Información adicional -->
+                <div class="well" style="max-width: 700px; margin: 30px auto; background-color: #f9f9f9; border: 1px solid #e3e3e3;">
+                    <h4 style="color: #337ab7; margin-top: 0;">
+                        <i class="fa fa-info-circle"></i> Información
+                    </h4>
+                    <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 10px;">
+                        <i class="fa fa-check"></i> Tu evaluación ha sido registrada de forma <strong>anónima</strong>
+                    </p>
+                    <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 10px;">
+                        <i class="fa fa-check"></i> Los resultados serán utilizados para la mejora continua
+                    </p>
+                    <p style="font-size: 14px; color: #555; text-align: left; margin-bottom: 0;">
+                        <i class="fa fa-check"></i> No podrás modificar esta evaluación una vez enviada
+                    </p>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div style="margin-top: 40px;">
+                    <a href="<?= $this->url('assignment', ['action' => 'assignment']) ?>" 
+                       class="btn btn-primary btn-lg" 
+                       style="margin-right: 10px;">
+                        <i class="fa fa-list"></i> Ver Más Evaluaciones Pendientes
+                    </a>
+                    <a href="<?= $this->url('home') ?>" 
+                       class="btn btn-default btn-lg">
+                        <i class="fa fa-home"></i> Ir al Inicio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de estadísticas (opcional) -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <i class="fa fa-bar-chart"></i> Tu Participación
+            </div>
+            <div class="panel-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div style="padding: 20px;">
+                            <i class="fa fa-check-circle-o" style="font-size: 50px; color: #5cb85c;"></i>
+                            <h3 style="color: #333; margin-top: 15px; margin-bottom: 5px;">
+                                <strong>3</strong>
+                            </h3>
+                            <p style="color: #666; margin: 0;">Evaluaciones Completadas</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div style="padding: 20px; border-left: 1px solid #eee; border-right: 1px solid #eee;">
+                            <i class="fa fa-clock-o" style="font-size: 50px; color: #f0ad4e;"></i>
+                            <h3 style="color: #333; margin-top: 15px; margin-bottom: 5px;">
+                                <strong>2</strong>
+                            </h3>
+                            <p style="color: #666; margin: 0;">Evaluaciones Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div style="padding: 20px;">
+                            <i class="fa fa-star" style="font-size: 50px; color: #337ab7;"></i>
+                            <h3 style="color: #333; margin-top: 15px; margin-bottom: 5px;">
+                                <strong>60%</strong>
+                            </h3>
+                            <p style="color: #666; margin: 0;">Progreso Total</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animación de entrada */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.panel-success {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Efecto hover en botones */
+.btn-lg:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .col-md-4 {
+        border: none !important;
+        border-bottom: 1px solid #eee !important;
+    }
+    
+    .col-md-4:last-child {
+        border-bottom: none !important;
+    }
+}
+</style>
