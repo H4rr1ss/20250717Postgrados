@@ -28,11 +28,11 @@ $this->headTitle('Revisión de papelería');
 </div>
 
 <!-- Título Principal -->
-<div class="row">
+<!-- <div class="row">
     <div class="col-lg-12">
-        <h3 style="color: #333; margin-bottom: 25px; font-weight: 600;">Revisión de papelería</h3>
+        <h3 style="color: #333; margin-bottom: 15px; font-weight: 600;">Revisión de papelería</h3>
     </div>
-</div>
+</div> -->
 
 <!-- Información del Estudiante y Estados -->
 <div class="row">
@@ -63,6 +63,24 @@ $this->headTitle('Revisión de papelería');
                 
                 <!-- Columna Derecha: Estados -->
                 <div class="col-6 col-md-4 col-xl-3">
+                    <div class="estados-header">
+                        <h5 class="estados-titulo">Estados del Proceso</h5>
+                        <?php 
+                            $hayCompletados = false;
+                            foreach ($this->estados as $numPaso => $estado) {
+                                if ($numPaso < $this->paso) {
+                                    $hayCompletados = true;
+                                    break;
+                                }
+                            }
+                        ?>
+                        <?php if ($hayCompletados): ?>
+                            <button class="btn-ver-completados" id="toggleCompletados" onclick="toggleEstadosCompletados()">
+                                <i class="fa fa-eye"></i>
+                                <span class="btn-text">Ver completados</span>
+                            </button>
+                        <?php endif; ?>
+                    </div>
                     <div class="timeline-estados">
                         <?php foreach ($this->estados as $numPaso => $estado): ?>
                         <?php 
@@ -77,7 +95,7 @@ $this->headTitle('Revisión de papelería');
                             <div class="timeline-item <?= $esActual ? 'timeline-activo' : '' ?> <?= $esCompletado ? 'timeline-completado' : '' ?>">
                                 <div class="timeline-icono <?= $esPendiente ? 'timeline-icono-pending' : '' ?> <?= $esCompletado ? 'timeline-icono-completed' : '' ?>">
                                     <?php if ($esCompletado): ?>
-                                        <i class="fa fa-check"></i>
+                                        <i class="fa fa-eye"></i>
                                     <?php elseif ($esActual): ?>
                                         <i class="fa fa-circle"></i>
                                     <?php else: ?>
@@ -123,7 +141,7 @@ $this->headTitle('Revisión de papelería');
         border: 3px solid #5f9876;
         border-radius: 4px;
         overflow: hidden;
-        margin-bottom: 20px;
+        margin-bottom: 5px;
     }
 
     .panel-revision-heading {
@@ -167,15 +185,93 @@ $this->headTitle('Revisión de papelería');
     }
 
     /* Timeline de estados */
+    .estados-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .estados-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .btn-ver-completados {
+        background: linear-gradient(135deg, #5f9876, #4a7c59);
+        border: none;
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 6px 12px;
+        border-radius: 18px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 8px rgba(95, 152, 118, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-ver-completados::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s;
+    }
+
+    .btn-ver-completados:hover::before {
+        left: 100%;
+    }
+
+    .btn-ver-completados:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(95, 152, 118, 0.4);
+        background: linear-gradient(135deg, #6ba982, #5f9876);
+    }
+
+    .btn-ver-completados:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(95, 152, 118, 0.3);
+    }
+
+    .btn-ver-completados i {
+        font-size: 11px;
+        transition: transform 0.2s ease;
+    }
+
+    .btn-ver-completados:hover i {
+        transform: scale(1.1);
+    }
+
+    .btn-ver-completados .btn-text {
+        position: relative;
+        z-index: 1;
+    }
+
     .timeline-estados {
         display: flex;
         flex-direction: column;
         padding-top: 5px;
     }
 
+    .timeline-item.estado-completado-oculto {
+        display: none;
+    }
+
     .timeline-item {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 15px;
         position: relative;
         padding-bottom: 28px;
@@ -318,7 +414,7 @@ $this->headTitle('Revisión de papelería');
 
     /* Scroll para el contenedor del timeline */
     .timeline-estados {
-        max-height: 450px;
+        max-height: 250px;
         overflow-y: auto;
         padding-right: 10px;
     }
@@ -505,5 +601,47 @@ $this->headTitle('Revisión de papelería');
         }
     }
 </style>
+
+<script>
+let estadosCompletadosVisibles = false;
+
+function toggleEstadosCompletados() {
+    const btn = document.getElementById('toggleCompletados');
+    const btnText = btn.querySelector('.btn-text');
+    const btnIcon = btn.querySelector('i');
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    
+    estadosCompletadosVisibles = !estadosCompletadosVisibles;
+    
+    timelineItems.forEach(item => {
+        // Verificar si el item tiene la clase timeline-completado
+        if (item.classList.contains('timeline-completado')) {
+            if (estadosCompletadosVisibles) {
+                item.classList.remove('estado-completado-oculto');
+            } else {
+                item.classList.add('estado-completado-oculto');
+            }
+        }
+    });
+    
+    // Actualizar el botón
+    if (estadosCompletadosVisibles) {
+        btnText.textContent = 'Ocultar completados';
+        btnIcon.className = 'fa fa-eye-slash';
+    } else {
+        btnText.textContent = 'Ver completados';
+        btnIcon.className = 'fa fa-eye';
+    }
+}
+
+// Inicializar estados completados como ocultos
+document.addEventListener('DOMContentLoaded', function() {
+    // Ocultar estados completados por defecto
+    const timelineItems = document.querySelectorAll('.timeline-item.timeline-completado');
+    timelineItems.forEach(item => {
+        item.classList.add('estado-completado-oculto');
+    });
+});
+</script>
 
 </div><!-- /.padding container -->
