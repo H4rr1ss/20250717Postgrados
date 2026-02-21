@@ -15,6 +15,7 @@ use Eep\Controller\CohortController;
 use Eep\Controller\MassiveLoadController;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\ExamenController;
 
 return [
     //FORMAT:
@@ -390,6 +391,23 @@ return [
         'recoverPassword' => [
             'code' => 67,
             'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
+        ],
+    ],
+    ExamenController::class => [
+        'index' => [
+            'code' => 68,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
+        'papeleria' => [
+            'code' => 69,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
+        'solicitudes' => [
+            'code' => 70,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
     ],
 ];

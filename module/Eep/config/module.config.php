@@ -57,6 +57,7 @@ use Eep\Controller\MassiveLoadController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\ExamenController;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -74,6 +75,7 @@ return [
             MassiveLoadController::class => LazyControllerAbstractFactory::class,
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
+            ExamenController::class => LazyControllerAbstractFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -262,6 +264,19 @@ return [
                     'defaults' => [
                         'controller' => UserController::class,
                         'action' => 'profile',
+                    ],
+                ],
+            ],
+            'examen' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen[/:action]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'index',
                     ],
                 ],
             ],

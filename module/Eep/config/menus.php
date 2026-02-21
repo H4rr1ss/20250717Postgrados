@@ -137,6 +137,12 @@ return [//ICON, MENU text
 //        'icon' => 'fa-retweet',
 //        'text' => 'Actualización de Órdenes',
 //        'roles' => [Role::TESORERO]],
+    View::EXAMEN => [
+        'controller' => 'examen',
+        'action' => 'index',
+        'icon' => 'fa-graduation-cap',
+        'text' => 'Gestión de Exámenes',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]],
     View::LOG_VIEW => [
         'controller' => 'user',
         'action' => 'logView',
