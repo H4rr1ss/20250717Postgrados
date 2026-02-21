@@ -270,9 +270,10 @@ return [
             'examen' => [
                 'type' => Segment::class,
                 'options' => [
-                    'route' => '/examen[/:action]',
+                    'route' => '/examen[/:action[/:id]]',
                     'constraints' => [
                         'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
                     ],
                     'defaults' => [
                         'controller' => ExamenController::class,

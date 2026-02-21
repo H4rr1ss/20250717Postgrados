@@ -1,0 +1,374 @@
+<?php
+$this->headTitle('Gestión de Requisitos de Papelería');
+?>
+
+<div style="padding: 5px 60px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li class="active">Requisitos de Papelería</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Sección de Requisitos -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                <span>Gestión de Requisitos de Papelería</span>
+                <button class="btn btn-blanco" id="btnCrearRequisito">
+                    <i class="fa fa-plus-circle"></i> Crear requisito
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom" id="tablaRequisitos">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Título</th>
+                            <th style="width: 60%;">Descripción</th>
+                            <th style="width: 15%; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ORDEN DE PAGO PARA EXAMEN</td>
+                            <td>Valor: Q. 250.00 Generado desde su usuario de SIIF: https://siif.usac.edu.gt/pagousac Únicamente se aceptan pagos en agencias</td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>CERTIFICACIÓN DE CURSOS</td>
+                            <td>Generación de boleta de pago para documento desde el portal estudiantil en gestiones académicas podrá subir la certificación</td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>BOLETA DE PAGO PARA EXAMEN</td>
+                            <td>Valor: Q. 250.00 Generado desde su usuario de SIIF: https://siif.usac.edu.gt/pagousac Únicamente se aceptan pagos en agencias</td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>FOTOGRAFÍA</td>
+                            <td>Fotografía reciente del estudiante</td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>SOLVENCIA GENERAL PARA EXAMEN</td>
+                            <td>Vigente del Ciclo Académico en curso generado (en formato PDF) desde su usuario de SIIF: https://siif.usac.edu.gt/pagousac</td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Requisito -->
+<div class="modal fade" id="modalCrearRequisito" tabindex="-1" role="dialog" aria-labelledby="modalCrearRequisitoLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalCrearRequisitoLabel">Crear Requisito</h4>
+            </div>
+            <div class="modal-body">
+                <form id="formRequisito">
+                    <div class="form-group">
+                        <label for="titulo">Título</label>
+                        <div class="input-icon">
+                            <i class="fa fa-money"></i>
+                            <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Ej: ORDEN DE PAGO PARA EXAMEN" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <div class="input-icon">
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" placeholder="Ej: Valor Q. 250.00 generado desde su usuario de SIIF..." required></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarRequisito">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Editar Requisito -->
+<div class="modal fade" id="modalEditarRequisito" tabindex="-1" role="dialog" aria-labelledby="modalEditarRequisitoLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalEditarRequisitoLabel">Editar Requisito</h4>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarRequisito">
+                    <div class="form-group">
+                        <label for="tituloEditar">Título</label>
+                        <div class="input-icon">
+                            <i class="fa fa-money"></i>
+                            <input type="text" class="form-control" id="tituloEditar" name="tituloEditar" placeholder="Ej: ORDEN DE PAGO PARA EXAMEN" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcionEditar">Descripción</label>
+                        <div class="input-icon">
+                            <textarea class="form-control" id="descripcionEditar" name="descripcionEditar" rows="4" placeholder="Ej: Valor Q. 250.00 generado desde su usuario de SIIF..." required></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnActualizarRequisito">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Panel verde con estilo de la imagen */
+    .panel-verde {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        background-color: white;
+        margin-bottom: 20px;
+    }
+    
+    .panel-verde-heading {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+    
+    .panel-verde-body {
+        padding: 25px;
+        background-color: white;
+    }
+    
+    /* Panel para tabla con header verde */
+    .panel-verde-tabla {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    
+    .panel-verde-heading-tabla {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    /* Botón blanco dentro del header verde */
+    .btn-blanco {
+        background-color: white;
+        color: #5f9876;
+        border: none;
+        padding: 6px 15px;
+        border-radius: 3px;
+        font-size: 13px;
+    }
+    
+    .btn-blanco:hover {
+        background-color: #f0f0f0;
+        color: #5f9876;
+    }
+    
+    /* Botón azul */
+    .btn-azul {
+        background-color: #5b9bd5;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+    }
+    
+    .btn-azul:hover {
+        background-color: #4a8bc2;
+        color: white;
+    }
+    
+    /* Tabla personalizada */
+    .table-custom {
+        margin-bottom: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    .table-custom thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: normal;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        border-top: none;
+    }
+    
+    .table-custom tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        border-top: 1px solid #ddd;
+    }
+    
+    .table-custom tbody tr:nth-child(even) {
+        background-color: #e8e8e8;
+    }
+    
+    .table-custom tbody tr:nth-child(odd) {
+        background-color: white;
+    }
+    
+    /* Botones de acción - Estilo de la imagen */
+    .btn-accion {
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .btn-editar-accion {
+        background-color: #5b9bd5;
+    }
+    
+    .btn-editar-accion:hover {
+        background-color: #4a8bc2;
+    }
+    
+    .btn-eliminar-accion {
+        background-color: #c9524e;
+    }
+    
+    .btn-eliminar-accion:hover {
+        background-color: #a84440;
+    }
+    
+    /* Formularios */
+    .form-control {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #5f9876;
+        box-shadow: 0 0 0 0.2rem rgba(95, 152, 118, 0.25);
+    }
+    
+    label {
+        color: #333;
+        font-weight: normal;
+        margin-bottom: 5px;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Abrir modal para crear requisito
+    $('#btnCrearRequisito').on('click', function() {
+        $('#formRequisito')[0].reset();
+        $('#modalCrearRequisito').modal('show');
+    });
+
+    // Guardar nuevo requisito
+    $('#btnGuardarRequisito').on('click', function() {
+        if ($('#formRequisito')[0].checkValidity()) {
+            // Aquí iría la llamada AJAX para guardar
+            $('#modalCrearRequisito').modal('hide');
+            $('#formRequisito')[0].reset();
+        } else {
+            $('#formRequisito')[0].reportValidity();
+        }
+    });
+
+    // Editar requisito
+    $(document).on('click', '.btn-editar-accion', function() {
+        var titulo = $(this).closest('tr').find('td:eq(0)').text();
+        var descripcion = $(this).closest('tr').find('td:eq(1)').text();
+        $('#tituloEditar').val(titulo);
+        $('#descripcionEditar').val(descripcion);
+        $('#modalEditarRequisito').modal('show');
+    });
+
+    // Actualizar requisito
+    $('#btnActualizarRequisito').on('click', function() {
+        if ($('#formEditarRequisito')[0].checkValidity()) {
+            // Aquí iría la llamada AJAX para actualizar
+            $('#modalEditarRequisito').modal('hide');
+        } else {
+            $('#formEditarRequisito')[0].reportValidity();
+        }
+    });
+
+    // Eliminar requisito
+    $(document).on('click', '.btn-eliminar-accion', function() {
+        if (confirm('¿Está seguro de que desea eliminar este requisito?')) {
+            $(this).closest('tr').remove();
+            // Aquí iría la llamada AJAX para eliminar del servidor
+        }
+    });
+});
+</script>

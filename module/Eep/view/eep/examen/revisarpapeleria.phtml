@@ -1,0 +1,556 @@
+<?php
+$this->headTitle('Revisión de papelería');
+?>
+
+<div style="padding: 5px 60px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>">
+                    Solicitudes
+                </a>
+            </li>
+            <li class="active">Revisión de papelería</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Título Principal -->
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #333; margin-bottom: 25px; font-weight: 600;">Revisión de papelería</h3>
+    </div>
+</div>
+
+<!-- Información del Estudiante y Estados -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Información del Estudiante
+            </div>
+            <div class="panel-revision-body">
+            <div class="row" style="display: flex; justify-content: space-between;">
+                <!-- Columna Izquierda: Información del Estudiante -->
+                <div class="col-md-9">
+                    <div class="seccion-estudiante">
+                        <h4 style="font-weight: 600; margin-bottom: 15px; font-size: 16px;">Nombre del Estudiante</h4>
+                        <div class="info-estudiante">
+                            <p><strong>Registro académico:</strong> 202103718</p>
+                            <p><strong>CUI:</strong> 89128312812</p>
+                            <p><strong>Carrera:</strong> 13 - Maestría en desarrollo urbano y territorio</p>
+                            <p><strong>Pensum:</strong> 21- Red Curricular 2006 Maestría en desarrollo urbano y territorio</p>
+                            <p><strong>Cohorte:</strong> 15/12/2022</p>
+                        </div>
+                        <div class="tipo-examen">
+                            <p style="margin-bottom: 5px;"><strong>Tipo de examen:</strong></p>
+                            <p style="font-weight: 600;">EXAMEN GENERAL PRIVADO</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Columna Derecha: Estados -->
+                <div class="col-md-3">
+                    <div class="timeline-estados">
+                        <div class="timeline-item timeline-activo">
+                            <div class="timeline-icono">
+                                <i class="fa fa-circle"></i>
+                            </div>
+                            <div class="timeline-contenido">
+                                <p class="timeline-titulo">Papelería</p>
+                                <p class="timeline-subtitulo">Revisión de documentos entregados</p>
+                                <span class="timeline-badge badge-en-proceso">En proceso</span>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icono timeline-icono-pending">
+                                <i class="fa fa-clock-o"></i>
+                            </div>
+                            <div class="timeline-contenido">
+                                <p class="timeline-titulo">Entrega Papelería</p>
+                                <p class="timeline-subtitulo">Sin fecha asignada</p>
+                                <span class="timeline-badge badge-pendiente-tl">Pendiente</span>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icono timeline-icono-pending">
+                                <i class="fa fa-clock-o"></i>
+                            </div>
+                            <div class="timeline-contenido">
+                                <p class="timeline-titulo">Fecha Privado</p>
+                                <p class="timeline-subtitulo">Sin fecha asignada</p>
+                                <span class="timeline-badge badge-pendiente-tl">Pendiente</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div><!-- /.panel-revision-body -->
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Requisitos -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Requisitos
+            </div>
+        <div class="panel-revision-body" style="padding: 10px;">
+
+        <div class="tabla-requisitos-revision">
+            <table class="table table-bordered table-requisitos">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Nombre</th>
+                        <th style="width: 15%;">Última revisión</th>
+                        <th style="width: 12%;">Estado</th>
+                        <th style="width: 28%;">Razón rechazo</th>
+                        <th style="width: 10%; text-align: center;">Ver documento</th>
+                        <th style="width: 10%; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Carta Solicitud del asesor</td>
+                        <td>27/04/2025</td>
+                        <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                        <td></td>
+                        <td style="text-align: center;">
+                            <button class="btn-ver-documento" title="Ver documento">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Recibo de pago examen privado</td>
+                        <td>27/04/2025</td>
+                        <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                        <td></td>
+                        <td style="text-align: center;">
+                            <button class="btn-ver-documento" title="Ver documento">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>C0nstancia de inscripción</td>
+                        <td>27/04/2025</td>
+                        <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                        <td></td>
+                        <td style="text-align: center;">
+                            <button class="btn-ver-documento" title="Ver documento">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr class="fila-rechazada">
+                        <td>Ejemplar impreso del proyecto de graduación</td>
+                        <td>27/04/2025</td>
+                        <td><span class="estado-badge estado-rechazado">Rechazado</span></td>
+                        <td>Formato incorrecto corregir carátula</td>
+                        <td style="text-align: center;">
+                            <button class="btn-ver-documento" title="Ver documento">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Factura por pago de asesoría</td>
+                        <td>27/04/2025</td>
+                        <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                        <td></td>
+                        <td style="text-align: center;">
+                            <button class="btn-ver-documento" title="Ver documento">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                        <td style="text-align: center;">
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td>-</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+            <div style="text-align: right; padding: 15px 0 5px 0;">
+                <button class="btn btn-primary" id="btnGuardarCambios">
+                    Guardar Cambios
+                </button>
+            </div>
+            </div><!-- /.panel-revision-body -->
+        </div><!-- /.panel-revision -->
+    </div>
+</div>
+
+<style>
+    /* Panel de revisión */
+    .panel-revision {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .panel-revision-heading {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+
+    .panel-revision-body {
+        padding: 20px;
+        background-color: #ffffff;
+    }
+
+    .seccion-estudiante {
+        padding-right: 20px;
+    }
+
+    .info-estudiante p {
+        margin: 8px 0;
+        font-size: 13px;
+        color: #444;
+    }
+
+    .info-estudiante strong {
+        color: #333;
+        font-weight: 600;
+    }
+
+    .tipo-examen {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .tipo-examen p {
+        font-size: 13px;
+        color: #444;
+        margin: 0;
+    }
+
+    /* Timeline de estados */
+    .timeline-estados {
+        display: flex;
+        flex-direction: column;
+        padding-top: 5px;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        position: relative;
+        padding-bottom: 28px;
+    }
+
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 16px;
+        top: 34px;
+        width: 2px;
+        bottom: 0;
+        background-color: #d0d0d0;
+    }
+
+    .timeline-icono {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+
+    .timeline-icono-pending {
+        background-color: #ffffff;
+        border: 2px solid #d0d0d0;
+        color: #aaa;
+    }
+
+    .timeline-contenido {
+        flex: 1;
+        padding-top: 4px;
+    }
+
+    .timeline-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 2px 0;
+    }
+
+    .timeline-subtitulo {
+        font-size: 12px;
+        color: #888;
+        margin: 0 0 6px 0;
+    }
+
+    .timeline-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-en-proceso {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+    }
+
+    .badge-pendiente-tl {
+        background-color: #f1f1f1;
+        color: #888;
+    }
+
+    /* Tabla de requisitos */
+    .tabla-requisitos-revision {
+        background-color: white;
+        border-radius: 0;
+        overflow: hidden;
+        box-shadow: none;
+    }
+
+    .table-requisitos {
+        margin-bottom: 0;
+        font-size: 13px;
+    }
+
+    .table-requisitos thead {
+        background-color: #f5f5f5;
+    }
+
+    .table-requisitos thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 2px solid #ddd;
+        font-size: 12px;
+    }
+
+    .table-requisitos tbody td {
+        padding: 12px 10px;
+        vertical-align: middle;
+        color: #444;
+        border-color: #e0e0e0;
+    }
+
+    .fila-rechazada {
+        background-color: #fff5f5;
+    }
+
+    /* Estados de requisitos */
+    .estado-badge {
+        padding: 5px 12px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .estado-aceptado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .estado-rechazado {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Botón ver documento */
+    .btn-ver-documento {
+        background-color: transparent;
+        border: none;
+        color: #666;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 5px 10px;
+        transition: color 0.2s;
+    }
+
+    .btn-ver-documento:hover {
+        color: #333;
+    }
+
+    /* Toggle Switch */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #5cb85c;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    /* Botón guardar cambios */
+    .btn-guardar-cambios {
+        background-color: #f5f5f5;
+        border: 2px solid #d0d0d0;
+        color: #333;
+        padding: 10px 25px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-guardar-cambios:hover {
+        background-color: #e8e8e8;
+        border-color: #bbb;
+    }
+
+    .btn-guardar-cambios i {
+        margin-right: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .estados-papeleria {
+            margin-top: 20px;
+        }
+
+        .table-requisitos {
+            font-size: 12px;
+        }
+
+        .switch {
+            width: 40px;
+            height: 20px;
+        }
+
+        .slider:before {
+            height: 14px;
+            width: 14px;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Manejar click en ver documento
+    $('.btn-ver-documento').on('click', function() {
+        // Aquí se implementaría la lógica para mostrar el documento
+        alert('Función para ver documento');
+    });
+
+    // Manejar cambios en los toggles
+    $('.switch input[type="checkbox"]').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        const row = $(this).closest('tr');
+        
+        if (isChecked) {
+            console.log('Requisito aceptado');
+            // Aquí se puede cambiar el estado a "Aceptado"
+        } else {
+            console.log('Requisito rechazado');
+            // Aquí se puede abrir un modal para ingresar la razón del rechazo
+        }
+    });
+
+    // Manejar click en guardar cambios
+    $('#btnGuardarCambios').on('click', function() {
+        // Aquí se implementaría la lógica para guardar los cambios
+        alert('Guardando cambios...');
+    });
+});
+</script>
