@@ -1,0 +1,126 @@
+<!-- Paso 8: Realización del Examen -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Realización del Examen Privado
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+                
+                <!-- Estado del examen -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="alert alert-warning" style="display: flex; align-items: center; gap: 15px;">
+                            <i class="fa fa-clock-o fa-2x"></i>
+                            <div>
+                                <strong>Examen Programado</strong><br>
+                                <span>Fecha: 28 de febrero de 2026 | Hora: 09:00 hrs | Lugar: Sala de Reuniones 1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de control del examen -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-6">
+                        <h5 style="font-weight: 600; margin-bottom: 15px;">Control del Examen</h5>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; text-align: center;">
+                            <div style="font-size: 48px; color: #1a73e8; margin-bottom: 15px;">
+                                <i class="fa fa-hourglass-start"></i>
+                            </div>
+                            <h4 style="margin: 0 0 10px 0;">Examen No Iniciado</h4>
+                            <p style="color: #666; margin-bottom: 20px;">
+                                El examen comenzará cuando el presidente del tribunal lo indique.
+                            </p>
+                            <button class="btn btn-lg btn-success">
+                                <i class="fa fa-play"></i> Iniciar Examen
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 style="font-weight: 600; margin-bottom: 15px;">Asistencia del Tribunal</h5>
+                        <table class="table table-bordered" style="font-size: 13px;">
+                            <thead style="background: #f5f5f5;">
+                                <tr>
+                                    <th>Miembro</th>
+                                    <th>Rol</th>
+                                    <th>Presente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Dr. Roberto Martínez</td>
+                                    <td>Presidente</td>
+                                    <td>
+                                        <label class="switch switch-sm">
+                                            <input type="checkbox">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Dra. María González</td>
+                                    <td>Secretario</td>
+                                    <td>
+                                        <label class="switch switch-sm">
+                                            <input type="checkbox">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Dr. Juan Carlos Pérez</td>
+                                    <td>Asesor</td>
+                                    <td>
+                                        <label class="switch switch-sm">
+                                            <input type="checkbox">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h5 style="font-weight: 600; margin: 20px 0 15px 0;">Estudiante</h5>
+                        <div class="alert" style="background: #f8f9fa; border: 1px solid #ddd;">
+                            <label style="margin: 0; cursor: pointer;">
+                                <input type="checkbox" style="margin-right: 10px;">
+                                Estudiante presente y listo para iniciar
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cronómetro (cuando el examen esté en curso) -->
+                <div class="row" style="margin-top: 25px; display: none;" id="cronometroSection">
+                    <div class="col-md-12">
+                        <div style="background: #e8f4fd; padding: 20px; border-radius: 4px; text-align: center;">
+                            <h5 style="margin: 0 0 10px 0;">Tiempo Transcurrido</h5>
+                            <div style="font-size: 48px; font-weight: bold; color: #1a73e8;">
+                                00:00:00
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Observaciones del Examen</h5>
+                        <textarea class="form-control" rows="3" placeholder="Registrar observaciones durante el desarrollo del examen..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                    <button class="btn btn-danger" style="margin-right: 10px;" disabled>
+                        <i class="fa fa-stop"></i> Finalizar Examen
+                    </button>
+                    <button class="btn btn-primary">
+                        <i class="fa fa-save"></i> Guardar Registro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,144 @@
+<!-- Paso 1: Revisión de Papelería -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Requisitos de Papelería
+            </div>
+            <div class="panel-revision-body" style="padding: 10px;">
+                <div class="tabla-requisitos-revision">
+                    <table class="table table-bordered table-requisitos">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Nombre</th>
+                                <th style="width: 15%;">Última revisión</th>
+                                <th style="width: 12%;">Estado</th>
+                                <th style="width: 28%;">Razón rechazo</th>
+                                <th style="width: 10%; text-align: center;">Ver documento</th>
+                                <th style="width: 10%; text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Carta Solicitud del asesor</td>
+                                <td>27/04/2025</td>
+                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Recibo de pago examen privado</td>
+                                <td>27/04/2025</td>
+                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Constancia de inscripción</td>
+                                <td>27/04/2025</td>
+                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr class="fila-rechazada">
+                                <td>Ejemplar impreso del proyecto de graduación</td>
+                                <td>27/04/2025</td>
+                                <td><span class="estado-badge estado-rechazado">Rechazado</span></td>
+                                <td>Formato incorrecto corregir carátula</td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="switch">
+                                        <input type="checkbox">
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Factura por pago de asesoría</td>
+                                <td>27/04/2025</td>
+                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <label class="switch">
+                                        <input type="checkbox" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="text-align: right; padding: 15px 0 5px 0;">
+                    <button class="btn btn-primary" id="btnGuardarCambios">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div><!-- /.panel-revision-body -->
+        </div><!-- /.panel-revision -->
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Manejar click en ver documento
+    $('.btn-ver-documento').on('click', function() {
+        alert('Función para ver documento');
+    });
+
+    // Manejar cambios en los toggles
+    $('.switch input[type="checkbox"]').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        const row = $(this).closest('tr');
+        
+        if (isChecked) {
+            console.log('Requisito aceptado');
+        } else {
+            console.log('Requisito rechazado');
+        }
+    });
+
+    // Manejar click en guardar cambios
+    $('#btnGuardarCambios').on('click', function() {
+        alert('Guardando cambios de papelería...');
+    });
+});
+</script>
