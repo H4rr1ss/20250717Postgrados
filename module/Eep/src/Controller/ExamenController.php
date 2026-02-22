@@ -56,36 +56,36 @@ class ExamenController extends AbstractActionController {
                 'subtitulo' => 'Revisión de requisitos académicos',
                 'partial' => 'eep/examen/partial/paso3-terna'
             ],
+            // 4 => [
+            //     'titulo' => 'Programación de Fecha',
+            //     'subtitulo' => 'Asignación de fecha de examen',
+            //     'partial' => 'eep/examen/partial/paso4-programacion'
+            // ],
             4 => [
-                'titulo' => 'Programación de Fecha',
-                'subtitulo' => 'Asignación de fecha de examen',
-                'partial' => 'eep/examen/partial/paso4-programacion'
-            ],
-            5 => [
                 'titulo' => 'Notificación',
                 'subtitulo' => 'Comunicación al estudiante',
-                'partial' => 'eep/examen/partial/paso5-notificacion'
+                'partial' => 'eep/examen/partial/paso4-notificacion'
             ],
-            6 => [
-                'titulo' => 'Preparación de Examen',
-                'subtitulo' => 'Configuración del tribunal',
-                'partial' => 'eep/examen/partial/paso6-preparacion'
-            ],
-            7 => [
-                'titulo' => 'Realización del Examen',
-                'subtitulo' => 'Ejecución del examen privado',
-                'partial' => 'eep/examen/partial/paso7-realizacion'
-            ],
-            8 => [
-                'titulo' => 'Calificación',
-                'subtitulo' => 'Registro de resultado',
-                'partial' => 'eep/examen/partial/paso8-calificacion'
-            ],
-            9 => [
-                'titulo' => 'Cierre y Acta Final',
-                'subtitulo' => 'Generación de acta oficial',
-                'partial' => 'eep/examen/partial/paso9-cierre'
-            ],
+            // 5 => [
+            //     'titulo' => 'Preparación de Examen',
+            //     'subtitulo' => 'Configuración del tribunal',
+            //     'partial' => 'eep/examen/partial/paso5-preparacion'
+            // ],
+            // 6 => [
+            //     'titulo' => 'Realización del Examen',
+            //     'subtitulo' => 'Ejecución del examen privado',
+            //     'partial' => 'eep/examen/partial/paso6-realizacion'
+            // ],
+            // 7 => [
+            //     'titulo' => 'Calificación',
+            //     'subtitulo' => 'Registro de resultado',
+            //     'partial' => 'eep/examen/partial/paso7-calificacion'
+            // ],
+            // 8 => [
+            //     'titulo' => 'Cierre y Acta Final',
+            //     'subtitulo' => 'Generación de acta oficial',
+            //     'partial' => 'eep/examen/partial/paso8-cierre'
+            // ],
         ];
 
         // Asignar subtitulos de fecha dinámicamente
@@ -138,36 +138,36 @@ class ExamenController extends AbstractActionController {
                     'subtitulo' => 'Revisión de requisitos académicos',
                     'partial' => 'eep/examen/partial/paso3-terna'
                 ],
+                // 4 => [
+                //     'titulo' => 'Programación de Fecha',
+                //     'subtitulo' => 'Asignación de fecha de examen',
+                //     'partial' => 'eep/examen/partial/paso4-programacion'
+                // ],
                 4 => [
-                    'titulo' => 'Programación de Fecha',
-                    'subtitulo' => 'Asignación de fecha de examen',
-                    'partial' => 'eep/examen/partial/paso4-programacion'
-                ],
-                5 => [
                     'titulo' => 'Notificación',
                     'subtitulo' => 'Comunicación al estudiante',
-                    'partial' => 'eep/examen/partial/paso5-notificacion'
+                    'partial' => 'eep/examen/partial/paso4-notificacion'
                 ],
-                6 => [
-                    'titulo' => 'Preparación de Examen',
-                    'subtitulo' => 'Configuración del tribunal',
-                    'partial' => 'eep/examen/partial/paso6-preparacion'
-                ],
-                7 => [
-                    'titulo' => 'Realización del Examen',
-                    'subtitulo' => 'Ejecución del examen privado',
-                    'partial' => 'eep/examen/partial/paso7-realizacion'
-                ],
-                8 => [
-                    'titulo' => 'Calificación',
-                    'subtitulo' => 'Registro de resultado',
-                    'partial' => 'eep/examen/partial/paso8-calificacion'
-                ],
-                9 => [
-                    'titulo' => 'Cierre y Acta Final',
-                    'subtitulo' => 'Generación de acta oficial',
-                    'partial' => 'eep/examen/partial/paso9-cierre'
-                ],
+                // 5 => [
+                //     'titulo' => 'Preparación de Examen',
+                //     'subtitulo' => 'Configuración del tribunal',
+                //     'partial' => 'eep/examen/partial/paso5-preparacion'
+                // ],
+                // 6 => [
+                //     'titulo' => 'Realización del Examen',
+                //     'subtitulo' => 'Ejecución del examen privado',
+                //     'partial' => 'eep/examen/partial/paso6-realizacion'
+                // ],
+                // 7 => [
+                //     'titulo' => 'Calificación',
+                //     'subtitulo' => 'Registro de resultado',
+                //     'partial' => 'eep/examen/partial/paso7-calificacion'
+                // ],
+                // 8 => [
+                //     'titulo' => 'Cierre y Acta Final',
+                //     'subtitulo' => 'Generación de acta oficial',
+                //     'partial' => 'eep/examen/partial/paso8-cierre'
+                // ],
             ];
 
             // Asignar subtitulos de fecha dinámicamente
