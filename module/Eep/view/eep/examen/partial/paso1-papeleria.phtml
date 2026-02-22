@@ -6,6 +6,11 @@
                 Requisitos de Papelería
             </div>
             <div class="panel-revision-body" style="padding: 10px;">
+                <div class="alert alert-info" style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Información importante:</strong>
+                    Debe aceptar todos los documentos de la papelería para poder habilitar el siguiente paso de <strong>Entrega de Documentación</strong>.
+                </div>
                 <div class="tabla-requisitos-revision">
                     <table class="table table-bordered table-requisitos">
                         <thead>
@@ -148,7 +153,10 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="text-align: right; padding: 15px 0 5px 0;">
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 15px 0 5px 0;">
+                    <div id="alertaRecordatorioGuardar" class="alerta-recordatorio-interna">
+                        <i class="fa fa-warning"></i> * No olvides guardar tus cambios
+                    </div>
                     <button class="btn btn-primary" id="btnGuardarCambios">
                         Guardar Cambios
                     </button>
@@ -288,6 +296,17 @@
     border-color: #dc3545;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
+
+.alerta-recordatorio-interna {
+    padding: 8px 15px;
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: 50px;
+    display: none;
+    font-size: 13px;
+    font-weight: 600;
+}
 </style>
 
 <script>
@@ -362,6 +381,8 @@ $(document).ready(function() {
         estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Aceptado');
         
         console.log('Requisito aceptado');
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
     }
 
     function aplicarEstadoRechazado(fila, boton, razonRechazo) {
@@ -382,6 +403,8 @@ $(document).ready(function() {
         estadoBadge.removeClass('estado-aceptado estado-pendiente').addClass('estado-rechazado').text('Rechazado');
         
         console.log('Requisito rechazado:', razonRechazo);
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
     }
 
     function aplicarEstadoPendiente(fila, grupo) {
@@ -399,7 +422,75 @@ $(document).ready(function() {
         estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
         
         console.log('Requisito pendiente');
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
     }
+
+    function mostrarAlertaGuardar() {
+        $('#alertaGuardarCambios').fadeIn(400);
+        $('#alertaRecordatorioGuardar').fadeIn(400);
+    }
+
+    function actualizarEstadoAvance() {
+        // Obtenemos solo las filas que son de requisitos 
+        const filas = $('.table-requisitos tbody tr');
+        const totalRequisitos = filas.length;
+        const requisitosAceptados = filas.filter('.fila-aceptada').length;
+        const todosAceptados = totalRequisitos === requisitosAceptados;
+        
+        console.log(`Avance: ${requisitosAceptados}/${totalRequisitos}`);
+        
+        // Desactivar/Activar visualmente los pasos siguientes en el timeline
+        // Usamos el paso desde el objeto PHP
+        const pasoActual = <?= $this->paso ?>;
+        $('.timeline-link').each(function() {
+            const pasoLink = $(this).data('paso');
+            if (pasoLink > pasoActual) {
+                if (!todosAceptados) {
+                    $(this).addClass('link-desactivado').css({
+                        'opacity': '0.5',
+                        'cursor': 'not-allowed'
+                    });
+                } else {
+                    $(this).removeClass('link-desactivado').css({
+                        'opacity': '1',
+                        'cursor': 'pointer'
+                    });
+                }
+            }
+        });
+        
+        return todosAceptados;
+    }
+
+    // Inicializar estado al cargar
+    $('.table-requisitos tbody tr').each(function() {
+        const estadoTxt = $(this).find('.estado-badge').text().trim().toLowerCase();
+        if (estadoTxt === 'aceptado') {
+            $(this).addClass('fila-aceptada');
+        } else if (estadoTxt === 'rechazado') {
+            $(this).addClass('fila-rechazada');
+        } else {
+            $(this).addClass('fila-pendiente');
+        }
+    });
+    
+    // Ejecutar inicialización del avance
+    setTimeout(actualizarEstadoAvance, 500);
+
+    // Bloquear el click en el timeline si no se ha completado la papelería
+    $(document).on('click', '.timeline-link', function(e) {
+        const pasoLink = $(this).data('paso');
+        const pasoActual = <?= $this->paso ?>;
+        
+        if (pasoLink > pasoActual) {
+            if (!actualizarEstadoAvance()) {
+                e.preventDefault();
+                alert('Debe aceptar todos los requisitos de papelería para continuar al siguiente paso.');
+                return false;
+            }
+        }
+    });
 
     // Manejar click en guardar cambios
     $('#btnGuardarCambios').on('click', function() {
@@ -424,6 +515,8 @@ $(document).ready(function() {
         });
         
         console.log('Estados a guardar:', estados);
+        $('#alertaGuardarCambios').fadeOut(300);
+        $('#alertaRecordatorioGuardar').fadeOut(300);
         alert('Guardando cambios de papelería...');
     });
 });
