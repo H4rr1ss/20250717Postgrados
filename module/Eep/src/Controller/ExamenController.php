@@ -41,50 +41,50 @@ class ExamenController extends AbstractActionController {
                 'subtitulo' => 'Revisión de documentos entregados',
                 'partial' => 'eep/examen/partial/paso1-papeleria'
             ],
+            // 2 => [
+            //     'titulo' => 'Aprobación de Asesor',
+            //     'subtitulo' => 'Validación del asesor asignado',
+            //     'partial' => 'eep/examen/partial/paso2-asesor'
+            // ],
             2 => [
-                'titulo' => 'Aprobación de Asesor',
-                'subtitulo' => 'Validación del asesor asignado',
-                'partial' => 'eep/examen/partial/paso2-asesor'
-            ],
-            3 => [
                 'titulo' => 'Entrega de Documentación',
                 'subtitulo' => 'Recepción física de documentos',
-                'partial' => 'eep/examen/partial/paso3-documentacion'
+                'partial' => 'eep/examen/partial/paso2-documentacion'
+            ],
+            3 => [
+                'titulo' => 'Terna Examinadora',
+                'subtitulo' => 'Revisión de requisitos académicos',
+                'partial' => 'eep/examen/partial/paso3-terna'
             ],
             4 => [
-                'titulo' => 'Verificación Académica',
-                'subtitulo' => 'Revisión de requisitos académicos',
-                'partial' => 'eep/examen/partial/paso4-verificacion'
-            ],
-            5 => [
                 'titulo' => 'Programación de Fecha',
                 'subtitulo' => 'Asignación de fecha de examen',
-                'partial' => 'eep/examen/partial/paso5-programacion'
+                'partial' => 'eep/examen/partial/paso4-programacion'
             ],
-            6 => [
+            5 => [
                 'titulo' => 'Notificación',
                 'subtitulo' => 'Comunicación al estudiante',
-                'partial' => 'eep/examen/partial/paso6-notificacion'
+                'partial' => 'eep/examen/partial/paso5-notificacion'
             ],
-            7 => [
+            6 => [
                 'titulo' => 'Preparación de Examen',
                 'subtitulo' => 'Configuración del tribunal',
-                'partial' => 'eep/examen/partial/paso7-preparacion'
+                'partial' => 'eep/examen/partial/paso6-preparacion'
             ],
-            8 => [
+            7 => [
                 'titulo' => 'Realización del Examen',
                 'subtitulo' => 'Ejecución del examen privado',
-                'partial' => 'eep/examen/partial/paso8-realizacion'
+                'partial' => 'eep/examen/partial/paso7-realizacion'
             ],
-            9 => [
+            8 => [
                 'titulo' => 'Calificación',
                 'subtitulo' => 'Registro de resultado',
-                'partial' => 'eep/examen/partial/paso9-calificacion'
+                'partial' => 'eep/examen/partial/paso8-calificacion'
             ],
-            10 => [
+            9 => [
                 'titulo' => 'Cierre y Acta Final',
                 'subtitulo' => 'Generación de acta oficial',
-                'partial' => 'eep/examen/partial/paso10-cierre'
+                'partial' => 'eep/examen/partial/paso9-cierre'
             ],
         ];
 
@@ -123,50 +123,50 @@ class ExamenController extends AbstractActionController {
                     'subtitulo' => 'Revisión de documentos entregados',
                     'partial' => 'eep/examen/partial/paso1-papeleria'
                 ],
+                // 2 => [
+                //     'titulo' => 'Aprobación de Asesor',
+                //     'subtitulo' => 'Validación del asesor asignado',
+                //     'partial' => 'eep/examen/partial/paso2-asesor'
+                // ],
                 2 => [
-                    'titulo' => 'Aprobación de Asesor',
-                    'subtitulo' => 'Validación del asesor asignado',
-                    'partial' => 'eep/examen/partial/paso2-asesor'
-                ],
-                3 => [
                     'titulo' => 'Entrega de Documentación',
                     'subtitulo' => 'Recepción física de documentos',
-                    'partial' => 'eep/examen/partial/paso3-documentacion'
+                    'partial' => 'eep/examen/partial/paso2-documentacion'
+                ],
+                3 => [
+                    'titulo' => 'Terna Examinadora',
+                    'subtitulo' => 'Revisión de requisitos académicos',
+                    'partial' => 'eep/examen/partial/paso3-terna'
                 ],
                 4 => [
-                    'titulo' => 'Verificación Académica',
-                    'subtitulo' => 'Revisión de requisitos académicos',
-                    'partial' => 'eep/examen/partial/paso4-verificacion'
-                ],
-                5 => [
                     'titulo' => 'Programación de Fecha',
                     'subtitulo' => 'Asignación de fecha de examen',
-                    'partial' => 'eep/examen/partial/paso5-programacion'
+                    'partial' => 'eep/examen/partial/paso4-programacion'
                 ],
-                6 => [
+                5 => [
                     'titulo' => 'Notificación',
                     'subtitulo' => 'Comunicación al estudiante',
-                    'partial' => 'eep/examen/partial/paso6-notificacion'
+                    'partial' => 'eep/examen/partial/paso5-notificacion'
                 ],
-                7 => [
+                6 => [
                     'titulo' => 'Preparación de Examen',
                     'subtitulo' => 'Configuración del tribunal',
-                    'partial' => 'eep/examen/partial/paso7-preparacion'
+                    'partial' => 'eep/examen/partial/paso6-preparacion'
                 ],
-                8 => [
+                7 => [
                     'titulo' => 'Realización del Examen',
                     'subtitulo' => 'Ejecución del examen privado',
-                    'partial' => 'eep/examen/partial/paso8-realizacion'
+                    'partial' => 'eep/examen/partial/paso7-realizacion'
                 ],
-                9 => [
+                8 => [
                     'titulo' => 'Calificación',
                     'subtitulo' => 'Registro de resultado',
-                    'partial' => 'eep/examen/partial/paso9-calificacion'
+                    'partial' => 'eep/examen/partial/paso8-calificacion'
                 ],
-                10 => [
+                9 => [
                     'titulo' => 'Cierre y Acta Final',
                     'subtitulo' => 'Generación de acta oficial',
-                    'partial' => 'eep/examen/partial/paso10-cierre'
+                    'partial' => 'eep/examen/partial/paso9-cierre'
                 ],
             ];
 

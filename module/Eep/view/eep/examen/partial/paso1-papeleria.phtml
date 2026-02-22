@@ -30,10 +30,14 @@
                                     </button>
                                 </td>
                                 <td style="text-align: center;">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
-                                        <span class="slider"></span>
-                                    </label>
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
@@ -47,10 +51,14 @@
                                     </button>
                                 </td>
                                 <td style="text-align: center;">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
-                                        <span class="slider"></span>
-                                    </label>
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
@@ -64,10 +72,14 @@
                                     </button>
                                 </td>
                                 <td style="text-align: center;">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
-                                        <span class="slider"></span>
-                                    </label>
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="fila-rechazada">
@@ -81,10 +93,14 @@
                                     </button>
                                 </td>
                                 <td style="text-align: center;">
-                                    <label class="switch">
-                                        <input type="checkbox">
-                                        <span class="slider"></span>
-                                    </label>
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar active" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
@@ -98,10 +114,35 @@
                                     </button>
                                 </td>
                                 <td style="text-align: center;">
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
-                                        <span class="slider"></span>
-                                    </label>
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="fila-pendiente">
+                                <td>Certificación de notas</td>
+                                <td>-</td>
+                                <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-ver-documento" title="Ver documento">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </td>
+                                <td style="text-align: center;">
+                                    <div class="acciones-grupo">
+                                        <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -117,27 +158,272 @@
     </div>
 </div>
 
+<!-- Modal para razón de rechazo -->
+<div class="modal fade" id="modalRazonRechazo" tabindex="-1" role="dialog" aria-labelledby="modalRazonRechazoLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalRazonRechazoLabel">
+                    <i class="fa fa-times-circle text-danger"></i> Razón de Rechazo
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p><strong>Requisito:</strong> <span id="nombreRequisito"></span></p>
+                <div class="form-group">
+                    <label for="razonRechazo">Especifique la razón del rechazo:</label>
+                    <textarea class="form-control" id="razonRechazo" rows="4" placeholder="Ingrese la razón detallada del rechazo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmarRechazo">
+                    <i class="fa fa-check"></i> Confirmar Rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.fila-rechazada {
+    background-color: #fff5f5;
+}
+
+.fila-aceptada {
+    background-color: #f0fff4;
+}
+
+.fila-pendiente {
+    background-color: #fff9e6;
+}
+
+.estado-pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Estilos para los botones de acción */
+.acciones-grupo {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.btn-accion {
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+    position: relative;
+}
+
+.btn-accion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-accion.active {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.btn-aceptar {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-aceptar:hover {
+    background-color: #218838;
+}
+
+.btn-rechazar {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-rechazar:hover {
+    background-color: #c82333;
+}
+
+.btn-accion.active::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid currentColor;
+    border-radius: 6px;
+    opacity: 0.3;
+}
+
+/* Estilos para el modal */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-title {
+    color: #333;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #555;
+}
+
+#razonRechazo {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+}
+
+#razonRechazo:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+</style>
+
 <script>
 $(document).ready(function() {
+    let filaActual = null;
+    let botonActual = null;
+
     // Manejar click en ver documento
     $('.btn-ver-documento').on('click', function() {
         alert('Función para ver documento');
     });
 
-    // Manejar cambios en los toggles
-    $('.switch input[type="checkbox"]').on('change', function() {
-        const isChecked = $(this).is(':checked');
-        const row = $(this).closest('tr');
+    // Manejar click en botones de acción
+    $('.btn-accion').on('click', function() {
+        const boton = $(this);
+        const grupo = boton.parent();
+        const estadoSeleccionado = boton.data('estado');
+        const fila = boton.closest('tr');
+        const nombreRequisito = fila.find('td:first').text();
+        const yaEstaActivo = boton.hasClass('active');
         
-        if (isChecked) {
-            console.log('Requisito aceptado');
-        } else {
-            console.log('Requisito rechazado');
+        // Si el botón ya está activo, lo desmarcamos (estado pendiente)
+        if (yaEstaActivo) {
+            aplicarEstadoPendiente(fila, grupo);
+            return;
+        }
+        
+        if (estadoSeleccionado === 'aceptar') {
+            // Aceptar directamente
+            aplicarEstadoAceptado(fila, boton, grupo);
+        } else if (estadoSeleccionado === 'rechazar') {
+            // Guardar referencias para el modal
+            filaActual = fila;
+            botonActual = boton;
+            
+            // Mostrar modal para razón de rechazo
+            $('#nombreRequisito').text(nombreRequisito);
+            $('#razonRechazo').val('');
+            $('#modalRazonRechazo').modal('show');
         }
     });
 
+    // Confirmar rechazo desde el modal
+    $('#confirmarRechazo').on('click', function() {
+        const razonRechazo = $('#razonRechazo').val().trim();
+        
+        if (razonRechazo === '') {
+            alert('Por favor, ingrese una razón para el rechazo.');
+            return;
+        }
+        
+        // Aplicar estado rechazado
+        aplicarEstadoRechazado(filaActual, botonActual, razonRechazo);
+        
+        // Cerrar modal
+        $('#modalRazonRechazo').modal('hide');
+    });
+
+    function aplicarEstadoAceptado(fila, boton, grupo) {
+        // Remover clases de estado
+        fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
+        
+        // Actualizar botones
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        
+        // Limpiar razón de rechazo
+        fila.find('td').eq(3).text('');
+        
+        // Actualizar estado visual
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Aceptado');
+        
+        console.log('Requisito aceptado');
+    }
+
+    function aplicarEstadoRechazado(fila, boton, razonRechazo) {
+        const grupo = boton.parent();
+        
+        // Remover clases de estado
+        fila.removeClass('fila-aceptada fila-pendiente').addClass('fila-rechazada');
+        
+        // Actualizar botones
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        
+        // Actualizar razón de rechazo
+        fila.find('td').eq(3).text(razonRechazo);
+        
+        // Actualizar estado visual
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-aceptado estado-pendiente').addClass('estado-rechazado').text('Rechazado');
+        
+        console.log('Requisito rechazado:', razonRechazo);
+    }
+
+    function aplicarEstadoPendiente(fila, grupo) {
+        // Remover clases de estado
+        fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
+        
+        // Desactivar todos los botones
+        grupo.find('.btn-accion').removeClass('active');
+        
+        // Limpiar razón de rechazo
+        fila.find('td').eq(3).text('');
+        
+        // Actualizar estado visual
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
+        
+        console.log('Requisito pendiente');
+    }
+
     // Manejar click en guardar cambios
     $('#btnGuardarCambios').on('click', function() {
+        // Recopilar estados de todos los requisitos
+        const estados = [];
+        $('.acciones-grupo').each(function() {
+            const botonActivo = $(this).find('.btn-accion.active');
+            const fila = $(this).closest('tr');
+            const nombreRequisito = fila.find('td:first').text();
+            const razonRechazo = fila.find('td').eq(3).text();
+            
+            let estado = 'pendiente'; // Estado por defecto
+            if (botonActivo.length > 0) {
+                estado = botonActivo.data('estado');
+            }
+            
+            estados.push({
+                requisito: nombreRequisito,
+                estado: estado,
+                razonRechazo: razonRechazo
+            });
+        });
+        
+        console.log('Estados a guardar:', estados);
         alert('Guardando cambios de papelería...');
     });
 });

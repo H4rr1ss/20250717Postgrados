@@ -1,0 +1,163 @@
+<!-- Paso 3: Terna de Examinadores -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Terna de examinadores
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+                
+                <div class="row">
+                    <!-- Examinador 1 -->
+                    <div class="col-md-4">
+                        <div class="examinador-card">
+                            <h5 class="examinador-titulo">Examinador 1</h5>
+                            
+                            <div class="form-group">
+                                <label for="nombre1">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombre1" placeholder="">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="colegiado1">Número de colegiado</label>
+                                <input type="text" class="form-control" id="colegiado1" placeholder="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Examinador 2 -->
+                    <div class="col-md-4">
+                        <div class="examinador-card">
+                            <h5 class="examinador-titulo">Examinador 2</h5>
+                            
+                            <div class="form-group">
+                                <label for="nombre2">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombre2" placeholder="">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="colegiado2">Número de colegiado</label>
+                                <input type="text" class="form-control" id="colegiado2" placeholder="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Examinador 3 -->
+                    <div class="col-md-4">
+                        <div class="examinador-card">
+                            <h5 class="examinador-titulo">Examinador 3</h5>
+                            
+                            <div class="form-group">
+                                <label for="nombre3">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombre3" placeholder="">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="colegiado3">Número de colegiado</label>
+                                <input type="text" class="form-control" id="colegiado3" placeholder="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                    <button class="btn btn-primary" id="btnGuardarTerna">
+                        <i class="fa fa-save"></i> Guardar Terna
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.examinador-card {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 20px;
+    background-color: #fafafa;
+    margin-bottom: 20px;
+    min-height: 180px;
+}
+
+.examinador-titulo {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #5f9876;
+    box-shadow: 0 0 0 2px rgba(95, 152, 118, 0.2);
+}
+
+.form-control:placeholder-shown {
+    background-color: #fff;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    // Manejar guardar terna
+    $('#btnGuardarTerna').on('click', function() {
+        const terna = {
+            examinador1: {
+                nombre: $('#nombre1').val().trim(),
+                colegiado: $('#colegiado1').val().trim()
+            },
+            examinador2: {
+                nombre: $('#nombre2').val().trim(),
+                colegiado: $('#colegiado2').val().trim()
+            },
+            examinador3: {
+                nombre: $('#nombre3').val().trim(),
+                colegiado: $('#colegiado3').val().trim()
+            }
+        };
+
+        // Validar que todos los campos estén llenos
+        let camposVacios = false;
+        Object.keys(terna).forEach(key => {
+            if (!terna[key].nombre || !terna[key].colegiado) {
+                camposVacios = true;
+            }
+        });
+
+        if (camposVacios) {
+            alert('Por favor, complete todos los campos de la terna.');
+            return;
+        }
+
+        console.log('Terna a guardar:', terna);
+        alert('Guardando terna de examinadores...');
+    });
+});
+</script>
