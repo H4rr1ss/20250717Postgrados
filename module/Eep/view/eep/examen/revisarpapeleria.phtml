@@ -37,7 +37,7 @@ $this->headTitle('Revisión de papelería');
             <div class="panel-revision-body">
             <div class="row" style="display: flex; justify-content: space-between;">
                 <!-- Columna Izquierda: Información del Estudiante -->
-                <div class="col-6 col-md-8 col-xl-9">
+                <div class="col-5 col-lg-8 col-xl-9">
                     <div class="seccion-estudiante">
                         <h4 style="font-weight: 600; margin-bottom: 15px; font-size: 16px;">Nombre del Estudiante</h4>
                         <div class="info-estudiante">
@@ -55,25 +55,10 @@ $this->headTitle('Revisión de papelería');
                 </div>
                 
                 <!-- Columna Derecha: Estados -->
-                <div class="col-6 col-md-4 col-xl-3">
-                    <div class="estados-header">
+                <div class="col-7 col-lg-4 col-xl-3">
+                    <!-- <div class="estados-header">
                         <h5 class="estados-titulo">Estados del Proceso</h5>
-                        <?php 
-                            $hayCompletados = false;
-                            foreach ($this->estados as $numPaso => $estado) {
-                                if ($numPaso < $this->paso) {
-                                    $hayCompletados = true;
-                                    break;
-                                }
-                            }
-                        ?>
-                        <?php if ($hayCompletados): ?>
-                            <button class="btn-ver-completados" id="toggleCompletados" onclick="toggleEstadosCompletados()">
-                                <i class="fa fa-eye"></i>
-                                <span class="btn-text">Ver completados</span>
-                            </button>
-                        <?php endif; ?>
-                    </div>
+                    </div> -->
                     <div class="timeline-estados">
                         <?php foreach ($this->estados as $numPaso => $estado): ?>
                         <?php 
@@ -97,14 +82,16 @@ $this->headTitle('Revisión de papelería');
                                 </div>
                                 <div class="timeline-contenido">
                                     <p class="timeline-titulo"><?= $estado['titulo'] ?></p>
-                                    <p class="timeline-subtitulo"><?= $estado['subtitulo'] ?></p>
-                                    <?php if ($esActual): ?>
-                                        <span class="timeline-badge badge-en-proceso">En proceso</span>
-                                    <?php elseif ($esCompletado): ?>
-                                        <span class="timeline-badge badge-completado">Completado</span>
-                                    <?php else: ?>
-                                        <span class="timeline-badge badge-pendiente-tl">Pendiente</span>
-                                    <?php endif; ?>
+                                    <div class="timeline-row">
+                                        <p class="timeline-subtitulo"><?= $estado['subtitulo'] ?></p>
+                                        <?php if ($esActual): ?>
+                                            <span class="timeline-badge badge-en-proceso">En proceso</span>
+                                        <?php elseif ($esCompletado): ?>
+                                            <span class="timeline-badge badge-completado">Completado</span>
+                                        <?php else: ?>
+                                            <span class="timeline-badge badge-pendiente-tl">Pendiente</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -194,72 +181,10 @@ $this->headTitle('Revisión de papelería');
         margin: 0;
     }
 
-    .btn-ver-completados {
-        background: linear-gradient(135deg, #5f9876, #4a7c59);
-        border: none;
-        color: white;
-        font-size: 11px;
-        font-weight: 500;
-        cursor: pointer;
-        padding: 6px 12px;
-        border-radius: 18px;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 2px 8px rgba(95, 152, 118, 0.3);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-ver-completados::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        transition: left 0.6s;
-    }
-
-    .btn-ver-completados:hover::before {
-        left: 100%;
-    }
-
-    .btn-ver-completados:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(95, 152, 118, 0.4);
-        background: linear-gradient(135deg, #6ba982, #5f9876);
-    }
-
-    .btn-ver-completados:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 6px rgba(95, 152, 118, 0.3);
-    }
-
-    .btn-ver-completados i {
-        font-size: 11px;
-        transition: transform 0.2s ease;
-    }
-
-    .btn-ver-completados:hover i {
-        transform: scale(1.1);
-    }
-
-    .btn-ver-completados .btn-text {
-        position: relative;
-        z-index: 1;
-    }
-
     .timeline-estados {
         display: flex;
         flex-direction: column;
         padding-top: 5px;
-    }
-
-    .timeline-item.estado-completado-oculto {
-        display: none;
     }
 
     .timeline-item {
@@ -315,7 +240,15 @@ $this->headTitle('Revisión de papelería');
     .timeline-subtitulo {
         font-size: 12px;
         color: #888;
-        margin: 0 0 6px 0;
+        white-space: nowrap;
+        width: 90px;
+    }
+
+    .timeline-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
     }
 
     .timeline-badge {
@@ -397,7 +330,7 @@ $this->headTitle('Revisión de papelería');
 
     .timeline-subtitulo {
         font-size: 11px;
-        margin-bottom: 4px;
+        margin: 0;
     }
 
     .timeline-badge {
@@ -407,7 +340,7 @@ $this->headTitle('Revisión de papelería');
 
     /* Scroll para el contenedor del timeline */
     .timeline-estados {
-        max-height: 250px;
+        max-height: 300px;
         overflow-y: auto;
         padding-right: 10px;
     }
@@ -596,45 +529,7 @@ $this->headTitle('Revisión de papelería');
 </style>
 
 <script>
-let estadosCompletadosVisibles = false;
-
-function toggleEstadosCompletados() {
-    const btn = document.getElementById('toggleCompletados');
-    const btnText = btn.querySelector('.btn-text');
-    const btnIcon = btn.querySelector('i');
-    const timelineItems = document.querySelectorAll('.timeline-item');
-    
-    estadosCompletadosVisibles = !estadosCompletadosVisibles;
-    
-    timelineItems.forEach(item => {
-        // Verificar si el item tiene la clase timeline-completado
-        if (item.classList.contains('timeline-completado')) {
-            if (estadosCompletadosVisibles) {
-                item.classList.remove('estado-completado-oculto');
-            } else {
-                item.classList.add('estado-completado-oculto');
-            }
-        }
-    });
-    
-    // Actualizar el botón
-    if (estadosCompletadosVisibles) {
-        btnText.textContent = 'Ocultar completados';
-        btnIcon.className = 'fa fa-eye-slash';
-    } else {
-        btnText.textContent = 'Ver completados';
-        btnIcon.className = 'fa fa-eye';
-    }
-}
-
-// Inicializar estados completados como ocultos
-document.addEventListener('DOMContentLoaded', function() {
-    // Ocultar estados completados por defecto
-    const timelineItems = document.querySelectorAll('.timeline-item.timeline-completado');
-    timelineItems.forEach(item => {
-        item.classList.add('estado-completado-oculto');
-    });
-});
+// Script vacío - funcionalidad eliminada
 </script>
 
 </div><!-- /.padding container -->
