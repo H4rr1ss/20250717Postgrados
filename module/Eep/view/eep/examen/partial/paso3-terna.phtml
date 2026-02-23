@@ -8,37 +8,38 @@
             <div class="panel-revision-body" style="padding: 20px;">
                 
                 <!-- Fecha del examen -->
-                <div class="row" style="margin-bottom: 25px;">
+                <div class="row align-items-end" style="margin-bottom: 25px;">
                     <div class="col-md-12">
                         <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
                             <div class="row align-items-center">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label style="font-weight: 600; margin-bottom: 15px; font-size: 14px; color: #333; display: block;">
                                         Calendarización de exámen:
                                     </label>
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Fecha del Examen</label>
                                                 <input type="date" class="form-control" id="fechaExamen">
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Hora de Inicio</label>
                                                 <input type="time" class="form-control" id="horaExamen" value="09:00">
                                             </div>
                                         </div>
+                                        <div class="col-md-4" style="text-align: right;">
+                                            <button type="button" class="btn btn-outline-secondary" id="btnCancelar">
+                                                <i class="fa fa-ban"></i> Cancelar
+                                            </button>
+                                            <button type="button" class="btn btn-success" id="btnGuardarCambios" style="margin-left: 10px;">
+                                                <i class="fa fa-save"></i> Guardar Cambios
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6" style="text-align: right;">
-                                    <button type="button" class="btn btn-outline-secondary" id="btnCancelar">
-                                        <i class="fa fa-ban"></i> Cancelar
-                                    </button>
-                                    <button type="button" class="btn btn-success" id="btnGuardarCambios" style="margin-left: 10px;">
-                                        <i class="fa fa-save"></i> Guardar Cambios
-                                    </button>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>

@@ -196,117 +196,117 @@
 </div>
 
 <style>
-.fila-rechazada {
-    background-color: #fff5f5;
-}
+    .fila-rechazada {
+        background-color: #fff5f5;
+    }
 
-.fila-aceptada {
-    background-color: #f0fff4;
-}
+    .fila-aceptada {
+        background-color: #f0fff4;
+    }
 
-.fila-pendiente {
-    background-color: #fff9e6;
-}
+    .fila-pendiente {
+        background-color: #fff9e6;
+    }
 
-.estado-pendiente {
-    background-color: #fff3cd;
-    color: #856404;
-}
+    .estado-pendiente {
+        background-color: #fff3cd;
+        color: #856404;
+    }
 
-/* Estilos para los botones de acción */
-.acciones-grupo {
-    display: flex;
-    gap: 5px;
-    justify-content: center;
-}
+    /* Estilos para los botones de acción */
+    .acciones-grupo {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+    }
 
-.btn-accion {
-    border: none;
-    border-radius: 4px;
-    padding: 6px 8px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s ease;
-    opacity: 0.4;
-    position: relative;
-}
+    .btn-accion {
+        border: none;
+        border-radius: 4px;
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        opacity: 0.4;
+        position: relative;
+    }
 
-.btn-accion:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+    .btn-accion:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-.btn-accion.active {
-    opacity: 1;
-    transform: scale(1.1);
-}
+    .btn-accion.active {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 
-.btn-aceptar {
-    background-color: #28a745;
-    color: white;
-}
+    .btn-aceptar {
+        background-color: #28a745;
+        color: white;
+    }
 
-.btn-aceptar:hover {
-    background-color: #218838;
-}
+    .btn-aceptar:hover {
+        background-color: #218838;
+    }
 
-.btn-rechazar {
-    background-color: #dc3545;
-    color: white;
-}
+    .btn-rechazar {
+        background-color: #dc3545;
+        color: white;
+    }
 
-.btn-rechazar:hover {
-    background-color: #c82333;
-}
+    .btn-rechazar:hover {
+        background-color: #c82333;
+    }
 
-.btn-accion.active::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    border: 2px solid currentColor;
-    border-radius: 6px;
-    opacity: 0.3;
-}
+    .btn-accion.active::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid currentColor;
+        border-radius: 6px;
+        opacity: 0.3;
+    }
 
-/* Estilos para el modal */
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
+    /* Estilos para el modal */
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
 
-.modal-title {
-    color: #333;
-}
+    .modal-title {
+        color: #333;
+    }
 
-.form-group label {
-    font-weight: 600;
-    color: #555;
-}
+    .form-group label {
+        font-weight: 600;
+        color: #555;
+    }
 
-#razonRechazo {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    resize: vertical;
-}
+    #razonRechazo {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+    }
 
-#razonRechazo:focus {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
+    #razonRechazo:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
 
-.alerta-recordatorio-interna {
-    padding: 8px 15px;
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-    border-radius: 50px;
-    display: none;
-    font-size: 13px;
-    font-weight: 600;
-}
+    .alerta-recordatorio-interna {
+        padding: 8px 15px;
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        border-radius: 50px;
+        display: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
 </style>
 
 <script>

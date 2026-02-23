@@ -23,64 +23,73 @@
                 <div class="row" style="margin-top: 20px;">
                     <div class="col-md-12">
                         <h5 style="font-weight: 600; margin-bottom: 15px;">Checklist de Documentos Físicos</h5>
-                        <table class="table table-bordered" style="font-size: 13px;">
+                        <table class="table table-bordered table-documentos" style="font-size: 13px;">
                             <thead style="background: #f5f5f5;">
                                 <tr>
                                     <th style="width: 5%;">#</th>
-                                    <th style="width: 45%;">Documento</th>
-                                    <th style="width: 20%;">Copias Requeridas</th>
-                                    <th style="width: 15%;">Recibido</th>
+                                    <th style="width: 35%;">Documento</th>
+                                    <th style="width: 15%;">Copias Requeridas</th>
+                                    <th style="width: 15%;">Estado</th>
                                     <th style="width: 15%;">Fecha Recepción</th>
+                                    <th style="width: 15%; text-align: center;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
+                                <tr class="fila-pendiente">
                                     <td>1</td>
                                     <td>Proyecto de graduación empastado</td>
                                     <td>3 ejemplares</td>
-                                    <td>
-                                        <label class="switch switch-sm">
-                                            <input type="checkbox">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </td>
+                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
                                     <td>-</td>
+                                    <td style="text-align: center;">
+                                        <div class="acciones-grupo">
+                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                                <tr>
+                                <tr class="fila-pendiente">
                                     <td>2</td>
                                     <td>CD con versión digital</td>
                                     <td>2 copias</td>
-                                    <td>
-                                        <label class="switch switch-sm">
-                                            <input type="checkbox">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </td>
+                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
                                     <td>-</td>
+                                    <td style="text-align: center;">
+                                        <div class="acciones-grupo">
+                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                                <tr>
+                                <tr class="fila-pendiente">
                                     <td>3</td>
                                     <td>Carta de autorización del asesor (original)</td>
                                     <td>1 original</td>
-                                    <td>
-                                        <label class="switch switch-sm">
-                                            <input type="checkbox">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </td>
+                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
                                     <td>-</td>
+                                    <td style="text-align: center;">
+                                        <div class="acciones-grupo">
+                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
-                                <tr>
+                                <tr class="fila-pendiente">
                                     <td>4</td>
                                     <td>Constancia de cierre de pensum</td>
                                     <td>1 original</td>
-                                    <td>
-                                        <label class="switch switch-sm">
-                                            <input type="checkbox">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </td>
+                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
                                     <td>-</td>
+                                    <td style="text-align: center;">
+                                        <div class="acciones-grupo">
+                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -96,8 +105,11 @@
                 </div>
 
                 <!-- Acciones -->
-                <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
-                    <button class="btn btn-primary">
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                    <div id="alertaRecordatorioGuardarDoc" class="alerta-recordatorio-interna">
+                        <i class="fa fa-warning"></i> * No olvides guardar tus cambios
+                    </div>
+                    <button class="btn btn-primary" id="btnGuardarDocumentacion">
                         <i class="fa fa-save"></i> Guardar Recepción
                     </button>
                 </div>
@@ -105,3 +117,205 @@
         </div>
     </div>
 </div>
+
+<style>
+    .fila-rechazada {
+        background-color: #fff5f5;
+    }
+
+    .fila-aceptada {
+        background-color: #f0fff4;
+    }
+
+    .fila-pendiente {
+        background-color: #fff9e6;
+    }
+
+    .estado-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .estado-pendiente {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .estado-aceptado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .estado-rechazado {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Estilos para los botones de acción */
+    .acciones-grupo {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+    }
+
+    .btn-accion {
+        border: none;
+        border-radius: 4px;
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        opacity: 0.4;
+        position: relative;
+    }
+
+    .btn-accion:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-accion.active {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .btn-aceptar {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-aceptar:hover {
+        background-color: #218838;
+    }
+
+    .btn-rechazar {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-rechazar:hover {
+        background-color: #c82333;
+    }
+
+    .btn-accion.active::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid currentColor;
+        border-radius: 6px;
+        opacity: 0.3;
+    }
+
+    .alerta-recordatorio-interna {
+        padding: 8px 15px;
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        border-radius: 50px;
+        display: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Manejar click en botones de acción
+    $('.table-documentos .btn-accion').on('click', function() {
+        const boton = $(this);
+        const grupo = boton.parent();
+        const estadoSeleccionado = boton.data('estado');
+        const fila = boton.closest('tr');
+        const yaEstaActivo = boton.hasClass('active');
+        
+        // Si el botón ya está activo, lo desmarcamos (estado pendiente)
+        if (yaEstaActivo) {
+            aplicarEstadoPendiente(fila, grupo);
+            return;
+        }
+        
+        if (estadoSeleccionado === 'aceptar') {
+            // Aceptar y colocar fecha actual
+            aplicarEstadoAceptado(fila, boton, grupo);
+        }
+    });
+
+    function aplicarEstadoAceptado(fila, boton, grupo) {
+        // Remover clases de estado
+        fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
+        
+        // Actualizar botones
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        
+        // Obtener fecha actual
+        const fechaActual = new Date();
+        const dia = String(fechaActual.getDate()).padStart(2, '0');
+        const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+        const anio = fechaActual.getFullYear();
+        const fechaFormateada = `${dia}/${mes}/${anio}`;
+        
+        // Actualizar fecha de recepción (columna 5)
+        fila.find('td').eq(4).text(fechaFormateada);
+        
+        // Actualizar estado visual (columna 4)
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Recibido');
+        
+        console.log('Documento recibido');
+        mostrarAlertaGuardar();
+    }
+
+    function aplicarEstadoPendiente(fila, grupo) {
+        // Remover clases de estado
+        fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
+        
+        // Desactivar todos los botones
+        grupo.find('.btn-accion').removeClass('active');
+        
+        // Limpiar fecha de recepción
+        fila.find('td').eq(4).text('-');
+        
+        // Actualizar estado visual
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
+        
+        console.log('Documento pendiente');
+        mostrarAlertaGuardar();
+    }
+
+    function mostrarAlertaGuardar() {
+        $('#alertaRecordatorioGuardarDoc').fadeIn(400);
+    }
+
+    // Manejar click en guardar cambios
+    $('#btnGuardarDocumentacion').on('click', function() {
+        // Recopilar estados de todos los documentos
+        const estados = [];
+        $('.table-documentos tbody tr').each(function() {
+            const fila = $(this);
+            const numeroDoc = fila.find('td').eq(0).text();
+            const nombreDoc = fila.find('td').eq(1).text();
+            const estadoTexto = fila.find('.estado-badge').text().trim();
+            const fechaRecepcion = fila.find('td').eq(4).text();
+            
+            estados.push({
+                numero: numeroDoc,
+                documento: nombreDoc,
+                estado: estadoTexto,
+                fechaRecepcion: fechaRecepcion
+            });
+        });
+        
+        console.log('Estados de documentos a guardar:', estados);
+        $('#alertaRecordatorioGuardarDoc').fadeOut(300);
+        alert('Guardando recepción de documentación...');
+    });
+});
+</script>
