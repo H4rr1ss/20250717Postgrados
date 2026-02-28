@@ -17,8 +17,8 @@ use Eep\Service\Factory\AuthAdapterFactory;
 use Eep\Service\AuthManager;
 use Eep\Service\Factory\AuthManagerFactory;
 use Eep\Service\CohortManager;
-use Eep\Service\Factory\CohortManagerFactory;
-use Eep\Service\UserManager;
+use Eep\Service\Factory\CohortManagerFactory;use Eep\Service\ExamenManager;
+use Eep\Service\Factory\ExamenManagerFactory;use Eep\Service\UserManager;
 use Eep\Service\Factory\UserManagerFactory;
 use Eep\Service\OrderManager;
 use Eep\Service\Factory\OrderManagerFactory;
@@ -292,6 +292,7 @@ return [
             AuthAdapter::class => AuthAdapterFactory::class,
             AuthManager::class => AuthManagerFactory::class,
             CohortManager::class => CohortManagerFactory::class,
+            ExamenManager::class => ExamenManagerFactory::class,
             MassiveLoadManager::class => MassiveLoaderManagerFactory::class,
             GradesManager::class => GradesManagerFactory::class,
             GeneralManager::class => GeneralManagerFactory::class,
