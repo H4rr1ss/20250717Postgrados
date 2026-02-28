@@ -24,132 +24,52 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>Carta Solicitud del asesor</td>
-                                <td>27/04/2025</td>
-                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
-                                <td></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Recibo de pago examen privado</td>
-                                <td>27/04/2025</td>
-                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
-                                <td></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Constancia de inscripción</td>
-                                <td>27/04/2025</td>
-                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
-                                <td></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="fila-rechazada">
-                                <td>Ejemplar impreso del proyecto de graduación</td>
-                                <td>27/04/2025</td>
-                                <td><span class="estado-badge estado-rechazado">Rechazado</span></td>
-                                <td>Formato incorrecto corregir carátula</td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar active" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Factura por pago de asesoría</td>
-                                <td>27/04/2025</td>
-                                <td><span class="estado-badge estado-aceptado">Aceptado</span></td>
-                                <td></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar active" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="fila-pendiente">
-                                <td>Certificación de notas</td>
-                                <td>-</td>
-                                <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
-                                <td></td>
-                                <td style="text-align: center;">
-                                    <button class="btn-ver-documento" title="Ver documento">
-                                        <i class="fa fa-eye"></i>
-                                    </button>
-                                </td>
-                                <td style="text-align: center;">
-                                    <div class="acciones-grupo">
-                                        <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
-                                            <i class="fa fa-check"></i>
-                                        </button>
-                                        <button class="btn-accion btn-rechazar" title="Rechazar" data-estado="rechazar">
-                                            <i class="fa fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <?php if (empty($this->documentos)): ?>
+                                <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($this->documentos as $doc): 
+                                    $estado = $doc['estado_evaluacion'] ?? 'pendiente';
+                                    $claseFila = ($estado == 'rechazado') ? 'fila-rechazada' : (($estado == 'pendiente') ? 'fila-pendiente' : '');
+                                    $claseBadge = 'estado-pendiente';
+                                    if ($estado == 'aprobado') $claseBadge = 'estado-aceptado';
+                                    if ($estado == 'rechazado') $claseBadge = 'estado-rechazado';
+                                ?>
+                                <tr class="<?= $claseFila ?>" data-id-requisito="<?= $doc['id_requisito'] ?>">
+                                    <td><?= $this->escapeHtml($doc['nombre_requisito']) ?></td>
+                                    <td><?= $doc['fecha_revision'] ? date('d/m/Y', strtotime($doc['fecha_revision'])) : '-' ?></td>
+                                    <td><span class="estado-badge <?= $claseBadge ?>"><?= ucfirst($estado) ?></span></td>
+                                    <td>
+                                        <input type="text" class="form-control observacion-doc" 
+                                               value="<?= $this->escapeHtml($doc['observacion'] ?? '') ?>" 
+                                               placeholder="Motivo de rechazo..."
+                                               <?= ($this->proceso['id_estado_actual'] > 1) ? 'disabled' : '' ?>>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <?php if (!empty($doc['url_google_drive'])): ?>
+                                            <a href="<?= $doc['url_google_drive'] ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <i class="fa fa-minus text-muted"></i>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <?php if ($this->proceso['id_estado_actual'] == 1): ?>
+                                            <div class="acciones-grupo">
+                                                <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
+                                                    <i class="fa fa-check"></i>
+                                                </button>
+                                                <button class="btn-accion btn-rechazar <?= $estado == 'rechazado' ? 'active' : '' ?>" title="Rechazar" data-valor="rechazado">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -319,51 +239,148 @@ $(document).ready(function() {
         alert('Función para ver documento');
     });
 
-    // Manejar click en botones de acción
+        // Manejar click en botones de acción
     $('.btn-accion').on('click', function() {
         const boton = $(this);
         const grupo = boton.parent();
-        const estadoSeleccionado = boton.data('estado');
+        const estadoSeleccionado = boton.data('valor'); 
         const fila = boton.closest('tr');
         const nombreRequisito = fila.find('td:first').text();
         const yaEstaActivo = boton.hasClass('active');
         
-        // Si el botón ya está activo, lo desmarcamos (estado pendiente)
         if (yaEstaActivo) {
             aplicarEstadoPendiente(fila, grupo);
             return;
         }
         
-        if (estadoSeleccionado === 'aceptar') {
-            // Aceptar directamente
+        if (estadoSeleccionado === 'aprobado') { 
             aplicarEstadoAceptado(fila, boton, grupo);
-        } else if (estadoSeleccionado === 'rechazar') {
-            // Guardar referencias para el modal
+        } else if (estadoSeleccionado === 'rechazado') {
             filaActual = fila;
             botonActual = boton;
             
-            // Mostrar modal para razón de rechazo
             $('#nombreRequisito').text(nombreRequisito);
-            $('#razonRechazo').val('');
+            const obsActual = fila.find('.observacion-doc').val();
+            $('#razonRechazo').val(obsActual);
             $('#modalRazonRechazo').modal('show');
         }
     });
 
-    // Confirmar rechazo desde el modal
     $('#confirmarRechazo').on('click', function() {
         const razonRechazo = $('#razonRechazo').val().trim();
-        
         if (razonRechazo === '') {
             alert('Por favor, ingrese una razón para el rechazo.');
             return;
         }
-        
-        // Aplicar estado rechazado
         aplicarEstadoRechazado(filaActual, botonActual, razonRechazo);
-        
-        // Cerrar modal
         $('#modalRazonRechazo').modal('hide');
     });
+
+    function aplicarEstadoAceptado(fila, boton, grupo) {
+        fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        fila.find('.observacion-doc').val('');
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Aprobado');
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function aplicarEstadoRechazado(fila, boton, razonRechazo) {
+        const grupo = boton.parent();
+        fila.removeClass('fila-aceptada fila-pendiente').addClass('fila-rechazada');
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        fila.find('.observacion-doc').val(razonRechazo);
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-aceptado estado-pendiente').addClass('estado-rechazado').text('Rechazado');
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function aplicarEstadoPendiente(fila, grupo) {
+        fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
+        grupo.find('.btn-accion').removeClass('active');
+        fila.find('.observacion-doc').val('');
+        const estadoBadge = fila.find('.estado-badge');
+        estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function mostrarAlertaGuardar() {
+        $('#alertaRecordatorioGuardar').fadeIn(400);
+    }
+
+    function actualizarEstadoAvance() {
+        const filas = $('.table-requisitos tbody tr');
+        const totalRequisitos = filas.length;
+        const requisitosAceptados = filas.filter('.fila-aceptada').length;
+        const todosAceptados = totalRequisitos > 0 && totalRequisitos === requisitosAceptados;
+        return todosAceptados;
+    }
+
+    $('.table-requisitos tbody tr').each(function() {
+        const estadoTxt = $(this).find('.estado-badge').text().trim().toLowerCase();
+        if (estadoTxt === 'aprobado' || estadoTxt === 'aceptado') {
+            $(this).addClass('fila-aceptada');
+        } else if (estadoTxt === 'rechazado') {
+            $(this).addClass('fila-rechazada');
+        } else {
+            $(this).addClass('fila-pendiente');
+        }
+    });
+    
+    setTimeout(actualizarEstadoAvance, 500);
+
+    $('#btnGuardarCambios').on('click', function() {
+        if ($(this).hasClass('disabled')) return;
+        const btn = $(this);
+        const originalText = btn.text();
+        const requisitos = [];
+        $('.table-requisitos tbody tr[data-id-requisito]').each(function() {
+            const fila = $(this);
+            const idReq = fila.data('id-requisito');
+            const botonActivo = fila.find('.btn-accion.active');
+            const observacion = fila.find('.observacion-doc').val();
+            let estado = 'pendiente';
+            if (botonActivo.length > 0) {
+                estado = botonActivo.data('valor');
+            }
+            requisitos.push({
+                id_requisito: idReq,
+                estado_evaluacion: estado,
+                observacion: observacion
+            });
+        });
+
+        btn.prop('disabled', true).text('Guardando...');
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "guardarRevision"]) ?>',
+            type: 'POST',
+            data: {
+                cod_proceso: '<?= $this->proceso["cod_proceso"] ?>',
+                id_paso: '1',
+                requisitos: requisitos
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Cambios guardados exitosamente.');
+                    $('#alertaRecordatorioGuardar').fadeOut(300);
+                    location.reload();
+                } else {
+                    alert('Error: ' + (response.message || 'No se pudieron guardar los cambios.'));
+                    btn.prop('disabled', false).text(originalText);
+                }
+            },
+            error: function() {
+                alert('Error de comunicación con el servidor.');
+                btn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+
 
     function aplicarEstadoAceptado(fila, boton, grupo) {
         // Remover clases de estado

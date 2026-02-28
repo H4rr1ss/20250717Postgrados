@@ -63,25 +63,62 @@ class ExamenController extends AbstractActionController {
 
     // 1. PAPELERIA ---------------------------------------
     /**
-     * T-14: Cargar lista de procesos de examen paginados para el administrador
+     * T-14: Gestión de requisitos de papelería (CRUD para el administrador)
      */
     public function papeleriaAction() {
-        $pagina = (int) $this->params()->fromQuery('page', 1);
-        $estado = $this->params()->fromQuery('estado', null);
+        // Obtenemos todos los requisitos sin filtros de paso/tipo para la gestión general
+        $requisitos = $this->examenManager->getTodosRequisitos();
         
-        $procesos = $this->examenManager->getProcesos([
-            'pagina' => $pagina,
-            'limite' => 20,
-            'estado' => $estado
-        ]);
-
         return new ViewModel([
-            'procesos' => $procesos,
-            'filtros'  => [
-                'pagina' => $pagina,
-                'estado' => $estado
-            ]
+            'requisitos' => $requisitos
         ]);
+    }
+
+    /**
+     * T-22.1: AJAX para guardar/actualizar requisito
+     */
+    public function guardarRequisitoAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+        }
+
+        $data = [
+            'id' => $request->getPost('id'),
+            'nombre' => $request->getPost('titulo'),
+            'descripcion' => $request->getPost('descripcion'),
+            'cod_paso' => 2, // Por defecto al paso de papelería
+            'activo' => 1
+        ];
+
+        try {
+            $id = $this->examenManager->upsertRequisito($data);
+            return new JsonModel([
+                'status' => 'success', 
+                'message' => $data['id'] ? 'Requisito actualizado' : 'Requisito creado',
+                'id' => $id
+            ]);
+        } catch (\Exception $e) {
+            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * T-22.2: AJAX para eliminar requisito
+     */
+    public function eliminarRequisitoAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+        }
+
+        $id = (int) $request->getPost('id');
+        try {
+            $this->examenManager->desactivarRequisito($id);
+            return new JsonModel(['status' => 'success', 'message' => 'Requisito eliminado']);
+        } catch (\Exception $e) {
+            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -457,90 +494,78 @@ class ExamenController extends AbstractActionController {
     }
 
     public function solicitudesAction(){
-        $carne = $this->params()->fromRoute('id', null);
+        $idProceso = $this->params()->fromRoute('id', null);
 
-        if ($carne) {
-            // Paso actual (1-10)
-            $paso = (int) $this->params()->fromQuery('paso', 1);
-            if ($paso < 1 || $paso > 10) {
-                $paso = 1;
+        if ($idProceso) {
+            $proceso = $this->examenManager->getProceso($idProceso);
+            if (!$proceso) {
+                $this->flashMessenger()->addErrorMessage('Proceso no encontrado');
+                return $this->redirect()->toRoute('examen', ['action' => 'solicitudes']);
             }
 
-            // Definición de los 10 estados del proceso
+            $estudiante = $this->examenManager->getEstudiantePorProceso($idProceso);
+            $pasoActualObj = $this->examenManager->getPasoActual($idProceso);
+            
+            // Permitir navegar por pasos vía query string, o cargar el actual por defecto
+            $paso = (int) $this->params()->fromQuery('paso', ($pasoActualObj ? $pasoActualObj['cod_paso_actual'] : 1));
+            
+            // Obtener fechas de hitos desde el historial
+            $hitos = $this->examenManager->getFechasHitos($idProceso);
+
             $estados = [
-                1 => [
-                    'titulo' => 'Revisión de Papelería',
-                    'subtitulo' => 'Revisión de documentos entregados',
-                    'partial' => 'eep/examen/partial/paso1-papeleria'
-                ],
-                // 2 => [
-                //     'titulo' => 'Aprobación de Asesor',
-                //     'subtitulo' => 'Validación del asesor asignado',
-                //     'partial' => 'eep/examen/partial/paso2-asesor'
-                // ],
-                2 => [
-                    'titulo' => 'Entrega de Documentación',
-                    'subtitulo' => 'Recepción física de documentos',
-                    'partial' => 'eep/examen/partial/paso2-documentacion'
-                ],
-                3 => [
-                    'titulo' => 'Terna Examinadora',
-                    'subtitulo' => 'Revisión de requisitos académicos',
-                    'partial' => 'eep/examen/partial/paso3-terna'
-                ],
-                // 4 => [
-                //     'titulo' => 'Programación de Fecha',
-                //     'subtitulo' => 'Asignación de fecha de examen',
-                //     'partial' => 'eep/examen/partial/paso4-programacion'
-                // ],
-                4 => [
-                    'titulo' => 'Notificación',
-                    'subtitulo' => 'Comunicación al estudiante',
-                    'partial' => 'eep/examen/partial/paso4-notificacion'
-                ],
-                // 5 => [
-                //     'titulo' => 'Preparación de Examen',
-                //     'subtitulo' => 'Configuración del tribunal',
-                //     'partial' => 'eep/examen/partial/paso5-preparacion'
-                // ],
-                // 6 => [
-                //     'titulo' => 'Realización del Examen',
-                //     'subtitulo' => 'Ejecución del examen privado',
-                //     'partial' => 'eep/examen/partial/paso6-realizacion'
-                // ],
-                // 7 => [
-                //     'titulo' => 'Calificación',
-                //     'subtitulo' => 'Registro de resultado',
-                //     'partial' => 'eep/examen/partial/paso7-calificacion'
-                // ],
-                // 8 => [
-                //     'titulo' => 'Cierre y Acta Final',
-                //     'subtitulo' => 'Generación de acta oficial',
-                //     'partial' => 'eep/examen/partial/paso8-cierre'
-                // ],
+                1 => ['titulo' => 'Revisión de Papelería', 'partial' => 'eep/examen/partial/paso1-papeleria'],
+                2 => ['titulo' => 'Solicitud y Asesor',   'partial' => 'eep/examen/partial/paso2-asesor'],
+                3 => ['titulo' => 'Verificación Admin',  'partial' => 'eep/examen/partial/paso3-verificacion'],
+                4 => ['titulo' => 'Programación y Terna','partial' => 'eep/examen/partial/paso4-programacion'],
+                5 => ['titulo' => 'Preparación de Acta', 'partial' => 'eep/examen/partial/paso5-preparacion'],
+                6 => ['titulo' => 'Realización Examen',  'partial' => 'eep/examen/partial/paso6-realizacion'],
+                7 => ['titulo' => 'Calificación Final',  'partial' => 'eep/examen/partial/paso7-calificacion'],
+                8 => ['titulo' => 'Cierre y Archivo',    'partial' => 'eep/examen/partial/paso8-cierre'],
             ];
 
-            // Asignar subtitulos de fecha dinámicamente
-            foreach ($estados as $numPaso => &$estado) {
-                if ($numPaso < $paso) {
-                    // TODO: Reemplazar con la fecha real de la base de datos
-                    $estado['subtitulo'] = '21/02/2026'; 
-                } else {
-                    $estado['subtitulo'] = 'Sin fecha';
-                }
+            foreach ($estados as $num => &$e) {
+                $e['subtitulo'] = isset($hitos[$num]) ? date('d/m/Y', strtotime($hitos[$num])) : 'Sin fecha';
             }
-            unset($estado); // Romper la referencia del último elemento
+            unset($e);
+
+            // T-25: Cargar documentos y requisitos para el paso 1
+            $documentos = $this->examenManager->getDocumentosYRequisitos($idProceso, 1);
+
+            // T-17: Cargar checklist de documentos físicos para el paso 2
+            $docsFisicos = $this->examenManager->getDocumentosFisicos($idProceso);
 
             $vm = new ViewModel([
-                'carne' => $carne,
-                'paso' => $paso,
-                'estados' => $estados
+                'proceso'     => $proceso,
+                'estudiante'  => $estudiante,
+                'paso'        => $paso,
+                'estados'     => $estados,
+                'documentos'  => $documentos,
+                'docsFisicos' => $docsFisicos
             ]);
             $vm->setTemplate('eep/examen/revisarpapeleria');
             return $vm;
         }
 
-        return new ViewModel();
+        // Listado de solicitudes (Paginado)
+        $pagina = (int) $this->params()->fromQuery('page', 1);
+        $estado = $this->params()->fromQuery('estado', null);
+        $carne  = $this->params()->fromQuery('carne', null);
+
+        $procesos = $this->examenManager->getProcesos([
+            'pagina' => $pagina,
+            'limite' => 10,
+            'estado' => $estado,
+            'carne'  => $carne
+        ]);
+
+        return new ViewModel([
+            'procesos' => $procesos,
+            'filtros'  => [
+                'pagina' => $pagina,
+                'estado' => $estado,
+                'carne'  => $carne
+            ]
+        ]);
     }
 
 }

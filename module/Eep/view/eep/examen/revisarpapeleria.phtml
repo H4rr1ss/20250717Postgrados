@@ -39,17 +39,17 @@ $this->headTitle('Revisión de papelería');
                 <!-- Columna Izquierda: Información del Estudiante -->
                 <div class="col-5 col-lg-8 col-xl-9">
                     <div class="seccion-estudiante">
-                        <h4 style="font-weight: 600; margin-bottom: 15px; font-size: 16px;">Nombre del Estudiante</h4>
+                        <h4 style="font-weight: 600; margin-bottom: 15px; font-size: 16px;"><?= $this->escapeHtml($this->estudiante['nombre_completo']) ?></h4>
                         <div class="info-estudiante">
-                            <p><strong>Registro académico:</strong> 202103718</p>
-                            <p><strong>CUI:</strong> 89128312812</p>
-                            <p><strong>Carrera:</strong> 13 - Maestría en desarrollo urbano y territorio</p>
-                            <p><strong>Pensum:</strong> 21- Red Curricular 2006 Maestría en desarrollo urbano y territorio</p>
-                            <p><strong>Cohorte:</strong> 15/12/2022</p>
+                            <p><strong>Registro académico:</strong> <?= $this->escapeHtml($this->estudiante['registro_academico']) ?></p>
+                            <p><strong>CUI:</strong> <?= $this->escapeHtml($this->estudiante['cui']) ?></p>
+                            <p><strong>Carrera:</strong> <?= $this->escapeHtml($this->estudiante['carrera']) ?></p>
+                            <p><strong>Pensum:</strong> <?= $this->escapeHtml($this->estudiante['pensum']) ?></p>
+                            <p><strong>Cohorte:</strong> <?= $this->escapeHtml($this->estudiante['cohorte']) ?></p>
                         </div>
                         <div class="tipo-examen">
                             <p style="margin-bottom: 5px;"><strong>Tipo de examen:</strong></p>
-                            <p style="font-weight: 600;">EXAMEN GENERAL PRIVADO</p>
+                            <p style="font-weight: 600;"><?= $this->escapeHtml($this->proceso['nombre_tipo_examen'] ?? 'N/A') ?></p>
                         </div>
                     </div>
                 </div>
@@ -67,7 +67,7 @@ $this->headTitle('Revisión de papelería');
                             $esPendiente = ($numPaso > $this->paso);
                             
                             // Construir URL con parámetro paso
-                            $urlPaso = $this->url('examen', ['action' => 'solicitudes', 'id' => $this->carne]) . '?paso=' . $numPaso;
+                            $urlPaso = $this->url('examen', ['action' => 'solicitudes', 'id' => $this->proceso['cod_proceso']]) . '?paso=' . $numPaso;
                         ?>
                         <a href="<?= $urlPaso ?>" class="timeline-link">
                             <div class="timeline-item <?= $esActual ? 'timeline-activo' : '' ?> <?= $esCompletado ? 'timeline-completado' : '' ?>">
@@ -113,9 +113,12 @@ $this->headTitle('Revisión de papelería');
     // Cargar el partial correspondiente al paso actual
     $partialActual = $this->estados[$this->paso]['partial'] ?? 'eep/examen/partial/paso1-papeleria';
     echo $this->partial($partialActual, [
-        'carne' => $this->carne,
-        'paso' => $this->paso,
-        'estados' => $this->estados
+        'proceso'     => $this->proceso,
+        'estudiante'  => $this->estudiante,
+        'paso'        => $this->paso,
+        'estados'     => $this->estados,
+        'documentos'  => $this->documentos,
+        'docsFisicos' => $this->docsFisicos ?? []
     ]);
 ?>
 

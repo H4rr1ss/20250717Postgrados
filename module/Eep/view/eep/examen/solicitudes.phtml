@@ -55,15 +55,17 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                     <div class="col-md-6">
                         <div class="input-group">
                             <span class="input-group-addon"><i class="fa fa-search"></i></span>
-                            <input type="text" class="form-control" id="buscarSolicitud" placeholder="Buscar por carné de estudiante...">
+                            <input type="text" class="form-control" id="buscarSolicitud" 
+                                placeholder="Buscar por carné de estudiante..." 
+                                value="<?= $this->escapeHtmlAttr($this->filtros['carne']) ?>">
                         </div>
                     </div>
                     <div class="col-md-3 col-md-offset-3">
                         <select class="form-control" id="filtroEstado">
                             <option value="">Estado de solicitud</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="aprobada">Aprobada</option>
-                            <option value="rechazada">Rechazada</option>
+                            <option value="activo" <?= $this->filtros['estado'] == 'activo' ? 'selected' : '' ?>>Activo</option>
+                            <option value="finalizado" <?= $this->filtros['estado'] == 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
+                            <option value="cancelado" <?= $this->filtros['estado'] == 'cancelado' ? 'selected' : '' ?>>Cancelado</option>
                         </select>
                     </div>
                 </div>
@@ -81,96 +83,27 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                             </tr>
                         </thead>
                         <tbody>
+                            <?php foreach ($this->procesos as $p): ?>
                             <tr>
-                                <td>202103728</td>
-                                <td>30/03/2025</td>
-                                <td>Pendiente</td>
+                                <td><?= $this->escapeHtml($p['registro_academico']) ?></td>
+                                <td><?= date('d/m/Y', strtotime($p['fecha_creacion'])) ?></td>
+                                <td>
+                                    <span class="label label-<?= ($p['estado'] == 'activo' ? 'success' : 'default') ?>">
+                                        <?= ucfirst($p['estado']) ?>
+                                    </span>
+                                </td>
                                 <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '202103728']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
+                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => $p['cod_proceso']]) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
                                         <i class="fa fa-eye"></i>
                                     </a>
                                 </td>
                                 <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
+                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle" onclick="verDetalleProceso(<?= $p['cod_proceso'] ?>)">
                                         <i class="fa fa-info-circle"></i>
                                     </button>
                                 </td>
                             </tr>
-                            <tr>
-                                <td>201203728</td>
-                                <td>24/02/2024</td>
-                                <td>Pendiente</td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '201203728']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
-                                        <i class="fa fa-info-circle"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>201203718</td>
-                                <td>02/01/2025</td>
-                                <td>Pendiente</td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '201203718']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
-                                        <i class="fa fa-info-circle"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>201102710</td>
-                                <td>12/01/2024</td>
-                                <td>Pendiente</td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '201102710']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
-                                        <i class="fa fa-info-circle"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>201433714</td>
-                                <td>04/04/2025</td>
-                                <td>Aprobada</td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '201433714']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
-                                        <i class="fa fa-info-circle"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>201103021</td>
-                                <td>17/02/2025</td>
-                                <td>Pendiente</td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => '201103021']) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
-                                        <i class="fa fa-info-circle"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -179,18 +112,12 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                 <div class="row">
                     <div class="col-md-12">
                         <nav aria-label="Paginación" style="text-align: right;">
-                            <ul class="pagination" style="margin: 10px 0;">
-                                <li class="disabled"><a href="#"><< first</a></li>
-                                <li class="disabled"><a href="#">< previous</a></li>
-                                <li class="active"><a href="#">1</a></li>
-                                <li><a href="#">2</a></li>
-                                <li><a href="#">3</a></li>
-                                <li><a href="#">4</a></li>
-                                <li><a href="#">5</a></li>
-                                <li><a href="#">6</a></li>
-                                <li><a href="#">next ></a></li>
-                                <li><a href="#">last >></a></li>
-                            </ul>
+                            <?= $this->paginationControl(
+                                $this->procesos,
+                                'sliding',
+                                'partial/paginator',
+                                ['route' => 'examen', 'action' => 'solicitudes', 'filtros' => $this->filtros]
+                            ) ?>
                         </nav>
                     </div>
                 </div>
@@ -198,6 +125,26 @@ $this->headTitle('Gestión de Solicitudes de Examen');
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    function aplicarFiltros() {
+        var carne = $('#buscarSolicitud').val();
+        var estado = $('#filtroEstado').val();
+        var url = '<?= $this->url('examen', ['action' => 'solicitudes']) ?>';
+        window.location.href = url + '?carne=' + carne + '&estado=' + estado;
+    }
+
+    $('#filtroEstado').on('change', aplicarFiltros);
+    $('#buscarSolicitud').on('keypress', function(e) {
+        if (e.which == 13) aplicarFiltros();
+    });
+});
+
+function verDetalleProceso(id) {
+    alert('Detalles del proceso ID: ' + id);
+}
+</script>
 
 <!-- Modal para Revisar Solicitud -->
 <div class="modal fade" id="modalRevisarSolicitud" tabindex="-1" role="dialog" aria-labelledby="modalRevisarSolicitudLabel">

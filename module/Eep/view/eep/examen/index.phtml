@@ -47,50 +47,24 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                             <th style="width: 30%; text-align: center;">Solicitudes</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Privado</td>
-                            <td>Gerencia</td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'papeleria']) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
-                                    <i class="fa fa-cog"></i>
-                                </a>
-                            </td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
-                                    <i class="fa fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Privado</td>
-                            <td>Normal</td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'papeleria']) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
-                                    <i class="fa fa-cog"></i>
-                                </a>
-                            </td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
-                                    <i class="fa fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Público</td>
-                            <td>Normal</td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'papeleria']) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
-                                    <i class="fa fa-cog"></i>
-                                </a>
-                            </td>
-                            <td style="text-align: center;">
-                                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
-                                    <i class="fa fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    </tbody>
+                        <tbody>
+                            <?php foreach ($this->tiposExamen as $tipo): ?>
+                                <tr>
+                                    <td><?= $this->escapeHtml($tipo['tipo']) ?></td>
+                                    <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
+                                    <td style="text-align: center;">
+                                        <a href="<?= $this->url('examen', ['action' => 'papeleria']) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
+                                            <i class="fa fa-cog"></i>
+                                        </a>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
                 </table>
             </div>
         </div>

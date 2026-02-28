@@ -438,5 +438,13 @@ return [
             'code' => 77,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
         ],
+        'guardarRequisito' => [
+            'code' => 78,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarRequisito' => [
+            'code' => 79,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
     ],
 ];

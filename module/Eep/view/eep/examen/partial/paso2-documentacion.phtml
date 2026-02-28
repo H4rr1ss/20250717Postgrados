@@ -35,62 +35,45 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="fila-pendiente">
-                                    <td>1</td>
-                                    <td>Proyecto de graduación empastado</td>
-                                    <td>3 ejemplares</td>
-                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
-                                    <td>-</td>
+                                <?php if (!empty($docsFisicos)): ?>
+                                <?php foreach ($docsFisicos as $i => $doc): ?>
+                                <?php
+                                    $recibido    = (int)$doc['recibido'];
+                                    $filaClase   = $recibido ? 'fila-aceptada' : 'fila-pendiente';
+                                    $badgeClase  = $recibido ? 'estado-aceptado' : 'estado-pendiente';
+                                    $badgeTexto  = $recibido ? 'Recibido'       : 'Pendiente';
+                                    $btnClase    = $recibido ? 'active'         : '';
+                                    $fechaTexto  = ($recibido && $doc['fecha_recepcion'])
+                                                    ? date('d/m/Y', strtotime($doc['fecha_recepcion']))
+                                                    : '-';
+                                ?>
+                                <tr class="<?= $filaClase ?>" data-cod-requisito="<?= (int)$doc['cod_requisito'] ?>">
+                                    <td><?= $i + 1 ?></td>
+                                    <td>
+                                        <?= htmlspecialchars($doc['nombre']) ?>
+                                        <?php if (!empty($doc['descripcion'])): ?>
+                                        <small class="text-muted d-block"><?= htmlspecialchars($doc['descripcion']) ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($doc['copias_requeridas'] ?? '-') ?></td>
+                                    <td><span class="estado-badge <?= $badgeClase ?>"><?= $badgeTexto ?></span></td>
+                                    <td class="celda-fecha"><?= $fechaTexto ?></td>
                                     <td style="text-align: center;">
                                         <div class="acciones-grupo">
-                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
+                                            <button class="btn-accion btn-aceptar <?= $btnClase ?>" title="Aceptar" data-estado="aceptar">
                                                 <i class="fa fa-check"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr class="fila-pendiente">
-                                    <td>2</td>
-                                    <td>CD con versión digital</td>
-                                    <td>2 copias</td>
-                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
-                                    <td>-</td>
-                                    <td style="text-align: center;">
-                                        <div class="acciones-grupo">
-                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </div>
+                                <?php endforeach; ?>
+                                <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted" style="padding: 20px;">
+                                        <i class="fa fa-info-circle"></i> No hay documentos físicos configurados para este proceso.
                                     </td>
                                 </tr>
-                                <tr class="fila-pendiente">
-                                    <td>3</td>
-                                    <td>Carta de autorización del asesor (original)</td>
-                                    <td>1 original</td>
-                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
-                                    <td>-</td>
-                                    <td style="text-align: center;">
-                                        <div class="acciones-grupo">
-                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr class="fila-pendiente">
-                                    <td>4</td>
-                                    <td>Constancia de cierre de pensum</td>
-                                    <td>1 original</td>
-                                    <td><span class="estado-badge estado-pendiente">Pendiente</span></td>
-                                    <td>-</td>
-                                    <td style="text-align: center;">
-                                        <div class="acciones-grupo">
-                                            <button class="btn-accion btn-aceptar" title="Aceptar" data-estado="aceptar">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -296,26 +279,62 @@ $(document).ready(function() {
 
     // Manejar click en guardar cambios
     $('#btnGuardarDocumentacion').on('click', function() {
-        // Recopilar estados de todos los documentos
-        const estados = [];
-        $('.table-documentos tbody tr').each(function() {
+        const btn = $(this);
+
+        // Recopilar estado actual de cada fila
+        const documentos = [];
+        $('.table-documentos tbody tr[data-cod-requisito]').each(function() {
             const fila = $(this);
-            const numeroDoc = fila.find('td').eq(0).text();
-            const nombreDoc = fila.find('td').eq(1).text();
-            const estadoTexto = fila.find('.estado-badge').text().trim();
-            const fechaRecepcion = fila.find('td').eq(4).text();
-            
-            estados.push({
-                numero: numeroDoc,
-                documento: nombreDoc,
-                estado: estadoTexto,
-                fechaRecepcion: fechaRecepcion
+            const codRequisito = parseInt(fila.data('cod-requisito'), 10);
+            const recibido     = fila.find('.btn-aceptar').hasClass('active') ? 1 : 0;
+
+            documentos.push({
+                cod_requisito: codRequisito,
+                recibido:      recibido,
+                observaciones: ''
             });
         });
-        
-        console.log('Estados de documentos a guardar:', estados);
-        $('#alertaRecordatorioGuardarDoc').fadeOut(300);
-        alert('Guardando recepción de documentación...');
+
+        if (documentos.length === 0) {
+            return;
+        }
+
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+
+        const codProceso = <?= isset($proceso['cod_proceso']) ? (int)$proceso['cod_proceso'] : 0 ?>;
+
+        $.ajax({
+            url: '/examen/guardarDocFisico',
+            type: 'POST',
+            data: {
+                cod_proceso: codProceso,
+                documentos:  documentos
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#alertaRecordatorioGuardarDoc').fadeOut(300);
+                    mostrarToast('Recepción guardada correctamente.', 'success');
+                } else {
+                    mostrarToast('Error: ' + (response.message || 'No se pudo guardar.'), 'danger');
+                }
+            },
+            error: function() {
+                mostrarToast('Error de comunicación con el servidor.', 'danger');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar Recepción');
+            }
+        });
     });
+
+    function mostrarToast(mensaje, tipo) {
+        const id = 'toast-doc-' + Date.now();
+        const html = `<div id="${id}" class="alert alert-${tipo}" role="alert"
+            style="position:fixed;bottom:20px;right:20px;z-index:9999;min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
+            ${mensaje}
+        </div>`;
+        $('body').append(html);
+        setTimeout(function() { $('#' + id).fadeOut(400, function() { $(this).remove(); }); }, 3500);
+    }
 });
 </script>

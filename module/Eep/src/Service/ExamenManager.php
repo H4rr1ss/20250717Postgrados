@@ -207,6 +207,38 @@ class ExamenManager
     }
 
     /**
+     * T-22.1: Gestión administrativa de requisitos
+     */
+    public function getTodosRequisitos(): array
+    {
+        return $this->execute('SELECT cod_requisito, nombre, descripcion FROM examen_requisito_documento WHERE activo = 1');
+    }
+
+    public function upsertRequisito($data): int
+    {
+        if (isset($data['id']) && (int)$data['id'] > 0) {
+            $this->execute('UPDATE examen_requisito_documento SET nombre = :nombre, descripcion = :descripcion WHERE cod_requisito = :id', [
+                'id' => $data['id'],
+                'nombre' => $data['nombre'],
+                'descripcion' => $data['descripcion']
+            ]);
+            return (int)$data['id'];
+        } else {
+            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_paso, activo) VALUES (:nombre, :descripcion, :paso, 1)', [
+                'nombre' => $data['nombre'],
+                'descripcion' => $data['descripcion'],
+                'paso' => $data['cod_paso']
+            ]);
+            return $this->getLastInsertId();
+        }
+    }
+
+    public function desactivarRequisito(int $id): bool
+    {
+        return (bool)$this->execute('UPDATE examen_requisito_documento SET activo = 0 WHERE cod_requisito = :id', ['id' => $id]);
+    }
+
+    /**
      * Obtiene los documentos subidos para un proceso (versión actual) y su última revisión.
      * T-05
      */
