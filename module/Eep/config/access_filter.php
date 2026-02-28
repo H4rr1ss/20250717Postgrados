@@ -409,5 +409,34 @@ return [
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
+        'revisarpapeleria' => [
+            'code' => 71,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
+        'inscripcion' => [
+            'code' => 72,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'subirDocumento' => [
+            'code' => 73,
+            'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarRevision' => [
+            'code' => 74,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarDocFisico' => [
+            'code' => 75,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarTerna' => [
+            'code' => 76,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'avanzarPaso' => [
+            'code' => 77,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
+        ],
     ],
 ];

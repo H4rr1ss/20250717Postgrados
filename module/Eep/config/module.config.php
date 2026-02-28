@@ -58,6 +58,7 @@ use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
 use Eep\Controller\ExamenController;
+use Eep\Controller\Factory\ExamenControllerFactory;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -75,7 +76,7 @@ return [
             MassiveLoadController::class => LazyControllerAbstractFactory::class,
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
-            ExamenController::class => LazyControllerAbstractFactory::class,
+            ExamenController::class => ExamenControllerFactory::class,
         ],
     ],
     'controller_plugins' => [

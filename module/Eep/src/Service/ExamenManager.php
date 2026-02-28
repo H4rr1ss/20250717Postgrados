@@ -34,6 +34,53 @@ class ExamenManager
         return $this->execute($sql);
     }
 
+    /**
+     * Inicia un nuevo proceso de examen para un estudiante.
+     * T-13
+     */
+    public function iniciarProceso(int $codUsuario, int $codTipoExamen): int
+    {
+        // 1. Obtener el primer paso del catálogo para este tipo de examen
+        $sqlPaso = 'SELECT cod_paso 
+                    FROM examen_paso_catalogo 
+                    WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
+                      AND numero_orden = 1 
+                      AND activo = 1 
+                    LIMIT 1';
+        $resPaso = $this->execute($sqlPaso, ['tipo' => $codTipoExamen]);
+        $primerPaso = !empty($resPaso) ? $resPaso[0]['cod_paso'] : 1; // Default fallback
+
+        // 2. Crear el registro maestro del proceso
+        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual, estado)
+                      VALUES (:usuario, :tipo, :paso, "activo")';
+        $this->adapter->createStatement($sqlMaster, [
+            'usuario' => $codUsuario,
+            'tipo'    => $codTipoExamen,
+            'paso'    => $primerPaso
+        ])->execute();
+
+        $codProceso = $this->adapter->getDriver()->getLastGeneratedValue();
+
+        // 3. Iniciar el primer paso técnicamente
+        $sqlPrimerPaso = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
+                          VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)';
+        $this->adapter->createStatement($sqlPrimerPaso, [
+            'proceso' => $codProceso,
+            'paso'    => $primerPaso
+        ])->execute();
+
+        // 4. Registrar en el historial de auditoría
+        $this->registrarHistorial([
+            'cod_proceso' => $codProceso,
+            'cod_usuario' => $codUsuario,
+            'tipo_evento' => 'inicio_proceso',
+            'descripcion' => 'Iniciando proceso de graduación tipo ID: ' . $codTipoExamen,
+            'datos_nuevos' => ['cod_tipo_examen' => $codTipoExamen, 'cod_paso_inicial' => $primerPaso]
+        ]);
+
+        return (int) $codProceso;
+    }
+
     public function getProcesos(array $filtros = []): array
     {
         $pagina = $filtros['pagina'] ?? 1;
@@ -122,6 +169,25 @@ class ExamenManager
 
         $result = $this->execute($sql, ['carne' => $carne]);
         return $result[0] ?? null;
+    }
+
+    /**
+     * Obtiene la información académica de un estudiante asociado a un proceso de examen.
+     * T-15
+     */
+    public function getEstudiantePorProceso(int $codProceso): ?array
+    {
+        $sql = 'SELECT u.registro_academico FROM examen_proceso ep 
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario 
+                WHERE ep.cod_proceso = :proceso';
+        
+        $res = $this->execute($sql, ['proceso' => $codProceso]);
+        
+        if (empty($res)) {
+            return null;
+        }
+
+        return $this->getEstudiante($res[0]['registro_academico']);
     }
 
     /**
@@ -282,6 +348,33 @@ class ExamenManager
 
         // Si fecha_completado es NULL, el paso sigue abierto
         return $result[0]['fecha_completado'] === null;
+    }
+
+    /**
+     * Registra un nuevo documento en la base de datos (con enlace a Google Drive).
+     * T-09/T-14
+     */
+    public function guardarDocumentoDb(array $data): int
+    {
+        $sql = 'INSERT INTO examen_documento 
+                    (cod_proceso, cod_requisito, drive_file_id, drive_view_link, drive_download_link, nombre_archivo, mime_type, tamano_bytes, subido_por)
+                VALUES 
+                    (:proceso, :requisito, :drive_id, :view_link, :download_link, :nombre, :mime, :tamano, :usuario)';
+        
+        $params = [
+            'proceso'       => $data['cod_proceso'],
+            'requisito'     => $data['cod_requisito'],
+            'drive_id'      => $data['drive_file_id'],
+            'view_link'     => $data['drive_view_link'],
+            'download_link' => $data['drive_download_link'],
+            'nombre'        => $data['nombre_archivo'],
+            'mime'          => $data['mime_type'],
+            'tamano'        => $data['tamano_bytes'],
+            'usuario'       => $data['subido_por']
+        ];
+
+        $this->adapter->createStatement($sql, $params)->execute();
+        return (int) $this->adapter->getDriver()->getLastGeneratedValue();
     }
 
     /**
