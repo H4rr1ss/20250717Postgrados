@@ -1,3 +1,12 @@
+<?php
+// Pre-cargar datos de BD
+$roles = ['presidente' => 'Presidente', 'secretario' => 'Secretario', 'vocal' => 'Vocal'];
+$examinadores = $terna['examinadores'] ?? [];
+$programacion = $terna['programacion'] ?? [];
+$fechaExamen  = $programacion['fecha'] ?? '';
+$horaExamen   = !empty($programacion['hora']) ? date('H:i', strtotime($programacion['hora'])) : '09:00';
+$codProceso   = (int)($proceso['cod_proceso'] ?? 0);
+?>
 <!-- Paso 3: Terna de Examinadores -->
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
@@ -20,13 +29,13 @@
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Fecha del Examen</label>
-                                                <input type="date" class="form-control" id="fechaExamen">
+                                                <input type="date" class="form-control" id="fechaExamen" value="<?= htmlspecialchars($fechaExamen) ?>">
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Hora de Inicio</label>
-                                                <input type="time" class="form-control" id="horaExamen" value="09:00">
+                                                <input type="time" class="form-control" id="horaExamen" value="<?= htmlspecialchars($horaExamen) ?>">
                                             </div>
                                         </div>
                                         <div class="col-md-4" style="text-align: right;">
@@ -46,56 +55,34 @@
                 </div>
                 
                 <div class="row">
-                    <!-- Examinador 1 -->
+                    <?php foreach ($roles as $rol => $etiqueta): ?>
+                    <?php
+                        $datos = $examinadores[$rol] ?? [];
+                        $nombre    = htmlspecialchars($datos['nombre']    ?? '');
+                        $colegiado = htmlspecialchars($datos['colegiado'] ?? '');
+                        $correo    = htmlspecialchars($datos['correo']    ?? '');
+                    ?>
                     <div class="col-md-4">
-                        <div class="examinador-card">
-                            <h5 class="examinador-titulo">Examinador 1</h5>
-                            
-                            <div class="form-group">
-                                <label for="nombre1">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre1" placeholder="">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="colegiado1">Número de colegiado</label>
-                                <input type="text" class="form-control" id="colegiado1" placeholder="">
-                            </div>
-                        </div>
-                    </div>
+                        <div class="examinador-card" data-rol="<?= $rol ?>">
+                            <h5 class="examinador-titulo"><?= $etiqueta ?></h5>
 
-                    <!-- Examinador 2 -->
-                    <div class="col-md-4">
-                        <div class="examinador-card">
-                            <h5 class="examinador-titulo">Examinador 2</h5>
-                            
                             <div class="form-group">
-                                <label for="nombre2">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre2" placeholder="">
+                                <label>Nombre Completo</label>
+                                <input type="text" class="form-control examinador-nombre" placeholder="" value="<?= $nombre ?>">
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="colegiado2">Número de colegiado</label>
-                                <input type="text" class="form-control" id="colegiado2" placeholder="">
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Examinador 3 -->
-                    <div class="col-md-4">
-                        <div class="examinador-card">
-                            <h5 class="examinador-titulo">Examinador 3</h5>
-                            
                             <div class="form-group">
-                                <label for="nombre3">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre3" placeholder="">
+                                <label>Número de colegiado</label>
+                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>">
                             </div>
-                            
+
                             <div class="form-group">
-                                <label for="colegiado3">Número de colegiado</label>
-                                <input type="text" class="form-control" id="colegiado3" placeholder="">
+                                <label>Correo electrónico</label>
+                                <input type="email" class="form-control examinador-correo" placeholder="" value="<?= $correo ?>">
                             </div>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
 
                 <!-- Acciones -->
@@ -196,66 +183,100 @@
 
 <script>
 $(document).ready(function() {
-    // Manejar guardar cambios de fecha y hora
+    const COD_PROCESO = <?= $codProceso ?>;
+
+    // ── Helpers ──────────────────────────────────────────────────
+    function mostrarToast(mensaje, tipo) {
+        const id  = 'toast-terna-' + Date.now();
+        const html = `<div id="${id}" class="alert alert-${tipo}" role="alert"
+            style="position:fixed;bottom:20px;right:20px;z-index:9999;
+                   min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
+            ${mensaje}</div>`;
+        $('body').append(html);
+        setTimeout(function() { $('#' + id).fadeOut(400, function() { $(this).remove(); }); }, 3500);
+    }
+
+    function recopilarTerna() {
+        const terna = {};
+        $('.examinador-card').each(function() {
+            const rol      = $(this).data('rol');
+            const nombre   = $(this).find('.examinador-nombre').val().trim();
+            const colegiado = $(this).find('.examinador-colegiado').val().trim();
+            const correo   = $(this).find('.examinador-correo').val().trim();
+            terna[rol] = { nombre: nombre, colegiado: colegiado, correo: correo };
+        });
+        return terna;
+    }
+
+    function enviarTerna(terna, programacion, btn, labelOk) {
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        $.ajax({
+            url:  '/examen/guardarTerna',
+            type: 'POST',
+            data: {
+                cod_proceso:  COD_PROCESO,
+                terna:        terna,
+                programacion: programacion
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    mostrarToast(labelOk, 'success');
+                } else {
+                    mostrarToast('Error: ' + (response.message || 'No se pudo guardar.'), 'danger');
+                }
+            },
+            error: function() {
+                mostrarToast('Error de comunicación con el servidor.', 'danger');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(btn.data('label-orig'));
+            }
+        });
+    }
+
+    // Guardar la etiqueta original de cada botón para restaurarla
+    $('#btnGuardarCambios, #btnGuardarTerna').each(function() {
+        $(this).data('label-orig', $(this).html());
+    });
+
+    // ── Guardar fecha/hora ────────────────────────────────────────
     $('#btnGuardarCambios').on('click', function() {
-        const fechaExamen = $('#fechaExamen').val();
-        const horaExamen = $('#horaExamen').val();
-        
-        if (!fechaExamen) {
-            alert('Por favor, seleccione una fecha para el examen.');
-            return;
-        }
-        
-        if (!horaExamen) {
-            alert('Por favor, seleccione una hora para el examen.');
-            return;
-        }
-        
-        console.log('Fecha del examen a guardar:', fechaExamen, 'Hora:', horaExamen);
-        alert('Guardando fecha y hora del examen: ' + fechaExamen + ' a las ' + horaExamen);
+        const fecha = $('#fechaExamen').val();
+        const hora  = $('#horaExamen').val();
+
+        if (!fecha) { mostrarToast('Seleccione una fecha para el examen.', 'warning'); return; }
+        if (!hora)  { mostrarToast('Seleccione una hora para el examen.',  'warning'); return; }
+
+        const terna = recopilarTerna();
+        enviarTerna(terna, { fecha: fecha, hora: hora }, $(this), 'Fecha y hora guardadas correctamente.');
     });
-    
-    // Manejar cancelar
+
+    // ── Cancelar fecha/hora ───────────────────────────────────────
     $('#btnCancelar').on('click', function() {
-        if (confirm('¿Está seguro que desea cancelar los cambios?')) {
-            $('#fechaExamen').val('');
-            $('#horaExamen').val('09:00');
-            console.log('Cambios cancelados');
+        if (confirm('¿Está seguro que desea cancelar los cambios de fecha?')) {
+            $('#fechaExamen').val('<?= htmlspecialchars($fechaExamen) ?>');
+            $('#horaExamen').val('<?= htmlspecialchars($horaExamen) ?>');
         }
     });
 
-    // Manejar guardar terna
+    // ── Guardar terna completa ────────────────────────────────────
     $('#btnGuardarTerna').on('click', function() {
-        const terna = {
-            examinador1: {
-                nombre: $('#nombre1').val().trim(),
-                colegiado: $('#colegiado1').val().trim()
-            },
-            examinador2: {
-                nombre: $('#nombre2').val().trim(),
-                colegiado: $('#colegiado2').val().trim()
-            },
-            examinador3: {
-                nombre: $('#nombre3').val().trim(),
-                colegiado: $('#colegiado3').val().trim()
-            }
-        };
+        const terna = recopilarTerna();
+        const fecha = $('#fechaExamen').val();
+        const hora  = $('#horaExamen').val();
 
-        // Validar que todos los campos estén llenos
+        // Validar que todos los roles tengan nombre y colegiado
         let camposVacios = false;
-        Object.keys(terna).forEach(key => {
-            if (!terna[key].nombre || !terna[key].colegiado) {
-                camposVacios = true;
-            }
+        $.each(terna, function(rol, datos) {
+            if (!datos.nombre || !datos.colegiado) { camposVacios = true; }
         });
 
         if (camposVacios) {
-            alert('Por favor, complete todos los campos de la terna.');
+            mostrarToast('Complete nombre y número de colegiado de cada examinador.', 'warning');
             return;
         }
 
-        console.log('Terna a guardar:', terna);
-        alert('Guardando terna de examinadores...');
+        enviarTerna(terna, { fecha: fecha, hora: hora }, $(this), 'Terna guardada correctamente.');
     });
 });
 </script>

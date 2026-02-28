@@ -534,13 +534,17 @@ class ExamenController extends AbstractActionController {
             // T-17: Cargar checklist de documentos físicos para el paso 2
             $docsFisicos = $this->examenManager->getDocumentosFisicos($idProceso);
 
+            // T-18: Cargar terna de examinadores para el paso 3
+            $terna = $this->examenManager->getTerna($idProceso);
+
             $vm = new ViewModel([
                 'proceso'     => $proceso,
                 'estudiante'  => $estudiante,
                 'paso'        => $paso,
                 'estados'     => $estados,
                 'documentos'  => $documentos,
-                'docsFisicos' => $docsFisicos
+                'docsFisicos' => $docsFisicos,
+                'terna'       => $terna
             ]);
             $vm->setTemplate('eep/examen/revisarpapeleria');
             return $vm;

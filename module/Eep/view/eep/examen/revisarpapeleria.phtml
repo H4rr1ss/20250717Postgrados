@@ -118,7 +118,8 @@ $this->headTitle('Revisión de papelería');
         'paso'        => $this->paso,
         'estados'     => $this->estados,
         'documentos'  => $this->documentos,
-        'docsFisicos' => $this->docsFisicos ?? []
+        'docsFisicos' => $this->docsFisicos ?? [],
+        'terna'       => $this->terna ?? ['examinadores' => [], 'programacion' => ['fecha' => null, 'hora' => null]]
     ]);
 ?>
 
