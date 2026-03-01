@@ -70,6 +70,14 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                     </div>
                 </div>
 
+                <pre>
+                    <?php var_dump($this->procesos); ?>
+                    <div>-------------------------</div>
+                    <?php var_dump($this->paginacion); ?>
+                    <div>-------------------------</div>
+                    <?php var_dump($this->filtros); ?>
+                </pre>
+
                 <!-- Tabla de solicitudes -->
                 <div class="table-responsive">
                     <table class="table table-custom-solicitudes" id="tablaSolicitudes">
@@ -83,13 +91,14 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                             </tr>
                         </thead>
                         <tbody>
+                            
                             <?php foreach ($this->procesos as $p): ?>
                             <tr>
                                 <td><?= $this->escapeHtml($p['registro_academico']) ?></td>
-                                <td><?= date('d/m/Y', strtotime($p['fecha_creacion'])) ?></td>
+                                <td><?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?></td>
                                 <td>
-                                    <span class="label label-<?= ($p['estado'] == 'activo' ? 'success' : 'default') ?>">
-                                        <?= ucfirst($p['estado']) ?>
+                                    <span class="label label-<?= ($p['estado_paso'] == 'activo' ? 'success' : 'warning') ?>" style="font-size: 14px; font-weight: 700;">
+                                        <?= ucfirst($p['estado_paso']) ?>
                                     </span>
                                 </td>
                                 <td style="text-align: center;">
@@ -98,7 +107,7 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                                     </a>
                                 </td>
                                 <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle" onclick="verDetalleProceso(<?= $p['cod_proceso'] ?>)">
+                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
                                         <i class="fa fa-info-circle"></i>
                                     </button>
                                 </td>
@@ -106,18 +115,46 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php if (empty($procesos)) : ?>
+                        <div style="padding: 65px; text-align: center;">
+                            <p style="margin: 0; font-size: 20px; color: #6c757f;">
+                                No hay solicitudes de estudiantes registradas.
+                            </p>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Paginación -->
                 <div class="row">
                     <div class="col-md-12">
                         <nav aria-label="Paginación" style="text-align: right;">
-                            <?= $this->paginationControl(
-                                $this->procesos,
-                                'sliding',
-                                'partial/paginator',
-                                ['route' => 'examen', 'action' => 'solicitudes', 'filtros' => $this->filtros]
-                            ) ?>
+                        <?php
+                            $pag       = $this->paginacion;
+                            $pagActual = (int)$pag['pagina'];
+                            $pagTotal  = (int)$pag['paginas_total'];
+                            $baseUrl   = $this->url('examen', ['action' => 'solicitudes'])
+                                       . '?carne=' . urlencode($this->filtros['carne'] ?? '')
+                                       . '&estado=' . urlencode($this->filtros['estado'] ?? '')
+                                       . '&page=';
+                        ?>
+                        <?php if ($pagTotal > 1): ?>
+                        <ul class="pagination pagination-sm" style="display:inline-flex;">
+                            <li class="<?= $pagActual <= 1 ? 'disabled' : '' ?>">
+                                <a href="<?= $baseUrl . max(1, $pagActual - 1) ?>">&laquo;</a>
+                            </li>
+                            <?php for ($i = max(1, $pagActual - 2); $i <= min($pagTotal, $pagActual + 2); $i++): ?>
+                            <li class="<?= $i === $pagActual ? 'active' : '' ?>">
+                                <a href="<?= $baseUrl . $i ?>"><?= $i ?></a>
+                            </li>
+                            <?php endfor; ?>
+                            <li class="<?= $pagActual >= $pagTotal ? 'disabled' : '' ?>">
+                                <a href="<?= $baseUrl . min($pagTotal, $pagActual + 1) ?>">&raquo;</a>
+                            </li>
+                        </ul>
+                        <small class="text-muted" style="margin-left:10px;">
+                            Página <?= $pagActual ?> de <?= $pagTotal ?> &mdash; <?= $pag['total'] ?> resultados
+                        </small>
+                        <?php endif; ?>
                         </nav>
                     </div>
                 </div>
@@ -140,10 +177,6 @@ $(document).ready(function() {
         if (e.which == 13) aplicarFiltros();
     });
 });
-
-function verDetalleProceso(id) {
-    alert('Detalles del proceso ID: ' + id);
-}
 </script>
 
 <!-- Modal para Revisar Solicitud -->
@@ -173,11 +206,6 @@ function verDetalleProceso(id) {
                         <p>Lista de documentos presentados por el estudiante...</p>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-danger" id="btnRechazar">Rechazar</button>
-                <button type="button" class="btn btn-success" id="btnAprobar">Aprobar</button>
             </div>
         </div>
     </div>

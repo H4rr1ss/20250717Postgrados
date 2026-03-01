@@ -3,7 +3,7 @@
 namespace Eep\Controller\Factory;
 
 use Interop\Container\ContainerInterface;
-use Laminas\ServiceManager\Factory\FactoryInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Eep\Controller\ExamenController;
 use Eep\Service\ExamenManager;
 

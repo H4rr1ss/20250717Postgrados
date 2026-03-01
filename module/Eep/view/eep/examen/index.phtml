@@ -50,8 +50,8 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                         <tbody>
                             <?php foreach ($this->tiposExamen as $tipo): ?>
                                 <tr>
-                                    <td><?= $this->escapeHtml($tipo['tipo']) ?></td>
                                     <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
+                                    <td><?= $this->escapeHtml($tipo['descripcion']) ?></td>
                                     <td style="text-align: center;">
                                         <a href="<?= $this->url('examen', ['action' => 'papeleria']) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
                                             <i class="fa fa-cog"></i>

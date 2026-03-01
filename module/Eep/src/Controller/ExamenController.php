@@ -25,10 +25,7 @@ class ExamenController extends AbstractActionController {
 
     public function indexAction() {
         $tiposExamen = $this->examenManager->getTiposExamen();
-        
-        // El usuario logueado (Simulado por ahora hasta llegar a T-29)
-        $userId = $this->pg()->userId(); 
-        $procesosActivos = $this->examenManager->getProcesos($userId);
+        $procesosActivos = $this->examenManager->getProcesos(['limite' => 5]);
 
         return new ViewModel([
             'tiposExamen' => $tiposExamen,
@@ -42,7 +39,7 @@ class ExamenController extends AbstractActionController {
     public function inscripcionAction() {
         $request = $this->getRequest();
         if ($request->isPost()) {
-            $userId = $this->pg()->userId();
+            $userId = $this->layout()->role->getUserCode();
             $tipoExamenId = (int) $request->getPost('tipo_examen_id');
 
             if ($tipoExamenId > 0) {
@@ -131,7 +128,7 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
         }
 
-        $userId      = $this->pg()->userId();
+        $userId      = $this->layout()->role->getUserCode();
         $codProceso  = (int) $request->getPost('cod_proceso');
         $codRequisito = (int) $request->getPost('cod_requisito');
         $files       = $request->getFiles()->toArray();
@@ -203,7 +200,7 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
         }
 
-        $userId = $this->pg()->userId();
+        $userId = $this->layout()->role->getUserCode();
         $data = [
             'cod_documento'   => (int) $request->getPost('cod_documento'),
             'cod_proceso'     => (int) $request->getPost('cod_proceso'),
@@ -254,7 +251,7 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
         }
 
-        $userId = $this->pg()->userId();
+        $userId = $this->layout()->role->getUserCode();
         $codProceso = (int) $request->getPost('cod_proceso');
         $documentos = $request->getPost('documentos'); // Array esperado: [['cod_requisito' => X, 'recibido' => 1|0, 'observaciones' => '...'], ...]
 
@@ -295,7 +292,7 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
         }
 
-        $userId = $this->pg()->userId();
+        $userId = $this->layout()->role->getUserCode();
         $codProceso = (int) $request->getPost('cod_proceso');
         $terna = $request->getPost('terna'); // Array esperado: ['presidente' => [...], 'secretario' => [...], 'vocal' => [...]]
         $programacion = $request->getPost('programacion'); // Array esperado: ['fecha' => 'YYYY-MM-DD', 'hora' => 'HH:MM']
@@ -337,7 +334,7 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
         }
 
-        $userId = $this->pg()->userId();
+        $userId = $this->layout()->role->getUserCode();
         $codProceso = (int) $request->getPost('cod_proceso');
         $codPasoActual = (int) $request->getPost('cod_paso_actual');
 
@@ -378,7 +375,7 @@ class ExamenController extends AbstractActionController {
             return $this->redirect()->toRoute('examen');
         }
 
-        $userId = $this->pg()->userId();
+        $userId = $this->layout()->role->getUserCode();
         
         // 1. Obtener información del paso actual
         $pasoActual = $this->examenManager->getPasoActual($idProceso);
@@ -428,11 +425,6 @@ class ExamenController extends AbstractActionController {
                 'subtitulo' => 'Revisión de documentos entregados',
                 'partial' => 'eep/examen/partial/paso1-papeleria'
             ],
-            // 2 => [
-            //     'titulo' => 'Aprobación de Asesor',
-            //     'subtitulo' => 'Validación del asesor asignado',
-            //     'partial' => 'eep/examen/partial/paso2-asesor'
-            // ],
             2 => [
                 'titulo' => 'Entrega de Documentación',
                 'subtitulo' => 'Recepción física de documentos',
@@ -443,36 +435,11 @@ class ExamenController extends AbstractActionController {
                 'subtitulo' => 'Revisión de requisitos académicos',
                 'partial' => 'eep/examen/partial/paso3-terna'
             ],
-            // 4 => [
-            //     'titulo' => 'Programación de Fecha',
-            //     'subtitulo' => 'Asignación de fecha de examen',
-            //     'partial' => 'eep/examen/partial/paso4-programacion'
-            // ],
             4 => [
                 'titulo' => 'Notificación',
                 'subtitulo' => 'Comunicación al estudiante',
                 'partial' => 'eep/examen/partial/paso4-notificacion'
             ],
-            // 5 => [
-            //     'titulo' => 'Preparación de Examen',
-            //     'subtitulo' => 'Configuración del tribunal',
-            //     'partial' => 'eep/examen/partial/paso5-preparacion'
-            // ],
-            // 6 => [
-            //     'titulo' => 'Realización del Examen',
-            //     'subtitulo' => 'Ejecución del examen privado',
-            //     'partial' => 'eep/examen/partial/paso6-realizacion'
-            // ],
-            // 7 => [
-            //     'titulo' => 'Calificación',
-            //     'subtitulo' => 'Registro de resultado',
-            //     'partial' => 'eep/examen/partial/paso7-calificacion'
-            // ],
-            // 8 => [
-            //     'titulo' => 'Cierre y Acta Final',
-            //     'subtitulo' => 'Generación de acta oficial',
-            //     'partial' => 'eep/examen/partial/paso8-cierre'
-            // ],
         ];
 
         // Asignar subtitulos de fecha dinámicamente
@@ -497,7 +464,8 @@ class ExamenController extends AbstractActionController {
         $idProceso = $this->params()->fromRoute('id', null);
 
         if ($idProceso) {
-            $proceso = $this->examenManager->getProceso($idProceso);
+            $proceso = $this->examenManager->getProceso((int) $idProceso);
+
             if (!$proceso) {
                 $this->flashMessenger()->addErrorMessage('Proceso no encontrado');
                 return $this->redirect()->toRoute('examen', ['action' => 'solicitudes']);
@@ -507,26 +475,40 @@ class ExamenController extends AbstractActionController {
             $pasoActualObj = $this->examenManager->getPasoActual($idProceso);
             
             // Permitir navegar por pasos vía query string, o cargar el actual por defecto
-            $paso = (int) $this->params()->fromQuery('paso', ($pasoActualObj ? $pasoActualObj['cod_paso_actual'] : 1));
+            $paso = $this->params()->fromQuery('paso', ($pasoActualObj ? $pasoActualObj['cod_paso_actual'] : 1));
             
-            // Obtener fechas de hitos desde el historial
-            $hitos = $this->examenManager->getFechasHitos($idProceso);
+            // Obtener fechas de los estados
+            $fechas = $this->examenManager->getFechasPasosCompletado($idProceso);
 
             $estados = [
-                1 => ['titulo' => 'Revisión de Papelería', 'partial' => 'eep/examen/partial/paso1-papeleria'],
-                2 => ['titulo' => 'Solicitud y Asesor',   'partial' => 'eep/examen/partial/paso2-asesor'],
-                3 => ['titulo' => 'Verificación Admin',  'partial' => 'eep/examen/partial/paso3-verificacion'],
-                4 => ['titulo' => 'Programación y Terna','partial' => 'eep/examen/partial/paso4-programacion'],
-                5 => ['titulo' => 'Preparación de Acta', 'partial' => 'eep/examen/partial/paso5-preparacion'],
-                6 => ['titulo' => 'Realización Examen',  'partial' => 'eep/examen/partial/paso6-realizacion'],
-                7 => ['titulo' => 'Calificación Final',  'partial' => 'eep/examen/partial/paso7-calificacion'],
-                8 => ['titulo' => 'Cierre y Archivo',    'partial' => 'eep/examen/partial/paso8-cierre'],
+                1 => [
+                    'titulo' => 'Revisión de Papelería',
+                    'subtitulo' => 'Sin fecha',
+                    'partial' => 'eep/examen/partial/paso1-papeleria'
+                ],
+                2 => [
+                    'titulo' => 'Entrega de Documentación',
+                    'subtitulo' => 'Sin fecha',
+                    'partial' => 'eep/examen/partial/paso2-documentacion'
+                ],
+                3 => [
+                    'titulo' => 'Terna Examinadora',
+                    'subtitulo' => 'Sin fecha',
+                    'partial' => 'eep/examen/partial/paso3-terna'
+                ],
+                4 => [
+                    'titulo' => 'Notificación',
+                    'subtitulo' => 'Sin fecha',
+                    'partial' => 'eep/examen/partial/paso4-notificacion'
+                ],
             ];
 
-            foreach ($estados as $num => &$e) {
-                $e['subtitulo'] = isset($hitos[$num]) ? date('d/m/Y', strtotime($hitos[$num])) : 'Sin fecha';
+            if (!empty($fechas)){
+                foreach ($estados as $num => &$e) {
+                    $e['subtitulo'] = isset($fechas[$num]) ? date('d/m/Y', strtotime($fechas[$num])) : 'Sin fecha';
+                }
+                unset($e);
             }
-            unset($e);
 
             // T-25: Cargar documentos y requisitos para el paso 1
             $documentos = $this->examenManager->getDocumentosYRequisitos($idProceso, 1);
@@ -558,14 +540,18 @@ class ExamenController extends AbstractActionController {
         $procesos = $this->examenManager->getProcesos([
             'pagina' => $pagina,
             'limite' => 10,
-            'estado' => $estado,
-            'carne'  => $carne
+            'estado' => $estado
         ]);
 
         return new ViewModel([
-            'procesos' => $procesos,
+            'procesos'   => $procesos['procesos'],
+            'paginacion' => [
+                'total'         => $procesos['total'],
+                'pagina'        => $procesos['pagina'],
+                'limite'        => $procesos['limite'],
+                'paginas_total' => $procesos['paginas_total'],
+            ],
             'filtros'  => [
-                'pagina' => $pagina,
                 'estado' => $estado,
                 'carne'  => $carne
             ]

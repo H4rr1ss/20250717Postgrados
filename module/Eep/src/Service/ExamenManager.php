@@ -2,9 +2,9 @@
 
 namespace Eep\Service;
 
-use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Db\Sql\Sql;
-use Laminas\Db\ResultSet\ResultSet;
+use Zend\Db\Adapter\AdapterInterface;
+use Zend\Db\Sql\Sql;
+use Zend\Db\ResultSet\ResultSet;
 
 class ExamenManager
 {
@@ -51,8 +51,8 @@ class ExamenManager
         $primerPaso = !empty($resPaso) ? $resPaso[0]['cod_paso'] : 1; // Default fallback
 
         // 2. Crear el registro maestro del proceso
-        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual, estado)
-                      VALUES (:usuario, :tipo, :paso, "activo")';
+        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual)
+                      VALUES (:usuario, :tipo, :paso)';
         $this->adapter->createStatement($sqlMaster, [
             'usuario' => $codUsuario,
             'tipo'    => $codTipoExamen,
@@ -62,8 +62,8 @@ class ExamenManager
         $codProceso = $this->adapter->getDriver()->getLastGeneratedValue();
 
         // 3. Iniciar el primer paso técnicamente
-        $sqlPrimerPaso = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
-                          VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)';
+        $sqlPrimerPaso = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, fecha_inicio)
+                          VALUES (:proceso, :paso, CURRENT_TIMESTAMP)';
         $this->adapter->createStatement($sqlPrimerPaso, [
             'proceso' => $codProceso,
             'paso'    => $primerPaso
@@ -81,6 +81,103 @@ class ExamenManager
         return (int) $codProceso;
     }
 
+    /**
+     * Retorna el numero_orden y fecha_completado de cada paso completado
+     * para el proceso más reciente del estudiante identificado por carne.
+     * El resultado viene ordenado por numero_orden ascendente.
+     */
+    /**
+     * Retorna las fechas de completado de cada paso indexadas por numero_orden.
+     * Ej: [1 => '2026-02-10 09:15:00', 2 => '2026-02-15 14:30:00']
+     */
+    public function getFechasPasosCompletado(int $codProceso): array
+    {
+        $sql = 'SELECT epc.numero_orden,
+                       epp.fecha_completado
+                FROM examen_proceso_paso epp
+                INNER JOIN examen_paso_catalogo epc ON epc.cod_paso = epp.cod_paso
+                WHERE epp.cod_proceso = :proceso
+                  AND epp.fecha_completado IS NOT NULL
+                ORDER BY epc.numero_orden ASC';
+
+        $rows = $this->execute($sql, ['proceso' => $codProceso]);
+
+        // Indexar por numero_orden para acceso directo desde el controlador
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row['numero_orden']] = $row['fecha_completado'];
+        }
+        return $result;
+    }
+
+    /**
+     * Obtiene un único proceso de examen por su cod_proceso.
+     * Retorna null si no existe.
+     */
+    public function getProceso(int $codProceso): ?array
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    et.nombre              AS tipo_examen,
+                    ep.fecha_solicitud,
+                    ep.cod_paso_actual,
+                    epc.nombre             AS nombre_paso_actual,
+                    epc.numero_orden,
+                    COALESCE(epp.estado, "pendiente") AS estado_paso,
+                    ep.cancelado
+                FROM examen_proceso ep
+                JOIN usuario u              ON u.cod_usuario      = ep.cod_usuario
+                JOIN examen_tipo et         ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                LEFT JOIN examen_proceso_paso epp  ON epp.cod_proceso = ep.cod_proceso
+                    AND epp.cod_paso = ep.cod_paso_actual
+                WHERE ep.cod_proceso = :proceso
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Obtiene los requisitos digitales de un paso junto con el documento subido
+     * (si existe) para el proceso dado. Retorna un registro por requisito.
+     */
+    public function getDocumentosYRequisitos(int $codProceso, int $codPaso): array
+    {
+        $sql = 'SELECT
+                    erd.cod_requisito,
+                    erd.nombre            AS nombre_requisito,
+                    erd.descripcion,
+                    erd.formatos_permitidos,
+                    erd.tamano_max_mb,
+                    erd.obligatorio,
+                    ed.cod_documento,
+                    ed.nombre_original,
+                    ed.version,
+                    ed.fecha_subida,
+                    da.drive_web_view_link,
+                    er.estado             AS estado_revision,
+                    er.motivo_rechazo
+                FROM examen_requisito_documento erd
+                LEFT JOIN examen_documento ed ON ed.cod_requisito = erd.cod_requisito
+                    AND ed.cod_proceso = :proceso
+                    AND ed.es_version_actual = 1
+                    AND ed.eliminado = 0
+                LEFT JOIN drive_archivo da ON da.cod_documento = ed.cod_documento
+                LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
+                WHERE erd.cod_paso = :paso
+                  AND erd.tipo_entrega = "digital"
+                  AND erd.activo = 1
+                ORDER BY erd.orden_display ASC';
+
+        return $this->execute($sql, ['proceso' => $codProceso, 'paso' => $codPaso]);
+    }
+
+    // Funcion para obtener datos genericos de procesos de examen con filtros y paginación.
     public function getProcesos(array $filtros = []): array
     {
         $pagina = $filtros['pagina'] ?? 1;
@@ -153,19 +250,13 @@ class ExamenManager
                     CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
                     u.correo,
                     u.telefono,
-                    c.nombre_carrera AS carrera,
-                    p.anio AS pensum_anio,
                     p.descripcion AS pensum_nombre,
-                    co.nombre AS cohorte_nombre,
-                    co.fecha_inicio AS cohorte_fecha
+                    c.nombre_actual AS carrera
                 FROM usuario u
                 LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
-                LEFT JOIN carrera c ON c.cod_carrera = i.cod_carrera
                 LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
-                LEFT JOIN cohorte co ON co.cod_cohorte = i.cod_cohorte
-                WHERE u.registro_academico = :carne
-                ORDER BY i.anio DESC
-                LIMIT 1';
+                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
+                WHERE u.registro_academico = :carne';
 
         $result = $this->execute($sql, ['carne' => $carne]);
         return $result[0] ?? null;
@@ -177,17 +268,25 @@ class ExamenManager
      */
     public function getEstudiantePorProceso(int $codProceso): ?array
     {
-        $sql = 'SELECT u.registro_academico FROM examen_proceso ep 
-                JOIN usuario u ON u.cod_usuario = ep.cod_usuario 
-                WHERE ep.cod_proceso = :proceso';
-        
-        $res = $this->execute($sql, ['proceso' => $codProceso]);
-        
-        if (empty($res)) {
-            return null;
-        }
+        $sql = 'SELECT
+                    u.cod_usuario,
+                    u.registro_academico,
+                    u.cui,
+                    CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
+                    u.correo,
+                    u.telefono,
+                    p.descripcion  AS pensum_nombre,
+                    c.nombre_actual AS carrera
+                FROM examen_proceso ep
+                JOIN usuario u        ON u.cod_usuario  = ep.cod_usuario
+                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
+                LEFT JOIN pensum p     ON p.cod_pensum  = i.cod_pensum
+                LEFT JOIN carrera c    ON c.cod_carrera = p.cod_carrera
+                WHERE ep.cod_proceso = :proceso
+                LIMIT 1';
 
-        return $this->getEstudiante($res[0]['registro_academico']);
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return $result[0] ?? null;
     }
 
     /**
@@ -350,7 +449,7 @@ class ExamenManager
                     epp.fecha_inicio,
                     epp.fecha_completado
                 FROM examen_proceso ep
-                JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                 LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso 
                     AND epp.cod_paso = ep.cod_paso_actual
                 WHERE ep.cod_proceso = :proceso';

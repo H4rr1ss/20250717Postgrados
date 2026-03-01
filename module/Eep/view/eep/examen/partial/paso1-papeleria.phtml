@@ -1,4 +1,11 @@
 <!-- Paso 1: Revisión de Papelería -->
+ <pre>
+    <?php var_dump((int)$this->proceso['numero_orden']); ?>
+    <div>------------------------------</div>
+    <?php var_dump((int)$this->paso); ?>
+    <div>------------------------------</div>
+</pre>
+
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
         <div class="panel-revision">
@@ -39,10 +46,11 @@
                                     <td><?= $doc['fecha_revision'] ? date('d/m/Y', strtotime($doc['fecha_revision'])) : '-' ?></td>
                                     <td><span class="estado-badge <?= $claseBadge ?>"><?= ucfirst($estado) ?></span></td>
                                     <td>
-                                        <input type="text" class="form-control observacion-doc" 
+                                        <!-- <input type="text" class="form-control observacion-doc" 
                                                value="<?= $this->escapeHtml($doc['observacion'] ?? '') ?>" 
                                                placeholder="Motivo de rechazo..."
-                                               <?= ($this->proceso['id_estado_actual'] > 1) ? 'disabled' : '' ?>>
+                                               <?= ($this->proceso['id_estado_actual'] > 1) ? 'disabled' : '' ?>> 
+                                        -->
                                     </td>
                                     <td style="text-align: center;">
                                         <?php if (!empty($doc['url_google_drive'])): ?>
@@ -54,7 +62,9 @@
                                         <?php endif; ?>
                                     </td>
                                     <td style="text-align: center;">
-                                        <?php if ($this->proceso['id_estado_actual'] == 1): ?>
+                                        <?php if ((int)$this->paso > (int)$this->proceso['numero_orden']): ?>
+                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
+                                        <?php else: ?>
                                             <div class="acciones-grupo">
                                                 <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
                                                     <i class="fa fa-check"></i>
@@ -63,8 +73,6 @@
                                                     <i class="fa fa-times"></i>
                                                 </button>
                                             </div>
-                                        <?php else: ?>
-                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

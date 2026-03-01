@@ -43,13 +43,12 @@ $this->headTitle('Revisión de papelería');
                         <div class="info-estudiante">
                             <p><strong>Registro académico:</strong> <?= $this->escapeHtml($this->estudiante['registro_academico']) ?></p>
                             <p><strong>CUI:</strong> <?= $this->escapeHtml($this->estudiante['cui']) ?></p>
-                            <p><strong>Carrera:</strong> <?= $this->escapeHtml($this->estudiante['carrera']) ?></p>
-                            <p><strong>Pensum:</strong> <?= $this->escapeHtml($this->estudiante['pensum']) ?></p>
-                            <p><strong>Cohorte:</strong> <?= $this->escapeHtml($this->estudiante['cohorte']) ?></p>
+                            <p><strong>Carrera:</strong> <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?></p>
+                            <p><strong>Pensum:</strong> <?= $this->escapeHtml($this->estudiante['pensum_nombre'] ?? 'N/A') ?></p>
                         </div>
                         <div class="tipo-examen">
                             <p style="margin-bottom: 5px;"><strong>Tipo de examen:</strong></p>
-                            <p style="font-weight: 600;"><?= $this->escapeHtml($this->proceso['nombre_tipo_examen'] ?? 'N/A') ?></p>
+                            <p style="font-weight: 600;"><?= $this->escapeHtml($this->proceso['tipo_examen'] ?? 'N/A') ?></p>
                         </div>
                     </div>
                 </div>

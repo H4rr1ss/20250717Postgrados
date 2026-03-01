@@ -3,9 +3,9 @@
 namespace Eep\Service\Factory;
 
 use Interop\Container\ContainerInterface;
-use Laminas\ServiceManager\Factory\FactoryInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 use Eep\Service\ExamenManager;
-use Laminas\Db\Adapter\AdapterInterface;
+use Zend\Db\Adapter\AdapterInterface;
 
 class ExamenManagerFactory implements FactoryInterface
 {
