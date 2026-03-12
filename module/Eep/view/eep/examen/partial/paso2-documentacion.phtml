@@ -28,7 +28,6 @@
                                 <tr>
                                     <th style="width: 5%;">#</th>
                                     <th style="width: 35%;">Documento</th>
-                                    <th style="width: 15%;">Copias Requeridas</th>
                                     <th style="width: 15%;">Estado</th>
                                     <th style="width: 15%;">Fecha Recepción</th>
                                     <th style="width: 15%; text-align: center;">Acciones</th>
@@ -55,7 +54,6 @@
                                         <small class="text-muted d-block"><?= htmlspecialchars($doc['descripcion']) ?></small>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?= htmlspecialchars($doc['copias_requeridas'] ?? '-') ?></td>
                                     <td><span class="estado-badge <?= $badgeClase ?>"><?= $badgeTexto ?></span></td>
                                     <td class="celda-fecha"><?= $fechaTexto ?></td>
                                     <td style="text-align: center;">

@@ -63,11 +63,19 @@ class ExamenController extends AbstractActionController {
      * T-14: Gestión de requisitos de papelería (CRUD para el administrador)
      */
     public function papeleriaAction() {
-        // Obtenemos todos los requisitos sin filtros de paso/tipo para la gestión general
-        $requisitos = $this->examenManager->getTodosRequisitos();
-        
+        $codTipoExamen = (int) $this->params()->fromRoute('cod_tipo_examen', 0);
+
+        if ($codTipoExamen <= 0) {
+            return $this->redirect()->toRoute('examen');
+        }
+
+        $requisitos = $this->examenManager->getTodosRequisitos($codTipoExamen);
+        $nombreExamen = $this->examenManager->getNombreTipoExamen($codTipoExamen);
+
         return new ViewModel([
-            'requisitos' => $requisitos
+            'requisitos'    => $requisitos,
+            'codTipoExamen' => $codTipoExamen,
+            'nombreExamen'  => $nombreExamen
         ]);
     }
 
@@ -81,11 +89,12 @@ class ExamenController extends AbstractActionController {
         }
 
         $data = [
-            'id' => $request->getPost('id'),
-            'nombre' => $request->getPost('titulo'),
-            'descripcion' => $request->getPost('descripcion'),
-            'cod_paso' => 2, // Por defecto al paso de papelería
-            'activo' => 1
+            'id'             => $request->getPost('id'),
+            'nombre'         => $request->getPost('titulo'),
+            'descripcion'    => $request->getPost('descripcion'),
+            'cod_tipo_examen'=> (int) $request->getPost('cod_tipo_examen'),
+            'cod_paso'       => 2, // Por defecto al paso de papelería
+            'activo'         => 1
         ];
 
         try {
@@ -191,53 +200,76 @@ class ExamenController extends AbstractActionController {
     }
 
     /**
-     * T-16: Acción para que el administrador guarde la revisión de un documento.
-     * Retorna JSON para manejo vía AJAX.
+     * T-16 / T-25: Guarda la revisión de todos los documentos del Paso 1 en bloque.
+     * Recibe: cod_proceso, cod_paso_actual, requisitos[] (cod_requisito, cod_documento, estado_evaluacion, observacion).
+     * Si todos quedan 'aprobado', avanza el proceso al siguiente paso.
+     * Retorna JSON { success, avanzado, message }.
      */
     public function guardarRevisionAction() {
         $request = $this->getRequest();
         if (!$request->isPost()) {
-            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
         }
 
-        $userId = $this->layout()->role->getUserCode();
-        $data = [
-            'cod_documento'   => (int) $request->getPost('cod_documento'),
-            'cod_proceso'     => (int) $request->getPost('cod_proceso'),
-            'cod_requisito'   => (int) $request->getPost('cod_requisito'),
-            'estado'          => $request->getPost('estado'), // aprobado, rechazado
-            'motivo_rechazo'  => $request->getPost('motivo_rechazo'),
-            'revisado_por'    => $userId
-        ];
+        $userId        = $this->layout()->role->getUserCode();
+        $codProceso    = (int) $request->getPost('cod_proceso');
+        $codPasoActual = (int) $request->getPost('cod_paso_actual');
+        $requisitos    = $request->getPost('requisitos');
 
-        if ($data['cod_documento'] <= 0 || !$data['estado']) {
-            return new JsonModel(['status' => 'error', 'message' => 'Datos insuficientes para la revisión']);
+        if ($codProceso <= 0 || $codPasoActual <= 0 || !is_array($requisitos) || empty($requisitos)) {
+            return new JsonModel(['success' => false, 'message' => 'Datos insuficientes para guardar la revisión']);
         }
 
         try {
-            $success = $this->examenManager->guardarRevisionDocumento($data);
-            
-            if ($success) {
-                // Registrar en historial
+            // 1. Guardar/actualizar revisiones en bloque
+            $this->examenManager->guardarRevisionesBulk($codProceso, $requisitos, $userId);
+
+            // 2. Registrar historial de la revisión
+            $this->examenManager->registrarHistorial([
+                'cod_proceso'  => $codProceso,
+                'cod_usuario'  => $userId,
+                'tipo_evento'  => 'revision_papeleria',
+                'descripcion'  => 'Se guardó la revisión de papelería (Paso 1) en bloque.',
+                'datos_nuevos' => $requisitos,
+            ]);
+
+            // 3. Verificar si todos los requisitos fueron aprobados
+            $todosAprobados = !empty($requisitos) && count(array_filter($requisitos, function ($r) {
+                return ($r['estado_evaluacion'] ?? '') !== 'aprobado';
+            })) === 0;
+
+            if ($todosAprobados) {
+                // 4. Avanzar al siguiente paso
+                $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userId);
+
                 $this->examenManager->registrarHistorial([
-                    'cod_proceso' => $data['cod_proceso'],
-                    'cod_usuario' => $userId,
-                    'tipo_evento' => 'revision_documento',
-                    'descripcion' => "Documento ID {$data['cod_documento']} revisado como: " . $data['estado'],
-                    'datos_nuevos' => $data
+                    'cod_proceso'      => $codProceso,
+                    'cod_usuario'      => $userId,
+                    'tipo_evento'      => 'cambio_paso',
+                    'descripcion'      => 'Papelería completamente aprobada. El proceso avanzó desde el Paso 1.',
+                    'datos_anteriores' => ['cod_paso' => $codPasoActual],
                 ]);
 
                 return new JsonModel([
-                    'status' => 'success', 
-                    'message' => 'Revisión guardada correctamente',
-                    'estado' => $data['estado']
+                    'success'  => true,
+                    'avanzado' => true,
+                    'message'  => '¡Papelería aprobada! El proceso ha avanzado al siguiente paso.',
                 ]);
             }
-            
-            return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la revisión en la base de datos']);
+
+            // Hay rechazados o pendientes: se guarda pero no se avanza
+            $rechazados = count(array_filter($requisitos, function ($r) {
+                return ($r['estado_evaluacion'] ?? '') === 'rechazado';
+            }));
+
+            return new JsonModel([
+                'success'  => true,
+                'avanzado' => false,
+                'message'  => "Revisión guardada. Hay {$rechazados} documento(s) rechazado(s). Corrija los rechazos para poder avanzar.",
+            ]);
 
         } catch (\Exception $e) {
-            return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 
@@ -408,57 +440,57 @@ class ExamenController extends AbstractActionController {
     }
 
     // Revisar solicitud de examen
-    public function revisarpapeleriaAction() {
-        $carne = $this->params()->fromRoute('carne', null)
-               ?: $this->params()->fromQuery('carne', null);
+    // public function revisarpapeleriaAction() {
+    //     $carne = $this->params()->fromRoute('carne', null)
+    //            ?: $this->params()->fromQuery('carne', null);
         
-        // Paso actual (1-10)
-        $paso = (int) $this->params()->fromQuery('paso', 1);
-        if ($paso < 1 || $paso > 10) {
-            $paso = 1;
-        }
+    //     // Paso actual (1-10)
+    //     $paso = (int) $this->params()->fromQuery('paso', 1);
+    //     if ($paso < 1 || $paso > 10) {
+    //         $paso = 1;
+    //     }
 
-        // Definición de los 10 estados del proceso
-        $estados = [
-            1 => [
-                'titulo' => 'Revisión de Papelería',
-                'subtitulo' => 'Revisión de documentos entregados',
-                'partial' => 'eep/examen/partial/paso1-papeleria'
-            ],
-            2 => [
-                'titulo' => 'Entrega de Documentación',
-                'subtitulo' => 'Recepción física de documentos',
-                'partial' => 'eep/examen/partial/paso2-documentacion'
-            ],
-            3 => [
-                'titulo' => 'Terna Examinadora',
-                'subtitulo' => 'Revisión de requisitos académicos',
-                'partial' => 'eep/examen/partial/paso3-terna'
-            ],
-            4 => [
-                'titulo' => 'Notificación',
-                'subtitulo' => 'Comunicación al estudiante',
-                'partial' => 'eep/examen/partial/paso4-notificacion'
-            ],
-        ];
+    //     // Definición de los 10 estados del proceso
+    //     $estados = [
+    //         1 => [
+    //             'titulo' => 'Revisión de Papelería',
+    //             'subtitulo' => 'Revisión de documentos entregados',
+    //             'partial' => 'eep/examen/partial/paso1-papeleria'
+    //         ],
+    //         2 => [
+    //             'titulo' => 'Entrega de Documentación',
+    //             'subtitulo' => 'Recepción física de documentos',
+    //             'partial' => 'eep/examen/partial/paso2-documentacion'
+    //         ],
+    //         3 => [
+    //             'titulo' => 'Terna Examinadora',
+    //             'subtitulo' => 'Revisión de requisitos académicos',
+    //             'partial' => 'eep/examen/partial/paso3-terna'
+    //         ],
+    //         4 => [
+    //             'titulo' => 'Notificación',
+    //             'subtitulo' => 'Comunicación al estudiante',
+    //             'partial' => 'eep/examen/partial/paso4-notificacion'
+    //         ],
+    //     ];
 
-        // Asignar subtitulos de fecha dinámicamente
-        foreach ($estados as $numPaso => &$estado) {
-            if ($numPaso < $paso) {
-                // TODO: Reemplazar con la fecha real de la base de datos
-                $estado['subtitulo'] = '21/02/2026'; 
-            } else {
-                $estado['subtitulo'] = 'Sin fecha';
-            }
-        }
-        unset($estado); // Romper la referencia del último elemento
+    //     // Asignar subtitulos de fecha dinámicamente
+    //     foreach ($estados as $numPaso => &$estado) {
+    //         if ($numPaso < $paso) {
+    //             // TODO: Reemplazar con la fecha real de la base de datos
+    //             $estado['subtitulo'] = '21/02/2026'; 
+    //         } else {
+    //             $estado['subtitulo'] = 'Sin fecha';
+    //         }
+    //     }
+    //     unset($estado); // Romper la referencia del último elemento
 
-        return new ViewModel([
-            'carne' => $carne,
-            'paso' => $paso,
-            'estados' => $estados
-        ]);
-    }
+    //     return new ViewModel([
+    //         'carne' => $carne,
+    //         'paso' => $paso,
+    //         'estados' => $estados
+    //     ]);
+    // }
 
     public function solicitudesAction(){
         $idProceso = $this->params()->fromRoute('id', null);

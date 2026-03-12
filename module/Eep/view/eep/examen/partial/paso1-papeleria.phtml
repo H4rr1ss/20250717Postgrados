@@ -1,11 +1,4 @@
 <!-- Paso 1: Revisión de Papelería -->
- <pre>
-    <?php var_dump((int)$this->proceso['numero_orden']); ?>
-    <div>------------------------------</div>
-    <?php var_dump((int)$this->paso); ?>
-    <div>------------------------------</div>
-</pre>
-
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
         <div class="panel-revision">
@@ -35,26 +28,20 @@
                                 <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($this->documentos as $doc): 
-                                    $estado = $doc['estado_evaluacion'] ?? 'pendiente';
+                                    $estado = $doc['estado_revision'] ?? 'pendiente';
                                     $claseFila = ($estado == 'rechazado') ? 'fila-rechazada' : (($estado == 'pendiente') ? 'fila-pendiente' : '');
                                     $claseBadge = 'estado-pendiente';
                                     if ($estado == 'aprobado') $claseBadge = 'estado-aceptado';
                                     if ($estado == 'rechazado') $claseBadge = 'estado-rechazado';
                                 ?>
-                                <tr class="<?= $claseFila ?>" data-id-requisito="<?= $doc['id_requisito'] ?>">
+                                <tr class="<?= $claseFila ?>" data-cod-requisito="<?= $doc['cod_requisito'] ?>" data-cod-documento="<?= $doc['cod_documento'] ?? '' ?>">
                                     <td><?= $this->escapeHtml($doc['nombre_requisito']) ?></td>
-                                    <td><?= $doc['fecha_revision'] ? date('d/m/Y', strtotime($doc['fecha_revision'])) : '-' ?></td>
+                                    <td><?= !empty($doc['fecha_subida']) ? date('d/m/Y', strtotime($doc['fecha_subida'])) : '-' ?></td>
                                     <td><span class="estado-badge <?= $claseBadge ?>"><?= ucfirst($estado) ?></span></td>
-                                    <td>
-                                        <!-- <input type="text" class="form-control observacion-doc" 
-                                               value="<?= $this->escapeHtml($doc['observacion'] ?? '') ?>" 
-                                               placeholder="Motivo de rechazo..."
-                                               <?= ($this->proceso['id_estado_actual'] > 1) ? 'disabled' : '' ?>> 
-                                        -->
-                                    </td>
+                                    <td><?= $this->escapeHtml($doc['motivo_rechazo'] ?? '') ?></td>
                                     <td style="text-align: center;">
-                                        <?php if (!empty($doc['url_google_drive'])): ?>
-                                            <a href="<?= $doc['url_google_drive'] ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
+                                        <?php if (!empty($doc['drive_web_view_link'])): ?>
+                                            <a href="<?= $this->escapeHtml($doc['drive_web_view_link']) ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                         <?php else: ?>
@@ -62,7 +49,7 @@
                                         <?php endif; ?>
                                     </td>
                                     <td style="text-align: center;">
-                                        <?php if ((int)$this->paso > (int)$this->proceso['numero_orden']): ?>
+                                        <?php if ((int)$this->paso < (int)$this->proceso['numero_orden']): ?>
                                             <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
                                         <?php else: ?>
                                             <div class="acciones-grupo">
@@ -242,34 +229,25 @@ $(document).ready(function() {
     let filaActual = null;
     let botonActual = null;
 
-    // Manejar click en ver documento
-    $('.btn-ver-documento').on('click', function() {
-        alert('Función para ver documento');
-    });
-
-        // Manejar click en botones de acción
+    // ── Acciones de revisión en la tabla ───────────────────────────────────────
     $('.btn-accion').on('click', function() {
         const boton = $(this);
         const grupo = boton.parent();
-        const estadoSeleccionado = boton.data('valor'); 
-        const fila = boton.closest('tr');
-        const nombreRequisito = fila.find('td:first').text();
-        const yaEstaActivo = boton.hasClass('active');
-        
-        if (yaEstaActivo) {
+        const estadoSeleccionado = boton.data('valor');
+        const fila  = boton.closest('tr');
+
+        if (boton.hasClass('active')) {
             aplicarEstadoPendiente(fila, grupo);
             return;
         }
-        
-        if (estadoSeleccionado === 'aprobado') { 
+
+        if (estadoSeleccionado === 'aprobado') {
             aplicarEstadoAceptado(fila, boton, grupo);
         } else if (estadoSeleccionado === 'rechazado') {
-            filaActual = fila;
+            filaActual  = fila;
             botonActual = boton;
-            
-            $('#nombreRequisito').text(nombreRequisito);
-            const obsActual = fila.find('.observacion-doc').val();
-            $('#razonRechazo').val(obsActual);
+            $('#nombreRequisito').text(fila.find('td:first').text());
+            $('#razonRechazo').val(fila.find('td').eq(3).text());
             $('#modalRazonRechazo').modal('show');
         }
     });
@@ -284,13 +262,15 @@ $(document).ready(function() {
         $('#modalRazonRechazo').modal('hide');
     });
 
+    // ── Funciones de estado ────────────────────────────────────────────────────
     function aplicarEstadoAceptado(fila, boton, grupo) {
         fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
         grupo.find('.btn-accion').removeClass('active');
         boton.addClass('active');
-        fila.find('.observacion-doc').val('');
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Aprobado');
+        fila.find('td').eq(3).text('');
+        fila.find('.estado-badge')
+            .removeClass('estado-rechazado estado-pendiente')
+            .addClass('estado-aceptado').text('Aprobado');
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -300,9 +280,10 @@ $(document).ready(function() {
         fila.removeClass('fila-aceptada fila-pendiente').addClass('fila-rechazada');
         grupo.find('.btn-accion').removeClass('active');
         boton.addClass('active');
-        fila.find('.observacion-doc').val(razonRechazo);
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-aceptado estado-pendiente').addClass('estado-rechazado').text('Rechazado');
+        fila.find('td').eq(3).text(razonRechazo);
+        fila.find('.estado-badge')
+            .removeClass('estado-aceptado estado-pendiente')
+            .addClass('estado-rechazado').text('Rechazado');
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -310,9 +291,10 @@ $(document).ready(function() {
     function aplicarEstadoPendiente(fila, grupo) {
         fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
         grupo.find('.btn-accion').removeClass('active');
-        fila.find('.observacion-doc').val('');
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
+        fila.find('td').eq(3).text('');
+        fila.find('.estado-badge')
+            .removeClass('estado-aceptado estado-rechazado')
+            .addClass('estado-pendiente').text('Pendiente');
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -321,62 +303,82 @@ $(document).ready(function() {
         $('#alertaRecordatorioGuardar').fadeIn(400);
     }
 
+    // ── Estado de avance (todos aprobados?) ────────────────────────────────────
     function actualizarEstadoAvance() {
-        const filas = $('.table-requisitos tbody tr');
-        const totalRequisitos = filas.length;
-        const requisitosAceptados = filas.filter('.fila-aceptada').length;
-        const todosAceptados = totalRequisitos > 0 && totalRequisitos === requisitosAceptados;
+        const filas     = $('.table-requisitos tbody tr[data-cod-requisito]');
+        const total     = filas.length;
+        const aceptados = filas.filter('.fila-aceptada').length;
+        const todosAceptados = total > 0 && total === aceptados;
+
+        const pasoActual = <?= (int)$this->paso ?>;
+        $('.timeline-link').each(function() {
+            const pasoLink = parseInt($(this).attr('href').split('paso=')[1]) || 0;
+            if (pasoLink > pasoActual) {
+                if (!todosAceptados) {
+                    $(this).css({ 'opacity': '0.5', 'pointer-events': 'none' });
+                } else {
+                    $(this).css({ 'opacity': '1', 'pointer-events': '' });
+                }
+            }
+        });
+
         return todosAceptados;
     }
 
-    $('.table-requisitos tbody tr').each(function() {
-        const estadoTxt = $(this).find('.estado-badge').text().trim().toLowerCase();
-        if (estadoTxt === 'aprobado' || estadoTxt === 'aceptado') {
+    // ── Inicializar colores al cargar ──────────────────────────────────────────
+    $('.table-requisitos tbody tr[data-cod-requisito]').each(function() {
+        const estado = $(this).find('.estado-badge').text().trim().toLowerCase();
+        if (estado === 'aprobado') {
             $(this).addClass('fila-aceptada');
-        } else if (estadoTxt === 'rechazado') {
+        } else if (estado === 'rechazado') {
             $(this).addClass('fila-rechazada');
         } else {
             $(this).addClass('fila-pendiente');
         }
     });
-    
-    setTimeout(actualizarEstadoAvance, 500);
+    setTimeout(actualizarEstadoAvance, 300);
 
+    // ── Guardar cambios (AJAX) ─────────────────────────────────────────────────
     $('#btnGuardarCambios').on('click', function() {
-        if ($(this).hasClass('disabled')) return;
-        const btn = $(this);
+        const btn          = $(this);
         const originalText = btn.text();
-        const requisitos = [];
-        $('.table-requisitos tbody tr[data-id-requisito]').each(function() {
-            const fila = $(this);
-            const idReq = fila.data('id-requisito');
-            const botonActivo = fila.find('.btn-accion.active');
-            const observacion = fila.find('.observacion-doc').val();
-            let estado = 'pendiente';
-            if (botonActivo.length > 0) {
-                estado = botonActivo.data('valor');
-            }
+        const requisitos   = [];
+
+        $('.table-requisitos tbody tr[data-cod-requisito]').each(function() {
+            const fila      = $(this);
+            const activo    = fila.find('.btn-accion.active');
+            const estado    = activo.length ? activo.data('valor') : 'pendiente';
             requisitos.push({
-                id_requisito: idReq,
+                cod_requisito:    fila.data('cod-requisito'),
+                cod_documento:    fila.data('cod-documento') || null,
                 estado_evaluacion: estado,
-                observacion: observacion
+                observacion:      fila.find('td').eq(3).text().trim()
             });
         });
 
         btn.prop('disabled', true).text('Guardando...');
+
         $.ajax({
-            url: '<?= $this->url("examen", ["action" => "guardarRevision"]) ?>',
-            type: 'POST',
+            url:      '<?= $this->url("examen", ["action" => "guardarRevision"]) ?>',
+            type:     'POST',
+            dataType: 'json',
             data: {
-                cod_proceso: '<?= $this->proceso["cod_proceso"] ?>',
-                id_paso: '1',
-                requisitos: requisitos
+                cod_proceso:    '<?= $this->proceso["cod_proceso"] ?>',
+                cod_paso_actual:'<?= $this->proceso["cod_paso_actual"] ?>',
+                requisitos:     requisitos
             },
             success: function(response) {
                 if (response.success) {
-                    alert('Cambios guardados exitosamente.');
-                    $('#alertaRecordatorioGuardar').fadeOut(300);
-                    location.reload();
+                    if (response.avanzado) {
+                        // Todos aprobados → paso avanzado
+                        alert(response.message);
+                        location.reload();
+                    } else {
+                        // Hay rechazados: guardado pero sin avance
+                        alert(response.message);
+                        $('#alertaRecordatorioGuardar').fadeOut(300);
+                        btn.prop('disabled', false).text(originalText);
+                    }
                 } else {
                     alert('Error: ' + (response.message || 'No se pudieron guardar los cambios.'));
                     btn.prop('disabled', false).text(originalText);
@@ -387,162 +389,6 @@ $(document).ready(function() {
                 btn.prop('disabled', false).text(originalText);
             }
         });
-    });
-
-
-    function aplicarEstadoAceptado(fila, boton, grupo) {
-        // Remover clases de estado
-        fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
-        
-        // Actualizar botones
-        grupo.find('.btn-accion').removeClass('active');
-        boton.addClass('active');
-        
-        // Limpiar razón de rechazo
-        fila.find('td').eq(3).text('');
-        
-        // Actualizar estado visual
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Aceptado');
-        
-        console.log('Requisito aceptado');
-        actualizarEstadoAvance();
-        mostrarAlertaGuardar();
-    }
-
-    function aplicarEstadoRechazado(fila, boton, razonRechazo) {
-        const grupo = boton.parent();
-        
-        // Remover clases de estado
-        fila.removeClass('fila-aceptada fila-pendiente').addClass('fila-rechazada');
-        
-        // Actualizar botones
-        grupo.find('.btn-accion').removeClass('active');
-        boton.addClass('active');
-        
-        // Actualizar razón de rechazo
-        fila.find('td').eq(3).text(razonRechazo);
-        
-        // Actualizar estado visual
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-aceptado estado-pendiente').addClass('estado-rechazado').text('Rechazado');
-        
-        console.log('Requisito rechazado:', razonRechazo);
-        actualizarEstadoAvance();
-        mostrarAlertaGuardar();
-    }
-
-    function aplicarEstadoPendiente(fila, grupo) {
-        // Remover clases de estado
-        fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
-        
-        // Desactivar todos los botones
-        grupo.find('.btn-accion').removeClass('active');
-        
-        // Limpiar razón de rechazo
-        fila.find('td').eq(3).text('');
-        
-        // Actualizar estado visual
-        const estadoBadge = fila.find('.estado-badge');
-        estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
-        
-        console.log('Requisito pendiente');
-        actualizarEstadoAvance();
-        mostrarAlertaGuardar();
-    }
-
-    function mostrarAlertaGuardar() {
-        $('#alertaGuardarCambios').fadeIn(400);
-        $('#alertaRecordatorioGuardar').fadeIn(400);
-    }
-
-    function actualizarEstadoAvance() {
-        // Obtenemos solo las filas que son de requisitos 
-        const filas = $('.table-requisitos tbody tr');
-        const totalRequisitos = filas.length;
-        const requisitosAceptados = filas.filter('.fila-aceptada').length;
-        const todosAceptados = totalRequisitos === requisitosAceptados;
-        
-        console.log(`Avance: ${requisitosAceptados}/${totalRequisitos}`);
-        
-        // Desactivar/Activar visualmente los pasos siguientes en el timeline
-        // Usamos el paso desde el objeto PHP
-        const pasoActual = <?= $this->paso ?>;
-        $('.timeline-link').each(function() {
-            const pasoLink = $(this).data('paso');
-            if (pasoLink > pasoActual) {
-                if (!todosAceptados) {
-                    $(this).addClass('link-desactivado').css({
-                        'opacity': '0.5',
-                        'cursor': 'not-allowed'
-                    });
-                } else {
-                    $(this).removeClass('link-desactivado').css({
-                        'opacity': '1',
-                        'cursor': 'pointer'
-                    });
-                }
-            }
-        });
-        
-        return todosAceptados;
-    }
-
-    // Inicializar estado al cargar
-    $('.table-requisitos tbody tr').each(function() {
-        const estadoTxt = $(this).find('.estado-badge').text().trim().toLowerCase();
-        if (estadoTxt === 'aceptado') {
-            $(this).addClass('fila-aceptada');
-        } else if (estadoTxt === 'rechazado') {
-            $(this).addClass('fila-rechazada');
-        } else {
-            $(this).addClass('fila-pendiente');
-        }
-    });
-    
-    // Ejecutar inicialización del avance
-    setTimeout(actualizarEstadoAvance, 500);
-
-    // Bloquear el click en el timeline si no se ha completado la papelería
-    $(document).on('click', '.timeline-link', function(e) {
-        const pasoLink = $(this).data('paso');
-        const pasoActual = <?= $this->paso ?>;
-        
-        if (pasoLink > pasoActual) {
-            if (!actualizarEstadoAvance()) {
-                e.preventDefault();
-                alert('Debe aceptar todos los requisitos de papelería para continuar al siguiente paso.');
-                return false;
-            }
-        }
-    });
-
-    // Manejar click en guardar cambios
-    $('#btnGuardarCambios').on('click', function() {
-        // Recopilar estados de todos los requisitos
-        const estados = [];
-        $('.acciones-grupo').each(function() {
-            const botonActivo = $(this).find('.btn-accion.active');
-            const fila = $(this).closest('tr');
-            const nombreRequisito = fila.find('td:first').text();
-            const razonRechazo = fila.find('td').eq(3).text();
-            
-            let estado = 'pendiente'; // Estado por defecto
-            if (botonActivo.length > 0) {
-                estado = botonActivo.data('estado');
-            }
-            
-            estados.push({
-                requisito: nombreRequisito,
-                estado: estado,
-                razonRechazo: razonRechazo
-            });
-        });
-        
-        console.log('Estados a guardar:', estados);
-        $('#alertaGuardarCambios').fadeOut(300);
-        $('#alertaRecordatorioGuardar').fadeOut(300);
-        alert('Guardando cambios de papelería...');
     });
 });
 </script>

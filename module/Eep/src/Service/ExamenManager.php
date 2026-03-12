@@ -308,9 +308,21 @@ class ExamenManager
     /**
      * T-22.1: Gestión administrativa de requisitos
      */
-    public function getTodosRequisitos(): array
+    public function getTodosRequisitos($examenTipo): array
     {
-        return $this->execute('SELECT cod_requisito, nombre, descripcion FROM examen_requisito_documento WHERE activo = 1');
+        $sql = 'SELECT cod_requisito, nombre, descripcion 
+                FROM examen_requisito_documento 
+                WHERE activo = 1 AND cod_tipo_examen = :tipo';
+
+        return $this->execute($sql, ['tipo' => $examenTipo]);
+    }
+
+    // funcion que retorna el nombre de examen por medio de codigo tipo de examen
+    public function getNombreTipoExamen(int $codTipoExamen): ?string
+    {
+        $sql = 'SELECT nombre FROM examen_tipo WHERE cod_tipo_examen = :tipo';
+        $result = $this->execute($sql, ['tipo' => $codTipoExamen]);
+        return $result[0]['nombre'] ?? null;
     }
 
     public function upsertRequisito($data): int
@@ -323,10 +335,11 @@ class ExamenManager
             ]);
             return (int)$data['id'];
         } else {
-            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_paso, activo) VALUES (:nombre, :descripcion, :paso, 1)', [
-                'nombre' => $data['nombre'],
-                'descripcion' => $data['descripcion'],
-                'paso' => $data['cod_paso']
+            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_tipo_examen, cod_paso, activo) VALUES (:nombre, :descripcion, :tipo, :paso, 1)', [
+                'nombre'          => $data['nombre'],
+                'descripcion'     => $data['descripcion'],
+                'tipo'            => $data['cod_tipo_examen'] ?? null,
+                'paso'            => $data['cod_paso']
             ]);
             return $this->getLastInsertId();
         }
@@ -530,6 +543,62 @@ class ExamenManager
 
         $statement = $this->adapter->createStatement($sql, $params);
         return (bool) $statement->execute()->getAffectedRows();
+    }
+
+    /**
+     * Guarda/Actualiza la revisión de múltiples requisitos en bloque (Paso 1).
+     * Usa UPSERT: si ya existe una revisión para (cod_proceso, cod_requisito),
+     * la actualiza; de lo contrario, inserta una nueva.
+     * T-25
+     */
+    public function guardarRevisionesBulk(int $codProceso, array $requisitos, int $codUsuario): bool
+    {
+        foreach ($requisitos as $req) {
+            $codRequisito = (int) $req['cod_requisito'];
+            $codDocumento = !empty($req['cod_documento']) ? (int) $req['cod_documento'] : null;
+            $estado       = $req['estado_evaluacion'] ?? 'pendiente';
+            $motivo       = !empty($req['observacion']) ? $req['observacion'] : null;
+
+            // Intentar actualizar la revisión más reciente del requisito en este proceso
+            $sqlUpdate = 'UPDATE examen_revision_documento
+                          SET estado          = :estado,
+                              motivo_rechazo  = :motivo,
+                              revisado_por    = :usuario,
+                              fecha_revision  = CURRENT_TIMESTAMP
+                          WHERE cod_proceso   = :proceso
+                            AND cod_requisito = :req
+                          ORDER BY fecha_revision DESC
+                          LIMIT 1';
+
+            $stmt = $this->adapter->createStatement($sqlUpdate, [
+                'estado'  => $estado,
+                'motivo'  => $motivo,
+                'usuario' => $codUsuario,
+                'proceso' => $codProceso,
+                'req'     => $codRequisito,
+            ]);
+            $affected = (int) $stmt->execute()->getAffectedRows();
+
+            if ($affected === 0) {
+                // No existe revisión previa → INSERT (solo si hay documento)
+                if ($codDocumento !== null) {
+                    $sqlInsert = 'INSERT INTO examen_revision_documento
+                                      (cod_documento, cod_proceso, cod_requisito, estado, motivo_rechazo, revisado_por)
+                                  VALUES (:doc, :proceso, :req, :estado, :motivo, :usuario)';
+                    $this->adapter->createStatement($sqlInsert, [
+                        'doc'     => $codDocumento,
+                        'proceso' => $codProceso,
+                        'req'     => $codRequisito,
+                        'estado'  => $estado,
+                        'motivo'  => $motivo,
+                        'usuario' => $codUsuario,
+                    ])->execute();
+                }
+                // Si no hay cod_documento, el requisito aún no tiene archivo subido:
+                // se omite silenciosamente (el admin sólo puede revisar lo que existe)
+            }
+        }
+        return true;
     }
 
     /**

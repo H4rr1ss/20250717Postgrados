@@ -22,6 +22,19 @@ $this->headTitle('Gestión de Requisitos de Papelería');
     </div>
 </div>
 
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Gestión de Papelería para <strong><?= $this->escapeHtml($this->nombreExamen) ?></strong></h3>
+        <div style="margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;"><strong>Información</strong></p>
+            <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
+                <li>En esta sección puedes gestionar los requisitos de papelería necesarios para el proceso de examen.</li>
+                <li>Puedes crear nuevos requisitos, editar los existentes o eliminarlos según sea necesario.</li>
+                <li>Estos requisitos serán visibles para los estudiantes durante el proceso de solicitud de examen.</li>
+            </ul>
+        </div>
+    </div>
+
 <!-- Sección de Requisitos -->
 <div class="row">
     <div class="col-lg-12">
@@ -79,6 +92,7 @@ $this->headTitle('Gestión de Requisitos de Papelería');
             <div class="modal-body">
                 <form id="formRequisito">
                     <input type="hidden" id="idRequisito" name="id">
+                    <input type="hidden" name="cod_tipo_examen" value="<?= (int) $this->codTipoExamen ?>">
                     <div class="form-group">
                         <label for="titulo">Título</label>
                         <div class="input-icon">
@@ -252,10 +266,16 @@ $this->headTitle('Gestión de Requisitos de Papelería');
 
 <script>
 $(document).ready(function() {
+    // Extraer cod_tipo_examen desde la URL: /examen/papeleria/{cod_tipo_examen}
+    var urlParts      = window.location.pathname.split('/');
+    var codTipoExamen = urlParts[urlParts.length - 1];
+
     // Abrir modal para crear requisito
     $('#btnCrearRequisito').on('click', function() {
         $('#formRequisito')[0].reset();
         $('#idRequisito').val('');
+        // Asegurar que el campo siempre lleve el código de la URL
+        $('input[name="cod_tipo_examen"]').val(codTipoExamen);
         $('#modalCrearRequisitoLabel').text('Crear Requisito');
         $('#modalCrearRequisito').modal('show');
     });
@@ -264,6 +284,8 @@ $(document).ready(function() {
     $('#btnGuardarRequisito').on('click', function() {
         var form = $('#formRequisito');
         if (form[0].checkValidity()) {
+            // Garantizar que el cod_tipo_examen de la URL siempre se envíe
+            $('input[name="cod_tipo_examen"]').val(codTipoExamen);
             var formData = form.serialize();
             $.post('<?= $this->url('examen', ['action' => 'guardarRequisito']) ?>', formData, function(response) {
                 if (response.status === 'success') {

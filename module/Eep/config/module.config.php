@@ -282,6 +282,19 @@ return [
                     ],
                 ],
             ],
+            'examen-papeleria' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen/papeleria/:cod_tipo_examen',
+                    'constraints' => [
+                        'cod_tipo_examen' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'papeleria',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [
