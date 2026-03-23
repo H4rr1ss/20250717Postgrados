@@ -23,22 +23,40 @@
                                 <th style="width: 10%; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
+                        <?php var_dump($this->proceso); ?>
                         <tbody>
                             <?php if (empty($this->documentos)): ?>
                                 <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($this->documentos as $doc): 
-                                    $estado = $doc['estado_revision'] ?? 'pendiente';
-                                    $claseFila = ($estado == 'rechazado') ? 'fila-rechazada' : (($estado == 'pendiente') ? 'fila-pendiente' : '');
+                                    $estado = $doc['estado_revision'];
+
+                                    if ($estado === null) {
+                                        if ($doc['cod_documento'] === null) {
+                                            $estado = 'Sin entregar';
+                                        } else {
+                                            $estado = 'pendiente';
+                                        }
+                                    }
+
+                                    $claseFila = ($estado == 'rechazado') 
+                                    ? 'fila-rechazada' 
+                                    : (($estado == 'pendiente') ? 'fila-pendiente' : '');
+
                                     $claseBadge = 'estado-pendiente';
                                     if ($estado == 'aprobado') $claseBadge = 'estado-aceptado';
                                     if ($estado == 'rechazado') $claseBadge = 'estado-rechazado';
                                 ?>
-                                <tr class="<?= $claseFila ?>" data-cod-requisito="<?= $doc['cod_requisito'] ?>" data-cod-documento="<?= $doc['cod_documento'] ?? '' ?>">
+                                <tr class="<?= $claseFila ?>" data-cod-requisito="<?= $doc['cod_requisito'] ?>" data-cod-documento="<?= $doc['cod_documento'] ?? '' ?>" data-dirty="false">
+                                    <!-- Nombre -->
                                     <td><?= $this->escapeHtml($doc['nombre_requisito']) ?></td>
-                                    <td><?= !empty($doc['fecha_subida']) ? date('d/m/Y', strtotime($doc['fecha_subida'])) : '-' ?></td>
+                                    <!-- Ultima revisión -->
+                                    <td><?= !empty($doc['fecha_revision']) ? date('d/m/Y', strtotime($doc['fecha_revision'])) : 'Sin revisión' ?></td>
+                                    <!-- Estado -->
                                     <td><span class="estado-badge <?= $claseBadge ?>"><?= ucfirst($estado) ?></span></td>
+                                    <!-- Razon de rechazo -->
                                     <td><?= $this->escapeHtml($doc['motivo_rechazo'] ?? '') ?></td>
+                                    <!-- ver documento -->
                                     <td style="text-align: center;">
                                         <?php if (!empty($doc['drive_web_view_link'])): ?>
                                             <a href="<?= $this->escapeHtml($doc['drive_web_view_link']) ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
@@ -48,6 +66,7 @@
                                             <i class="fa fa-minus text-muted"></i>
                                         <?php endif; ?>
                                     </td>
+                                    <!-- acciones -->
                                     <td style="text-align: center;">
                                         <?php if ((int)$this->paso < (int)$this->proceso['numero_orden']): ?>
                                             <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
@@ -252,6 +271,7 @@ $(document).ready(function() {
         }
     });
 
+    //* Confirmar razón de rechazo
     $('#confirmarRechazo').on('click', function() {
         const razonRechazo = $('#razonRechazo').val().trim();
         if (razonRechazo === '') {
@@ -263,6 +283,15 @@ $(document).ready(function() {
     });
 
     // ── Funciones de estado ────────────────────────────────────────────────────
+    // ── Dirty tracking ─────────────────────────────────────────────────────────
+    function marcarDirty(fila) {
+        fila.attr('data-dirty', 'true');
+    }
+
+    function resetDirty(filas) {
+        filas.attr('data-dirty', 'false');
+    }
+
     function aplicarEstadoAceptado(fila, boton, grupo) {
         fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
         grupo.find('.btn-accion').removeClass('active');
@@ -271,6 +300,7 @@ $(document).ready(function() {
         fila.find('.estado-badge')
             .removeClass('estado-rechazado estado-pendiente')
             .addClass('estado-aceptado').text('Aprobado');
+        marcarDirty(fila);
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -284,6 +314,7 @@ $(document).ready(function() {
         fila.find('.estado-badge')
             .removeClass('estado-aceptado estado-pendiente')
             .addClass('estado-rechazado').text('Rechazado');
+        marcarDirty(fila);
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -295,6 +326,7 @@ $(document).ready(function() {
         fila.find('.estado-badge')
             .removeClass('estado-aceptado estado-rechazado')
             .addClass('estado-pendiente').text('Pendiente');
+        marcarDirty(fila);
         actualizarEstadoAvance();
         mostrarAlertaGuardar();
     }
@@ -344,49 +376,83 @@ $(document).ready(function() {
         const originalText = btn.text();
         const requisitos   = [];
 
-        $('.table-requisitos tbody tr[data-cod-requisito]').each(function() {
-            const fila      = $(this);
-            const activo    = fila.find('.btn-accion.active');
-            const estado    = activo.length ? activo.data('valor') : 'pendiente';
+        const filasModificadas = $('.table-requisitos tbody tr[data-cod-requisito][data-dirty="true"]');
+
+        filasModificadas.each(function() {
+            const fila   = $(this);
+            const activo = fila.find('.btn-accion.active');
+            const estado = activo.length ? activo.data('valor') : 'pendiente';
             requisitos.push({
-                cod_requisito:    fila.data('cod-requisito'),
-                cod_documento:    fila.data('cod-documento') || null,
+                cod_requisito:     fila.data('cod-requisito'),
+                cod_documento:     fila.data('cod-documento') || null,
                 estado_evaluacion: estado,
-                observacion:      fila.find('td').eq(3).text().trim()
+                observacion:       fila.find('td').eq(3).text().trim()
             });
         });
 
+        if (requisitos.length === 0) {
+            alert('No hay cambios pendientes por guardar.');
+            return;
+        }
+
         btn.prop('disabled', true).text('Guardando...');
+
+        // ── DEBUG: revisar payload antes de enviar ─────────────────────────────
+        const payload = {
+            cod_proceso:     '<?= $this->proceso["cod_proceso"] ?>',
+            cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?>',
+            requisitos:      requisitos
+        };
+        console.log('[DEBUG guardarRevision] payload:', JSON.stringify(payload, null, 2));
+        // ──────────────────────────────────────────────────────────────────────
 
         $.ajax({
             url:      '<?= $this->url("examen", ["action" => "guardarRevision"]) ?>',
             type:     'POST',
             dataType: 'json',
+            async:    true,
+            timeout:  10000,
             data: {
-                cod_proceso:    '<?= $this->proceso["cod_proceso"] ?>',
-                cod_paso_actual:'<?= $this->proceso["cod_paso_actual"] ?>',
-                requisitos:     requisitos
+                cod_proceso:     '<?= $this->proceso["cod_proceso"] ?? null ?>',
+                cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?? null ?>',
+                cod_tipo_examen:   '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                requisitos:      requisitos ?? []
             },
-            success: function(response) {
-                if (response.success) {
-                    if (response.avanzado) {
-                        // Todos aprobados → paso avanzado
-                        alert(response.message);
-                        location.reload();
-                    } else {
-                        // Hay rechazados: guardado pero sin avance
-                        alert(response.message);
-                        $('#alertaRecordatorioGuardar').fadeOut(300);
-                        btn.prop('disabled', false).text(originalText);
-                    }
-                } else {
-                    alert('Error: ' + (response.message || 'No se pudieron guardar los cambios.'));
+            success: function(data) {
+                btn.prop('disabled', false).text(originalText);
+                $('#alertaRecordatorioGuardar').fadeOut(300);
+                console.log('[DEBUG guardarRevision] respuesta del servidor:', data);
+                if (!data.hasOwnProperty('status')) {
+                    alert('No se obtuvo una respuesta correcta del servidor.');
                     btn.prop('disabled', false).text(originalText);
+                } else {
+                    if (!data.status) {
+                        // ! ESTO PUEDE BORRARSE AL MOMENTO DE TENER TODA LA INTEGRACION
+                        alert('Error: ' + (data.error || 'No se pudieron guardar los cambios.'));
+                        btn.prop('disabled', false).text(originalText);
+                    } else {
+                        if (data.avanzado) {
+                            // Todos aprobados → paso avanzado
+                            alert(data.message);
+                            // location.reload();
+                        } else {
+                            // Hay rechazados: guardado pero sin avance
+                            alert(data.message);
+                            resetDirty(filasModificadas);
+                            $('#alertaRecordatorioGuardar').fadeOut(300);
+                            btn.prop('disabled', false).text(originalText);
+                        }
+                    }
                 }
             },
-            error: function() {
-                alert('Error de comunicación con el servidor.');
+            error: function(xmlhttprequest, textstatus, message) {
+                if (textstatus === 'timeout') {
+                    alert('Tiempo de espera de solicitud agotado.');
+                } else {
+                    alert('Error en solicitud: ' + message);
+                }
                 btn.prop('disabled', false).text(originalText);
+                $('#alertaRecordatorioGuardar').fadeOut(300);
             }
         });
     });

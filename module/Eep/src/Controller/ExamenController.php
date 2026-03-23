@@ -5,7 +5,9 @@ namespace Eep\Controller;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
+// SERVICES
 use Eep\Service\ExamenManager;
+use Eep\Service\LogManager as LM;
 
 class ExamenController extends AbstractActionController {
 
@@ -203,74 +205,66 @@ class ExamenController extends AbstractActionController {
      * T-16 / T-25: Guarda la revisión de todos los documentos del Paso 1 en bloque.
      * Recibe: cod_proceso, cod_paso_actual, requisitos[] (cod_requisito, cod_documento, estado_evaluacion, observacion).
      * Si todos quedan 'aprobado', avanza el proceso al siguiente paso.
-     * Retorna JSON { success, avanzado, message }.
+     * Retorna JSON { status, avanzado?, message?, error? }.
      */
     public function guardarRevisionAction() {
-        $request = $this->getRequest();
-        if (!$request->isPost()) {
-            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
-        }
+        $response  = ['status' => false];
+        $logStatus = LM::FAILURE;
 
-        $userId        = $this->layout()->role->getUserCode();
-        $codProceso    = (int) $request->getPost('cod_proceso');
-        $codPasoActual = (int) $request->getPost('cod_paso_actual');
-        $requisitos    = $request->getPost('requisitos');
+        if ($this->getRequest()->isPost()) {
+            $params = $this->params()->fromPost();
+            $role = $this->layout()->role;
+            $userRolId     = $role->getCode();
+            
+            $codProceso    = $params['cod_proceso'];
+            $codPasoActual = $params['cod_paso_actual'];
+            $requisitos    = $params['requisitos'];
+            $cod_tipo_examen = $params['cod_tipo_examen'];
+            
+            error_log("DEBUG user rol: ".print_r($userRolId, true));
+            error_log("DEBUG cod proceso: ".print_r($codProceso, true));
+            error_log("DEBUG cod paso actual: ".print_r($codPasoActual, true));
+            error_log("DEBUG requisitos: ".print_r($requisitos, true));
+            error_log("DEBUG cod examen: ".print_r($cod_tipo_examen, true));
+            
+            if ($codProceso == null || $codPasoActual == null || !is_array($requisitos) || empty($requisitos)) {
+                $response['error'] = 'Datos insuficientes para guardar la revisión';
+            } else {
+                try {
+                    // 1. Guardar/actualizar revisiones en bloque (INSERT si no existe, UPDATE si existe)
+                    $this->examenManager->guardarRevisionesBulk($codProceso, $requisitos, $userRolId);
 
-        if ($codProceso <= 0 || $codPasoActual <= 0 || !is_array($requisitos) || empty($requisitos)) {
-            return new JsonModel(['success' => false, 'message' => 'Datos insuficientes para guardar la revisión']);
-        }
+                    // 3. Verificar si todos los requisitos fueron aprobados
+                    $todosAprobados = $this->examenManager->todosRequisitosAceptados($codProceso, $codPasoActual, $cod_tipo_examen);
 
-        try {
-            // 1. Guardar/actualizar revisiones en bloque
-            $this->examenManager->guardarRevisionesBulk($codProceso, $requisitos, $userId);
+                    if ($todosAprobados) {
+                        // 4. Avanzar al siguiente paso
+                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual);
 
-            // 2. Registrar historial de la revisión
-            $this->examenManager->registrarHistorial([
-                'cod_proceso'  => $codProceso,
-                'cod_usuario'  => $userId,
-                'tipo_evento'  => 'revision_papeleria',
-                'descripcion'  => 'Se guardó la revisión de papelería (Paso 1) en bloque.',
-                'datos_nuevos' => $requisitos,
-            ]);
+                        $response['status']   = true;
+                        $response['avanzado'] = true;
+                        $response['message']  = '¡Papelería aprobada! El proceso ha avanzado al siguiente paso.';
+                    } else {
+                        $response['status']   = true;
+                        $response['avanzado'] = false;
+                        $response['message']  = "Documento revisado correctamente.";
+                    }
 
-            // 3. Verificar si todos los requisitos fueron aprobados
-            $todosAprobados = !empty($requisitos) && count(array_filter($requisitos, function ($r) {
-                return ($r['estado_evaluacion'] ?? '') !== 'aprobado';
-            })) === 0;
+                    $logStatus = LM::SUCCESS;
 
-            if ($todosAprobados) {
-                // 4. Avanzar al siguiente paso
-                $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userId);
-
-                $this->examenManager->registrarHistorial([
-                    'cod_proceso'      => $codProceso,
-                    'cod_usuario'      => $userId,
-                    'tipo_evento'      => 'cambio_paso',
-                    'descripcion'      => 'Papelería completamente aprobada. El proceso avanzó desde el Paso 1.',
-                    'datos_anteriores' => ['cod_paso' => $codPasoActual],
-                ]);
-
-                return new JsonModel([
-                    'success'  => true,
-                    'avanzado' => true,
-                    'message'  => '¡Papelería aprobada! El proceso ha avanzado al siguiente paso.',
-                ]);
+                } catch (\Exception $e) {
+                    $response['error'] = 'Error: ' . $e->getMessage();
+                    $logStatus = LM::ERROR;
+                }
             }
-
-            // Hay rechazados o pendientes: se guarda pero no se avanza
-            $rechazados = count(array_filter($requisitos, function ($r) {
-                return ($r['estado_evaluacion'] ?? '') === 'rechazado';
-            }));
-
-            return new JsonModel([
-                'success'  => true,
-                'avanzado' => false,
-                'message'  => "Revisión guardada. Hay {$rechazados} documento(s) rechazado(s). Corrija los rechazos para poder avanzar.",
-            ]);
-
-        } catch (\Exception $e) {
-            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        } else {
+            $this->getResponse()->setStatusCode(400);
+            $response['error'] = 'Solicitud sin datos (No POST)';
         }
+
+        $view = new JsonModel($response);
+        $view->setTerminal(true);
+        return $view;
     }
 
     /**
@@ -299,7 +293,7 @@ class ExamenController extends AbstractActionController {
                 $this->examenManager->registrarHistorial([
                     'cod_proceso' => $codProceso,
                     'cod_usuario' => $userId,
-                    'tipo_evento' => 'recepcion_fisica',
+                    'tipo_evento' => 'otro',
                     'descripcion' => 'Se actualizó el checklist de documentos físicos',
                     'datos_nuevos' => $documentos
                 ]);
@@ -341,7 +335,7 @@ class ExamenController extends AbstractActionController {
                 $this->examenManager->registrarHistorial([
                     'cod_proceso' => $codProceso,
                     'cod_usuario' => $userId,
-                    'tipo_evento' => 'registro_terna',
+                    'tipo_evento' => 'asignacion_terna',
                     'descripcion' => 'Se registró/actualizó la terna examinadora y programación',
                     'datos_nuevos' => ['terna' => $terna, 'programacion' => $programacion]
                 ]);
@@ -382,7 +376,7 @@ class ExamenController extends AbstractActionController {
                 $this->examenManager->registrarHistorial([
                     'cod_proceso' => $codProceso,
                     'cod_usuario' => $userId,
-                    'tipo_evento' => 'cambio_paso',
+                    'tipo_evento' => 'avance_paso',
                     'descripcion' => "El proceso avanzó desde el paso ID {$codPasoActual}",
                     'datos_anteriores' => ['cod_paso' => $codPasoActual]
                 ]);
@@ -438,60 +432,7 @@ class ExamenController extends AbstractActionController {
             'terna'       => $terna
         ]);
     }
-
-    // Revisar solicitud de examen
-    // public function revisarpapeleriaAction() {
-    //     $carne = $this->params()->fromRoute('carne', null)
-    //            ?: $this->params()->fromQuery('carne', null);
-        
-    //     // Paso actual (1-10)
-    //     $paso = (int) $this->params()->fromQuery('paso', 1);
-    //     if ($paso < 1 || $paso > 10) {
-    //         $paso = 1;
-    //     }
-
-    //     // Definición de los 10 estados del proceso
-    //     $estados = [
-    //         1 => [
-    //             'titulo' => 'Revisión de Papelería',
-    //             'subtitulo' => 'Revisión de documentos entregados',
-    //             'partial' => 'eep/examen/partial/paso1-papeleria'
-    //         ],
-    //         2 => [
-    //             'titulo' => 'Entrega de Documentación',
-    //             'subtitulo' => 'Recepción física de documentos',
-    //             'partial' => 'eep/examen/partial/paso2-documentacion'
-    //         ],
-    //         3 => [
-    //             'titulo' => 'Terna Examinadora',
-    //             'subtitulo' => 'Revisión de requisitos académicos',
-    //             'partial' => 'eep/examen/partial/paso3-terna'
-    //         ],
-    //         4 => [
-    //             'titulo' => 'Notificación',
-    //             'subtitulo' => 'Comunicación al estudiante',
-    //             'partial' => 'eep/examen/partial/paso4-notificacion'
-    //         ],
-    //     ];
-
-    //     // Asignar subtitulos de fecha dinámicamente
-    //     foreach ($estados as $numPaso => &$estado) {
-    //         if ($numPaso < $paso) {
-    //             // TODO: Reemplazar con la fecha real de la base de datos
-    //             $estado['subtitulo'] = '21/02/2026'; 
-    //         } else {
-    //             $estado['subtitulo'] = 'Sin fecha';
-    //         }
-    //     }
-    //     unset($estado); // Romper la referencia del último elemento
-
-    //     return new ViewModel([
-    //         'carne' => $carne,
-    //         'paso' => $paso,
-    //         'estados' => $estados
-    //     ]);
-    // }
-
+    
     public function solicitudesAction(){
         $idProceso = $this->params()->fromRoute('id', null);
 
@@ -519,7 +460,7 @@ class ExamenController extends AbstractActionController {
                     'partial' => 'eep/examen/partial/paso1-papeleria'
                 ],
                 2 => [
-                    'titulo' => 'Entrega de Documentación',
+                    'titulo' => 'Entrega de Papelería',
                     'subtitulo' => 'Sin fecha',
                     'partial' => 'eep/examen/partial/paso2-documentacion'
                 ],
@@ -543,7 +484,8 @@ class ExamenController extends AbstractActionController {
             }
 
             // T-25: Cargar documentos y requisitos para el paso 1
-            $documentos = $this->examenManager->getDocumentosYRequisitos($idProceso, 1);
+            $codigo_tipo_examen = (int) $proceso['tipo_cod_examen'];
+            $documentos = $this->examenManager->getDocumentosYRequisitos($idProceso, 1, $codigo_tipo_examen);
 
             // T-17: Cargar checklist de documentos físicos para el paso 2
             $docsFisicos = $this->examenManager->getDocumentosFisicos($idProceso);

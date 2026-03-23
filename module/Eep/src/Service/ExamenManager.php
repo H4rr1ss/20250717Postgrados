@@ -5,6 +5,9 @@ namespace Eep\Service;
 use Zend\Db\Adapter\AdapterInterface;
 use Zend\Db\Sql\Sql;
 use Zend\Db\ResultSet\ResultSet;
+use Zend\Db\TableGateway\TableGateway;
+use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Expression;
 
 class ExamenManager
 {
@@ -122,6 +125,7 @@ class ExamenManager
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
+                    et.cod_tipo_examen     AS tipo_cod_examen,
                     et.nombre              AS tipo_examen,
                     ep.fecha_solicitud,
                     ep.cod_paso_actual,
@@ -146,9 +150,9 @@ class ExamenManager
      * Obtiene los requisitos digitales de un paso junto con el documento subido
      * (si existe) para el proceso dado. Retorna un registro por requisito.
      */
-    public function getDocumentosYRequisitos(int $codProceso, int $codPaso): array
+    public function getDocumentosYRequisitos(int $codProceso, int $codPaso, int $codTipoExamen): array
     {
-        $sql = 'SELECT
+        $sql = "SELECT
                     erd.cod_requisito,
                     erd.nombre            AS nombre_requisito,
                     erd.descripcion,
@@ -158,7 +162,7 @@ class ExamenManager
                     ed.cod_documento,
                     ed.nombre_original,
                     ed.version,
-                    ed.fecha_subida,
+                    er.fecha_revision,
                     da.drive_web_view_link,
                     er.estado             AS estado_revision,
                     er.motivo_rechazo
@@ -169,12 +173,92 @@ class ExamenManager
                     AND ed.eliminado = 0
                 LEFT JOIN drive_archivo da ON da.cod_documento = ed.cod_documento
                 LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
+                AND er.fecha_revision = (
+                    SELECT MAX(er2.fecha_revision)
+                    FROM examen_revision_documento er2
+                    WHERE er2.cod_documento = ed.cod_documento
+                )
                 WHERE erd.cod_paso = :paso
-                  AND erd.tipo_entrega = "digital"
+                  AND erd.tipo_entrega = 'digital'
+                  AND erd.cod_tipo_examen = :tipo
                   AND erd.activo = 1
-                ORDER BY erd.orden_display ASC';
+                ORDER BY erd.orden_display ASC";
 
-        return $this->execute($sql, ['proceso' => $codProceso, 'paso' => $codPaso]);
+        return $this->execute($sql, ['proceso' => $codProceso, 'paso' => $codPaso, 'tipo' => $codTipoExamen]);
+    }
+
+    /**
+     * Verifica si TODOS los requisitos digitales obligatorios de un paso/proceso
+     * ya cuentan con un documento cargado y una revisión en estado 'aprobado'.
+     * Retorna true si el paso está completamente aprobado, false en caso contrario.
+     */
+    public function todosRequisitosAceptados(int $codProceso, int $codPaso, int $codTipoExamen): bool
+    {
+        // 1. Total de requisitos obligatorios para este paso y tipo de examen
+        $tableReq    = new TableGateway('examen_requisito_documento', $this->adapter);
+        $selectTotal = $tableReq->getSql()->select();
+        $selectTotal->columns(['total' => new Expression('COUNT(*)')]);
+        $selectTotal->where([
+            'cod_paso'        => $codPaso,
+            'cod_tipo_examen' => $codTipoExamen,
+            'obligatorio'     => 1,
+            'activo'          => 1,
+        ]);
+        $resTotal = $tableReq->selectWith($selectTotal)->toArray();
+        $total    = (int)($resTotal[0]['total'] ?? 0);
+
+        // Sin requisitos obligatorios => se considera completo
+        if ($total === 0) {
+            return true;
+        }
+
+        // 2. Cuántos de esos requisitos tienen un documento en versión actual
+        //    con una revisión aprobada
+        $tableRed        = new TableGateway(['erd' => 'examen_requisito_documento'], $this->adapter);
+        $selectAprobados = $tableRed->getSql()->select();
+        $selectAprobados->columns(['aprobados' => new Expression('COUNT(*)')]);
+
+        // Documento actual
+        $selectAprobados->join(
+            ['ed' => 'examen_documento'],
+            new Expression(
+                'ed.cod_requisito = erd.cod_requisito
+                AND ed.cod_proceso = ' . (int)$codProceso . '
+                AND ed.es_version_actual = 1
+                AND ed.eliminado = 0'
+            ),
+            [],
+            Select::JOIN_INNER
+        );
+
+        // Última revisión (corregido)
+        $selectAprobados->join(
+            ['er' => 'examen_revision_documento'],
+            new Expression(
+                'er.cod_documento = ed.cod_documento
+                AND er.fecha_revision = (
+                    SELECT MAX(er2.fecha_revision)
+                    FROM examen_revision_documento er2
+                    WHERE er2.cod_documento = ed.cod_documento
+                )'
+            ),
+            [],
+            Select::JOIN_INNER
+        );
+
+        // Filtros
+        $selectAprobados->where([
+            'erd.cod_paso'        => $codPaso,
+            'erd.cod_tipo_examen' => $codTipoExamen,
+            'erd.obligatorio'     => 1,
+            'erd.activo'          => 1,
+            'er.estado'           => 'aprobado',
+        ]);
+
+        $resAprobados = $tableRed->selectWith($selectAprobados)->toArray();
+        $aprobados    = (int)($resAprobados[0]['aprobados'] ?? 0);
+
+        return $aprobados === $total;
     }
 
     // Funcion para obtener datos genericos de procesos de examen con filtros y paginación.
@@ -197,7 +281,8 @@ class ExamenManager
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
-                    et.nombre AS tipo_examen,
+                    et.cod_tipo_examen   AS tipo_cod_examen,
+                    et.nombre            AS tipo_examen,
                     ep.fecha_solicitud,
                     ep.cod_paso_actual,
                     COALESCE(epp.estado, 'pendiente') AS estado_paso,
@@ -397,7 +482,7 @@ class ExamenManager
                 LEFT JOIN usuario u ON u.cod_usuario = edf.recibido_por
                 WHERE erd.cod_paso = 2 
                   AND erd.tipo_entrega = "fisico"
-                  AND (erd.cod_tipo_examen = :tipo OR erd.cod_tipo_examen IS NULL)
+                  AND erd.cod_tipo_examen = :tipo
                   AND erd.activo = 1
                 ORDER BY erd.orden_display ASC';
 
@@ -559,43 +644,27 @@ class ExamenManager
             $estado       = $req['estado_evaluacion'] ?? 'pendiente';
             $motivo       = !empty($req['observacion']) ? $req['observacion'] : null;
 
-            // Intentar actualizar la revisión más reciente del requisito en este proceso
-            $sqlUpdate = 'UPDATE examen_revision_documento
-                          SET estado          = :estado,
-                              motivo_rechazo  = :motivo,
-                              revisado_por    = :usuario,
-                              fecha_revision  = CURRENT_TIMESTAMP
-                          WHERE cod_proceso   = :proceso
-                            AND cod_requisito = :req
-                          ORDER BY fecha_revision DESC
-                          LIMIT 1';
-
-            $stmt = $this->adapter->createStatement($sqlUpdate, [
-                'estado'  => $estado,
-                'motivo'  => $motivo,
-                'usuario' => $codUsuario,
-                'proceso' => $codProceso,
-                'req'     => $codRequisito,
-            ]);
-            $affected = (int) $stmt->execute()->getAffectedRows();
-
-            if ($affected === 0) {
-                // No existe revisión previa → INSERT (solo si hay documento)
-                if ($codDocumento !== null) {
-                    $sqlInsert = 'INSERT INTO examen_revision_documento
-                                      (cod_documento, cod_proceso, cod_requisito, estado, motivo_rechazo, revisado_por)
-                                  VALUES (:doc, :proceso, :req, :estado, :motivo, :usuario)';
-                    $this->adapter->createStatement($sqlInsert, [
-                        'doc'     => $codDocumento,
-                        'proceso' => $codProceso,
-                        'req'     => $codRequisito,
-                        'estado'  => $estado,
-                        'motivo'  => $motivo,
-                        'usuario' => $codUsuario,
-                    ])->execute();
+            if ($codDocumento !== null) {
+                // Validación de negocio
+                if ($estado === 'rechazado' && empty($motivo)) {
+                    throw new \Exception('Debe indicar motivo de rechazo');
                 }
-                // Si no hay cod_documento, el requisito aún no tiene archivo subido:
-                // se omite silenciosamente (el admin sólo puede revisar lo que existe)
+
+                $sqlInsert = '
+                    INSERT INTO examen_revision_documento
+                        (cod_documento, cod_proceso, cod_requisito, estado, motivo_rechazo, revisado_por)
+                    VALUES
+                        (:doc, :proceso, :req, :estado, :motivo, :usuario)
+                ';
+
+                $this->adapter->createStatement($sqlInsert, [
+                    'doc'     => $codDocumento,
+                    'proceso' => $codProceso,
+                    'req'     => $codRequisito,
+                    'estado'  => $estado,
+                    'motivo'  => $motivo,
+                    'usuario' => $codUsuario,
+                ])->execute();
             }
         }
         return true;
@@ -671,14 +740,17 @@ class ExamenManager
      * Avanza el proceso al siguiente paso definido en el catálogo.
      * T-10
      */
-    public function avanzarPaso(int $codProceso, int $codPasoActual, int $codUsuario): bool
+    public function avanzarPaso(int $codProceso, int $codPasoActual): bool
     {
+        $role = $this->layout()->role;
+        $userRolId     = $role->getCode();
+
         // 1. Obtener el orden del paso actual
         $sqlActual = 'SELECT cod_tipo_examen, numero_orden FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
         if (empty($resActual)) return false;
 
-        $tipoExamen = $resActual[0]['cod_tipo_examen'];
+        $tipoExamen = $resActual[0]['cod_tipo_examen']; // puede ser NULL
         $ordenActual = $resActual[0]['numero_orden'];
 
         // 2. Cerrar el paso actual
@@ -687,7 +759,12 @@ class ExamenManager
                           estado = "completado",
                           completado_por = :usuario
                       WHERE cod_proceso = :proceso AND cod_paso = :paso';
-        $this->adapter->createStatement($sqlCerrar, ['proceso' => $codProceso, 'paso' => $codPasoActual, 'usuario' => $codUsuario])->execute();
+
+        $this->adapter->createStatement($sqlCerrar, [
+            'proceso' => $codProceso,
+            'paso'    => $codPasoActual,
+            'usuario' => $userRolId
+        ])->execute();
 
         // 3. Buscar el siguiente paso en el orden
         $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
