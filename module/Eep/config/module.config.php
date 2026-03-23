@@ -59,6 +59,7 @@ use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
 use Eep\Controller\ExamenController;
 use Eep\Controller\Factory\ExamenControllerFactory;
+use Eep\Controller\StudentGraduationController;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -77,6 +78,7 @@ return [
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
             ExamenController::class => ExamenControllerFactory::class,
+            StudentGraduationController::class => LazyControllerAbstractFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -292,6 +294,19 @@ return [
                     'defaults' => [
                         'controller' => ExamenController::class,
                         'action' => 'papeleria',
+                    ],
+                ],
+            ],
+            'student-graduation' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/student-graduation[/:action]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                    ],
+                    'defaults' => [
+                        'controller' => StudentGraduationController::class,
+                        'action' => 'index',
                     ],
                 ],
             ],

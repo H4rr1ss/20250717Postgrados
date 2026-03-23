@@ -143,6 +143,12 @@ return [//ICON, MENU text
         'icon' => 'fa-graduation-cap',
         'text' => 'Gestión de Exámenes',
         'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]],
+    View::STUDENT_GRADUATION => [
+        'controller' => 'student-graduation',
+        'action' => 'index',
+        'icon' => 'fa-graduation-cap',
+        'text' => 'Proceso de Graduación',
+        'roles' => [Role::ESTUDIANTE]],
     View::LOG_VIEW => [
         'controller' => 'user',
         'action' => 'logView',

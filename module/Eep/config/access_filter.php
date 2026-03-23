@@ -16,6 +16,7 @@ use Eep\Controller\MassiveLoadController;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
 use Eep\Controller\ExamenController;
+use Eep\Controller\StudentGraduationController;
 
 return [
     //FORMAT:
@@ -445,6 +446,23 @@ return [
         'eliminarRequisito' => [
             'code' => 79,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+    ],
+    StudentGraduationController::class => [
+        'index' => [
+            'code' => 80,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'proceso' => [
+            'code' => 81,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'paso1SolicitudExamen' => [
+            'code' => 82,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
         ],
     ],
 ];

@@ -1,0 +1,115 @@
+<?php
+$this->headTitle('Progreso del Proceso de Graduación');
+?>
+
+<div class="col-lg-12">
+
+    <!-- Breadcrumb -->
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb">
+                <li>
+                    <a href="<?= $this->url('home') ?>">
+                        <i class="fa fa-home"></i> Inicio
+                    </a>
+                </li>
+                <li class="active">Proceso de Graduación</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Panel azul: fases de progreso -->
+    <div class="panel panel-blue">
+        <div class="panel-heading">Progreso del Proceso de Graduación</div>
+        <div class="panel-body">
+
+            <p style="color: #555; font-size: 14px; padding: 12px 15px;">
+                Durante el desarrollo del proceso de graduación se visualizan las siguientes fases por las cuales el estudiante debe completar el 100% del progreso
+                la carrera universitaria dentro de la Facultad de Ingeniería de la Universidad de San Carlos de Guatemala.
+            </p>
+
+            <div class="row" style="margin-bottom: 10px; padding: 40px 15px;">
+
+                <!-- Exámen privado -->
+                <div class="col-sm-3" style="text-align: center;">
+                    <p style="font-size: 16px; margin-bottom: 16px;">Exámen privado</p>
+                    <div class="progress" style="height: 22px; border-radius: 3px; margin-bottom: 16px; border: 1px solid #b0c4de;">
+                        <div class="progress-bar" role="progressbar" style="width: 25%; background-color: #3a87e0; font-size: 12px; line-height: 22px;">
+                            25%
+                        </div>
+                    </div>
+                    
+                    <a href="<?= $this->url('student-graduation', ['action' => 'paso1SolicitudExamen']) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
+                        <i class="fa fa-sticky-note"></i>Resumen
+                    </a>
+                </div>
+
+                <!-- Autorización de imprimase -->
+                <div class="col-sm-3" style="text-align: center;">
+                    <p style="font-size: 16px; margin-bottom: 16px;">Autorización de imprimase</p>
+                    <div class="progress" style="height: 22px; border-radius: 3px; margin-bottom: 16px; border: 1px solid #b0c4de;">
+                        <div class="progress-bar" role="progressbar" style="width: 25%; background-color: #3a87e0; font-size: 12px; line-height: 22px;">
+                            25%
+                        </div>
+                    </div>
+                    
+                    <a class="btn btn-blue btn-sm" style="min-width: 90px;">
+                        <i class="fa fa-sticky-note"></i>Resumen
+                    </a>
+                </div>
+
+                <!-- Entrega oficial -->
+                <div class="col-sm-3" style="text-align: center;">
+                    <p style="font-size: 16px; margin-bottom: 16px;">Entrega oficial</p>
+                    <div class="progress" style="height: 22px; border-radius: 3px; margin-bottom: 16px; border: 1px solid #b0c4de;">
+                        <div class="progress-bar" role="progressbar" style="width: 25%; background-color: #3a87e0; font-size: 12px; line-height: 22px;">
+                            25%
+                        </div>
+                    </div>
+                    
+                    <a class="btn btn-blue btn-sm" style="min-width: 90px;">
+                        <i class="fa fa-sticky-note"></i>Resumen
+                    </a>
+                </div>
+
+                <!-- Exámen publico -->
+                <div class="col-sm-3" style="text-align: center;">
+                    <p style="font-size: 16px; margin-bottom: 16px;">Exámen publico</p>
+                    <div class="progress" style="height: 22px; border-radius: 3px; margin-bottom: 16px; border: 1px solid #b0c4de;">
+                        <div class="progress-bar" role="progressbar" style="width: 25%; background-color: #3a87e0; font-size: 12px; line-height: 22px;">
+                            25%
+                        </div>
+                    </div>
+                    
+                    <a class="btn btn-blue btn-sm" style="min-width: 90px;">
+                        <i class="fa fa-sticky-note"></i>Resumen
+                    </a>
+                </div>
+
+            </div>
+
+        </div><!-- /panel-body -->
+    </div><!-- /panel-blue -->
+
+    <!-- Panel verde: tabla resumen -->
+    <div class="panel panel-green">
+        <div class="panel-heading">Resumen</div>
+        <div class="panel-body" style="padding: 0;">
+            <table class="table table-hover table-bordered table-condensed" style="margin-bottom: 0;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px 15px; font-size: 20px; text-align: center;">Fase proceso de graduación</th>
+                        <th style="padding: 12px 15px; font-size: 20px; text-align: center;">Estado proceso de graduación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 16px 15px; font-size: 20px; text-align: center;">Exámen Privado</td>
+                        <td style="padding: 16px 15px; font-size: 20px; text-align: center;">Programación de Exámen</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div><!-- /panel-green -->
+
+</div><!-- /col-lg-12 -->

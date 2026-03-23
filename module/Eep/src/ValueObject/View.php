@@ -31,5 +31,6 @@ class View {
     const ORDERS_UPDATE = 24;
     const EVALUACION_DOCENTE = 25;
     const EXAMEN = 26;
+    const STUDENT_GRADUATION = 27;
 
 }
