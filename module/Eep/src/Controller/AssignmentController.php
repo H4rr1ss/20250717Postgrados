@@ -267,6 +267,31 @@ class AssignmentController extends AbstractActionController {
         $coursesForEvaluationRaw = $this->assignmentManager->getUserCourseStaff($userCode);
         $formattedCourses = $this->formatEvaluationCourses($coursesForEvaluationRaw);
 
+        // DATOS DE PRUEBA — remover antes de producción
+        $formattedCourses = [
+            [
+                'id_curso_programado' => 1,
+                'nombre_curso'        => 'Metodología de la Investigación',
+                'seccion'             => 'A',
+                'periodo'             => 'Del 01/01/2026 al 31/03/2026',
+                'nombre_docente'      => 'Dr. Juan Pérez García',
+            ],
+            [
+                'id_curso_programado' => 2,
+                'nombre_curso'        => 'Estadística Avanzada',
+                'seccion'             => 'B',
+                'periodo'             => 'Del 01/01/2026 al 31/03/2026',
+                'nombre_docente'      => 'Mtra. Ana López Mendoza',
+            ],
+            [
+                'id_curso_programado' => 3,
+                'nombre_curso'        => 'Gestión del Conocimiento',
+                'seccion'             => 'A',
+                'periodo'             => 'Marzo de 2026',
+                'nombre_docente'      => 'Dr. Carlos Ramírez Soto',
+            ],
+        ];
+
         $courseIdToEvaluate = (int) $this->params()->fromQuery('evaluar', 0);
         if ($courseIdToEvaluate > 0) {
             $selectedCourse = null;
@@ -290,13 +315,11 @@ class AssignmentController extends AbstractActionController {
             return $view;
         }
 
-        if (!empty($formattedCourses)) {
-            $view = new ViewModel([
-                'cursosPendientes' => $formattedCourses
-            ]);
-            $view->setTemplate('eep/evaluacion-docente/index');
-            return $view;
-        }
+        $view = new ViewModel([
+            'cursosPendientes' => $formattedCourses
+        ]);
+        $view->setTemplate('eep/evaluacion-docente/index');
+        return $view;
 
         $result = $this->getAssignmentForm($userCode, AssignmentTypeForm::TYPE_STUDENT_REGULAR);
         if (!empty($result->getMsg())) {
