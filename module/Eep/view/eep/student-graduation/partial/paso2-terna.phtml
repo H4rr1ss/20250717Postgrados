@@ -1,0 +1,288 @@
+<?php
+// Paso 2: Terna Evaluadora - Convocatoria de Grado
+
+$miembros = [
+    [
+        'nombre'      => 'NOMBRE EXAMINADOR 1',
+        'titulo'      => 'PhD en Ciencias Computacionales',
+        'foto'        => $this->basePath('img/default-avatar.png'),
+    ],
+    [
+        'nombre'      => 'NOMBRE EXAMINADOR 2',
+        'titulo'      => 'MSc. en Educación Superior',
+        'foto'        => $this->basePath('img/default-avatar.png'),
+    ],
+    [
+        'nombre'      => 'NOMBRE EXAMINADOR 3',
+        'titulo'      => 'PhD en Gestión Tecnológica',
+        'foto'        => $this->basePath('img/default-avatar.png'),
+    ],
+];
+
+$requisitos = [
+    'Confirmación de quorum mínimo requerida 30 minutos antes.',
+    'Actas pre-impresas y material de evaluación digital disponible.',
+    'Enlace de respaldo para examinadores remotos activos.',
+];
+
+$fechaExamen = '22/10/2025';
+?>
+
+<div style="padding-left: 16px; padding-right: 16px; margin: 0 auto;">
+
+    <!-- ===== Header Banner ===== -->
+    <div class="terna-header">
+        <div class="terna-header-left">
+            <span class="terna-badge-top">Detalles del Tribunal</span>
+            <h2 class="terna-header-title">Convocatoria de Grado</h2>
+            <p class="terna-header-subtitle">
+                Asignación formal de la terna evaluadora para la defensa de tesis doctoral en Ciencias Aplicadas.
+            </p>
+        </div>
+        <div class="terna-fecha-box">
+            <div class="terna-fecha-icon">
+                <i class="fa fa-calendar"></i>
+            </div>
+            <div>
+                <div class="terna-fecha-label">Fecha del Examen</div>
+                <div class="terna-fecha-value"><?= $this->escapeHtml($fechaExamen) ?></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Miembros de la Terna ===== -->
+    <div class="terna-section-header">
+        <h3 class="terna-section-title">Miembros de la Terna</h3>
+        <span class="terna-count-badge"><?= count($miembros) ?> Examinadores Asignados</span>
+    </div>
+
+    <div class="terna-cards-row">
+        <?php foreach ($miembros as $miembro): ?>
+        <div class="terna-card">
+            <div class="terna-avatar-wrap">
+                <div class="terna-avatar-fallback">
+                    <i class="fa fa-user"></i>
+                </div>
+            </div>
+            <div class="terna-member-name"><?= $this->escapeHtml($miembro['nombre']) ?></div>
+            <p class="terna-member-titulo"><?= $this->escapeHtml($miembro['titulo']) ?></p>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- ===== Requisitos de la Sesión ===== -->
+    <div class="terna-requisitos">
+        <div class="terna-req-title">Requisitos de la Sesión</div>
+        <ul class="terna-req-list">
+            <?php foreach ($requisitos as $req): ?>
+            <li>
+                <span class="terna-req-check"><i class="fa fa-check-circle"></i></span>
+                <?= $this->escapeHtml($req) ?>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+
+</div>
+
+<style>
+    /* --- Header banner --- */
+    .terna-header {
+        background: linear-gradient(135deg, #1a2a44 0%, #1e3a5f 100%);
+        border-radius: 10px;
+        padding: 32px 36px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        color: #fff;
+    }
+    .terna-header-left {
+        flex: 1;
+    }
+    .terna-badge-top {
+        display: inline-block;
+        background: rgba(255,255,255,0.12);
+        color: #cdd8e8;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+    .terna-header-title {
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+        color: #fff;
+    }
+    .terna-header-subtitle {
+        font-size: 13px;
+        color: #8faec8;
+        margin: 0;
+        max-width: 360px;
+        line-height: 1.5;
+    }
+    .terna-fecha-box {
+        display: flex;
+        align-items: center;
+        background: rgba(255,255,255,0.10);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 10px;
+        padding: 16px 22px;
+        gap: 14px;
+        min-width: 180px;
+    }
+    .terna-fecha-icon {
+        font-size: 22px;
+        color: #7eb8f7;
+    }
+    .terna-fecha-label {
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        color: #8ab4cc;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    .terna-fecha-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 1px;
+    }
+
+    /* --- Miembros section --- */
+    .terna-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .terna-section-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #1a2a44;
+        margin: 0;
+    }
+    .terna-count-badge {
+        font-size: 12px;
+        color: #667;
+        background: #f0f2f5;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    /* --- Member cards row --- */
+    .terna-cards-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .terna-card {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #e4e8ef;
+        border-radius: 10px;
+        padding: 28px 20px 24px 20px;
+        text-align: center;
+        transition: box-shadow 0.2s;
+    }
+    .terna-card:hover {
+        box-shadow: 0 4px 18px rgba(26,42,68,0.10);
+    }
+    .terna-avatar-wrap {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 14px;
+    }
+    .terna-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #1a2a44;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        display: block;
+        margin: 0 auto;
+    }
+    .terna-avatar-fallback {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        font-size: 32px;
+        color: #7eb8f7;
+    }
+    .terna-rol-badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+    }
+    .terna-member-name {
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #1a2a44;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .terna-member-titulo {
+        font-size: 12px;
+        color: #7a8799;
+        margin: 0;
+    }
+
+    /* --- Requisitos section --- */
+    .terna-requisitos {
+        background: #f7f9fc;
+        border: 1px solid #e4e8ef;
+        border-radius: 10px;
+        padding: 24px 28px;
+    }
+    .terna-req-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a2a44;
+        margin-bottom: 14px;
+    }
+    .terna-req-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .terna-req-list li {
+        display: flex;
+        align-items: flex-start;
+        font-size: 13px;
+        color: #444;
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+    .terna-req-list li:last-child {
+        margin-bottom: 0;
+    }
+    .terna-req-check {
+        color: #4caf50;
+        font-size: 15px;
+        margin-right: 10px;
+        margin-top: 1px;
+        flex-shrink: 0;
+    }
+</style>

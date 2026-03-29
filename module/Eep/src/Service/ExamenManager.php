@@ -740,59 +740,62 @@ class ExamenManager
      * Avanza el proceso al siguiente paso definido en el catálogo.
      * T-10
      */
-    public function avanzarPaso(int $codProceso, int $codPasoActual): bool
+    public function avanzarPaso(int $codProceso, int $codPasoActual, int $userRolId): bool
     {
-        $role = $this->layout()->role;
-        $userRolId     = $role->getCode();
+        error_log("DEBUG ENTRO A AVANZAR PASO");
+
+        
 
         // 1. Obtener el orden del paso actual
         $sqlActual = 'SELECT cod_tipo_examen, numero_orden FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
         if (empty($resActual)) return false;
-
+        error_log("DEBUG RESPUESTA DE QUERY: ".print_r($resActual, true));
         $tipoExamen = $resActual[0]['cod_tipo_examen']; // puede ser NULL
         $ordenActual = $resActual[0]['numero_orden'];
 
+        
+
         // 2. Cerrar el paso actual
-        $sqlCerrar = 'UPDATE examen_proceso_paso 
-                      SET fecha_completado = CURRENT_TIMESTAMP, 
-                          estado = "completado",
-                          completado_por = :usuario
-                      WHERE cod_proceso = :proceso AND cod_paso = :paso';
+        // $sqlCerrar = 'UPDATE examen_proceso_paso 
+        //               SET fecha_completado = CURRENT_TIMESTAMP, 
+        //                   estado = "completado",
+        //                   completado_por = :usuario
+        //               WHERE cod_proceso = :proceso AND cod_paso = :paso';
 
-        $this->adapter->createStatement($sqlCerrar, [
-            'proceso' => $codProceso,
-            'paso'    => $codPasoActual,
-            'usuario' => $userRolId
-        ])->execute();
+        // $this->adapter->createStatement($sqlCerrar, [
+        //     'proceso' => $codProceso,
+        //     'paso'    => $codPasoActual,
+        //     'usuario' => $userRolId
+        // ])->execute();
 
-        // 3. Buscar el siguiente paso en el orden
-        $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
-                         WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
-                           AND numero_orden = :siguiente 
-                           AND activo = 1';
-        $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
+        // // 3. Buscar el siguiente paso en el orden
+        // $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
+        //                  WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
+        //                    AND numero_orden = :siguiente 
+        //                    AND activo = 1';
+        // $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
 
-        if (!empty($resSiguiente)) {
-            $codSiguiente = $resSiguiente[0]['cod_paso'];
+        // if (!empty($resSiguiente)) {
+        //     $codSiguiente = $resSiguiente[0]['cod_paso'];
 
-            // 4. Actualizar el proceso maestro
-            $sqlMaster = 'UPDATE examen_proceso SET cod_paso_actual = :siguiente WHERE cod_proceso = :proceso';
-            $this->adapter->createStatement($sqlMaster, ['siguiente' => $codSiguiente, 'proceso' => $codProceso])->execute();
+        //     // 4. Actualizar el proceso maestro
+        //     $sqlMaster = 'UPDATE examen_proceso SET cod_paso_actual = :siguiente WHERE cod_proceso = :proceso';
+        //     $this->adapter->createStatement($sqlMaster, ['siguiente' => $codSiguiente, 'proceso' => $codProceso])->execute();
 
-            // 5. Iniciar el nuevo paso
-            $sqlNuevo = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
-                         VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)
-                         ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP';
-            $this->adapter->createStatement($sqlNuevo, ['proceso' => $codProceso, 'paso' => $codSiguiente])->execute();
+        //     // 5. Iniciar el nuevo paso
+        //     $sqlNuevo = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
+        //                  VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)
+        //                  ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP';
+        //     $this->adapter->createStatement($sqlNuevo, ['proceso' => $codProceso, 'paso' => $codSiguiente])->execute();
             
             return true;
-        }
+        // }
 
-        // Si no hay siguiente paso, el proceso finaliza
-        $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
-        $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
-        return true;
+        // // Si no hay siguiente paso, el proceso finaliza
+        // $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
+        // $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
+        // return true;
     }
 
     /**

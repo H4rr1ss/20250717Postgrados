@@ -20,4 +20,10 @@ class StudentGraduationController extends AbstractActionController {
         $view->setTemplate('eep/student-graduation/partial/paso1-solicitud-examen');
         return $view;
     }
+
+    public function paso2TernaAction() {
+        $view = new ViewModel([]);
+        $view->setTemplate('eep/student-graduation/partial/paso2-terna');
+        return $view;
+    }
 }

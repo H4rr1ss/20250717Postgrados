@@ -221,12 +221,6 @@ class ExamenController extends AbstractActionController {
             $requisitos    = $params['requisitos'];
             $cod_tipo_examen = $params['cod_tipo_examen'];
             
-            error_log("DEBUG user rol: ".print_r($userRolId, true));
-            error_log("DEBUG cod proceso: ".print_r($codProceso, true));
-            error_log("DEBUG cod paso actual: ".print_r($codPasoActual, true));
-            error_log("DEBUG requisitos: ".print_r($requisitos, true));
-            error_log("DEBUG cod examen: ".print_r($cod_tipo_examen, true));
-            
             if ($codProceso == null || $codPasoActual == null || !is_array($requisitos) || empty($requisitos)) {
                 $response['error'] = 'Datos insuficientes para guardar la revisión';
             } else {
@@ -238,8 +232,9 @@ class ExamenController extends AbstractActionController {
                     $todosAprobados = $this->examenManager->todosRequisitosAceptados($codProceso, $codPasoActual, $cod_tipo_examen);
 
                     if ($todosAprobados) {
+                        error_log("DEBUG cod examen: SI ENTRO A APROBADOS");
                         // 4. Avanzar al siguiente paso
-                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual);
+                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userRolId);
 
                         $response['status']   = true;
                         $response['avanzado'] = true;

@@ -464,5 +464,10 @@ return [
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
+        'paso2Terna' => [
+            'code' => 83,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
     ],
 ];
