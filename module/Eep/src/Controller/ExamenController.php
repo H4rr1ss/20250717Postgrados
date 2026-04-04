@@ -220,6 +220,12 @@ class ExamenController extends AbstractActionController {
             $codPasoActual = $params['cod_paso_actual'];
             $requisitos    = $params['requisitos'];
             $cod_tipo_examen = $params['cod_tipo_examen'];
+
+            error_log("DEBUG user rol: ".print_r($userRolId, true));
+            error_log("DEBUG cod proceso: ".print_r($codProceso, true));
+            error_log("DEBUG cod paso actual: ".print_r($codPasoActual, true));
+            error_log("DEBUG cod tipo examen: ".print_r($cod_tipo_examen, true));
+
             
             if ($codProceso == null || $codPasoActual == null || !is_array($requisitos) || empty($requisitos)) {
                 $response['error'] = 'Datos insuficientes para guardar la revisión';
@@ -232,9 +238,14 @@ class ExamenController extends AbstractActionController {
                     $todosAprobados = $this->examenManager->todosRequisitosAceptados($codProceso, $codPasoActual, $cod_tipo_examen);
 
                     if ($todosAprobados) {
-                        error_log("DEBUG cod examen: SI ENTRO A APROBADOS");
-                        // 4. Avanzar al siguiente paso
+                        // 4. Obtener documentos del paso antes de avanzar
+                        $documentosTipoExamen = $this->examenManager->getRequisitosDocumento($codPasoActual, $cod_tipo_examen);
+
+                        // 5. Avanzar al siguiente paso
                         $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userRolId);
+
+                        // 6. Agregar requisitos a recepcion física si es el paso 1 (T-17) getDocumentosFisicos
+                        $this->examenManager->InitDocumentacionFisica($codProceso, $documentosTipoExamen);
 
                         $response['status']   = true;
                         $response['avanzado'] = true;
@@ -245,11 +256,8 @@ class ExamenController extends AbstractActionController {
                         $response['message']  = "Documento revisado correctamente.";
                     }
 
-                    $logStatus = LM::SUCCESS;
-
                 } catch (\Exception $e) {
                     $response['error'] = 'Error: ' . $e->getMessage();
-                    $logStatus = LM::ERROR;
                 }
             }
         } else {
@@ -267,40 +275,73 @@ class ExamenController extends AbstractActionController {
      * Retorna JSON para manejo vía AJAX.
      */
     public function guardarDocFisicoAction() {
-        $request = $this->getRequest();
-        if (!$request->isPost()) {
-            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
-        }
+        $response  = ['status' => false];
 
-        $userId = $this->layout()->role->getUserCode();
-        $codProceso = (int) $request->getPost('cod_proceso');
-        $documentos = $request->getPost('documentos'); // Array esperado: [['cod_requisito' => X, 'recibido' => 1|0, 'observaciones' => '...'], ...]
+        if ($this->getRequest()->isPost()) {
+            $userId = $this->layout()->role->getCode();
+            $params = $this->params()->fromPost();
+            $role = $this->layout()->role;
+            $userRolId     = $role->getCode();
 
-        if ($codProceso <= 0 || !is_array($documentos)) {
-            return new JsonModel(['status' => 'error', 'message' => 'Datos inválidos o incompletos']);
-        }
+            error_log("DEBUG user id: ".print_r($userId, true));
+            error_log("DEBUG params: ".print_r($params, true));
 
-        try {
-            $success = $this->examenManager->guardarDocumentionFisica($codProceso, $documentos, $userId);
-            
-            if ($success) {
-                // Registrar historial
-                $this->examenManager->registrarHistorial([
-                    'cod_proceso' => $codProceso,
-                    'cod_usuario' => $userId,
-                    'tipo_evento' => 'otro',
-                    'descripcion' => 'Se actualizó el checklist de documentos físicos',
-                    'datos_nuevos' => $documentos
-                ]);
+            $codProceso    = $params['cod_proceso'];
+            $codPasoActual = $params['cod_paso_actual'];
+            $cod_tipo_examen = $params['cod_tipo_examen'];
+            $documentos    = $params['documentos'];
 
-                return new JsonModel(['status' => 'success', 'message' => 'Documentación física actualizada']);
+            if ($codProceso <= 0 || !is_array($documentos)) {
+                return new JsonModel(['status' => 'error', 'message' => 'Datos inválidos o incompletos']);
             }
-            
-            return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la información']);
 
-        } catch (\Exception $e) {
-            return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+            try {
+                $success = $this->examenManager->guardarDocumentacionFisica($codProceso, $documentos, $userId);
+                
+                if ($success) {
+                    $docsFisicosRes = $this->examenManager->getDocumentosFisicos($codProceso, $cod_tipo_examen);
+
+                    // Verificar si todos los documentos tienen estado = 1 (recibidos)
+                    $todosRecibidos = true;
+                    if (!empty($docsFisicosRes)) {
+                        foreach ($docsFisicosRes as $doc) {
+                            if ((int)$doc['estado'] !== 1) {
+                                $todosRecibidos = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Solo avanzar paso si todos los documentos fueron recibidos
+                    if ($todosRecibidos && !empty($docsFisicosRes)) {
+                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userRolId);
+                        return new JsonModel([
+                            'status' => 'success', 
+                            'message' => 'Documentación física completada. El proceso ha avanzado al siguiente paso.',
+                            'avanzado' => true
+                        ]);
+                    }
+
+                    return new JsonModel([
+                        'status' => 'success', 
+                        'message' => 'Documentación física actualizada',
+                        'avanzado' => false
+                    ]);
+                }
+                
+                return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la información']);
+
+            } catch (\Exception $e) {
+                return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
+            }
+        } else {
+            $this->getResponse()->setStatusCode(400);
+            $response['error'] = 'Solicitud sin datos (No POST)';
         }
+
+        $view = new JsonModel($response);
+        $view->setTerminal(true);
+        return $view;
     }
 
     /**
@@ -388,6 +429,7 @@ class ExamenController extends AbstractActionController {
 
     // 2. SOLICITUDES ---------------------------------------
     /**
+     * CARGA INICIAL PARA SOLICITUDES (PASO 1)
      * T-15: Cargar datos reales del estudiante, paso actual y documentos
      */
     public function solicitudesProcessAction() {
@@ -483,7 +525,7 @@ class ExamenController extends AbstractActionController {
             $documentos = $this->examenManager->getDocumentosYRequisitos($idProceso, 1, $codigo_tipo_examen);
 
             // T-17: Cargar checklist de documentos físicos para el paso 2
-            $docsFisicos = $this->examenManager->getDocumentosFisicos($idProceso);
+            $docsFisicos = $this->examenManager->getDocumentosFisicos($idProceso, $codigo_tipo_examen);
 
             // T-18: Cargar terna de examinadores para el paso 3
             $terna = $this->examenManager->getTerna($idProceso);
@@ -493,7 +535,7 @@ class ExamenController extends AbstractActionController {
                 'estudiante'  => $estudiante,
                 'paso'        => $paso,
                 'estados'     => $estados,
-                'documentos'  => $documentos,
+                'docsDigitales'  => $documentos,
                 'docsFisicos' => $docsFisicos,
                 'terna'       => $terna
             ]);

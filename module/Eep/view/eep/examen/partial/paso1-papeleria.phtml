@@ -23,12 +23,12 @@
                                 <th style="width: 10%; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
-                        <?php var_dump($this->proceso); ?>
+                        <!-- <?php var_dump($this->docsDigitales); ?> -->
                         <tbody>
-                            <?php if (empty($this->documentos)): ?>
+                            <?php if (empty($this->docsDigitales)): ?>
                                 <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
                             <?php else: ?>
-                                <?php foreach ($this->documentos as $doc): 
+                                <?php foreach ($this->docsDigitales as $doc): 
                                     $estado = $doc['estado_revision'];
 
                                     if ($estado === null) {
@@ -91,9 +91,12 @@
                     <div id="alertaRecordatorioGuardar" class="alerta-recordatorio-interna">
                         <i class="fa fa-warning"></i> * No olvides guardar tus cambios
                     </div>
-                    <button class="btn btn-primary" id="btnGuardarCambios">
-                        Guardar Cambios
-                    </button>
+                    <?php if ((int)$this->paso < (int)$this->proceso['numero_orden']): ?>
+                    <?php else: ?>
+                        <button class="btn btn-primary" id="btnGuardarCambios">
+                            Guardar Cambios
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div><!-- /.panel-revision-body -->
         </div><!-- /.panel-revision -->
@@ -421,7 +424,7 @@ $(document).ready(function() {
             success: function(data) {
                 btn.prop('disabled', false).text(originalText);
                 $('#alertaRecordatorioGuardar').fadeOut(300);
-                console.log('[DEBUG guardarRevision] respuesta del servidor:', data);
+                
                 if (!data.hasOwnProperty('status')) {
                     alert('No se obtuvo una respuesta correcta del servidor.');
                     btn.prop('disabled', false).text(originalText);
@@ -434,7 +437,9 @@ $(document).ready(function() {
                         if (data.avanzado) {
                             // Todos aprobados → paso avanzado
                             alert(data.message);
-                            // location.reload();
+                            setTimeout(function() {
+                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=2';
+                            }, 1000);
                         } else {
                             // Hay rechazados: guardado pero sin avance
                             alert(data.message);

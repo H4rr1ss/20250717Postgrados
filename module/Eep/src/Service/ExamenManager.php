@@ -382,12 +382,11 @@ class ExamenManager
     {
         $sql = 'SELECT cod_requisito, nombre, descripcion, tipo_entrega, obligatorio, formatos_permitidos, tamano_max_mb
                 FROM examen_requisito_documento
-                WHERE cod_paso = :paso 
-                  AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
+                WHERE cod_tipo_examen = :tipo
                   AND activo = 1
                 ORDER BY orden_display ASC';
 
-        return $this->execute($sql, ['paso' => $codPaso, 'tipo' => $codTipoExamen]);
+        return $this->execute($sql, ['tipo' => $codTipoExamen]);
     }
 
     /**
@@ -460,33 +459,6 @@ class ExamenManager
                   AND ed.eliminado = 0';
 
         return $this->execute($sql, ['proceso' => $codProceso]);
-    }
-
-    /**
-     * Obtiene el checklist de documentos físicos recibidos para el Paso 2.
-     * T-06
-     */
-    public function getDocumentosFisicos(int $codProceso, int $codTipoExamen = null): array
-    {
-        $sql = 'SELECT 
-                    erd.cod_requisito,
-                    erd.nombre,
-                    erd.descripcion,
-                    COALESCE(edf.recibido, 0) AS recibido,
-                    edf.fecha_recepcion,
-                    edf.observaciones,
-                    CONCAT(u.nombres, " ", u.apellidos) AS recibido_por_nombre
-                FROM examen_requisito_documento erd
-                LEFT JOIN examen_documento_fisico edf ON edf.cod_requisito = erd.cod_requisito 
-                    AND edf.cod_proceso = :proceso
-                LEFT JOIN usuario u ON u.cod_usuario = edf.recibido_por
-                WHERE erd.cod_paso = 2 
-                  AND erd.tipo_entrega = "fisico"
-                  AND erd.cod_tipo_examen = :tipo
-                  AND erd.activo = 1
-                ORDER BY erd.orden_display ASC';
-
-        return $this->execute($sql, ['proceso' => $codProceso, 'tipo' => $codTipoExamen]);
     }
 
     /**
@@ -670,6 +642,53 @@ class ExamenManager
         return true;
     }
 
+    // * MANEJO DE DOCUMENTACION FISICA (ADMINISTRACION) ------------------------
+
+    /**
+     * Inicializacion de proceso para documentos físicos (Paso 2).
+     * T-09
+     */
+    public function InitDocumentacionFisica(int $codProceso, array $documentos): bool
+    {
+        foreach ($documentos as $req) {
+            $sql = 'INSERT INTO examen_documento_fisico 
+                        (cod_proceso, cod_requisito)
+                    VALUES 
+                        (:proceso, :req)';
+            
+            $params = [
+                'proceso'  => $codProceso,
+                'req'      => $req['cod_requisito']
+            ];
+
+            $this->adapter->createStatement($sql, $params)->execute();
+        }
+        return true;
+    }
+
+    /**
+     * Obtiene el checklist de documentos físicos recibidos para el Paso 2.
+     * T-06
+     */
+    public function getDocumentosFisicos(int $codProceso, int $codTipoExamen): array
+    {
+        $sql = 'SELECT 
+                    erd.cod_requisito,
+                    erd.nombre,
+                    edf.recibido AS estado,
+                    edf.fecha_recepcion
+                FROM examen_requisito_documento erd
+                LEFT JOIN examen_documento_fisico edf
+                    ON edf.cod_requisito = erd.cod_requisito 
+                    AND edf.cod_proceso = :proceso
+                WHERE
+                    erd.cod_tipo_examen = :tipo
+                    AND erd.activo = 1
+                ORDER BY erd.orden_display ASC';
+
+        return $this->execute($sql, ['proceso' => $codProceso, 'tipo' => $codTipoExamen]);
+    }
+    
     /**
      * Guarda el checklist de recepción de documentos físicos (Paso 2).
      * T-09
@@ -677,22 +696,17 @@ class ExamenManager
     public function guardarDocumentacionFisica(int $codProceso, array $documentos, int $codUsuario): bool
     {
         foreach ($documentos as $req) {
-            $sql = 'INSERT INTO examen_documento_fisico 
-                        (cod_proceso, cod_requisito, recibido, fecha_recepcion, observaciones, recibido_por)
-                    VALUES 
-                        (:proceso, :req, :recibido, :fecha, :obs, :usuario)
-                    ON DUPLICATE KEY UPDATE 
-                        recibido = VALUES(recibido), 
-                        fecha_recepcion = VALUES(fecha_recepcion), 
-                        observaciones = VALUES(observaciones),
-                        recibido_por = VALUES(recibido_por)';
+            $sql = 'UPDATE examen_documento_fisico 
+                    SET recibido = :recibido,
+                        fecha_recepcion = :fecha,
+                        recibido_por = :usuario
+                    WHERE cod_proceso = :proceso AND cod_requisito = :req';
             
             $params = [
                 'proceso'  => $codProceso,
                 'req'      => $req['cod_requisito'],
                 'recibido' => $req['recibido'] ? 1 : 0,
                 'fecha'    => $req['recibido'] ? date('Y-m-d H:i:s') : null,
-                'obs'      => $req['observaciones'] ?? null,
                 'usuario'  => $codUsuario
             ];
 
@@ -700,6 +714,7 @@ class ExamenManager
         }
         return true;
     }
+    // * -------------------------------------------------------------------------------
 
     /**
      * Guarda la terna de examinadores y la programación del examen (Paso 3).
@@ -742,10 +757,6 @@ class ExamenManager
      */
     public function avanzarPaso(int $codProceso, int $codPasoActual, int $userRolId): bool
     {
-        error_log("DEBUG ENTRO A AVANZAR PASO");
-
-        
-
         // 1. Obtener el orden del paso actual
         $sqlActual = 'SELECT cod_tipo_examen, numero_orden FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
@@ -754,48 +765,46 @@ class ExamenManager
         $tipoExamen = $resActual[0]['cod_tipo_examen']; // puede ser NULL
         $ordenActual = $resActual[0]['numero_orden'];
 
-        
-
         // 2. Cerrar el paso actual
-        // $sqlCerrar = 'UPDATE examen_proceso_paso 
-        //               SET fecha_completado = CURRENT_TIMESTAMP, 
-        //                   estado = "completado",
-        //                   completado_por = :usuario
-        //               WHERE cod_proceso = :proceso AND cod_paso = :paso';
+        $sqlCerrar = 'UPDATE examen_proceso_paso 
+                      SET fecha_completado = CURRENT_TIMESTAMP, 
+                          estado = "completado",
+                          completado_por = :usuario
+                      WHERE cod_proceso = :proceso AND cod_paso = :paso';
 
-        // $this->adapter->createStatement($sqlCerrar, [
-        //     'proceso' => $codProceso,
-        //     'paso'    => $codPasoActual,
-        //     'usuario' => $userRolId
-        // ])->execute();
+        $this->adapter->createStatement($sqlCerrar, [
+            'proceso' => $codProceso,
+            'paso'    => $codPasoActual,
+            'usuario' => $userRolId
+        ])->execute();
 
-        // // 3. Buscar el siguiente paso en el orden
-        // $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
-        //                  WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
-        //                    AND numero_orden = :siguiente 
-        //                    AND activo = 1';
-        // $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
+        // 3. Buscar el siguiente paso en el orden
+        $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
+                         WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
+                           AND numero_orden = :siguiente 
+                           AND activo = 1';
+        $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
 
-        // if (!empty($resSiguiente)) {
-        //     $codSiguiente = $resSiguiente[0]['cod_paso'];
+        if (!empty($resSiguiente)) {
+            $codSiguiente = $resSiguiente[0]['cod_paso'];
 
-        //     // 4. Actualizar el proceso maestro
-        //     $sqlMaster = 'UPDATE examen_proceso SET cod_paso_actual = :siguiente WHERE cod_proceso = :proceso';
-        //     $this->adapter->createStatement($sqlMaster, ['siguiente' => $codSiguiente, 'proceso' => $codProceso])->execute();
+            // 4. Actualizar el proceso maestro
+            $sqlMaster = 'UPDATE examen_proceso SET cod_paso_actual = :siguiente WHERE cod_proceso = :proceso';
+            $this->adapter->createStatement($sqlMaster, ['siguiente' => $codSiguiente, 'proceso' => $codProceso])->execute();
 
-        //     // 5. Iniciar el nuevo paso
-        //     $sqlNuevo = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
-        //                  VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)
-        //                  ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP';
-        //     $this->adapter->createStatement($sqlNuevo, ['proceso' => $codProceso, 'paso' => $codSiguiente])->execute();
+            // 5. Iniciar el nuevo paso
+            $sqlNuevo = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
+                         VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)
+                         ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP';
+            $this->adapter->createStatement($sqlNuevo, ['proceso' => $codProceso, 'paso' => $codSiguiente])->execute();
             
             return true;
-        // }
+        }
 
-        // // Si no hay siguiente paso, el proceso finaliza
-        // $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
-        // $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
-        // return true;
+        // Si no hay siguiente paso, el proceso finaliza
+        $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
+        $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
+        return true;
     }
 
     /**

@@ -34,36 +34,38 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php var_dump($this->docsFisicos); ?>
                                 <?php if (!empty($docsFisicos)): ?>
                                 <?php foreach ($docsFisicos as $i => $doc): ?>
-                                <?php
-                                    $recibido    = (int)$doc['recibido'];
-                                    $filaClase   = $recibido ? 'fila-aceptada' : 'fila-pendiente';
-                                    $badgeClase  = $recibido ? 'estado-aceptado' : 'estado-pendiente';
-                                    $badgeTexto  = $recibido ? 'Recibido'       : 'Pendiente';
-                                    $btnClase    = $recibido ? 'active'         : '';
-                                    $fechaTexto  = ($recibido && $doc['fecha_recepcion'])
-                                                    ? date('d/m/Y', strtotime($doc['fecha_recepcion']))
-                                                    : '-';
-                                ?>
-                                <tr class="<?= $filaClase ?>" data-cod-requisito="<?= (int)$doc['cod_requisito'] ?>">
-                                    <td><?= $i + 1 ?></td>
-                                    <td>
-                                        <?= htmlspecialchars($doc['nombre']) ?>
-                                        <?php if (!empty($doc['descripcion'])): ?>
-                                        <small class="text-muted d-block"><?= htmlspecialchars($doc['descripcion']) ?></small>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><span class="estado-badge <?= $badgeClase ?>"><?= $badgeTexto ?></span></td>
-                                    <td class="celda-fecha"><?= $fechaTexto ?></td>
-                                    <td style="text-align: center;">
-                                        <div class="acciones-grupo">
-                                            <button class="btn-accion btn-aceptar <?= $btnClase ?>" title="Aceptar" data-estado="aceptar">
-                                                <i class="fa fa-check"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    <?php
+                                        $recibido    = (int)$doc['estado'];
+                                        $filaClase   = $recibido ? 'fila-aceptada' : 'fila-pendiente';
+                                        $badgeClase  = $recibido ? 'estado-aceptado' : 'estado-pendiente';
+                                        $badgeTexto  = $recibido ? 'Recibido'       : 'Pendiente';
+                                        $btnClase    = $recibido ? 'active'         : '';
+                                        $fechaTexto  = ($recibido && $doc['fecha_recepcion'])
+                                                        ? date('d/m/Y', strtotime($doc['fecha_recepcion']))
+                                                        : '-';
+                                    ?>
+                                    <tr class="<?= $filaClase ?>" data-cod-requisito="<?= (int)$doc['cod_requisito'] ?>" data-estado-inicial="<?= $recibido ?>">
+                                        <td><?= $i + 1 ?></td>
+                                        <td>
+                                            <?= htmlspecialchars($doc['nombre']) ?>
+                                        </td>
+                                        <td><span class="estado-badge <?= $badgeClase ?>"><?= $badgeTexto ?></span></td>
+                                        <td class="celda-fecha"><?= $fechaTexto ?></td>
+                                        <td style="text-align: center;">
+                                            <?php if ($recibido): ?>
+                                                <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
+                                            <?php else: ?>
+                                                <div class="acciones-grupo">
+                                                    <button class="btn-accion btn-aceptar <?= $btnClase ?>" title="Aceptar" data-estado="aceptar">
+                                                        <i class="fa fa-check"></i>
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
                                 <?php endforeach; ?>
                                 <?php else: ?>
                                 <tr>
@@ -205,6 +207,9 @@
     }
 </style>
 
+<!-- Toast Service -->
+<script src="/js/toast-service.js"></script>
+
 <script>
 $(document).ready(function() {
     // Manejar click en botones de acción
@@ -222,8 +227,11 @@ $(document).ready(function() {
         }
         
         if (estadoSeleccionado === 'aceptar') {
-            // Aceptar y colocar fecha actual
-            aplicarEstadoAceptado(fila, boton, grupo);
+            // Confirmar antes de marcar como aceptado
+            if (confirm('¿Está seguro de marcar este documento como recibido?')) {
+                // Aceptar y colocar fecha actual
+                aplicarEstadoAceptado(fila, boton, grupo);
+            }
         }
     });
 
@@ -242,12 +250,15 @@ $(document).ready(function() {
         const anio = fechaActual.getFullYear();
         const fechaFormateada = `${dia}/${mes}/${anio}`;
         
-        // Actualizar fecha de recepción (columna 5)
-        fila.find('td').eq(4).text(fechaFormateada);
+        // Actualizar fecha de recepción (columna 4 - índice 3)
+        fila.find('td').eq(3).text(fechaFormateada);
         
-        // Actualizar estado visual (columna 4)
+        // Actualizar estado visual (columna 3 - índice 2)
         const estadoBadge = fila.find('.estado-badge');
         estadoBadge.removeClass('estado-rechazado estado-pendiente').addClass('estado-aceptado').text('Recibido');
+
+        // Actualizar acciones a "Cerrado" (columna 5 - índice 4)
+        fila.find('td').eq(4).html('<span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>');
         
         console.log('Documento recibido');
         mostrarAlertaGuardar();
@@ -260,10 +271,10 @@ $(document).ready(function() {
         // Desactivar todos los botones
         grupo.find('.btn-accion').removeClass('active');
         
-        // Limpiar fecha de recepción
-        fila.find('td').eq(4).text('-');
+        // Limpiar fecha de recepción (columna 4 - índice 3)
+        fila.find('td').eq(3).text('-');
         
-        // Actualizar estado visual
+        // Actualizar estado visual (columna 3 - índice 2)
         const estadoBadge = fila.find('.estado-badge');
         estadoBadge.removeClass('estado-aceptado estado-rechazado').addClass('estado-pendiente').text('Pendiente');
         
@@ -279,21 +290,25 @@ $(document).ready(function() {
     $('#btnGuardarDocumentacion').on('click', function() {
         const btn = $(this);
 
-        // Recopilar estado actual de cada fila
+        // Recopilar estado actual de cada fila, solo si cambió
         const documentos = [];
         $('.table-documentos tbody tr[data-cod-requisito]').each(function() {
             const fila = $(this);
             const codRequisito = parseInt(fila.data('cod-requisito'), 10);
-            const recibido     = fila.find('.btn-aceptar').hasClass('active') ? 1 : 0;
+            const estadoInicial = parseInt(fila.attr('data-estado-inicial'), 10);
+            const recibido      = (fila.find('.btn-aceptar').hasClass('active') || fila.find('.fa-lock').length > 0) ? 1 : 0;
 
-            documentos.push({
-                cod_requisito: codRequisito,
-                recibido:      recibido,
-                observaciones: ''
-            });
+            // Solo agregar si el estado actual es diferente al inicial
+            if (recibido !== estadoInicial) {
+                documentos.push({
+                    cod_requisito: codRequisito,
+                    recibido:      recibido
+                });
+            }
         });
 
         if (documentos.length === 0) {
+            ToastService.info('No hay cambios pendientes por guardar.');
             return;
         }
 
@@ -301,38 +316,50 @@ $(document).ready(function() {
 
         const codProceso = <?= isset($proceso['cod_proceso']) ? (int)$proceso['cod_proceso'] : 0 ?>;
 
+        console.log("prueba de codProceso ", codProceso);
+        console.log("prueba de documentos ", documentos);
+
         $.ajax({
-            url: '/examen/guardarDocFisico',
-            type: 'POST',
+            url:      '<?= $this->url("examen", ["action" => "guardarDocFisico"]) ?>',
+            type:     'POST',
+            dataType: 'json',
+            async:    true,
+            timeout:  10000,
             data: {
-                cod_proceso: codProceso,
-                documentos:  documentos
+                cod_proceso: '<?= $this->proceso["cod_proceso"] ?? null ?>',
+                cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?? null ?>',
+                cod_tipo_examen: '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                documentos:  documentos ?? []
             },
             success: function(response) {
                 if (response.status === 'success') {
+                    // Actualizar el estado inicial de las filas enviadas
+                    $('.table-documentos tbody tr[data-cod-requisito]').each(function() {
+                        const fila = $(this);
+                        const recibido = (fila.find('.btn-aceptar').hasClass('active') || fila.find('.fa-lock').length > 0) ? 1 : 0;
+                        fila.attr('data-estado-inicial', recibido);
+                    });
+                    
                     $('#alertaRecordatorioGuardarDoc').fadeOut(300);
-                    mostrarToast('Recepción guardada correctamente.', 'success');
+                    ToastService.success(response.message || 'Recepción guardada correctamente.');
+                    
+                    // Si el proceso avanzó, redirigir al siguiente paso
+                    if (response.avanzado) {
+                        setTimeout(function() {
+                            window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=3';
+                        }, 1000);
+                    }
                 } else {
-                    mostrarToast('Error: ' + (response.message || 'No se pudo guardar.'), 'danger');
+                    ToastService.error('Error: ' + (response.message || 'No se pudo guardar.'));
                 }
             },
             error: function() {
-                mostrarToast('Error de comunicación con el servidor.', 'danger');
+                ToastService.error('Error de comunicación con el servidor.');
             },
             complete: function() {
                 btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar Recepción');
             }
         });
     });
-
-    function mostrarToast(mensaje, tipo) {
-        const id = 'toast-doc-' + Date.now();
-        const html = `<div id="${id}" class="alert alert-${tipo}" role="alert"
-            style="position:fixed;bottom:20px;right:20px;z-index:9999;min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
-            ${mensaje}
-        </div>`;
-        $('body').append(html);
-        setTimeout(function() { $('#' + id).fadeOut(400, function() { $(this).remove(); }); }, 3500);
-    }
 });
 </script>

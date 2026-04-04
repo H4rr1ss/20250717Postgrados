@@ -341,7 +341,6 @@ CREATE TABLE `examen_documento_fisico` (
   `cod_requisito`   smallint(5) unsigned NOT NULL COMMENT 'Solo requisitos con tipo_entrega = fisico',
   `recibido`        tinyint(1) NOT NULL DEFAULT 0,
   `fecha_recepcion` timestamp NULL DEFAULT NULL,
-  `observaciones`   text DEFAULT NULL,
   `recibido_por`    int(11) DEFAULT NULL COMMENT 'FK → usuario (staff)',
   `created_at`      timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at`      timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),

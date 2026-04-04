@@ -420,31 +420,31 @@ return [
             'roles' => [Role::ESTUDIANTE]
         ],
         'subirDocumento' => [
-            'code' => 73,
+            'code' => 100,
             'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE]
         ],
         'guardarRevision' => [
-            'code' => 74,
+            'code' => 101,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'guardarDocFisico' => [
-            'code' => 75,
+            'code' => 102,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'guardarTerna' => [
-            'code' => 76,
+            'code' => 103,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'avanzarPaso' => [
-            'code' => 77,
+            'code' => 104,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
         ],
         'guardarRequisito' => [
-            'code' => 78,
+            'code' => 105,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'eliminarRequisito' => [
-            'code' => 79,
+            'code' => 106,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
     ],

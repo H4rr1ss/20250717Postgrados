@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo de Toast Service</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <style>
+        body {
+            padding: 50px;
+            font-family: Arial, sans-serif;
+        }
+        .demo-section {
+            margin-bottom: 30px;
+        }
+        .btn {
+            margin: 5px;
+        }
+        h1 {
+            margin-bottom: 30px;
+        }
+        .code-example {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Servicio de Notificaciones Toast</h1>
+        
+        <div class="demo-section">
+            <h3>Métodos Básicos</h3>
+            <button class="btn btn-success" onclick="ToastService.success('¡Operación exitosa!')">
+                <i class="fa fa-check"></i> Éxito
+            </button>
+            <button class="btn btn-danger" onclick="ToastService.error('Ha ocurrido un error')">
+                <i class="fa fa-times"></i> Error
+            </button>
+            <button class="btn btn-warning" onclick="ToastService.warning('Advertencia importante')">
+                <i class="fa fa-exclamation-triangle"></i> Advertencia
+            </button>
+            <button class="btn btn-info" onclick="ToastService.info('Información útil')">
+                <i class="fa fa-info-circle"></i> Info
+            </button>
+            
+            <div class="code-example">
+ToastService.success('¡Operación exitosa!');<br>
+ToastService.error('Ha ocurrido un error');<br>
+ToastService.warning('Advertencia importante');<br>
+ToastService.info('Información útil');
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>Con Opciones Personalizadas</h3>
+            <button class="btn btn-primary" onclick="showCustomToast()">
+                <i class="fa fa-cog"></i> Toast Personalizado
+            </button>
+            <button class="btn btn-default" onclick="showLongToast()">
+                <i class="fa fa-clock-o"></i> Toast de Larga Duración
+            </button>
+            <button class="btn btn-default" onclick="showNoIconToast()">
+                <i class="fa fa-window-minimize"></i> Sin Icono
+            </button>
+            
+            <div class="code-example">
+// Toast personalizado con duración específica<br>
+ToastService.show('Mensaje personalizado', 'success', {<br>
+&nbsp;&nbsp;duration: 5000,<br>
+&nbsp;&nbsp;icon: 'fa-heart'<br>
+});<br><br>
+
+// Toast sin auto-cerrar<br>
+ToastService.success('Mensaje permanente', {<br>
+&nbsp;&nbsp;duration: 0,<br>
+&nbsp;&nbsp;dismissible: true<br>
+});
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>Mensajes Múltiples</h3>
+            <button class="btn btn-primary" onclick="showMultipleToasts()">
+                <i class="fa fa-list"></i> Mostrar Varios Toasts
+            </button>
+            <button class="btn btn-default" onclick="ToastService.clear()">
+                <i class="fa fa-trash"></i> Limpiar Todos
+            </button>
+            
+            <div class="code-example">
+// Mostrar múltiples toasts<br>
+ToastService.success('Primer mensaje');<br>
+ToastService.info('Segundo mensaje');<br>
+ToastService.warning('Tercer mensaje');<br><br>
+
+// Limpiar todos los toasts<br>
+ToastService.clear();
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>Configuración Global</h3>
+            <button class="btn btn-default" onclick="changePosition('top-left')">
+                <i class="fa fa-arrow-up"></i><i class="fa fa-arrow-left"></i> Arriba Izquierda
+            </button>
+            <button class="btn btn-default" onclick="changePosition('top-right')">
+                <i class="fa fa-arrow-up"></i><i class="fa fa-arrow-right"></i> Arriba Derecha
+            </button>
+            <button class="btn btn-default" onclick="changePosition('bottom-left')">
+                <i class="fa fa-arrow-down"></i><i class="fa fa-arrow-left"></i> Abajo Izquierda
+            </button>
+            <button class="btn btn-default" onclick="changePosition('bottom-right')">
+                <i class="fa fa-arrow-down"></i><i class="fa fa-arrow-right"></i> Abajo Derecha
+            </button>
+            
+            <div class="code-example">
+// Cambiar configuración global<br>
+ToastService.configure({<br>
+&nbsp;&nbsp;position: 'top-right',<br>
+&nbsp;&nbsp;duration: 5000,<br>
+&nbsp;&nbsp;maxToasts: 3,<br>
+&nbsp;&nbsp;offset: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vertical: 30,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;horizontal: 30,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;spacing: 15<br>
+&nbsp;&nbsp;}<br>
+});
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>Uso en AJAX (Ejemplo de tu código)</h3>
+            <button class="btn btn-primary" onclick="simulateAjaxSuccess()">
+                <i class="fa fa-cloud-upload"></i> Simular Guardado Exitoso
+            </button>
+            <button class="btn btn-danger" onclick="simulateAjaxError()">
+                <i class="fa fa-exclamation-circle"></i> Simular Error
+            </button>
+            
+            <div class="code-example">
+$.ajax({<br>
+&nbsp;&nbsp;url: '/api/guardar',<br>
+&nbsp;&nbsp;type: 'POST',<br>
+&nbsp;&nbsp;data: { ... },<br>
+&nbsp;&nbsp;success: function(response) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if (response.status === 'success') {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ToastService.success('Recepción guardada correctamente.');<br>
+&nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ToastService.error('Error: ' + response.message);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;error: function() {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ToastService.error('Error de comunicación con el servidor.');<br>
+&nbsp;&nbsp;}<br>
+});
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>Inclusión en tu Proyecto</h3>
+            <div class="code-example">
+&lt;!-- Incluir el servicio de toast en tu HTML --&gt;<br>
+&lt;script src="/js/toast-service.js"&gt;&lt;/script&gt;<br><br>
+
+&lt;!-- En tus archivos .phtml de Zend Framework 3 --&gt;<br>
+&lt;?php echo $this->headScript()->appendFile($this->basePath('js/toast-service.js')); ?&gt;
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- Toast Service -->
+    <script src="js/toast-service.js"></script>
+
+    <script>
+        // Funciones de demostración
+        function showCustomToast() {
+            ToastService.show('Este es un toast personalizado con icono de corazón', 'success', {
+                duration: 5000,
+                icon: 'fa-heart'
+            });
+        }
+
+        function showLongToast() {
+            ToastService.info('Este mensaje permanecerá por 10 segundos', {
+                duration: 10000
+            });
+        }
+
+        function showNoIconToast() {
+            ToastService.show('Mensaje sin icono', 'info', {
+                icon: null
+            });
+        }
+
+        function showMultipleToasts() {
+            ToastService.success('Documento 1 procesado');
+            setTimeout(() => ToastService.info('Documento 2 procesado'), 200);
+            setTimeout(() => ToastService.warning('Documento 3 requiere revisión'), 400);
+            setTimeout(() => ToastService.success('Proceso completado'), 600);
+        }
+
+        function changePosition(position) {
+            ToastService.configure({ position: position });
+            ToastService.info('Posición cambiada a: ' + position);
+        }
+
+        function simulateAjaxSuccess() {
+            // Simular una llamada AJAX exitosa
+            setTimeout(function() {
+                ToastService.success('Recepción guardada correctamente.');
+            }, 500);
+        }
+
+        function simulateAjaxError() {
+            // Simular un error AJAX
+            setTimeout(function() {
+                ToastService.error('Error de comunicación con el servidor.');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
