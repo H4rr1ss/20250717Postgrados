@@ -242,7 +242,7 @@ class ExamenController extends AbstractActionController {
                         $documentosTipoExamen = $this->examenManager->getRequisitosDocumento($codPasoActual, $cod_tipo_examen);
 
                         // 5. Avanzar al siguiente paso
-                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userRolId);
+                        $this->examenManager->avanzarPaso($codProceso, $userRolId);
 
                         // 6. Agregar requisitos a recepcion física si es el paso 1 (T-17) getDocumentosFisicos
                         $this->examenManager->InitDocumentacionFisica($codProceso, $documentosTipoExamen);
@@ -287,7 +287,6 @@ class ExamenController extends AbstractActionController {
             error_log("DEBUG params: ".print_r($params, true));
 
             $codProceso    = $params['cod_proceso'];
-            $codPasoActual = $params['cod_paso_actual'];
             $cod_tipo_examen = $params['cod_tipo_examen'];
             $documentos    = $params['documentos'];
 
@@ -314,7 +313,7 @@ class ExamenController extends AbstractActionController {
 
                     // Solo avanzar paso si todos los documentos fueron recibidos
                     if ($todosRecibidos && !empty($docsFisicosRes)) {
-                        $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userRolId);
+                        $this->examenManager->avanzarPaso($codProceso, $userRolId);
                         return new JsonModel([
                             'status' => 'success', 
                             'message' => 'Documentación física completada. El proceso ha avanzado al siguiente paso.',
@@ -349,34 +348,83 @@ class ExamenController extends AbstractActionController {
      * Retorna JSON para manejo vía AJAX.
      */
     public function guardarTernaAction() {
-        $request = $this->getRequest();
-        if (!$request->isPost()) {
-            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
-        }
+        $params = $this->params()->fromPost();
+        $userAdminId = $this->layout()->role->getCode();
 
-        $userId = $this->layout()->role->getUserCode();
-        $codProceso = (int) $request->getPost('cod_proceso');
-        $terna = $request->getPost('terna'); // Array esperado: ['presidente' => [...], 'secretario' => [...], 'vocal' => [...]]
-        $programacion = $request->getPost('programacion'); // Array esperado: ['fecha' => 'YYYY-MM-DD', 'hora' => 'HH:MM']
+        // Parametros
+        $codProceso = (int) $params['cod_proceso'];
+        $terna = $params['terna'] ?? [];
+        $programacion = $params['programacion'] ?? null;
+        $pasoUrl = (int) $params['pasoUrl'];
 
         if ($codProceso <= 0 || !is_array($terna)) {
             return new JsonModel(['status' => 'error', 'message' => 'Datos de la terna inválidos']);
         }
 
         try {
-            $success = $this->examenManager->guardarTerna($codProceso, $terna, $programacion, $userId);
-            
-            if ($success) {
-                // Registrar historial
-                $this->examenManager->registrarHistorial([
-                    'cod_proceso' => $codProceso,
-                    'cod_usuario' => $userId,
-                    'tipo_evento' => 'asignacion_terna',
-                    'descripcion' => 'Se registró/actualizó la terna examinadora y programación',
-                    'datos_nuevos' => ['terna' => $terna, 'programacion' => $programacion]
-                ]);
+            $statusRes = false;
 
-                return new JsonModel(['status' => 'success', 'message' => 'Terna y programación guardadas correctamente']);
+            if (!empty($terna)){
+                $success = $this->examenManager->guardarTerna($codProceso, $terna, $userAdminId);
+                if ($success) {
+                    $statusRes = true;
+                }
+            }
+
+            if (!empty($programacion)) {
+                $successProg = $this->examenManager->guardarProgramacionTerna($codProceso, $programacion, $userAdminId);
+                if ($successProg) {
+                    $statusRes = true;
+                }
+            }            
+            
+            if ($statusRes) {
+                // Obtener la terna guardada y verificar si está completa
+                $ternaGuardada = $this->examenManager->getTerna($codProceso);
+                $ternaCompleta = true;
+                
+                if (!empty($ternaGuardada['examinadores'])) {
+                    $examinadores = $ternaGuardada['examinadores'];
+
+                    foreach ($examinadores as $examinador) {
+                        if (
+                            empty($examinador['colegiado']) ||
+                            empty($examinador['tipo'])
+                        ) {
+                            $ternaCompleta = false;
+                            break;
+                        }
+                    }
+                } else {
+                    $ternaCompleta = false;
+                }
+
+                if (
+                    empty($ternaGuardada['programacion']) ||
+                    empty($ternaGuardada['programacion']['fecha']) ||
+                    empty($ternaGuardada['programacion']['hora'])
+                ) {
+                    $ternaCompleta = false;
+                }
+
+                // Obtener información del paso actual para obtener su número de orden
+                $infoPasoActual = $this->examenManager->getPasoActual($codProceso);
+                $numeroOrdenPasoActual = $infoPasoActual["numero_orden"] ?? null;
+
+                if ($ternaCompleta && ($numeroOrdenPasoActual == $pasoUrl)) {
+                    $this->examenManager->avanzarPaso($codProceso, $userAdminId);
+                    return new JsonModel([
+                        'status' => 'success', 
+                        'message' => 'Terna completa. El proceso ha avanzado al siguiente paso.',
+                        'avanzado' => true
+                    ]);
+                }
+
+                return new JsonModel([
+                    'status' => 'success', 
+                    'message' => 'Terna y programación guardadas correctamente',
+                    'avanzado' => false
+                ]);
             }
             
             return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la terna']);
@@ -405,7 +453,7 @@ class ExamenController extends AbstractActionController {
         }
 
         try {
-            $success = $this->examenManager->avanzarPaso($codProceso, $codPasoActual, $userId);
+            $success = $this->examenManager->avanzarPaso($codProceso, $userId);
             
             if ($success) {
                 // Registrar en historial
@@ -482,10 +530,9 @@ class ExamenController extends AbstractActionController {
             }
 
             $estudiante = $this->examenManager->getEstudiantePorProceso($idProceso);
-            $pasoActualObj = $this->examenManager->getPasoActual($idProceso);
             
             // Permitir navegar por pasos vía query string, o cargar el actual por defecto
-            $paso = $this->params()->fromQuery('paso', ($pasoActualObj ? $pasoActualObj['cod_paso_actual'] : 1));
+            $paso = $this->params()->fromQuery('paso', 0);
             
             // Obtener fechas de los estados
             $fechas = $this->examenManager->getFechasPasosCompletado($idProceso);

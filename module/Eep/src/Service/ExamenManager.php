@@ -462,49 +462,6 @@ class ExamenManager
     }
 
     /**
-     * Obtiene los examinadores asignados y la programación del examen.
-     * T-07
-     */
-    public function getTerna(int $codProceso): array
-    {
-        $sql = 'SELECT 
-                    rol,
-                    nombre_examinador,
-                    numero_colegiado,
-                    correo,
-                    fecha_examen,
-                    hora_inicio
-                FROM examen_terna 
-                WHERE cod_proceso = :proceso';
-
-        $rows = $this->execute($sql, ['proceso' => $codProceso]);
-        
-        $terna = [
-            'examinadores' => [],
-            'programacion' => [
-                'fecha' => null,
-                'hora'  => null
-            ]
-        ];
-
-        foreach ($rows as $row) {
-            $terna['examinadores'][$row['rol']] = [
-                'nombre'    => $row['nombre_examinador'],
-                'colegiado' => $row['numero_colegiado'],
-                'correo'    => $row['correo']
-            ];
-            
-            // La fecha y hora son compartidas por todos los miembros de la terna en un mismo proceso
-            if ($row['fecha_examen']) {
-                $terna['programacion']['fecha'] = $row['fecha_examen'];
-                $terna['programacion']['hora']  = $row['hora_inicio'];
-            }
-        }
-
-        return $terna;
-    }
-
-    /**
      * Obtiene el paso actual del proceso de examen y su información de catálogo.
      * T-08
      */
@@ -720,43 +677,119 @@ class ExamenManager
      * Guarda la terna de examinadores y la programación del examen (Paso 3).
      * T-09
      */
-    public function guardarTerna(int $codProceso, array $terna, array $programacion, int $codUsuario): bool
+    public function guardarTerna(int $codProceso, array $terna, int $codUsuario): bool
     {
-        foreach ($terna as $rol => $datos) {
+        foreach ($terna as $datos) {
             $sql = 'INSERT INTO examen_terna 
-                        (cod_proceso, rol, nombre_examinador, numero_colegiado, correo, fecha_examen, hora_inicio, registrado_por)
+                        (cod_proceso, nombre_examinador, numero_colegiado, correo, tipo_examinador, posicion, registrado_por)
                     VALUES 
-                        (:proceso, :rol, :nombre, :colegiado, :correo, :fecha, :hora, :usuario)
+                        (:proceso, :nombre, :colegiado, :correo, :tipo, :posicion, :usuario)
                     ON DUPLICATE KEY UPDATE 
-                        nombre_examinador = VALUES(nombre_examinador), 
+                        nombre_examinador = VALUES(nombre_examinador),
                         numero_colegiado = VALUES(numero_colegiado), 
                         correo = VALUES(correo),
-                        fecha_examen = VALUES(fecha_examen),
-                        hora_inicio = VALUES(hora_inicio),
+                        tipo_examinador = VALUES(tipo_examinador),
                         registrado_por = VALUES(registrado_por)';
-            
+
             $params = [
                 'proceso'   => $codProceso,
-                'rol'       => $rol,
                 'nombre'    => $datos['nombre'],
                 'colegiado' => $datos['colegiado'] ?? null,
                 'correo'    => $datos['correo'] ?? null,
-                'fecha'     => $programacion['fecha'] ?? null,
-                'hora'      => $programacion['hora'] ?? null,
+                'tipo'      => $datos['tipo_examinador'],
+                'posicion'  => (int)$datos['posicion'],
                 'usuario'   => $codUsuario
             ];
 
             $this->adapter->createStatement($sql, $params)->execute();
         }
+
         return true;
+    }
+
+    public function guardarProgramacionTerna(int $codProceso, array $programacion, int $codUsuario): bool
+    {
+        // Se actualiza la tabla maestra del proceso ya que la fecha/hora es única por examen
+        $sql = 'UPDATE examen_proceso 
+                SET fecha_examen = :fecha, hora_inicio_examen = :hora
+                WHERE cod_proceso = :proceso';
+
+        $params = [
+            'proceso' => $codProceso,
+            'fecha'   => !empty($programacion['fecha']) ? $programacion['fecha'] : null,
+            'hora'    => !empty($programacion['hora'])  ? $programacion['hora']  : null
+        ];
+
+        $statement = $this->adapter->createStatement($sql, $params);
+        $result = $statement->execute();
+        
+        return (bool) $result->getAffectedRows();
+    }
+
+    /**
+     * Obtiene los examinadores asignados y la programación del examen.
+     * T-07
+     */
+    public function getTerna(int $codProceso): array
+    {
+        // 1. Obtener los examinadores de la tabla terna
+        $sqlTerna = 'SELECT 
+                        nombre_examinador,
+                        numero_colegiado,
+                        correo,
+                        tipo_examinador,
+                        posicion
+                    FROM examen_terna 
+                    WHERE cod_proceso = :proceso';
+
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
+        
+        // 2. Obtener fecha y hora de la tabla proceso
+        $sqlProceso = 'SELECT fecha_examen, hora_inicio_examen 
+                       FROM examen_proceso 
+                       WHERE cod_proceso = :proceso 
+                       LIMIT 1';
+        $resProceso = $this->execute($sqlProceso, ['proceso' => $codProceso]);
+        $prog = $resProceso[0] ?? ['fecha_examen' => null, 'hora_inicio_examen' => null];
+
+        $terna = [
+            'examinadores' => [],
+            'programacion' => [
+                'fecha' => $prog['fecha_examen'],
+                'hora'  => $prog['hora_inicio_examen']
+            ]
+        ];
+
+        foreach ($rows as $row) {
+            $terna['examinadores'][] = [
+                'nombre'    => $row['nombre_examinador'],
+                'colegiado' => $row['numero_colegiado'],
+                'correo'    => $row['correo'],
+                'tipo'      => $row['tipo_examinador'],
+                'posicion'  => $row['posicion']
+            ];
+        }
+
+        return $terna;
     }
 
     /**
      * Avanza el proceso al siguiente paso definido en el catálogo.
      * T-10
      */
-    public function avanzarPaso(int $codProceso, int $codPasoActual, int $userRolId): bool
-    {
+    public function avanzarPaso(int $codProceso, int $userAdminId): bool
+    {        
+        // 0. Obtener el codPasoActual del proceso para validar que el paso que se intenta cerrar es el correcto
+        $sqlValidar = 'SELECT cod_paso_actual FROM examen_proceso WHERE cod_proceso = :proceso';
+        $resValidar = $this->execute($sqlValidar, ['proceso' => $codProceso]);
+
+        // Validación adicional: si el proceso ya no tiene paso actual, no se puede avanzar
+        if (empty($resValidar)) {
+            return false;
+        }
+
+        $codPasoActual = $resValidar[0]['cod_paso_actual'];
+
         // 1. Obtener el orden del paso actual
         $sqlActual = 'SELECT cod_tipo_examen, numero_orden FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
@@ -775,7 +808,7 @@ class ExamenManager
         $this->adapter->createStatement($sqlCerrar, [
             'proceso' => $codProceso,
             'paso'    => $codPasoActual,
-            'usuario' => $userRolId
+            'usuario' => $userAdminId
         ])->execute();
 
         // 3. Buscar el siguiente paso en el orden

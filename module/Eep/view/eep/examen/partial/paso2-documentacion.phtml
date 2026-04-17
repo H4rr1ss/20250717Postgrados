@@ -34,7 +34,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php var_dump($this->docsFisicos); ?>
                                 <?php if (!empty($docsFisicos)): ?>
                                 <?php foreach ($docsFisicos as $i => $doc): ?>
                                     <?php
@@ -88,14 +87,21 @@
                 </div>
 
                 <!-- Acciones -->
-                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
-                    <div id="alertaRecordatorioGuardarDoc" class="alerta-recordatorio-interna">
-                        <i class="fa fa-warning"></i> * No olvides guardar tus cambios
+                <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
+                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                        <div id="alertaRecordatorioGuardarDoc" class="alerta-recordatorio-interna">
+                            <i class="fa fa-warning"></i> * No olvides guardar tus cambios
+                        </div>
+                        <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                            <button class="btn btn-info" id="btnEnviarCorreoPaso2" style="margin-right: 10px;">
+                                <i class="fa fa-envelope"></i> Enviar Correo
+                            </button>
+                            <button class="btn btn-primary" id="btnGuardarDocumentacion">
+                                <i class="fa fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
                     </div>
-                    <button class="btn btn-primary" id="btnGuardarDocumentacion">
-                        <i class="fa fa-save"></i> Guardar Recepción
-                    </button>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

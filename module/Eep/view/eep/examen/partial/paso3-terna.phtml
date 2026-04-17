@@ -1,10 +1,10 @@
 <?php
 // Pre-cargar datos de BD
-$roles = ['examinador_1' => 'Examinador 1', 'examinador_2' => 'Examinador 2', 'examinador_3' => 'Examinador 3'];
+$etiquetas = [1 => 'Examinador 1', 2 => 'Examinador 2', 3 => 'Examinador 3'];
 $examinadores = $terna['examinadores'] ?? [];
 $programacion = $terna['programacion'] ?? [];
 $fechaExamen  = $programacion['fecha'] ?? '';
-$horaExamen   = !empty($programacion['hora']) ? date('H:i', strtotime($programacion['hora'])) : '09:00';
+$horaExamen   = !empty($programacion['hora']) ? date('H:i', strtotime($programacion['hora'])) : '';
 $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 ?>
 <!-- Paso 3: Terna de Examinadores -->
@@ -35,16 +35,8 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Hora de Inicio</label>
-                                                <input type="time" class="form-control" id="horaExamen" value="<?= htmlspecialchars($horaExamen) ?>">
+                                                <input type="time" class="form-control" id="horaExamen" value="<?= htmlspecialchars($horaExamen) ?>" placeholder="--:--">
                                             </div>
-                                        </div>
-                                        <div class="col-md-4" style="text-align: right;">
-                                            <button type="button" class="btn btn-outline-secondary" id="btnCancelar">
-                                                <i class="fa fa-ban"></i> Cancelar
-                                            </button>
-                                            <button type="button" class="btn btn-success" id="btnGuardarCambios" style="margin-left: 10px;">
-                                                <i class="fa fa-save"></i> Guardar Cambios
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -55,30 +47,48 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                 </div>
                 
                 <div class="row">
-                    <?php foreach ($roles as $rol => $etiqueta): ?>
+                    <?php foreach ($etiquetas as $id => $etiqueta): ?>
                     <?php
-                        $datos = $examinadores[$rol] ?? [];
+                        // Buscar el examinador por su posición (posicion) en el array de examinadores
+                        $datos = [];
+                        foreach ($examinadores as $ex) {
+                            if (($ex['posicion'] ?? '') == $id) {
+                                $datos = $ex;
+                                break;
+                            }
+                        }
+                        
                         $nombre    = htmlspecialchars($datos['nombre']    ?? '');
                         $colegiado = htmlspecialchars($datos['colegiado'] ?? '');
                         $correo    = htmlspecialchars($datos['correo']    ?? '');
+                        $tipoEx    = $datos['tipo'] ?? '';
                     ?>
-                    <div class="col-md-4">
-                        <div class="examinador-card" data-rol="<?= $rol ?>">
+                        <div class="col-md-4">
+                        <div class="examinador-card" data-id="<?= $id ?>">
                             <h5 class="examinador-titulo"><?= $etiqueta ?></h5>
 
                             <div class="form-group">
+                                <label>Tipo de examinador</label>
+                                <select class="form-control examinador-tipo" required>
+                                    <option value="" disabled <?= empty($tipoEx) ? 'selected' : '' ?>>Seleccionar</option>
+                                    <option value="interno" <?= $tipoEx === 'interno' ? 'selected' : '' ?>>Interno</option>
+                                    <option value="externo" <?= $tipoEx === 'externo' ? 'selected' : '' ?>>Externo</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Nombre Completo</label>
-                                <input type="text" class="form-control examinador-nombre" placeholder="" value="<?= $nombre ?>">
+                                <input type="text" class="form-control examinador-nombre" placeholder="" value="<?= $nombre ?>" required>
                             </div>
 
                             <div class="form-group">
                                 <label>Número de colegiado</label>
-                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>">
+                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>" required>
                             </div>
 
                             <div class="form-group">
                                 <label>Correo electrónico</label>
-                                <input type="email" class="form-control examinador-correo" placeholder="" value="<?= $correo ?>">
+                                <input type="email" class="form-control examinador-correo" placeholder="ejemplo@dominio.com" value="<?= $correo ?>">
                             </div>
                         </div>
                     </div>
@@ -87,6 +97,9 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 
                 <!-- Acciones -->
                 <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                    <button class="btn btn-info" id="btnEnviarCorreoTerna" style="margin-right: 10px;">
+                        <i class="fa fa-envelope"></i> Enviar Correo
+                    </button>
                     <button class="btn btn-primary" id="btnGuardarTerna">
                         <i class="fa fa-save"></i> Guardar Terna
                     </button>
@@ -97,136 +110,200 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 </div>
 
 <style>
-.examinador-card {
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    padding: 20px;
-    background-color: #fafafa;
-    margin-bottom: 20px;
-    min-height: 180px;
-}
+    .examinador-card {
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        padding: 20px;
+        background-color: #fafafa;
+        margin-bottom: 20px;
+        min-height: 180px;
+    }
 
-.examinador-titulo {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20px;
-    text-align: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e0e0e0;
-}
+    .examinador-titulo {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
 
-.form-group {
-    margin-bottom: 20px;
-}
+    .form-group {
+        margin-bottom: 20px;
+    }
 
-.form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: #555;
-    margin-bottom: 8px;
-}
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+        margin-bottom: 8px;
+    }
 
-.form-control {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 13px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: white;
-    transition: border-color 0.2s ease;
-}
+    .form-control {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: white;
+        transition: border-color 0.2s ease;
+    }
 
-.form-control:focus {
-    outline: none;
-    border-color: #5f9876;
-    box-shadow: 0 0 0 2px rgba(95, 152, 118, 0.2);
-}
+    .form-control:focus {
+        outline: none;
+        border-color: #5f9876;
+        box-shadow: 0 0 0 2px rgba(95, 152, 118, 0.2);
+    }
 
-.form-control:placeholder-shown {
-    background-color: #fff;
-}
+    .form-control:placeholder-shown {
+        background-color: #fff;
+    }
 
-/* Estilos para botones */
-.btn-outline-secondary {
-    border: 1px solid #6c757d;
-    color: #6c757d;
-    background-color: transparent;
-    padding: 8px 20px;
-    border-radius: 4px;
-    font-size: 13px;
-    transition: all 0.2s ease;
-}
+    /* Estilos para botones */
+    .btn-outline-secondary {
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        background-color: transparent;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
 
-.btn-outline-secondary:hover {
-    background-color: #6c757d;
-    color: white;
-    border-color: #6c757d;
-}
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
 
-.btn-success {
-    background-color: #28a745;
-    border: 1px solid #28a745;
-    color: white;
-    padding: 8px 20px;
-    border-radius: 4px;
-    font-size: 13px;
-    transition: all 0.2s ease;
-}
+    .btn-success {
+        background-color: #28a745;
+        border: 1px solid #28a745;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 4px;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
 
-.btn-success:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
-}
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
 </style>
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
 
 <script>
 $(document).ready(function() {
     const COD_PROCESO = <?= $codProceso ?>;
 
     // ── Helpers ──────────────────────────────────────────────────
-    function mostrarToast(mensaje, tipo) {
-        const id  = 'toast-terna-' + Date.now();
-        const html = `<div id="${id}" class="alert alert-${tipo}" role="alert"
-            style="position:fixed;bottom:20px;right:20px;z-index:9999;
-                   min-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);">
-            ${mensaje}</div>`;
-        $('body').append(html);
-        setTimeout(function() { $('#' + id).fadeOut(400, function() { $(this).remove(); }); }, 3500);
+    function validarExaminadoresDuplicados() {
+        const colegiados = [];
+        let hayDuplicados = false;
+        
+        $('.examinador-card').each(function() {
+            const colegiado = $(this).find('.examinador-colegiado').val().trim();
+            if (colegiado !== "") {
+                colegiados.push(colegiado);
+            }
+        });
+        
+        // Verificar duplicados en números de colegiado
+        const colegiadosUnicos = [...new Set(colegiados)];
+        if (colegiados.length !== colegiadosUnicos.length) {
+            hayDuplicados = true;
+        }
+        
+        return hayDuplicados;
+    }
+
+    function verificarTernaCompleta() {
+        const terna = recopilarTerna();
+        let completa = true;
+        
+        // Verificar que los 3 examinadores tengan tipo, nombre, colegiado y correo
+        $.each(terna, function(id, datos) {
+            if (!datos.tipo_examinador || !datos.nombre || !datos.colegiado || !datos.correo) {
+                completa = false;
+                return false; // break del each
+            }
+        });
+        
+        return completa;
     }
 
     function recopilarTerna() {
-        const terna = {};
+        const terna = [];
+        const examinadoresDB = <?= json_encode($examinadores) ?>;
+
         $('.examinador-card').each(function() {
-            const rol      = $(this).data('rol');
+            const posicion = $(this).data('id');
+            const tipo      = $(this).find('.examinador-tipo').val();
             const nombre   = $(this).find('.examinador-nombre').val().trim();
             const colegiado = $(this).find('.examinador-colegiado').val().trim();
             const correo   = $(this).find('.examinador-correo').val().trim();
-            terna[rol] = { nombre: nombre, colegiado: colegiado, correo: correo };
+            
+            // Buscar datos originales de este examinador en el array de la BD
+            const original = examinadoresDB.find(ex => parseInt(ex.posicion) === parseInt(posicion)) || {};
+            
+            // Comparar valores actuales vs originales
+            const haCambiado = 
+                (tipo || '')      !== (original.tipo || '') ||
+                (nombre || '')    !== (original.nombre || '') ||
+                (colegiado || '') !== (original.colegiado || '') ||
+                (correo || '')    !== (original.correo || '');
+
+            // Solo agregar si ha habido cambios respecto a la base de datos
+            if (haCambiado) {
+                terna.push({ 
+                    posicion:        posicion, 
+                    tipo_examinador: tipo, 
+                    nombre:          nombre, 
+                    colegiado:       colegiado, 
+                    correo:          correo 
+                });
+            }
         });
         return terna;
     }
 
-    function enviarTerna(terna, programacion, btn, labelOk) {
+    function enviarTerna(terna, programacion, btn) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pasoDeNavegacion = urlParams.get('paso') || 0;
+        
         btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        
         $.ajax({
-            url:  '/examen/guardarTerna',
+            url:  '<?= $this->url("examen", ["action" => "guardar-terna"]) ?>',
             type: 'POST',
             data: {
-                cod_proceso:  COD_PROCESO,
-                terna:        terna,
-                programacion: programacion
+                cod_proceso:     COD_PROCESO,
+                cod_paso_actual: <?= (int)($this->proceso['cod_paso_actual'] ?? 0) ?>,
+                pasoUrl: pasoDeNavegacion,
+                terna:           terna,
+                programacion:    programacion
             },
             success: function(response) {
                 if (response.status === 'success') {
-                    mostrarToast(labelOk, 'success');
+                    ToastService.success(response.message || 'Terna guardada exitosamente.');
+                    
+                    // Si el proceso avanzó automáticamente, redirigir al siguiente paso
+                    if (response.avanzado) {
+                        setTimeout(function() {
+                            window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=4';
+                        }, 1500);
+                    }
                 } else {
-                    mostrarToast('Error: ' + (response.message || 'No se pudo guardar.'), 'danger');
+                    ToastService.error('Error: ' + (response.message || 'No se pudo guardar.'));
                 }
             },
             error: function() {
-                mostrarToast('Error de comunicación con el servidor.', 'danger');
+                ToastService.error('Error de comunicación con el servidor.');
             },
             complete: function() {
                 btn.prop('disabled', false).html(btn.data('label-orig'));
@@ -235,48 +312,67 @@ $(document).ready(function() {
     }
 
     // Guardar la etiqueta original de cada botón para restaurarla
-    $('#btnGuardarCambios, #btnGuardarTerna').each(function() {
+    $('#btnGuardarTerna').each(function() {
         $(this).data('label-orig', $(this).html());
     });
 
-    // ── Guardar fecha/hora ────────────────────────────────────────
-    $('#btnGuardarCambios').on('click', function() {
-        const fecha = $('#fechaExamen').val();
-        const hora  = $('#horaExamen').val();
-
-        if (!fecha) { mostrarToast('Seleccione una fecha para el examen.', 'warning'); return; }
-        if (!hora)  { mostrarToast('Seleccione una hora para el examen.',  'warning'); return; }
-
-        const terna = recopilarTerna();
-        enviarTerna(terna, { fecha: fecha, hora: hora }, $(this), 'Fecha y hora guardadas correctamente.');
-    });
-
-    // ── Cancelar fecha/hora ───────────────────────────────────────
-    $('#btnCancelar').on('click', function() {
-        if (confirm('¿Está seguro que desea cancelar los cambios de fecha?')) {
-            $('#fechaExamen').val('<?= htmlspecialchars($fechaExamen) ?>');
-            $('#horaExamen').val('<?= htmlspecialchars($horaExamen) ?>');
-        }
-    });
+    // ── Enviar correo ──────────────────────────────────────────
+    $('#btnEnviarCorreoTerna').on('click', function() {
+        const ternaCompleta = verificarTernaCompleta();
+        const estadoPaso = ternaCompleta ? 'Completo' : 'Incompleto';
+        
+        alert('Simulación de envío de correo\n' + 
+              'Proceso: ' + COD_PROCESO + '\n' +
+              'Estado del paso: ' + estadoPaso);
+    });        
 
     // ── Guardar terna completa ────────────────────────────────────
     $('#btnGuardarTerna').on('click', function() {
         const terna = recopilarTerna();
         const fecha = $('#fechaExamen').val();
         const hora  = $('#horaExamen').val();
+        const fechaOriginal = "<?= $fechaExamen ?>";
+        const horaOriginal  = "<?= $horaExamen ?>";
 
-        // Validar que todos los roles tengan nombre y colegiado
-        let camposVacios = false;
-        $.each(terna, function(rol, datos) {
-            if (!datos.nombre || !datos.colegiado) { camposVacios = true; }
-        });
+        // 1. Verificar si hubo algún cambio respecto a los valores iniciales
+        let haCambiadoAlgo = false;
+        const cambioProgramacion = (fecha !== fechaOriginal || hora !== horaOriginal);
 
-        if (camposVacios) {
-            mostrarToast('Complete nombre y número de colegiado de cada examinador.', 'warning');
+        // Si no hubo cambios en la programación ni en ningún examinador
+        if (cambioProgramacion || terna.length > 0) {
+            haCambiadoAlgo = true;
+        }
+
+        if (!haCambiadoAlgo) {
+            ToastService.warning('No se han detectado cambios para guardar.');
             return;
         }
 
-        enviarTerna(terna, { fecha: fecha, hora: hora }, $(this), 'Terna guardada correctamente.');
+        // 2. Si se editó un examinador, debe estar completo (tipo, nombre, colegiado)
+        let incompleto = false;
+        $.each(terna, function(index, d) {
+            if (!d.tipo_examinador || !d.nombre || !d.colegiado || !d.correo) {
+                incompleto = true;
+                return false;
+            }
+        });
+
+        if (incompleto) {
+            ToastService.warning('Si edita un examinador, debe completar su tipo de examinador, nombre y número de colegiado.');
+            return;
+        }
+
+        // 3. Validar duplicados si hay más de uno
+        const validacion = validarExaminadoresDuplicados();
+        if (validacion) {
+            ToastService.error('No puede haber examinadores con el mismo número de colegiado.');
+            return;
+        }
+
+        const programacionFinal = cambioProgramacion ? { fecha: fecha, hora: hora } : null;
+        console.log(programacionFinal)
+
+        enviarTerna(terna, programacionFinal, $(this));
     });
 });
 </script>

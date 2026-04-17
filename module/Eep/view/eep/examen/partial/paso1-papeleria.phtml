@@ -11,6 +11,8 @@
                     <strong>Información importante:</strong>
                     Debe aceptar todos los documentos de la papelería para poder habilitar el siguiente paso de <strong>Entrega de Documentación</strong>.
                 </div>
+                <?php var_dump($this->paso); ?>
+                                    <?php var_dump($this->proceso['numero_orden']); ?>
                 <div class="tabla-requisitos-revision">
                     <table class="table table-bordered table-requisitos">
                         <thead>
@@ -68,9 +70,7 @@
                                     </td>
                                     <!-- acciones -->
                                     <td style="text-align: center;">
-                                        <?php if ((int)$this->paso < (int)$this->proceso['numero_orden']): ?>
-                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
-                                        <?php else: ?>
+                                        <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
                                             <div class="acciones-grupo">
                                                 <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
                                                     <i class="fa fa-check"></i>
@@ -79,6 +79,8 @@
                                                     <i class="fa fa-times"></i>
                                                 </button>
                                             </div>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -91,11 +93,15 @@
                     <div id="alertaRecordatorioGuardar" class="alerta-recordatorio-interna">
                         <i class="fa fa-warning"></i> * No olvides guardar tus cambios
                     </div>
-                    <?php if ((int)$this->paso < (int)$this->proceso['numero_orden']): ?>
-                    <?php else: ?>
-                        <button class="btn btn-primary" id="btnGuardarCambios">
-                            Guardar Cambios
-                        </button>
+                    <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
+                        <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                            <button class="btn btn-info" id="btnEnviarCorreoPaso1" style="margin-right: 10px;">
+                                <i class="fa fa-envelope"></i> Enviar Correo
+                            </button>
+                            <button class="btn btn-primary" id="btnGuardarCambios">
+                                <i class="fa fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div><!-- /.panel-revision-body -->
@@ -125,7 +131,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" id="confirmarRechazo">
-                    <i class="fa fa-check"></i> Confirmar Rechazo
+                    <i class="fa fa-check"></i><?php var_dump($this->docsFisicos); ?> Confirmar Rechazo
                 </button>
             </div>
         </div>

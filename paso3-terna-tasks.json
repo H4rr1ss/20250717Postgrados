@@ -1,0 +1,405 @@
+{
+  "proyecto": "Paso 3 - Terna de Examinadores",
+  "descripcion": "Implementación completa de paso3-terna.phtml siguiendo el patrón establecido en paso2-documentacion.phtml",
+  "fecha_creacion": "2026-04-04",
+  "patron_base": "paso2-documentacion.phtml con auto-advance y ToastService",
+  "objetivo": "Permitir seleccionar 3 examinadores, guardar la terna, verificar completitud y avanzar automáticamente al siguiente paso",
+  
+  "fases": [
+    {
+      "fase_id": 1,
+      "fase_nombre": "Integración de ToastService",
+      "descripcion": "Reemplazar sistema de notificaciones local por ToastService centralizado",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "1.1",
+          "titulo": "Incluir ToastService.js en la vista",
+          "descripcion": "Agregar el script tag para cargar ToastService.js antes del código JavaScript inline",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "Antes del bloque <script> principal",
+          "accion": "Agregar: <script src=\"<?= $this->basePath('js/toast-service.js') ?>\"></script>",
+          "status": "pending",
+          "prioridad": "alta"
+        },
+        {
+          "tarea_id": "1.2",
+          "titulo": "Eliminar función local mostrarToast()",
+          "descripcion": "Remover la función mostrarToast() duplicada y usar ToastService global",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "Dentro del bloque <script>",
+          "accion": "Eliminar función mostrarToast() completa",
+          "status": "pending",
+          "prioridad": "alta"
+        },
+        {
+          "tarea_id": "1.3",
+          "titulo": "Actualizar llamadas a ToastService",
+          "descripcion": "Cambiar todas las llamadas de mostrarToast() a ToastService.success() o ToastService.error()",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En manejadores AJAX success y error",
+          "accion": "Reemplazar mostrarToast(mensaje, 'success') por ToastService.success(mensaje)",
+          "status": "pending",
+          "prioridad": "alta",
+          "ejemplos": [
+            "ToastService.success(data.message)",
+            "ToastService.error(data.message || 'Error al guardar la terna')"
+          ]
+        }
+      ]
+    },
+    {
+      "fase_id": 2,
+      "fase_nombre": "Corrección de AJAX y URLs",
+      "descripcion": "Arreglar la URL hardcodeada y agregar parámetros necesarios para auto-advance",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "2.1",
+          "titulo": "Corregir URL del AJAX",
+          "descripcion": "Cambiar URL hardcodeada por el helper url() de Zend Framework",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En $.post() dentro de guardarTerna()",
+          "accion": "Cambiar '/postgrados/public/examen/guardar-terna' por url() helper",
+          "codigo_actual": "'/postgrados/public/examen/guardar-terna'",
+          "codigo_nuevo": "<?= $this->url('examen', ['action' => 'guardar-terna']) ?>",
+          "status": "pending",
+          "prioridad": "critica"
+        },
+        {
+          "tarea_id": "2.2",
+          "titulo": "Agregar cod_paso_actual al POST",
+          "descripcion": "Incluir cod_paso_actual en los datos enviados al controller para permitir auto-advance",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En el objeto de datos del $.post()",
+          "accion": "Agregar cod_paso_actual: <?= $examen->getCodPasoActual() ?> al objeto enviado",
+          "status": "pending",
+          "prioridad": "alta",
+          "nota": "Necesario para que el controller pueda llamar avanzarPaso()"
+        }
+      ]
+    },
+    {
+      "fase_id": 3,
+      "fase_nombre": "Lógica de Verificación y Auto-Advance",
+      "descripcion": "Implementar verificación de completitud y redirección automática al siguiente paso",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "3.1",
+          "titulo": "Implementar verificarTernaCompleta() frontend",
+          "descripcion": "Crear función JavaScript que verifique si los 3 examinadores están seleccionados",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "Dentro del bloque <script>, junto a guardarTerna()",
+          "accion": "Crear función verificarTernaCompleta() que verifique examinador_1, examinador_2, examinador_3",
+          "status": "pending",
+          "prioridad": "alta",
+          "validaciones": [
+            "Los 3 selectores deben tener un valor seleccionado",
+            "Los valores no pueden estar repetidos",
+            "Opcional: validar emails si están presentes"
+          ]
+        },
+        {
+          "tarea_id": "3.2",
+          "titulo": "Agregar lógica de redirect en success",
+          "descripcion": "Cuando AJAX responde con avanzado=true, redirigir al siguiente paso después del toast",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En el success del $.post()",
+          "accion": "Verificar data.avanzado y hacer redirect con delay",
+          "status": "pending",
+          "prioridad": "alta",
+          "codigo_ejemplo": "if (data.avanzado) { setTimeout(() => { window.location.href = '?paso=4'; }, 1500); }"
+        },
+        {
+          "tarea_id": "3.3",
+          "titulo": "Ocultar botón cuando terna completa",
+          "descripcion": "Similar a paso2, ocultar el botón 'Guardar Terna' cuando ya está completa",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En verificarTernaCompleta() y al cargar la página",
+          "accion": "Verificar si terna ya existe con fecha y ocultar botón guardar",
+          "status": "pending",
+          "prioridad": "media",
+          "nota": "Mejorar UX evitando guardados duplicados"
+        }
+      ]
+    },
+    {
+      "fase_id": 4,
+      "fase_nombre": "Modificación del Controller",
+      "descripcion": "Actualizar guardarTernaAction() para verificar completitud y avanzar paso",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "4.1",
+          "titulo": "Recibir cod_paso_actual en guardarTernaAction()",
+          "descripcion": "Modificar el action para recibir y usar cod_paso_actual del POST",
+          "archivos": [
+            "module/Eep/src/Controller/ExamenController.php"
+          ],
+          "codigo_ubicacion": "En guardarTernaAction(), después de obtener parámetros POST",
+          "accion": "Agregar: $codPasoActual = (int) $this->params()->fromPost('cod_paso_actual', 0);",
+          "status": "pending",
+          "prioridad": "alta"
+        },
+        {
+          "tarea_id": "4.2",
+          "titulo": "Verificar completitud de la terna",
+          "descripcion": "Después de guardar, verificar si los 3 examinadores tienen valores asignados",
+          "archivos": [
+            "module/Eep/src/Controller/ExamenController.php"
+          ],
+          "codigo_ubicacion": "En guardarTernaAction(), después de $this->examenManager->guardarTerna()",
+          "accion": "Obtener terna guardada y verificar que examinador_1, examinador_2, examinador_3 no sean NULL",
+          "status": "pending",
+          "prioridad": "alta",
+          "logica": "Si los 3 tienen valores, terna está completa"
+        },
+        {
+          "tarea_id": "4.3",
+          "titulo": "Llamar avanzarPaso() cuando completo",
+          "descripcion": "Si terna completa y cod_paso_actual > 0, avanzar al siguiente paso",
+          "archivos": [
+            "module/Eep/src/Controller/ExamenController.php"
+          ],
+          "codigo_ubicacion": "En guardarTernaAction(), después de verificación",
+          "accion": "if ($ternaCompleta && $codPasoActual > 0) { $this->examenManager->avanzarPaso(...); }",
+          "status": "pending",
+          "prioridad": "critica",
+          "patron": "Igual a guardarDocFisicoAction() en paso2"
+        },
+        {
+          "tarea_id": "4.4",
+          "titulo": "Retornar respuesta JSON con flag avanzado",
+          "descripcion": "Modificar el return del action para incluir el campo 'avanzado'",
+          "archivos": [
+            "module/Eep/src/Controller/ExamenController.php"
+          ],
+          "codigo_ubicacion": "En el return new JsonModel() de guardarTernaAction()",
+          "accion": "Agregar 'avanzado' => $avanzado al array del JsonModel",
+          "status": "pending",
+          "prioridad": "critica",
+          "ejemplo": "return new JsonModel(['status' => 'success', 'message' => 'Terna guardada', 'avanzado' => true]);"
+        }
+      ]
+    },
+    {
+      "fase_id": 5,
+      "fase_nombre": "Validaciones Frontend",
+      "descripcion": "Agregar validaciones visuales y de UX para mejor experiencia de usuario",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "5.1",
+          "titulo": "Validar que no se repitan examinadores",
+          "descripcion": "Prevenir que se seleccione la misma persona en múltiples roles",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En verificarTernaCompleta() o nuevo validarSeleccion()",
+          "accion": "Comparar valores de examinador_1, examinador_2, examinador_3 y mostrar error si hay duplicados",
+          "status": "pending",
+          "prioridad": "alta",
+          "mensaje_error": "No puede seleccionar el mismo examinador en diferentes posiciones"
+        },
+        {
+          "tarea_id": "5.2",
+          "titulo": "Validación de emails (si aplica)",
+          "descripcion": "Si los campos de email están presentes, validar formato",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En validarSeleccion() antes de enviar AJAX",
+          "accion": "Validar formato de email con regex o HTML5 validation",
+          "status": "pending",
+          "prioridad": "media",
+          "condicional": "Solo si hay campos de email en el formulario"
+        },
+        {
+          "tarea_id": "5.3",
+          "titulo": "Feedback visual al seleccionar",
+          "descripcion": "Agregar indicadores visuales cuando se seleccionan los 3 examinadores",
+          "archivos": [
+            "module/Eep/view/eep/examen/partial/paso3-terna.phtml"
+          ],
+          "codigo_ubicacion": "En onChange de los selectores",
+          "accion": "Agregar clases CSS o iconos cuando un selector tiene valor",
+          "status": "pending",
+          "prioridad": "baja",
+          "mejora_ux": true,
+          "ejemplo": "Cambiar borde a verde con ícono de check cuando se selecciona"
+        }
+      ]
+    },
+    {
+      "fase_id": 6,
+      "fase_nombre": "Testing y Validación",
+      "descripcion": "Pruebas funcionales y verificación de flujo completo",
+      "status": "pending",
+      "tareas": [
+        {
+          "tarea_id": "6.1",
+          "titulo": "Probar guardado de terna completa",
+          "descripcion": "Seleccionar 3 examinadores diferentes y verificar guardado y auto-advance",
+          "archivos": [],
+          "tipo": "test_funcional",
+          "pasos": [
+            "Ir a paso=3",
+            "Seleccionar examinador_1",
+            "Seleccionar examinador_2",
+            "Seleccionar examinador_3",
+            "Click en Guardar Terna",
+            "Verificar toast success",
+            "Verificar redirect a paso=4",
+            "Verificar en DB que los 3 examinadores se guardaron"
+          ],
+          "status": "pending",
+          "prioridad": "critica"
+        },
+        {
+          "tarea_id": "6.2",
+          "titulo": "Probar guardado parcial",
+          "descripcion": "Guardar solo 1 o 2 examinadores y verificar que NO avance automáticamente",
+          "archivos": [],
+          "tipo": "test_funcional",
+          "pasos": [
+            "Ir a paso=3",
+            "Seleccionar solo examinador_1",
+            "Click en Guardar Terna",
+            "Verificar toast success",
+            "Verificar que NO se redirige",
+            "Verificar que botón sigue visible"
+          ],
+          "status": "pending",
+          "prioridad": "alta",
+          "resultado_esperado": "Guardar exitoso pero sin auto-advance"
+        },
+        {
+          "tarea_id": "6.3",
+          "titulo": "Probar validación de duplicados",
+          "descripcion": "Intentar seleccionar el mismo examinador en 2 posiciones",
+          "archivos": [],
+          "tipo": "test_validacion",
+          "pasos": [
+            "Seleccionar mismo examinador en examinador_1 y examinador_2",
+            "Click en Guardar",
+            "Verificar toast error con mensaje apropiado"
+          ],
+          "status": "pending",
+          "prioridad": "alta",
+          "depende_de": "5.1"
+        },
+        {
+          "tarea_id": "6.4",
+          "titulo": "Probar vista de terna ya completa",
+          "descripcion": "Volver a paso=3 después de completarlo y verificar que botón está oculto",
+          "archivos": [],
+          "tipo": "test_ux",
+          "pasos": [
+            "Completar paso 3 exitosamente",
+            "Navegar manualmente a ?paso=3",
+            "Verificar que se muestran los 3 examinadores seleccionados",
+            "Verificar que botón 'Guardar Terna' está oculto"
+          ],
+          "status": "pending",
+          "prioridad": "media",
+          "depende_de": "3.3"
+        },
+        {
+          "tarea_id": "6.5",
+          "titulo": "Verificar integridad de datos en DB",
+          "descripcion": "Revisar tabla examen_terna después de todas las pruebas",
+          "archivos": [],
+          "tipo": "test_datos",
+          "verificaciones": [
+            "Los 3 campos examinador_1/2/3 tienen valores correctos",
+            "No hay valores duplicados en una misma fila",
+            "cod_examen coincide con el registro procesado",
+            "fecha_creacion se guardó correctamente"
+          ],
+          "status": "pending",
+          "prioridad": "media"
+        }
+      ]
+    }
+  ],
+  
+  "resumen_archivos": {
+    "modificaciones_altas": [
+      {
+        "archivo": "module/Eep/view/eep/examen/partial/paso3-terna.phtml",
+        "tareas_asociadas": ["1.1", "1.2", "1.3", "2.1", "2.2", "3.1", "3.2", "3.3", "5.1", "5.2", "5.3"],
+        "prioridad": "critica",
+        "numero_cambios": 11
+      },
+      {
+        "archivo": "module/Eep/src/Controller/ExamenController.php",
+        "tareas_asociadas": ["4.1", "4.2", "4.3", "4.4"],
+        "prioridad": "critica",
+        "numero_cambios": 4,
+        "metodo": "guardarTernaAction()"
+      }
+    ],
+    "sin_modificaciones": [
+      {
+        "archivo": "module/Eep/src/Service/ExamenManager.php",
+        "razon": "Ya tiene getTerna() y guardarTerna() implementados correctamente"
+      },
+      {
+        "archivo": "public/js/toast-service.js",
+        "razon": "Ya está completo y funcionando"
+      }
+    ]
+  },
+  
+  "dependencias_tareas": {
+    "bloqueantes": [
+      {
+        "tarea": "2.1",
+        "bloquea": ["todas las pruebas de fase 6"],
+        "razon": "URL incorrecta impide funcionamiento del AJAX"
+      },
+      {
+        "tarea": "4.3",
+        "bloquea": ["3.2", "6.1"],
+        "razon": "Sin avanzarPaso() en backend, el auto-advance no funcionará"
+      }
+    ],
+    "recomendado_paralelo": [
+      {
+        "grupo": ["1.1", "1.2", "1.3"],
+        "razon": "Todas son modificaciones a la misma vista, se pueden hacer juntas"
+      },
+      {
+        "grupo": ["4.1", "4.2", "4.3", "4.4"],
+        "razon": "Todas son modificaciones al mismo método del controller"
+      }
+    ]
+  },
+  
+  "notas_importantes": [
+    "No hay roles (presidente/secretario/vocal), solo 3 examinadores genéricos",
+    "Seguir patrón de paso2-documentacion.phtml: verificar → guardar → avanzar → redirigir",
+    "ToastService ya está creado y funcionando correctamente",
+    "avanzarPaso() en ExamenManager ya existe y funciona",
+    "Los 3 examinadores deben ser diferentes entre sí",
+    "Auto-advance solo ocurre cuando los 3 examinadores están seleccionados",
+    "Toast dimensionado para personas de edad mayor (2x tamaño normal)"
+  ]
+}
