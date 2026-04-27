@@ -81,7 +81,6 @@ CREATE TABLE `examen_proceso` (
   `cod_usuario`        int(11) NOT NULL COMMENT 'FK → usuario (estudiante)',
   `cod_tipo_examen`    tinyint(3) unsigned NOT NULL,
   `cod_paso_actual`    tinyint(3) unsigned DEFAULT NULL COMMENT 'NULL = proceso cerrado',
-  `drive_folder_id`    varchar(200) DEFAULT NULL COMMENT 'Google Drive folder ID',
   `fecha_examen`       date DEFAULT NULL COMMENT 'Fecha programada del examen oral',
   `hora_inicio_examen` time DEFAULT NULL,
   `fecha_solicitud`    date,
@@ -106,33 +105,6 @@ CREATE TABLE `examen_proceso` (
     FOREIGN KEY (`cod_paso_actual`) REFERENCES `examen_paso_catalogo` (`cod_paso`),
   CONSTRAINT `examen_proceso_registrado_por_fk`
     FOREIGN KEY (`registrado_por`) REFERENCES `usuario` (`cod_usuario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
--- ------------------------------------------------------------
--- 4. drive_carpeta
---    Una carpeta de Google Drive por proceso. El backend
---    (Service Account) la crea al iniciar el proceso. Esta
---    tabla es la fuente de verdad; Drive es sólo almacenamiento.
--- ------------------------------------------------------------
-DROP TABLE IF EXISTS `drive_carpeta`;
-CREATE TABLE `drive_carpeta` (
-  `cod_carpeta`            int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `cod_proceso`            int(11) unsigned NOT NULL,
-  `drive_folder_id`        varchar(200) NOT NULL COMMENT 'Google Drive folder ID',
-  `drive_folder_name`      varchar(300) DEFAULT NULL,
-  `drive_parent_folder_id` varchar(200) DEFAULT NULL COMMENT 'Carpeta raíz del sistema en Drive',
-  `creado_por`             int(11) NOT NULL COMMENT 'FK → usuario (staff o sistema)',
-  `estado_sincronizacion`  enum('activo','error','eliminado') NOT NULL DEFAULT 'activo',
-  `ultima_sincronizacion`  timestamp NULL DEFAULT NULL,
-  `created_at`             timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`cod_carpeta`),
-  UNIQUE KEY `unique_dc_proceso`    (`cod_proceso`),
-  UNIQUE KEY `unique_dc_folder_id`  (`drive_folder_id`),
-  CONSTRAINT `drive_carpeta_proceso_fk`
-    FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`),
-  CONSTRAINT `drive_carpeta_usuario_fk`
-    FOREIGN KEY (`creado_por`) REFERENCES `usuario` (`cod_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -245,7 +217,7 @@ CREATE TABLE `examen_documento` (
   `cod_requisito`   smallint(5) unsigned NOT NULL,
   `version`         tinyint(3) unsigned NOT NULL DEFAULT 1 COMMENT 'Se incrementa en cada resubida',
   `es_version_actual` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1 = versión vigente; 0 = versión histórica',
-  `drive_file_id`   varchar(200) DEFAULT NULL COMMENT 'Google Drive fileId',
+  `archivo_nombre`   varchar(200) DEFAULT NULL COMMENT 'Google Drive fileId',
   `nombre_original` varchar(255) DEFAULT NULL COMMENT 'Nombre del archivo tal como lo subió el usuario',
   `mime_type`       varchar(100) DEFAULT NULL,
   `tamano_bytes`    bigint(20) unsigned DEFAULT NULL,
@@ -257,7 +229,7 @@ CREATE TABLE `examen_documento` (
   `fecha_eliminacion` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`cod_documento`),
   UNIQUE KEY `unique_ed_proceso_req_version` (`cod_proceso`, `cod_requisito`, `version`),
-  KEY `idx_ed_drive_file`          (`drive_file_id`),
+  KEY `idx_ed_archivo_nombre`          (`archivo_nombre`),
   KEY `idx_ed_eliminado`           (`eliminado`),
   KEY `idx_ed_version_actual`      (`cod_proceso`, `cod_requisito`, `es_version_actual`),
   CONSTRAINT `examen_documento_proceso_fk`
@@ -272,30 +244,25 @@ CREATE TABLE `examen_documento` (
 
 
 -- ------------------------------------------------------------
--- 8. drive_archivo
---    Metadata de Drive separada de la lógica de negocio. Las
---    URLs de Drive pueden cambiar/expirar sin afectar la tabla
+-- 8. archivo_local
+--    Metadata de archivos locales separada de la lógica de negocio. Las
+--    URLs de los archivos pueden cambiar/expirar sin afectar la tabla
 --    examen_documento. El backend inyecta el enlace en la
 --    respuesta HTTP; nunca se expone directamente al usuario.
 -- ------------------------------------------------------------
-DROP TABLE IF EXISTS `drive_archivo`;
-CREATE TABLE `drive_archivo` (
-  `cod_drive_archivo`      int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `cod_documento`          int(11) unsigned NOT NULL,
-  `drive_file_id`          varchar(200) NOT NULL COMMENT 'Google Drive fileId',
-  `drive_folder_id`        varchar(200) NOT NULL COMMENT 'Carpeta contenedora en Drive',
-  `drive_mime_type`        varchar(100) DEFAULT NULL,
-  `drive_web_view_link`    varchar(500) DEFAULT NULL COMMENT 'URL del visor de Drive — solo expuesta vía proxy del backend',
-  `drive_web_content_link` varchar(500) DEFAULT NULL COMMENT 'URL de descarga — solo expuesta vía proxy del backend',
-  `created_at`             timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at`             timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`cod_drive_archivo`),
-  UNIQUE KEY `unique_da_documento`   (`cod_documento`),
-  UNIQUE KEY `unique_da_file_id`     (`drive_file_id`),
-  KEY `idx_da_folder_id`             (`drive_folder_id`),
-  CONSTRAINT `drive_archivo_documento_fk`
+DROP TABLE IF EXISTS `archivo_local`;
+CREATE TABLE `archivo_local` (
+  `cod_archivo`   int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_documento` int(11) unsigned NOT NULL,
+  `nombre_md5`    varchar(32) NOT NULL COMMENT 'Hash MD5 = nombre físico del archivo en disk/archivos/',
+  `extension`     varchar(10) NOT NULL COMMENT 'Sin punto: pdf, jpg, png',
+  `created_at`    timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_archivo`),
+  UNIQUE KEY `unique_al_documento` (`cod_documento`),
+  UNIQUE KEY `unique_al_nombre`    (`nombre_md5`),
+  CONSTRAINT `archivo_local_documento_fk`
     FOREIGN KEY (`cod_documento`) REFERENCES `examen_documento` (`cod_documento`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 -- ------------------------------------------------------------

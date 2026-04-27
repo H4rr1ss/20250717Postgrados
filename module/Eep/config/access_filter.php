@@ -469,5 +469,10 @@ return [
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
+        'subirDocumento' => [
+            'code' => 84,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
     ],
 ];

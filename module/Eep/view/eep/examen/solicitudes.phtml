@@ -70,13 +70,13 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                     </div>
                 </div>
 
-                <pre>
+                <!-- <pre>
                     <?php var_dump($this->procesos); ?>
                     <div>-------------------------</div>
                     <?php var_dump($this->paginacion); ?>
                     <div>-------------------------</div>
                     <?php var_dump($this->filtros); ?>
-                </pre>
+                </pre> -->
 
                 <!-- Tabla de solicitudes -->
                 <div class="table-responsive">
@@ -84,6 +84,7 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                         <thead>
                             <tr>
                                 <th style="width: 20%;">Carné de estudiante</th>
+                                <th style="width: 20%;">Nombre de estudiante</th>
                                 <th style="width: 20%;">Creación de solicitud</th>
                                 <th style="width: 20%;">Estado solicitud</th>
                                 <th style="width: 20%; text-align: center;">Revisar</th>
@@ -95,10 +96,11 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                             <?php foreach ($this->procesos as $p): ?>
                             <tr>
                                 <td><?= $this->escapeHtml($p['registro_academico']) ?></td>
+                                <td><?= $this->escapeHtml($p['nombres'] . ' ' . $p['apellidos']) ?></td>
                                 <td><?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?></td>
                                 <td>
-                                    <span class="label label-<?= ($p['estado_paso'] == 'activo' ? 'success' : 'warning') ?>" style="font-size: 14px; font-weight: 700;">
-                                        <?= ucfirst($p['estado_paso']) ?>
+                                    <span class="label label-<?= ($p['estado_paso'] == 'activo' ? 'success' : ($p['estado_paso'] == 'pendiente' ? 'default' : 'warning')) ?>" style="font-size: 14px; font-weight: 700;">
+                                        <?= $p['estado_paso'] === 'en_progreso' ? 'En progreso' : ucfirst($p['estado_paso']) ?>
                                     </span>
                                 </td>
                                 <td style="text-align: center;">

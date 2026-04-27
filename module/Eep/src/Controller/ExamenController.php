@@ -157,33 +157,42 @@ class ExamenController extends AbstractActionController {
         }
 
         try {
-            // SIMULACIÓN LOGICA GOOGLE DRIVE (T-14.1)
-            // En un entorno real, aquí se llamaría al Google_Service_Drive
-            // Por ahora generamos IDs y links ficticios para completar el flujo técnico
-            $driveFileId = '1_simulated_drive_id_' . uniqid();
-            $viewLink    = 'https://drive.google.com/file/d/' . $driveFileId . '/view';
-            $downloadLink = 'https://drive.google.com/uc?id=' . $driveFileId . '&export=download';
+            // Generar nombre único MD5 para el archivo
+            $extension     = strtolower(pathinfo($fileData['name'], PATHINFO_EXTENSION));
+            $nombreBase    = pathinfo($fileData['name'], PATHINFO_FILENAME);
+            $nombreMd5     = md5($nombreBase . date('YmdHis') . uniqid());
+            $directorioUpload = getcwd() . '/archivos/';
+
+            if (!is_dir($directorioUpload)) {
+                mkdir($directorioUpload, 0755, true);
+            }
+
+            $rutaDestino = $directorioUpload . $nombreMd5 . '.' . $extension;
+
+            if (!move_uploaded_file($fileData['tmp_name'], $rutaDestino)) {
+                return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar el archivo en el servidor.']);
+            }
 
             // 2. Registrar en Base de Datos
             $idDoc = $this->examenManager->guardarDocumentoDb([
-                'cod_proceso'        => $codProceso,
-                'cod_requisito'      => $codRequisito,
-                'drive_file_id'      => $driveFileId,
-                'drive_view_link'    => $viewLink,
-                'drive_download_link' => $downloadLink,
-                'nombre_archivo'     => $fileData['name'],
-                'mime_type'          => $fileData['type'],
-                'tamano_bytes'       => $fileData['size'],
-                'subido_por'         => $userId
+                'cod_proceso'    => $codProceso,
+                'cod_requisito'  => $codRequisito,
+                'archivo_nombre' => $nombreMd5,
+                'nombre_original'=> $fileData['name'],
+                'mime_type'      => $fileData['type'],
+                'tamano_bytes'   => $fileData['size'],
+                'checksum_sha256'=> hash_file('sha256', $rutaDestino),
+                'extension'      => $extension,
+                'subido_por'     => $userId,
             ]);
 
             // 3. Registrar Historial
             $this->examenManager->registrarHistorial([
-                'cod_proceso' => $codProceso,
-                'cod_usuario' => $userId,
-                'tipo_evento' => 'subida_documento',
-                'descripcion' => "Documento subido: " . $fileData['name'],
-                'datos_nuevos' => ['cod_documento' => $idDoc, 'drive_id' => $driveFileId]
+                'cod_proceso'  => $codProceso,
+                'cod_usuario'  => $userId,
+                'tipo_evento'  => 'subida_documento',
+                'descripcion'  => 'Documento subido: ' . $fileData['name'],
+                'datos_nuevos' => ['cod_documento' => $idDoc, 'archivo_nombre' => $nombreMd5],
             ]);
 
             return new JsonModel([
@@ -191,9 +200,9 @@ class ExamenController extends AbstractActionController {
                 'message' => 'Archivo subido correctamente',
                 'data'    => [
                     'id'   => $idDoc,
-                    'link' => $viewLink,
-                    'name' => $fileData['name']
-                ]
+                    'link' => '/ver-documento/' . $nombreMd5,
+                    'name' => $fileData['name'],
+                ],
             ]);
 
         } catch (\Exception $e) {

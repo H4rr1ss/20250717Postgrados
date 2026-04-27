@@ -41,7 +41,7 @@ class ExamenManager
      * Inicia un nuevo proceso de examen para un estudiante.
      * T-13
      */
-    public function iniciarProceso(int $codUsuario, int $codTipoExamen): int
+    public function iniciarProceso(int $codUsuario, int $codTipoExamen, int $userAdminId): int
     {
         // 1. Obtener el primer paso del catálogo para este tipo de examen
         $sqlPaso = 'SELECT cod_paso 
@@ -54,12 +54,13 @@ class ExamenManager
         $primerPaso = !empty($resPaso) ? $resPaso[0]['cod_paso'] : 1; // Default fallback
 
         // 2. Crear el registro maestro del proceso
-        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual)
-                      VALUES (:usuario, :tipo, :paso)';
+        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual, registrado_por)
+                      VALUES (:usuario, :tipo, :paso, :registrado_por)';
         $this->adapter->createStatement($sqlMaster, [
             'usuario' => $codUsuario,
             'tipo'    => $codTipoExamen,
-            'paso'    => $primerPaso
+            'paso'    => $primerPaso,
+            'registrado_por' => $userAdminId
         ])->execute();
 
         $codProceso = $this->adapter->getDriver()->getLastGeneratedValue();
@@ -163,7 +164,7 @@ class ExamenManager
                     ed.nombre_original,
                     ed.version,
                     er.fecha_revision,
-                    da.drive_web_view_link,
+                    CONCAT('/ver-documento/', al.nombre_md5) AS url_ver,
                     er.estado             AS estado_revision,
                     er.motivo_rechazo
                 FROM examen_requisito_documento erd
@@ -171,7 +172,7 @@ class ExamenManager
                     AND ed.cod_proceso = :proceso
                     AND ed.es_version_actual = 1
                     AND ed.eliminado = 0
-                LEFT JOIN drive_archivo da ON da.cod_documento = ed.cod_documento
+                LEFT JOIN archivo_local al ON al.cod_documento = ed.cod_documento
                 LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
                 AND er.fecha_revision = (
                     SELECT MAX(er2.fecha_revision)
@@ -323,31 +324,6 @@ class ExamenManager
     }
 
     /**
-     * Obtiene la información académica completa de un estudiante para el panel de revisión.
-     * T-04
-     */
-    public function getEstudiante(string $carne): ?array
-    {
-        $sql = 'SELECT 
-                    u.cod_usuario,
-                    u.registro_academico,
-                    u.cui,
-                    CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
-                    u.correo,
-                    u.telefono,
-                    p.descripcion AS pensum_nombre,
-                    c.nombre_actual AS carrera
-                FROM usuario u
-                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
-                LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
-                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
-                WHERE u.registro_academico = :carne';
-
-        $result = $this->execute($sql, ['carne' => $carne]);
-        return $result[0] ?? null;
-    }
-
-    /**
      * Obtiene la información académica de un estudiante asociado a un proceso de examen.
      * T-15
      */
@@ -446,13 +422,14 @@ class ExamenManager
                     ed.nombre_original,
                     ed.version,
                     ed.fecha_subida,
-                    da.drive_file_id,
-                    da.drive_web_view_link,
+                    al.nombre_md5,
+                    al.extension,
+                    CONCAT('/ver-documento/', al.nombre_md5) AS url_ver,
                     er.estado AS estado_revision,
                     er.motivo_rechazo,
                     er.fecha_revision
                 FROM examen_documento ed
-                LEFT JOIN drive_archivo da ON da.cod_documento = ed.cod_documento
+                LEFT JOIN archivo_local al ON al.cod_documento = ed.cod_documento
                 LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
                 WHERE ed.cod_proceso = :proceso
                   AND ed.es_version_actual = 1
@@ -483,56 +460,6 @@ class ExamenManager
 
         $result = $this->execute($sql, ['proceso' => $codProceso]);
         return $result[0] ?? null;
-    }
-
-    /**
-     * Valida si un paso permite subida de documentos o modificaciones (bloqueo automático).
-     * Retorna true si el paso está abierto, false si ya fue completado/cerrado.
-     * T-08
-     */
-    public function puedeSubir(int $codProceso, int $codPaso): bool
-    {
-        $sql = 'SELECT fecha_completado 
-                FROM examen_proceso_paso 
-                WHERE cod_proceso = :proceso 
-                  AND cod_paso = :paso';
-
-        $result = $this->execute($sql, ['proceso' => $codProceso, 'paso' => $codPaso]);
-        
-        // Si no existe el registro del paso, está abierto por defecto
-        if (empty($result)) {
-            return true;
-        }
-
-        // Si fecha_completado es NULL, el paso sigue abierto
-        return $result[0]['fecha_completado'] === null;
-    }
-
-    /**
-     * Registra un nuevo documento en la base de datos (con enlace a Google Drive).
-     * T-09/T-14
-     */
-    public function guardarDocumentoDb(array $data): int
-    {
-        $sql = 'INSERT INTO examen_documento 
-                    (cod_proceso, cod_requisito, drive_file_id, drive_view_link, drive_download_link, nombre_archivo, mime_type, tamano_bytes, subido_por)
-                VALUES 
-                    (:proceso, :requisito, :drive_id, :view_link, :download_link, :nombre, :mime, :tamano, :usuario)';
-        
-        $params = [
-            'proceso'       => $data['cod_proceso'],
-            'requisito'     => $data['cod_requisito'],
-            'drive_id'      => $data['drive_file_id'],
-            'view_link'     => $data['drive_view_link'],
-            'download_link' => $data['drive_download_link'],
-            'nombre'        => $data['nombre_archivo'],
-            'mime'          => $data['mime_type'],
-            'tamano'        => $data['tamano_bytes'],
-            'usuario'       => $data['subido_por']
-        ];
-
-        $this->adapter->createStatement($sql, $params)->execute();
-        return (int) $this->adapter->getDriver()->getLastGeneratedValue();
     }
 
     /**

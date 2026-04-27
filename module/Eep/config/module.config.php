@@ -18,7 +18,10 @@ use Eep\Service\AuthManager;
 use Eep\Service\Factory\AuthManagerFactory;
 use Eep\Service\CohortManager;
 use Eep\Service\Factory\CohortManagerFactory;use Eep\Service\ExamenManager;
-use Eep\Service\Factory\ExamenManagerFactory;use Eep\Service\UserManager;
+use Eep\Service\Factory\ExamenManagerFactory;
+use Eep\Service\StudentGraduationManager;
+use Eep\Service\Factory\StudentGraduationManagerFactory;
+use Eep\Service\UserManager;
 use Eep\Service\Factory\UserManagerFactory;
 use Eep\Service\OrderManager;
 use Eep\Service\Factory\OrderManagerFactory;
@@ -60,6 +63,7 @@ use Eep\Controller\OfficialController;
 use Eep\Controller\ExamenController;
 use Eep\Controller\Factory\ExamenControllerFactory;
 use Eep\Controller\StudentGraduationController;
+use Eep\Controller\Factory\StudentGraduationControllerFactory;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -78,7 +82,7 @@ return [
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
             ExamenController::class => ExamenControllerFactory::class,
-            StudentGraduationController::class => LazyControllerAbstractFactory::class,
+            StudentGraduationController::class => StudentGraduationControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -330,6 +334,7 @@ return [
             OrderManager::class => OrderManagerFactory::class,
             ReportManager::class => ReportManagerFactory::class,
             SatuManager::class => SatuManagerFactory::class,
+            StudentGraduationManager::class => StudentGraduationManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
         ],
