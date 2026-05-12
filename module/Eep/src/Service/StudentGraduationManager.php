@@ -109,40 +109,116 @@ class StudentGraduationManager
     }
 
     /**
+     * Busca un archivo por su hash MD5 y verifica que pertenece al usuario indicado.
+     * Retorna null si el archivo no existe o el usuario no tiene acceso.
+     * T-09
+     */
+    public function getArchivoByHash(string $hash): ?array
+    {
+        $sql = 'SELECT
+                    al.nombre_md5,
+                    al.extension,
+                    ed.nombre_original
+                FROM archivo_local al
+                JOIN examen_documento ed ON ed.cod_documento = al.cod_documento
+                WHERE al.nombre_md5 = :hash
+                  AND ed.eliminado  = 0
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['hash' => $hash]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Retorna los datos de un requisito verificando que pertenezca al paso actual
+     * del proceso indicado. Retorna null si el requisito no es válido para ese proceso.
+     * Usado para validación de seguridad en la subida de documentos.
+     * T-09
+     */
+    public function getRequisitoInfo(int $codProceso, int $codRequisito): ?array
+    {
+        $sql = 'SELECT
+                    erd.cod_requisito,
+                    erd.formatos_permitidos,
+                    erd.tamano_max_mb,
+                    erd.tipo_entrega
+                FROM examen_requisito_documento erd
+                JOIN examen_proceso ep ON ep.cod_proceso = :proceso
+                WHERE erd.cod_requisito = :requisito
+                  AND erd.cod_paso = ep.cod_paso_actual
+                  AND erd.tipo_entrega = :digital
+                  AND erd.activo = 1
+                LIMIT 1';
+
+        $result = $this->execute($sql, [
+            'proceso'   => $codProceso,
+            'requisito' => $codRequisito,
+            'digital'   => 'digital',
+        ]);
+
+        return $result[0] ?? null;
+    }
+
+    /**
      * Registra un nuevo documento en la base de datos (almacenamiento local).
+     * Maneja versionado: marca la versión anterior como histórica antes de insertar.
      * Inserta en examen_documento y luego en archivo_local.
      * T-09/T-14
      */
     public function guardarDocumentoDb(array $data): int
     {
-        // 1. Insertar registro principal del documento
-        $sqlDoc = 'INSERT INTO examen_documento
-                       (cod_proceso, cod_requisito, archivo_nombre, nombre_original, mime_type, tamano_bytes, checksum_sha256, subido_por)
-                   VALUES
-                       (:proceso, :requisito, :archivo_nombre, :nombre_original, :mime, :tamano, :checksum, :usuario)';
+        // 1. Marcar versión anterior como histórica (si existe)
+        $this->adapter->createStatement(
+            'UPDATE examen_documento
+             SET es_version_actual = 0
+             WHERE cod_proceso = :proceso
+               AND cod_requisito = :requisito
+               AND es_version_actual = 1',
+            ['proceso' => $data['cod_proceso'], 'requisito' => $data['cod_requisito']]
+        )->execute();
 
-        $this->adapter->createStatement($sqlDoc, [
-            'proceso'         => $data['cod_proceso'],
-            'requisito'       => $data['cod_requisito'],
-            'archivo_nombre'  => $data['archivo_nombre'],
-            'nombre_original' => $data['nombre_original'],
-            'mime'            => $data['mime_type'],
-            'tamano'          => $data['tamano_bytes'],
-            'checksum'        => $data['checksum_sha256'],
-            'usuario'         => $data['subido_por'],
-        ])->execute();
+        // 2. Calcular número de versión siguiente
+        $versionResult = $this->execute(
+            'SELECT COALESCE(MAX(version), 0) + 1 AS siguiente
+             FROM examen_documento
+             WHERE cod_proceso = :proceso AND cod_requisito = :requisito',
+            ['proceso' => $data['cod_proceso'], 'requisito' => $data['cod_requisito']]
+        );
+        $version = (int) ($versionResult[0]['siguiente'] ?? 1);
+
+        // 3. Insertar registro principal del documento
+        $this->adapter->createStatement(
+            'INSERT INTO examen_documento
+                 (cod_proceso, cod_requisito, version, es_version_actual,
+                  archivo_nombre, nombre_original, mime_type, tamano_bytes, checksum_sha256, subido_por)
+             VALUES
+                 (:proceso, :requisito, :version, 1,
+                  :archivo_nombre, :nombre_original, :mime, :tamano, :checksum, :usuario)',
+            [
+                'proceso'         => $data['cod_proceso'],
+                'requisito'       => $data['cod_requisito'],
+                'version'         => $version,
+                'archivo_nombre'  => $data['archivo_nombre'],
+                'nombre_original' => $data['nombre_original'],
+                'mime'            => $data['mime_type'],
+                'tamano'          => $data['tamano_bytes'],
+                'checksum'        => $data['checksum_sha256'],
+                'usuario'         => $data['subido_por'],
+            ]
+        )->execute();
 
         $codDocumento = (int) $this->adapter->getDriver()->getLastGeneratedValue();
 
-        // 2. Insertar metadata del archivo local
-        $sqlArchivo = 'INSERT INTO archivo_local (cod_documento, nombre_md5, extension)
-                       VALUES (:cod_documento, :nombre_md5, :extension)';
-
-        $this->adapter->createStatement($sqlArchivo, [
-            'cod_documento' => $codDocumento,
-            'nombre_md5'    => $data['archivo_nombre'],
-            'extension'     => $data['extension'],
-        ])->execute();
+        // 4. Insertar metadata del archivo local
+        $this->adapter->createStatement(
+            'INSERT INTO archivo_local (cod_documento, nombre_md5, extension)
+             VALUES (:cod_documento, :nombre_md5, :extension)',
+            [
+                'cod_documento' => $codDocumento,
+                'nombre_md5'    => $data['archivo_nombre'],
+                'extension'     => $data['extension'],
+            ]
+        )->execute();
 
         return $codDocumento;
     }
@@ -259,7 +335,7 @@ class StudentGraduationManager
                     ed.nombre_original,
                     ed.version,
                     er.fecha_revision,
-                    CONCAT('/ver-documento/', al.nombre_md5) AS url_ver,
+                    CONCAT('/student-graduation/ver-documento?h=', al.nombre_md5) AS url_ver,
                     er.estado             AS estado_revision,
                     er.motivo_rechazo
                 FROM examen_requisito_documento erd

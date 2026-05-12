@@ -164,7 +164,7 @@ class ExamenManager
                     ed.nombre_original,
                     ed.version,
                     er.fecha_revision,
-                    CONCAT('/ver-documento/', al.nombre_md5) AS url_ver,
+                    CONCAT('/student-graduation/ver-documento?h=', al.nombre_md5) AS url_ver,
                     er.estado             AS estado_revision,
                     er.motivo_rechazo
                 FROM examen_requisito_documento erd
@@ -286,11 +286,13 @@ class ExamenManager
                     et.nombre            AS tipo_examen,
                     ep.fecha_solicitud,
                     ep.cod_paso_actual,
+                    epc.numero_orden,
                     COALESCE(epp.estado, 'pendiente') AS estado_paso,
                     ep.cancelado
                 FROM examen_proceso ep
                 JOIN usuario u ON u.cod_usuario = ep.cod_usuario
                 JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                 LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
                     AND epp.cod_paso = ep.cod_paso_actual
                 WHERE ep.cancelado = 0
@@ -416,7 +418,7 @@ class ExamenManager
      */
     public function getDocumentosProceso(int $codProceso): array
     {
-        $sql = 'SELECT 
+        $sql = "SELECT 
                     ed.cod_documento,
                     ed.cod_requisito,
                     ed.nombre_original,
@@ -424,7 +426,7 @@ class ExamenManager
                     ed.fecha_subida,
                     al.nombre_md5,
                     al.extension,
-                    CONCAT('/ver-documento/', al.nombre_md5) AS url_ver,
+                    CONCAT('/student-graduation/ver-documento?h=', al.nombre_md5) AS url_ver,
                     er.estado AS estado_revision,
                     er.motivo_rechazo,
                     er.fecha_revision
@@ -433,7 +435,7 @@ class ExamenManager
                 LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
                 WHERE ed.cod_proceso = :proceso
                   AND ed.es_version_actual = 1
-                  AND ed.eliminado = 0';
+                  AND ed.eliminado = 0";
 
         return $this->execute($sql, ['proceso' => $codProceso]);
     }

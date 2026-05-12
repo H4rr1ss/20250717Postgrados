@@ -61,18 +61,42 @@ $this->headTitle('Revisión de papelería');
                     <div class="timeline-estados">
                         <?php foreach ($this->estados as $numPaso => $estado): ?>
                         <?php 
-                            $esActual = ($numPaso == $this->paso);
-                            $esCompletado = ($numPaso < $this->paso);
-                            $esPendiente = ($numPaso > $this->paso);
-                            
+                            $pasoEstudiante = (int) ($this->proceso['numero_orden'] ?? 1);
+
+                            // Estado real del estudiante (independiente del paso que se esté viendo)
+                            $esActual     = ($numPaso == $pasoEstudiante);
+                            $esCompletado = ($numPaso < $pasoEstudiante);
+
+                            // Paso que el admin está viendo actualmente
+                            $esViendo = ($numPaso == $this->paso);
+
+                            // Bloquear pasos que el estudiante aún no ha alcanzado
+                            $bloqueado = ($numPaso > $pasoEstudiante);
+
                             // Construir URL con parámetro paso
                             $urlPaso = $this->url('examen', ['action' => 'solicitudes', 'id' => $this->proceso['cod_proceso']]) . '?paso=' . $numPaso;
                         ?>
-                        <a href="<?= $urlPaso ?>" class="timeline-link">
+                        <?php if ($bloqueado): ?>
+                        <span class="timeline-link timeline-link-bloqueado">
+                            <div class="timeline-item">
+                                <div class="timeline-icono timeline-icono-pending">
+                                    <i class="fa fa-lock"></i>
+                                </div>
+                                <div class="timeline-contenido">
+                                    <p class="timeline-titulo" style="color:#aaa;"><?= $estado['titulo'] ?></p>
+                                    <div class="timeline-row">
+                                        <p class="timeline-subtitulo"><?= $estado['subtitulo'] ?></p>
+                                        <span class="timeline-badge badge-pendiente-tl">Bloqueado</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
+                        <?php else: ?>
+                        <a href="<?= $urlPaso ?>" class="timeline-link <?= $esViendo ? 'timeline-link-viendo' : '' ?>">
                             <div class="timeline-item <?= $esActual ? 'timeline-activo' : '' ?> <?= $esCompletado ? 'timeline-completado' : '' ?>">
-                                <div class="timeline-icono <?= $esPendiente ? 'timeline-icono-pending' : '' ?> <?= $esCompletado ? 'timeline-icono-completed' : '' ?>">
+                                <div class="timeline-icono <?= $esCompletado ? 'timeline-icono-completed' : '' ?>">
                                     <?php if ($esCompletado): ?>
-                                        <i class="fa fa-eye"></i>
+                                        <i class="fa fa-check"></i>
                                     <?php elseif ($esActual): ?>
                                         <i class="fa fa-circle"></i>
                                     <?php else: ?>
@@ -87,13 +111,12 @@ $this->headTitle('Revisión de papelería');
                                             <span class="timeline-badge badge-en-proceso">En proceso</span>
                                         <?php elseif ($esCompletado): ?>
                                             <span class="timeline-badge badge-completado">Completado</span>
-                                        <?php else: ?>
-                                            <span class="timeline-badge badge-pendiente-tl">Pendiente</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
                         </a>
+                        <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -299,6 +322,27 @@ $this->headTitle('Revisión de papelería');
         padding: 5px;
         padding-bottom: 23px;
     }
+
+    /* Paso que el admin está viendo actualmente */
+    .timeline-link-viendo .timeline-item {
+        background-color: #eef3fa;
+        border-radius: 10px;
+        padding: 5px;
+        padding-bottom: 23px;
+    }
+
+    /* Paso bloqueado (el estudiante aún no llegó) */
+    .timeline-link-bloqueado {
+        display: block;
+        cursor: not-allowed;
+        opacity: 0.45;
+        text-decoration: none;
+        color: inherit;
+    }
+    .timeline-link-bloqueado .timeline-item {
+        pointer-events: none;
+    }
+
 
     /* Estado completado del timeline */
     .timeline-icono-completed {

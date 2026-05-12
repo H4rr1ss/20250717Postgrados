@@ -474,5 +474,9 @@ return [
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
+        'verDocumento' => [
+            'code' => 85,
+            'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
     ],
 ];

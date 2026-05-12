@@ -82,7 +82,7 @@ if (!empty($requisitos)) {
             'botones' => $metadatos['botones'],
             'fecha' => $metadatos['fecha'],
             'motivo_rechazo' => $req['motivo_rechazo'] ?? null,
-            'drive_link' => $req['drive_web_view_link'] ?? null,
+            'url_ver' => $req['url_ver'] ?? null,
             'formatos_permitidos' => $req['formatos_permitidos'],
             'tamano_max_mb' => $req['tamano_max_mb']
         ];
@@ -91,7 +91,6 @@ if (!empty($requisitos)) {
 ?>
 
 <div class="col-lg-12">
-
     <!-- Breadcrumb -->
     <div class="row">
         <div class="col-lg-12">
@@ -116,9 +115,20 @@ if (!empty($requisitos)) {
             <h4 style="font-weight: 700; letter-spacing: 1px; margin-bottom: 20px;">Solicitud de Examen <?= $this->escapeHtml($proceso['tipo_examen']) ?></h4>
 
             <!-- Mensaje importante -->
-            <div style="padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: #333;">
-                <strong>Importante:</strong> Asegúrese de cargar el total de archivos solicitados, hasta ese momento se enviará su solicitud a Control Académico.
-            </div>
+            <?php if ($proceso['cod_paso_actual'] == '2'): ?>
+                <div style="padding: 16px 20px; margin-bottom: 28px; font-size: 13px; color: #fff; background: linear-gradient(135deg, #1a3c6b 0%, #2c5f9e 100%); border-radius: 8px; border-left: 4px solid #0d1f3c; box-shadow: 0 2px 8px rgba(26, 60, 107, 0.15);">
+                    <i class="fa fa-info-circle" style="margin-right: 10px; font-size: 16px;"></i>
+                    <strong style="font-size: 14px;">Instrucciones importantes:</strong> 
+                    <span style="display: block; margin-top: 8px; font-size: 14px; line-height: 1.6;">
+                        El estudiante debe entregar la <strong>documentación física</strong> en la oficina de Postgrados<br>
+                        <i class="fa fa-clock-o" style="margin-right: 5px;"></i> Horario: <strong>8:00 - 16:00 hrs.</strong> (Lunes a Viernes)
+                    </span>
+                </div>
+            <?php else: ?>
+                <div style="padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: #333;">
+                    <strong>Importante:</strong> Asegúrese de cargar el total de archivos solicitados, hasta ese momento se enviará su solicitud a Control Académico.
+                </div>
+            <?php endif; ?>
 
             <?php if (empty($documentos)): ?>
             <!-- Mensaje cuando no hay requisitos -->
@@ -150,24 +160,22 @@ if (!empty($requisitos)) {
                         <!-- Botones -->
                         <div style="margin-top: auto;">
                             <?php if (in_array('razon', $doc['botones'])): ?>
-                            <button type="button" 
-                                    class="btn btn-block btn-doc-razon btn-ver-razon" 
-                                    style="margin-bottom: 8px; font-size: 12px;"
-                                    data-requisito="<?= $doc['cod_requisito'] ?>"
-                                    data-motivo="<?= htmlspecialchars($doc['motivo_rechazo'] ?? 'No se especificó motivo') ?>">
-                                <i class="fa fa-info-circle"></i> Ver razón de rechazo
-                            </button>
+                            <div class="recuadro-rechazo">
+                                <i class="fa fa-times-circle"></i>
+                                <span><?= htmlspecialchars($doc['motivo_rechazo'] ?? 'No se especificó motivo') ?></span>
+                            </div>
                             <div style="display: flex; gap: 8px;">
                                 <button type="button" 
                                         class="btn btn-doc-ver btn-ver-documento" 
                                         style="flex: 1; font-size: 12px;"
                                         data-documento="<?= $doc['cod_documento'] ?>"
-                                        data-link="<?= htmlspecialchars($doc['drive_link'] ?? '') ?>">
+                                        data-link="<?= htmlspecialchars($doc['url_ver'] ?? '') ?>">
                                     <i class="fa fa-eye"></i> Ver
                                 </button>
                                 <button type="button" 
                                         class="btn btn-doc-resubir btn-subir-documento" 
                                         style="flex: 1.6; font-size: 12px;"
+                                        data-requisito="<?= $doc['cod_requisito'] ?>"
                                         data-formatos="<?= htmlspecialchars($doc['formatos_permitidos']) ?>">
                                     <i class="fa fa-upload"></i> Re-subir
                                 </button>
@@ -177,7 +185,7 @@ if (!empty($requisitos)) {
                                     class="btn btn-block btn-doc-ver btn-ver-documento" 
                                     style="font-size: 12px; margin-bottom: 6px;"
                                     data-documento="<?= $doc['cod_documento'] ?>"
-                                    data-link="<?= htmlspecialchars($doc['drive_link'] ?? '') ?>">
+                                    data-link="<?= htmlspecialchars($doc['url_ver'] ?? '') ?>">
                                 <i class="fa fa-eye"></i> Ver archivo validado
                             </button>
                             <?php if (!empty($doc['fecha'])): ?>
@@ -187,6 +195,7 @@ if (!empty($requisitos)) {
                             <button type="button" 
                                     class="btn btn-block btn-doc-subir btn-subir-documento" 
                                     style="font-size: 12px;"
+                                    data-requisito="<?= $doc['cod_requisito'] ?>"
                                     data-formatos="<?= htmlspecialchars($doc['formatos_permitidos']) ?>">
                                 <i class="fa fa-paperclip"></i> Subir archivo
                             </button>
@@ -269,17 +278,24 @@ if (!empty($requisitos)) {
         line-height: 1.6;
     }
 
-    /* --- Botones --- */
-    .btn-doc-razon {
+    /* --- Recuadro razón de rechazo --- */
+    .recuadro-rechazo {
         background: #fce8e8;
         color: #c0392b;
         border: 1px solid #f4b8b8;
         border-radius: 6px;
-        padding: 7px 12px;
+        padding: 8px 12px;
+        font-size: 12px;
         font-weight: 600;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        line-height: 1.4;
     }
-    .btn-doc-razon:hover, .btn-doc-razon:focus { background: #f9d0d0; color: #a93226; }
+    .recuadro-rechazo .fa { margin-top: 2px; flex-shrink: 0; }
 
+    /* --- Botones --- */
     .btn-doc-outline {
         background: #fff;
         color: #555;
@@ -324,14 +340,6 @@ if (!empty($requisitos)) {
 <script>
 $(document).ready(function() {
     
-    // Ver razón de rechazo
-    $('.btn-ver-razon').on('click', function() {
-        const motivo = $(this).data('motivo');
-        const titulo = $(this).closest('.doc-card').find('.doc-titulo').text();
-        
-        alert('RAZÓN DE RECHAZO\n\n' + titulo + '\n\n' + motivo);
-    });
-    
     // Ver documento
     $('.btn-ver-documento').on('click', function() {
         const link = $(this).data('link');
@@ -349,6 +357,7 @@ $(document).ready(function() {
     $('.btn-subir-documento').on('click', function() {
         const $btn = $(this);
         const formatos = $btn.data('formatos');
+        const codRequisito = $btn.data('requisito');
         
         // Crear input file dinámicamente
         const $fileInput = $('<input type="file" style="display:none">');
@@ -404,7 +413,7 @@ $(document).ready(function() {
             
             // Si todo está bien, confirmar subida
             if (confirm(`¿Desea subir el archivo "${file.name}"?`)) {
-                subirDocumento(file);
+                subirDocumento(file, codRequisito);
             }
             
             // Remover input
@@ -416,9 +425,10 @@ $(document).ready(function() {
     });
     
     // Función para subir documento vía AJAX
-    function subirDocumento(file) {
+    function subirDocumento(file, codRequisito) {
         const formData = new FormData();
         formData.append('archivo', file);
+        formData.append('cod_requisito', codRequisito);
         
         // Crear overlay de carga
         const $overlay = $('<div id="upload-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;"></div>');
@@ -435,13 +445,10 @@ $(document).ready(function() {
             contentType: false,
             success: function(response) {
                 $overlay.remove();
-                
+                console.log("Respuesta del servidor:", response);
                 if (response.success) {
-                    console.log('Documento subido exitosamente');
-                    console.log(response.message)
-                    console.log(response.data)
-                    // Recargar la página para mostrar el documento actualizado
                     // location.reload();
+                    console.warn("TODO OCURRIO COMO DEBERIA DE SER. ARCHIVO CARGADO CON EXIñTO")
                 } else {
                     alert('✗ ERROR\n\n' + (response.message || 'No se pudo subir el documento'));
                 }

@@ -541,7 +541,13 @@ class ExamenController extends AbstractActionController {
             $estudiante = $this->examenManager->getEstudiantePorProceso($idProceso);
             
             // Permitir navegar por pasos vía query string, o cargar el actual por defecto
-            $paso = $this->params()->fromQuery('paso', 0);
+            $pasoEstudiante = (int) ($proceso['numero_orden'] ?? 1);
+            $paso = (int) $this->params()->fromQuery('paso', $pasoEstudiante);
+
+            // Bloquear acceso a pasos que el estudiante aún no ha alcanzado
+            if ($paso > $pasoEstudiante) {
+                $paso = $pasoEstudiante;
+            }
             
             // Obtener fechas de los estados
             $fechas = $this->examenManager->getFechasPasosCompletado($idProceso);

@@ -19,3 +19,7 @@ Thumbs.db
 
 /data/sessions/
 /data/sessiones/
+
+# Archivos subidos por estudiantes (no versionar)
+/public/archivos/*
+!/public/archivos/.gitkeep

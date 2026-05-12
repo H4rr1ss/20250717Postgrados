@@ -11,9 +11,10 @@
                     <strong>Información importante:</strong>
                     Debe aceptar todos los documentos de la papelería para poder habilitar el siguiente paso de <strong>Entrega de Documentación</strong>.
                 </div>
-                <?php var_dump($this->paso); ?>
-                                    <?php var_dump($this->proceso['numero_orden']); ?>
                 <div class="tabla-requisitos-revision">
+                    <pre>
+                    <?php var_dump($this->proceso); ?>
+                    </pre>
                     <table class="table table-bordered table-requisitos">
                         <thead>
                             <tr>
@@ -25,7 +26,6 @@
                                 <th style="width: 10%; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
-                        <!-- <?php var_dump($this->docsDigitales); ?> -->
                         <tbody>
                             <?php if (empty($this->docsDigitales)): ?>
                                 <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
@@ -60,8 +60,8 @@
                                     <td><?= $this->escapeHtml($doc['motivo_rechazo'] ?? '') ?></td>
                                     <!-- ver documento -->
                                     <td style="text-align: center;">
-                                        <?php if (!empty($doc['drive_web_view_link'])): ?>
-                                            <a href="<?= $this->escapeHtml($doc['drive_web_view_link']) ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
+                                        <?php if (!empty($doc['url_ver'])): ?>
+                                            <a href="<?= $this->escapeHtml($doc['url_ver']) ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
                                                 <i class="fa fa-eye"></i>
                                             </a>
                                         <?php else: ?>
@@ -71,14 +71,19 @@
                                     <!-- acciones -->
                                     <td style="text-align: center;">
                                         <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
-                                            <div class="acciones-grupo">
-                                                <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
-                                                    <i class="fa fa-check"></i>
-                                                </button>
-                                                <button class="btn-accion btn-rechazar <?= $estado == 'rechazado' ? 'active' : '' ?>" title="Rechazar" data-valor="rechazado">
-                                                    <i class="fa fa-times"></i>
-                                                </button>
-                                            </div>
+
+                                            <?php if (!empty($doc['url_ver'])): ?>
+                                                <div class="acciones-grupo">
+                                                    <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
+                                                        <i class="fa fa-check"></i>
+                                                    </button>
+                                                    <button class="btn-accion btn-rechazar <?= $estado == 'rechazado' ? 'active' : '' ?>" title="Rechazar" data-valor="rechazado">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted"><i class="fa fa-upload"></i> Sin documento</span>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
                                         <?php endif; ?>
@@ -131,7 +136,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" id="confirmarRechazo">
-                    <i class="fa fa-check"></i><?php var_dump($this->docsFisicos); ?> Confirmar Rechazo
+                    <i class="fa fa-check"></i> Confirmar Rechazo
                 </button>
             </div>
         </div>

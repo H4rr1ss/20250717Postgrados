@@ -60,7 +60,14 @@ $this->headTitle('Progreso del Proceso de Graduación');
                             </div>
                             
                             <?php if ($paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
-                                <a href="<?= $this->url('student-graduation', ['action' => 'paso1SolicitudExamen']) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
+                                <?php
+                                    $accionesPorPaso = [
+                                        1 => 'paso1-solicitud-examen',
+                                        3 => 'paso2-terna',
+                                    ];
+                                    $accionPaso = $accionesPorPaso[$paso['numero_orden']] ?? 'index';
+                                ?>
+                                <a href="<?= $this->url('student-graduation', ['action' => $accionPaso]) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
                                     <i class="fa fa-sticky-note"></i> Resumen
                                 </a>
                             <?php else: ?>
