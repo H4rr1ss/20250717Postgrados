@@ -444,6 +444,44 @@ class ExamenController extends AbstractActionController {
     }
 
     /**
+     * Notifica al estudiante cerrando el paso 4 (último) del proceso.
+     * Retorna JSON para manejo vía AJAX.
+     */
+    public function notificarEstudianteAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $userId     = $this->layout()->role->getUserCode();
+        $codProceso = (int) $request->getPost('cod_proceso');
+
+        if ($codProceso <= 0) {
+            return new JsonModel(['success' => false, 'message' => 'Identificador de proceso inválido']);
+        }
+
+        try {
+            $advanced = $this->examenManager->avanzarPaso($codProceso, $userId);
+
+            if ($advanced) {
+                $this->examenManager->registrarHistorial([
+                    'cod_proceso' => $codProceso,
+                    'cod_usuario' => $userId,
+                    'tipo_evento' => 'notificacion_estudiante',
+                    'descripcion' => 'Estudiante notificado y paso 4 cerrado',
+                ]);
+
+                return new JsonModel(['success' => true, 'message' => 'Estudiante notificado y proceso cerrado correctamente']);
+            }
+
+            return new JsonModel(['success' => false, 'message' => 'No se pudo cerrar el paso']);
+
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * T-19: Acción para avanzar el proceso al siguiente paso.
      * Retorna JSON para manejo vía AJAX.
      */

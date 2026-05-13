@@ -1,0 +1,171 @@
+<?php
+$programacion  = $terna['programacion'] ?? [];
+$examinadores  = $terna['examinadores'] ?? [];
+$fechaExamen   = !empty($programacion['fecha']) ? date('d/m/Y', strtotime($programacion['fecha'])) : null;
+$horaExamen    = !empty($programacion['hora'])  ? date('g:i A', strtotime($programacion['hora']))  : null;
+$codProceso    = (int)($proceso['cod_proceso'] ?? 0);
+?>
+<!-- Paso 4: Notificación al Estudiante -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Notificación al Estudiante
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+
+                <div class="alert alert-success" style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa fa-check-circle fa-2x"></i>
+                    <div>
+                        <strong>Proceso listo para notificar.</strong>
+                        Confirme los datos del examen y haga clic en "Notificar Estudiante" para enviar la información al estudiante.
+                    </div>
+                </div>
+
+                <!-- Datos del estudiante -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Datos del Estudiante</h5>
+                        <table class="table table-bordered" style="font-size: 13px;">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 25%; background: #f5f5f5;">Nombre</th>
+                                    <td><?= htmlspecialchars(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '')) ?></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Carné</th>
+                                    <td><?= htmlspecialchars($proceso['carne'] ?? '-') ?></td>
+                                </tr>
+                                <?php if (!empty($proceso['carrera'])): ?>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Carrera</th>
+                                    <td><?= htmlspecialchars($proceso['carrera']) ?></td>
+                                </tr>
+                                <?php endif; ?>
+                                <?php if (!empty($proceso['tipo_examen'])): ?>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Tipo de Examen</th>
+                                    <td><?= htmlspecialchars($proceso['tipo_examen']) ?></td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Programación del examen -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Programación del Examen</h5>
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <?php if ($fechaExamen): ?>
+                                <p style="margin: 0 0 6px;"><i class="fa fa-calendar" style="width:18px;"></i> <strong>Fecha:</strong> <?= $fechaExamen ?></p>
+                            <?php else: ?>
+                                <p style="margin: 0 0 6px; color: #999;"><i class="fa fa-calendar" style="width:18px;"></i> Fecha: <em>Por definir</em></p>
+                            <?php endif; ?>
+                            <?php if ($horaExamen): ?>
+                                <p style="margin: 0;"><i class="fa fa-clock-o" style="width:18px;"></i> <strong>Hora:</strong> <?= $horaExamen ?></p>
+                            <?php else: ?>
+                                <p style="margin: 0; color: #999;"><i class="fa fa-clock-o" style="width:18px;"></i> Hora: <em>Por definir</em></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terna de examinadores -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Terna de Examinadores</h5>
+                        <?php if (empty($examinadores)): ?>
+                            <div class="alert alert-warning">
+                                <i class="fa fa-exclamation-triangle"></i> La terna aún no ha sido asignada.
+                            </div>
+                        <?php else: ?>
+                            <table class="table table-bordered" style="font-size: 13px;">
+                                <thead style="background: #f5f5f5;">
+                                    <tr>
+                                        <th style="width: 5%;">#</th>
+                                        <th>Nombre</th>
+                                        <th style="width: 20%;">Tipo</th>
+                                        <th style="width: 20%;">No. Colegiado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($examinadores as $ex): ?>
+                                    <tr>
+                                        <td><?= (int)($ex['posicion'] ?? 0) ?></td>
+                                        <td><?= htmlspecialchars($ex['nombre'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars(ucfirst($ex['tipo'] ?? '-')) ?></td>
+                                        <td><?= htmlspecialchars($ex['colegiado'] ?? '-') ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Información adicional para el correo -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">
+                            <i class="fa fa-envelope-o"></i> Información Adicional para el Correo
+                        </h5>
+                        <div style="background: #f8f9fa; padding: 18px; border-radius: 4px; border: 1px solid #e0e0e0;">
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="infoExtra">Información adicional</label>
+                                <textarea class="form-control" id="infoExtra" name="info_extra" rows="8"
+                                          placeholder="Escriba aquí toda la información adicional que se enviará al estudiante en el correo (lugar, vestimenta, documentos requeridos, instrucciones, etc.)..."></textarea>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón notificar -->
+                <div class="row" style="margin-top: 25px;">
+                    <div class="col-md-12 text-right">
+                        <button type="button" id="btnNotificarEstudiante" class="btn btn-success btn-lg"
+                                data-cod-proceso="<?= $codProceso ?>"
+                                <?= (empty($examinadores) || !$fechaExamen) ? 'disabled title="Complete la terna y la fecha antes de notificar"' : '' ?>>
+                            <i class="fa fa-envelope"></i> Notificar Estudiante
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /panel-revision-body -->
+        </div><!-- /panel-revision -->
+    </div>
+</div>
+
+<script>
+$(document).ready(function () {
+    $('#btnNotificarEstudiante').on('click', function () {
+        var codProceso = $(this).data('cod-proceso');
+        if (!codProceso) return;
+
+        if (!confirm('¿Confirma que desea notificar al estudiante sobre su examen de graduación?')) return;
+
+        $.ajax({
+            url: '/eep/examen/notificar-estudiante',
+            method: 'POST',
+            data: {
+                cod_proceso: codProceso
+            },
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.success) {
+                    toastr.success('Estudiante notificado correctamente.');
+                    setTimeout(function () { location.reload(); }, 1500);
+                } else {
+                    toastr.error(resp.message || 'Error al notificar al estudiante.');
+                }
+            },
+            error: function () {
+                toastr.error('Error de conexión. Inténtelo de nuevo.');
+            }
+        });
+    });
+});
+</script>

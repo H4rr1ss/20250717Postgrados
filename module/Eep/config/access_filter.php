@@ -439,6 +439,10 @@ return [
             'code' => 104,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
         ],
+        'notificarEstudiante' => [
+            'code' => 107,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
         'guardarRequisito' => [
             'code' => 105,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
