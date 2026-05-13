@@ -45,8 +45,14 @@ class StudentGraduationController extends AbstractActionController {
             $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
         }
         
+        $terna = null;
+        if ($proceso) {
+            $terna = $this->processManager->getTerna($proceso['cod_proceso']);
+        }
+
         return new ViewModel([
-            'proceso' => $proceso
+            'proceso' => $proceso,
+            'terna'   => $terna,
         ]);
     }
 
@@ -83,8 +89,24 @@ class StudentGraduationController extends AbstractActionController {
         return $view;
     }
 
-    public function paso2TernaAction() {
-        $view = new ViewModel([]);
+    public function paso2TernaAction()
+    {
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return $this->redirect()->toRoute('auth', ['action' => 'login']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return $this->redirect()->toRoute('student-graduation', ['action' => 'index']);
+        }
+
+        $terna = $this->processManager->getTerna($proceso['cod_proceso']);
+
+        $view = new ViewModel([
+            'proceso' => $proceso,
+            'terna'   => $terna,
+        ]);
         $view->setTemplate('eep/student-graduation/partial/paso2-terna');
         return $view;
     }

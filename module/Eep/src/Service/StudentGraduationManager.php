@@ -233,6 +233,8 @@ class StudentGraduationManager
         $sqlProceso = 'SELECT
                 ep.cod_proceso,
                 ep.cod_usuario,
+                u.nombres,
+                u.apellidos,
                 et.cod_tipo_examen,
                 et.nombre AS tipo_examen,
                 ep.fecha_solicitud,
@@ -240,6 +242,7 @@ class StudentGraduationManager
                 ep.cancelado
             FROM examen_proceso ep
             JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+            JOIN usuario u ON u.cod_usuario = ep.cod_usuario
             WHERE ep.cod_usuario = :usuario
               AND ep.cancelado = 0
             ORDER BY ep.fecha_solicitud DESC
@@ -357,5 +360,49 @@ class StudentGraduationManager
                 ORDER BY erd.orden_display ASC";
 
         return $this->execute($sql, ['proceso' => $codProceso, 'paso' => $codPaso, 'tipo' => $codTipoExamen]);
+    }
+
+    /**
+     * Obtiene la terna de examinadores y la programación del examen para un proceso.
+     */
+    public function getTerna(int $codProceso): array
+    {
+        $sqlTerna = 'SELECT
+                        nombre_examinador,
+                        numero_colegiado,
+                        correo,
+                        tipo_examinador,
+                        posicion
+                    FROM examen_terna
+                    WHERE cod_proceso = :proceso';
+
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
+
+        $sqlProceso = 'SELECT fecha_examen, hora_inicio_examen
+                       FROM examen_proceso
+                       WHERE cod_proceso = :proceso
+                       LIMIT 1';
+        $resProceso = $this->execute($sqlProceso, ['proceso' => $codProceso]);
+        $prog = $resProceso[0] ?? ['fecha_examen' => null, 'hora_inicio_examen' => null];
+
+        $terna = [
+            'examinadores' => [],
+            'programacion' => [
+                'fecha' => $prog['fecha_examen'],
+                'hora'  => $prog['hora_inicio_examen'],
+            ],
+        ];
+
+        foreach ($rows as $row) {
+            $terna['examinadores'][] = [
+                'nombre'    => $row['nombre_examinador'],
+                'colegiado' => $row['numero_colegiado'],
+                'correo'    => $row['correo'],
+                'tipo'      => $row['tipo_examinador'],
+                'posicion'  => $row['posicion'],
+            ];
+        }
+
+        return $terna;
     }
 }
