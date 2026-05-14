@@ -19,6 +19,12 @@ $this->headTitle('Progreso del Proceso de Graduación');
     </div>
 
     <?php if ($proceso): ?>
+        <?php
+            $pasoActualOrden = $proceso['paso_actual_orden'] ?? 0;
+            $procesoFinalizado = empty($proceso['cod_paso_actual']);
+        ?>
+
+        <?php if (!$procesoFinalizado): ?>
         <!-- Panel azul: fases de progreso -->
         <div class="panel panel-blue">
             <div class="panel-heading">Progreso del Proceso de Graduación - <?= $this->escapeHtml($proceso['tipo_examen']) ?></div>
@@ -86,6 +92,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
 
             </div><!-- /panel-body -->
         </div><!-- /panel-blue -->
+        <?php endif; ?>
 
         <!-- Panel verde: tabla resumen -->
         <div class="panel panel-green">
@@ -151,11 +158,10 @@ $this->headTitle('Progreso del Proceso de Graduación');
             </div>
         </div><!-- /panel-green -->
 
-
         <?php
-            // Mostrar bloque resumen final cuando el estudiante está en terna (paso 3) o notificación (paso 4)
-            $pasoActualOrden = $proceso['paso_actual_orden'] ?? 0;
-            if ($pasoActualOrden >= 3):
+            // Mostrar bloque resumen final cuando el estudiante está en terna (paso 3),
+            // notificación (paso 4) o cuando el proceso ya fue completado (cod_paso_actual = NULL)
+            if ($pasoActualOrden >= 3 || $procesoFinalizado):
                 // Recopilar datos de pasos para el resumen
                 $infoPasos = [];
                 foreach ($proceso['pasos'] as $p) {

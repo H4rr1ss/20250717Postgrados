@@ -94,22 +94,48 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                         <tbody>
                             
                             <?php foreach ($this->procesos as $p): ?>
+                            <?php
+                                $estadoPaso = $p['estado_paso'] ?? 'pendiente';
+                                $labelClass = 'default';
+                                $labelTexto = ucfirst($estadoPaso);
+                                switch ($estadoPaso) {
+                                    case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
+                                    case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
+                                    case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado';  break;
+                                    case 'pendiente':   $labelClass = 'default'; $labelTexto = 'Pendiente';  break;
+                                }
+                                $completado = ($estadoPaso === 'completado');
+                            ?>
                             <tr>
                                 <td><?= $this->escapeHtml($p['registro_academico']) ?></td>
                                 <td><?= $this->escapeHtml($p['nombres'] . ' ' . $p['apellidos']) ?></td>
                                 <td><?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?></td>
                                 <td>
-                                    <span class="label label-<?= ($p['estado_paso'] == 'activo' ? 'success' : ($p['estado_paso'] == 'pendiente' ? 'default' : 'warning')) ?>" style="font-size: 14px; font-weight: 700;">
-                                        <?= $p['estado_paso'] === 'en_progreso' ? 'En progreso' : ucfirst($p['estado_paso']) ?>
+                                    <span class="label label-<?= $labelClass ?>" style="font-size: 14px; font-weight: 700;">
+                                        <?= $labelTexto ?>
                                     </span>
                                 </td>
                                 <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => $p['cod_proceso']]) ?>?paso=<?= (int)($p['numero_orden'] ?? 1) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
+                                    <?php if ($completado): ?>
+                                        <span class="btn-accion-sol" style="background-color:#ccc; cursor:not-allowed; opacity:0.6;" title="Proceso completado">
+                                            <i class="fa fa-eye"></i>
+                                        </span>
+                                    <?php else: ?>
+                                        <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => $p['cod_proceso']]) ?>?paso=<?= (int)($p['numero_orden'] ?? 1) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                                 <td style="text-align: center;">
-                                    <button class="btn-accion-sol btn-info-sol" title="Ver Detalle">
+                                    <button class="btn-accion-sol btn-info-sol"
+                                        data-completado="<?= $completado ? '1' : '0' ?>"
+                                        data-carne="<?= $this->escapeHtmlAttr($p['registro_academico']) ?>"
+                                        data-nombre="<?= $this->escapeHtmlAttr($p['nombres'] . ' ' . $p['apellidos']) ?>"
+                                        data-fecha="<?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?>"
+                                        data-tipo="<?= $this->escapeHtmlAttr($p['tipo_examen'] ?? '') ?>"
+                                        data-estado="<?= $labelTexto ?>"
+                                        data-fecha-completado="<?= !empty($p['fecha_completado']) ? date('d/m/Y', strtotime($p['fecha_completado'])) : '' ?>"
+                                        title="Ver Detalle">
                                         <i class="fa fa-info-circle"></i>
                                     </button>
                                 </td>
@@ -167,11 +193,12 @@ $this->headTitle('Gestión de Solicitudes de Examen');
 
 <script>
 $(document).ready(function() {
+    var codTipoExamen = '<?= (int)($this->filtros['cod_tipo_examen'] ?? 0) ?>';
     function aplicarFiltros() {
         var carne = $('#buscarSolicitud').val();
         var estado = $('#filtroEstado').val();
         var url = '<?= $this->url('examen', ['action' => 'solicitudes']) ?>';
-        window.location.href = url + '?carne=' + carne + '&estado=' + estado;
+        window.location.href = url + '?carne=' + encodeURIComponent(carne) + '&estado=' + encodeURIComponent(estado) + (codTipoExamen ? '&cod_tipo_examen=' + codTipoExamen : '');
     }
 
     $('#filtroEstado').on('change', aplicarFiltros);
@@ -181,33 +208,83 @@ $(document).ready(function() {
 });
 </script>
 
-<!-- Modal para Revisar Solicitud -->
-<div class="modal fade" id="modalRevisarSolicitud" tabindex="-1" role="dialog" aria-labelledby="modalRevisarSolicitudLabel">
-    <div class="modal-dialog modal-lg" role="document">
+<!-- Modal Detalle Solicitud -->
+<div class="modal fade" id="modalDetalleSolicitud" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header" id="modalDetalleHeader">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title" id="modalRevisarSolicitudLabel">Revisar Solicitud de Examen</h4>
+                <h4 class="modal-title" id="modalDetalleTitulo">Detalle de Solicitud</h4>
             </div>
             <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-12">
-                        <h5><strong>Información del Estudiante</strong></h5>
-                        <p><strong>Carné:</strong> <span id="detalleCarne">202103728</span></p>
-                        <p><strong>Nombre:</strong> <span id="detalleNombre">Juan Pérez López</span></p>
-                        <p><strong>Fecha de solicitud:</strong> <span id="detalleFecha">30/03/2025</span></p>
-                        <p><strong>Estado:</strong> <span id="detalleEstado">Pendiente</span></p>
-                    </div>
+                <!-- Bloque activo/pendiente -->
+                <div id="bloqueActivo">
+                    <table class="table table-bordered" style="font-size:13px;">
+                        <tbody>
+                            <tr>
+                                <th style="width:35%; background:#f5f5f5;">Estudiante</th>
+                                <td id="detalleNombre"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Carné</th>
+                                <td id="detalleCarne"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Tipo de Examen</th>
+                                <td id="detalleTipo"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Solicitud</th>
+                                <td id="detalleFecha"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Estado</th>
+                                <td><span id="detalleEstado"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <hr>
-                <div class="row">
-                    <div class="col-md-12">
-                        <h5><strong>Documentos de Papelería</strong></h5>
-                        <p>Lista de documentos presentados por el estudiante...</p>
+                <!-- Bloque completado -->
+                <div id="bloqueCompletado" style="display:none;">
+                    <div style="text-align:center; padding: 10px 0 20px;">
+                        <i class="fa fa-check-circle" style="font-size:48px; color:#28a745;"></i>
+                        <h4 style="color:#28a745; margin-top:10px;">Proceso Finalizado</h4>
+                        <p class="text-muted">Este proceso de graduación ha sido completado exitosamente.</p>
                     </div>
+                    <table class="table table-bordered" style="font-size:13px;">
+                        <tbody>
+                            <tr>
+                                <th style="width:35%; background:#f5f5f5;">Estudiante</th>
+                                <td id="resNombre"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Carné</th>
+                                <td id="resCarne"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Tipo de Examen</th>
+                                <td id="resTipo"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Solicitud</th>
+                                <td id="resFecha"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Completado</th>
+                                <td id="resFechaCompletado"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Estado</th>
+                                <td><span class="label label-success" style="font-size:13px;">Completado</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -348,16 +425,41 @@ $(document).ready(function() {
     
     // Abrir modal de detalle
     $('.btn-info-sol').on('click', function() {
-        var fila = $(this).closest('tr');
-        var carne = fila.find('td:eq(0)').text();
-        var fecha = fila.find('td:eq(1)').text();
-        var estado = fila.find('td:eq(2)').text();
-        
-        $('#detalleCarne').text(carne);
-        $('#detalleFecha').text(fecha);
-        $('#detalleEstado').text(estado);
-        
-        $('#modalRevisarSolicitud').modal('show');
+        var completado = $(this).data('completado') == '1';
+        var carne  = $(this).data('carne');
+        var nombre = $(this).data('nombre');
+        var fecha  = $(this).data('fecha');
+        var tipo   = $(this).data('tipo');
+        var estado = $(this).data('estado');
+
+        if (completado) {
+            $('#modalDetalleTitulo').text('Resumen del Proceso');
+            $('#bloqueActivo').hide();
+            $('#bloqueCompletado').show();
+            $('#resNombre').text(nombre);
+            $('#resCarne').text(carne);
+            $('#resTipo').text(tipo || '-');
+            $('#resFecha').text(fecha);
+            $('#resFechaCompletado').text($(this).data('fecha-completado') || '-');
+        } else {
+            $('#modalDetalleTitulo').text('Detalle de Solicitud');
+            $('#bloqueActivo').show();
+            $('#bloqueCompletado').hide();
+            $('#detalleCarne').text(carne);
+            $('#detalleNombre').text(nombre);
+            $('#detalleFecha').text(fecha);
+            $('#detalleTipo').text(tipo || '-');
+            var estadoClases = {
+                'Completado':  'label-success',
+                'En progreso': 'label-warning',
+                'Rechazado':   'label-danger',
+                'Pendiente':   'label-default'
+            };
+            var estadoClass = estadoClases[estado] || 'label-default';
+            $('#detalleEstado').html('<span class="label ' + estadoClass + '" style="font-size:13px;">' + estado + '</span>');
+        }
+
+        $('#modalDetalleSolicitud').modal('show');
     });
     
     // Aprobar solicitud

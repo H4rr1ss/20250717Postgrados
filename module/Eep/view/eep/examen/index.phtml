@@ -58,7 +58,7 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                                         </a>
                                     </td>
                                     <td style="text-align: center;">
-                                        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
+                                        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= $tipo['cod_tipo_examen'] ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
                                             <i class="fa fa-eye"></i>
                                         </a>
                                     </td>

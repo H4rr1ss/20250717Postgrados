@@ -448,13 +448,16 @@ class ExamenController extends AbstractActionController {
      * Retorna JSON para manejo vía AJAX.
      */
     public function notificarEstudianteAction() {
+        $userId = $this->layout()->role->getCode();
         $request = $this->getRequest();
         if (!$request->isPost()) {
             return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
         }
 
-        $userId     = $this->layout()->role->getUserCode();
         $codProceso = (int) $request->getPost('cod_proceso');
+
+        error_log("DEBUG primero: ".print_r($userId1, true));
+        error_log("DEBUG segundo: ".print_r($userId2, true));
 
         if ($codProceso <= 0) {
             return new JsonModel(['success' => false, 'message' => 'Identificador de proceso inválido']);
@@ -464,12 +467,12 @@ class ExamenController extends AbstractActionController {
             $advanced = $this->examenManager->avanzarPaso($codProceso, $userId);
 
             if ($advanced) {
-                $this->examenManager->registrarHistorial([
-                    'cod_proceso' => $codProceso,
-                    'cod_usuario' => $userId,
-                    'tipo_evento' => 'notificacion_estudiante',
-                    'descripcion' => 'Estudiante notificado y paso 4 cerrado',
-                ]);
+                // $this->examenManager->registrarHistorial([
+                //     'cod_proceso' => $codProceso,
+                //     'cod_usuario' => $userId,
+                //     'tipo_evento' => 'notificacion_estudiante',
+                //     'descripcion' => 'Estudiante notificado y paso 4 cerrado',
+                // ]);
 
                 return new JsonModel(['success' => true, 'message' => 'Estudiante notificado y proceso cerrado correctamente']);
             }
@@ -644,14 +647,16 @@ class ExamenController extends AbstractActionController {
         }
 
         // Listado de solicitudes (Paginado)
-        $pagina = (int) $this->params()->fromQuery('page', 1);
-        $estado = $this->params()->fromQuery('estado', null);
-        $carne  = $this->params()->fromQuery('carne', null);
+        $pagina        = (int) $this->params()->fromQuery('page', 1);
+        $estado        = $this->params()->fromQuery('estado', null);
+        $carne         = $this->params()->fromQuery('carne', null);
+        $codTipoExamen = (int) $this->params()->fromQuery('cod_tipo_examen', 0) ?: null;
 
         $procesos = $this->examenManager->getProcesos([
-            'pagina' => $pagina,
-            'limite' => 10,
-            'estado' => $estado
+            'pagina'          => $pagina,
+            'limite'          => 10,
+            'estado'          => $estado,
+            'cod_tipo_examen' => $codTipoExamen,
         ]);
 
         return new ViewModel([
@@ -663,8 +668,9 @@ class ExamenController extends AbstractActionController {
                 'paginas_total' => $procesos['paginas_total'],
             ],
             'filtros'  => [
-                'estado' => $estado,
-                'carne'  => $carne
+                'estado'          => $estado,
+                'carne'           => $carne,
+                'cod_tipo_examen' => $codTipoExamen,
             ]
         ]);
     }

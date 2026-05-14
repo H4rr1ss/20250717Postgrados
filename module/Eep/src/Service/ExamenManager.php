@@ -265,15 +265,21 @@ class ExamenManager
     // Funcion para obtener datos genericos de procesos de examen con filtros y paginación.
     public function getProcesos(array $filtros = []): array
     {
-        $pagina = $filtros['pagina'] ?? 1;
-        $limite = $filtros['limite'] ?? 20;
-        $estado = $filtros['estado'] ?? null;
+        $pagina        = $filtros['pagina'] ?? 1;
+        $limite        = $filtros['limite'] ?? 20;
+        $estado        = $filtros['estado'] ?? null;
+        $codTipoExamen = $filtros['cod_tipo_examen'] ?? null;
 
         $offset = ($pagina - 1) * $limite;
 
         $whereEstado = '';
         if ($estado) {
             $whereEstado = 'AND ep.estado = :estado';
+        }
+
+        $whereTipo = '';
+        if ($codTipoExamen) {
+            $whereTipo = 'AND ep.cod_tipo_examen = :cod_tipo_examen';
         }
 
         $sql = "SELECT
@@ -287,8 +293,16 @@ class ExamenManager
                     ep.fecha_solicitud,
                     ep.cod_paso_actual,
                     epc.numero_orden,
-                    COALESCE(epp.estado, 'pendiente') AS estado_paso,
-                    ep.cancelado
+                    CASE
+                        WHEN ep.cod_paso_actual IS NULL THEN 'completado'
+                        ELSE COALESCE(epp.estado, 'pendiente')
+                    END AS estado_paso,
+                    ep.cancelado,
+                    (
+                        SELECT MAX(epp2.fecha_completado)
+                        FROM examen_proceso_paso epp2
+                        WHERE epp2.cod_proceso = ep.cod_proceso
+                    ) AS fecha_completado
                 FROM examen_proceso ep
                 JOIN usuario u ON u.cod_usuario = ep.cod_usuario
                 JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
@@ -297,12 +311,16 @@ class ExamenManager
                     AND epp.cod_paso = ep.cod_paso_actual
                 WHERE ep.cancelado = 0
                 $whereEstado
+                $whereTipo
                 ORDER BY ep.fecha_solicitud DESC
                 LIMIT $limite OFFSET $offset";
 
         $params = [];
         if ($estado) {
             $params['estado'] = $estado;
+        }
+        if ($codTipoExamen) {
+            $params['cod_tipo_examen'] = $codTipoExamen;
         }
 
         $procesos = $this->execute($sql, $params);
@@ -311,7 +329,8 @@ class ExamenManager
         $sqlCount = "SELECT COUNT(*) AS total
                      FROM examen_proceso ep
                      WHERE ep.cancelado = 0
-                     $whereEstado";
+                     $whereEstado
+                     $whereTipo";
 
         $countResult = $this->execute($sqlCount, $params);
         $total = $countResult[0]['total'] ?? 0;

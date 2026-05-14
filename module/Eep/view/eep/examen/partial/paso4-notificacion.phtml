@@ -148,22 +148,23 @@ $(document).ready(function () {
         if (!confirm('¿Confirma que desea notificar al estudiante sobre su examen de graduación?')) return;
 
         $.ajax({
-            url: '/eep/examen/notificar-estudiante',
+            url: '/examen/notificar-estudiante',
             method: 'POST',
             data: {
                 cod_proceso: codProceso
             },
             dataType: 'json',
             success: function (resp) {
+                console.log('Respuesta del servidor:', resp);
                 if (resp.success) {
-                    toastr.success('Estudiante notificado correctamente.');
-                    setTimeout(function () { location.reload(); }, 1500);
+                    alert('Estudiante notificado correctamente.');
+                    location.reload();
                 } else {
-                    toastr.error(resp.message || 'Error al notificar al estudiante.');
+                    alert(resp.message || 'Error al notificar al estudiante.');
                 }
             },
             error: function () {
-                toastr.error('Error de conexión. Inténtelo de nuevo.');
+                alert('Error de conexión. Inténtelo de nuevo.');
             }
         });
     });
