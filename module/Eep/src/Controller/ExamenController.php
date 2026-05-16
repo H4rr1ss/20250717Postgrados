@@ -7,6 +7,7 @@ use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
 // SERVICES
 use Eep\Service\ExamenManager;
+use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\LogManager as LM;
 
 class ExamenController extends AbstractActionController {
@@ -17,12 +18,17 @@ class ExamenController extends AbstractActionController {
     private $examenManager;
 
     /**
-     * Constructor para inyectar ExamenManager
-     * T-11
+     * @var CartaExaminadoresManager
      */
-    public function __construct(ExamenManager $examenManager)
+    private $cartaManager;
+
+    /**
+     * Constructor para inyectar ExamenManager y CartaExaminadoresManager.
+     */
+    public function __construct(ExamenManager $examenManager, CartaExaminadoresManager $cartaManager)
     {
         $this->examenManager = $examenManager;
+        $this->cartaManager  = $cartaManager;
     }
 
     public function indexAction() {
@@ -595,30 +601,32 @@ class ExamenController extends AbstractActionController {
 
             $estados = [
                 1 => [
-                    'titulo' => 'Revisión de Papelería',
+                    'titulo'    => 'Revisión de Papelería',
                     'subtitulo' => 'Sin fecha',
-                    'partial' => 'eep/examen/partial/paso1-papeleria'
+                    'partial'   => 'eep/examen/partial/paso1-papeleria',
                 ],
                 2 => [
-                    'titulo' => 'Entrega de Papelería',
+                    'titulo'    => 'Entrega de Papelería',
                     'subtitulo' => 'Sin fecha',
-                    'partial' => 'eep/examen/partial/paso2-documentacion'
+                    'partial'   => 'eep/examen/partial/paso2-documentacion',
                 ],
                 3 => [
-                    'titulo' => 'Terna Examinadora',
+                    'titulo'    => 'Terna Examinadora',
                     'subtitulo' => 'Sin fecha',
-                    'partial' => 'eep/examen/partial/paso3-terna'
+                    'partial'   => 'eep/examen/partial/paso3-terna',
                 ],
                 4 => [
-                    'titulo' => 'Notificación',
+                    'titulo'    => 'Notificación',
                     'subtitulo' => 'Sin fecha',
-                    'partial' => 'eep/examen/partial/paso4-notificacion'
+                    'partial'   => 'eep/examen/partial/paso4-notificacion',
                 ],
             ];
 
             if (!empty($fechas)){
+                $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
                 foreach ($estados as $num => &$e) {
-                    $e['subtitulo'] = isset($fechas[$num]) ? date('d/m/Y', strtotime($fechas[$num])) : 'Sin fecha';
+                    $key = $faseActual . '_' . $num;
+                    $e['subtitulo'] = isset($fechas[$key]) ? date('d/m/Y', strtotime($fechas[$key])) : 'Sin fecha';
                 }
                 unset($e);
             }
@@ -634,13 +642,13 @@ class ExamenController extends AbstractActionController {
             $terna = $this->examenManager->getTerna($idProceso);
 
             $vm = new ViewModel([
-                'proceso'     => $proceso,
-                'estudiante'  => $estudiante,
-                'paso'        => $paso,
-                'estados'     => $estados,
-                'docsDigitales'  => $documentos,
-                'docsFisicos' => $docsFisicos,
-                'terna'       => $terna
+                'proceso'       => $proceso,
+                'estudiante'    => $estudiante,
+                'paso'          => $paso,
+                'estados'       => $estados,
+                'docsDigitales' => $documentos,
+                'docsFisicos'   => $docsFisicos,
+                'terna'         => $terna,
             ]);
             $vm->setTemplate('eep/examen/revisarpapeleria');
             return $vm;
@@ -675,4 +683,64 @@ class ExamenController extends AbstractActionController {
         ]);
     }
 
+    // 4. CARTA DE EXAMINADORES --------------------------------
+    /**
+     * Lista los procesos que se encuentran en el paso 5 (Carta de Examinadores).
+     * Desde aquí el director/coordinador accede al detalle de cada proceso
+     * a través de examen/ver-carta/{id}.
+     */
+    public function cartaExaminadoresAction()
+    {
+        $pagina        = (int) $this->params()->fromQuery('page', 1);
+        $codTipoExamen = (int) $this->params()->fromQuery('cod_tipo_examen', 0) ?: null;
+
+        $resultado = $this->examenManager->getProcesos([
+            'pagina'          => $pagina,
+            'limite'          => 15,
+            'numero_paso'     => 5,
+            'cod_tipo_examen' => $codTipoExamen,
+        ]);
+
+        return new ViewModel([
+            'procesos'   => $resultado['procesos'],
+            'paginacion' => [
+                'total'         => $resultado['total'],
+                'pagina'        => $resultado['pagina'],
+                'limite'        => $resultado['limite'],
+                'paginas_total' => $resultado['paginas_total'],
+            ],
+            'filtros' => [
+                'cod_tipo_examen' => $codTipoExamen,
+            ],
+        ]);
+    }
+
+    /**
+     * Vista de detalle del paso 5 para un proceso específico (staff).
+     * Ruta: /examen/ver-carta/{id}
+     */
+    public function verCartaAction()
+    {
+        $idProceso = (int) $this->params()->fromRoute('id', 0);
+        if ($idProceso <= 0) {
+            return $this->redirect()->toRoute('examen', ['action' => 'carta-examinadores']);
+        }
+
+        $proceso = $this->examenManager->getProceso($idProceso);
+        if (!$proceso) {
+            $this->flashMessenger()->addErrorMessage('Proceso no encontrado.');
+            return $this->redirect()->toRoute('examen', ['action' => 'carta-examinadores']);
+        }
+
+        $this->cartaManager->iniciarPasoCarta($idProceso);
+
+        return new ViewModel([
+            'proceso'     => $proceso,
+            'cicloActual' => $this->cartaManager->getCicloActual($idProceso),
+            'evidencias'  => $this->cartaManager->getEvidenciasPlanas($idProceso),
+            'carta'       => $this->cartaManager->getCartaPorProceso($idProceso),
+        ]);
+    }
+
 }
+

@@ -1,8 +1,8 @@
 FROM php:7.4-apache
 
 RUN apt-get update \
- && apt-get install -y git zlib1g-dev libzip-dev libxml2-dev \
- && docker-php-ext-install zip soap pdo pdo_mysql \
+ && apt-get install -y git zlib1g-dev libzip-dev libxml2-dev libpng-dev libjpeg-dev \
+ && docker-php-ext-install zip soap pdo pdo_mysql gd \
  && a2enmod rewrite \
  && sed -i 's!/var/www/html!/var/www/public!g' /etc/apache2/sites-available/000-default.conf \
  && mkdir -p /var/www/public \
@@ -13,6 +13,6 @@ RUN apt-get update \
  && chmod -R 755 /var/www/data/sessiones \
  && chmod 775 /var/www/public/archivos \
  && curl -sS https://getcomposer.org/installer \
-  | php -- --install-dir=/usr/local/bin --filename=composer --1
+  | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /var/www

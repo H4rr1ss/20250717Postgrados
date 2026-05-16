@@ -45,6 +45,7 @@ class StudentGraduationManager
                     ep.cod_paso_actual,
                     epc.nombre             AS nombre_paso_actual,
                     epc.numero_orden,
+                    epc.fase               AS fase_paso_actual,
                     COALESCE(epp.estado, "pendiente") AS estado_paso,
                     ep.cancelado
                 FROM examen_proceso ep
@@ -260,6 +261,8 @@ class StudentGraduationManager
         $sqlPasos = 'SELECT
                 epc.cod_paso,
                 epc.numero_orden,
+                epc.fase,
+                epc.template_parcial,
                 epc.nombre,
                 epc.es_ultimo_paso,
                 COALESCE(epp.estado, "pendiente") AS estado,
@@ -272,12 +275,36 @@ class StudentGraduationManager
                 AND epp.cod_proceso = :proceso
             WHERE epc.cod_tipo_examen IS NULL 
                OR epc.cod_tipo_examen = :tipo_examen
-            ORDER BY epc.numero_orden ASC';
+            ORDER BY FIELD(epc.fase, "examen_privado", "carta_examinadores", "examen_general"),
+                     epc.numero_orden ASC';
 
         $pasos = $this->execute($sqlPasos, [
             'proceso' => $proceso['cod_proceso'],
             'tipo_examen' => $proceso['cod_tipo_examen']
         ]);
+
+        // Determinar la fase actual del proceso para filtrar pasos visibles.
+        // Solo se muestran las fases ya alcanzadas — el estudiante no debe ver
+        // fases futuras que todavía no le corresponden.
+        $faseOrden = ['examen_privado' => 1, 'carta_examinadores' => 2, 'examen_general' => 3];
+
+        // Detectar la fase donde está actualmente (o la última si ya finalizó)
+        $faseActual = 'examen_privado'; // default
+        foreach ($pasos as $p) {
+            if ($p['cod_paso'] == $proceso['cod_paso_actual']) {
+                $faseActual = $p['fase'];
+                break;
+            }
+        }
+        // Si el proceso finalizó (cod_paso_actual = NULL), mostrar todo
+        if (empty($proceso['cod_paso_actual'])) {
+            $faseActual = 'examen_general';
+        }
+
+        $nivelFaseActual = $faseOrden[$faseActual] ?? 1;
+        $pasos = array_values(array_filter($pasos, function ($p) use ($faseOrden, $nivelFaseActual) {
+            return ($faseOrden[$p['fase']] ?? 99) <= $nivelFaseActual;
+        }));
 
         // Calcular el progreso total
         $totalPasos = count($pasos);

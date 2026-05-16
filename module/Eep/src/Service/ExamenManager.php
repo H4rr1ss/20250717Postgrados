@@ -47,6 +47,7 @@ class ExamenManager
         $sqlPaso = 'SELECT cod_paso 
                     FROM examen_paso_catalogo 
                     WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
+                      AND fase = \'examen_privado\'
                       AND numero_orden = 1 
                       AND activo = 1 
                     LIMIT 1';
@@ -97,6 +98,7 @@ class ExamenManager
     public function getFechasPasosCompletado(int $codProceso): array
     {
         $sql = 'SELECT epc.numero_orden,
+                       epc.fase,
                        epp.fecha_completado
                 FROM examen_proceso_paso epp
                 INNER JOIN examen_paso_catalogo epc ON epc.cod_paso = epp.cod_paso
@@ -106,10 +108,13 @@ class ExamenManager
 
         $rows = $this->execute($sql, ['proceso' => $codProceso]);
 
-        // Indexar por numero_orden para acceso directo desde el controlador
+        // Indexar por "fase_numeroOrden" para evitar colisión cuando privado y
+        // general comparten el mismo numero_orden (1-4).
+        // Ej: ['examen_privado_1' => '2026-03-01', 'examen_general_1' => '2026-04-10']
         $result = [];
         foreach ($rows as $row) {
-            $result[$row['numero_orden']] = $row['fecha_completado'];
+            $key = $row['fase'] . '_' . $row['numero_orden'];
+            $result[$key] = $row['fecha_completado'];
         }
         return $result;
     }
@@ -132,6 +137,7 @@ class ExamenManager
                     ep.cod_paso_actual,
                     epc.nombre             AS nombre_paso_actual,
                     epc.numero_orden,
+                    epc.fase               AS fase_paso_actual,
                     COALESCE(epp.estado, "pendiente") AS estado_paso,
                     ep.cancelado
                 FROM examen_proceso ep
@@ -269,6 +275,7 @@ class ExamenManager
         $limite        = $filtros['limite'] ?? 20;
         $estado        = $filtros['estado'] ?? null;
         $codTipoExamen = $filtros['cod_tipo_examen'] ?? null;
+        $numeroPaso    = isset($filtros['numero_paso']) ? (int) $filtros['numero_paso'] : null;
 
         $offset = ($pagina - 1) * $limite;
 
@@ -280,6 +287,11 @@ class ExamenManager
         $whereTipo = '';
         if ($codTipoExamen) {
             $whereTipo = 'AND ep.cod_tipo_examen = :cod_tipo_examen';
+        }
+
+        $wherePaso = '';
+        if ($numeroPaso !== null) {
+            $wherePaso = 'AND epc.numero_orden = :numero_paso';
         }
 
         $sql = "SELECT
@@ -312,6 +324,7 @@ class ExamenManager
                 WHERE ep.cancelado = 0
                 $whereEstado
                 $whereTipo
+                $wherePaso
                 ORDER BY ep.fecha_solicitud DESC
                 LIMIT $limite OFFSET $offset";
 
@@ -322,15 +335,20 @@ class ExamenManager
         if ($codTipoExamen) {
             $params['cod_tipo_examen'] = $codTipoExamen;
         }
+        if ($numeroPaso !== null) {
+            $params['numero_paso'] = $numeroPaso;
+        }
 
         $procesos = $this->execute($sql, $params);
 
         // Contar total para paginación
         $sqlCount = "SELECT COUNT(*) AS total
                      FROM examen_proceso ep
+                     LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                      WHERE ep.cancelado = 0
                      $whereEstado
-                     $whereTipo";
+                     $whereTipo
+                     $wherePaso";
 
         $countResult = $this->execute($sqlCount, $params);
         $total = $countResult[0]['total'] ?? 0;
@@ -738,13 +756,13 @@ class ExamenManager
 
         $codPasoActual = $resValidar[0]['cod_paso_actual'];
 
-        // 1. Obtener el orden del paso actual
-        $sqlActual = 'SELECT cod_tipo_examen, numero_orden FROM examen_paso_catalogo WHERE cod_paso = :paso';
+        // 1. Obtener el orden y fase del paso actual
+        $sqlActual = 'SELECT cod_tipo_examen, numero_orden, fase FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
         if (empty($resActual)) return false;
-        error_log("DEBUG RESPUESTA DE QUERY: ".print_r($resActual, true));
-        $tipoExamen = $resActual[0]['cod_tipo_examen']; // puede ser NULL
+        $tipoExamen  = $resActual[0]['cod_tipo_examen'];
         $ordenActual = $resActual[0]['numero_orden'];
+        $faseActual  = $resActual[0]['fase'];
 
         // 2. Cerrar el paso actual
         $sqlCerrar = 'UPDATE examen_proceso_paso 
@@ -759,12 +777,43 @@ class ExamenManager
             'usuario' => $userAdminId
         ])->execute();
 
-        // 3. Buscar el siguiente paso en el orden
-        $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo 
-                         WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
-                           AND numero_orden = :siguiente 
-                           AND activo = 1';
-        $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
+        // 3. Determinar el siguiente paso según la fase actual
+        //    - examen_privado  paso 1-3 → mismo fase, numero_orden + 1
+        //    - examen_privado  paso 4   → carta_examinadores (su único paso)
+        //    - carta_examinadores       → examen_general, numero_orden = 1
+        //    - examen_general  paso 1-3 → mismo fase, numero_orden + 1
+        //    - examen_general  paso 4   → fin del proceso
+        if ($faseActual === 'examen_privado' && $ordenActual < 4) {
+            $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
+                             WHERE fase = "examen_privado"
+                               AND numero_orden = :siguiente
+                               AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
+                               AND activo = 1 LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
+        } elseif ($faseActual === 'examen_privado' && $ordenActual === 4) {
+            $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
+                             WHERE fase = "carta_examinadores"
+                               AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
+                               AND activo = 1 LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen]);
+        } elseif ($faseActual === 'carta_examinadores') {
+            $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
+                             WHERE fase = "examen_general"
+                               AND numero_orden = 1
+                               AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
+                               AND activo = 1 LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen]);
+        } elseif ($faseActual === 'examen_general' && $ordenActual < 4) {
+            $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
+                             WHERE fase = "examen_general"
+                               AND numero_orden = :siguiente
+                               AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
+                               AND activo = 1 LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
+        } else {
+            // examen_general paso 4 → fin
+            $resSiguiente = [];
+        }
 
         if (!empty($resSiguiente)) {
             $codSiguiente = $resSiguiente[0]['cod_paso'];

@@ -21,6 +21,10 @@ use Eep\Service\Factory\CohortManagerFactory;use Eep\Service\ExamenManager;
 use Eep\Service\Factory\ExamenManagerFactory;
 use Eep\Service\StudentGraduationManager;
 use Eep\Service\Factory\StudentGraduationManagerFactory;
+use Eep\Service\CartaExaminadoresManager;
+use Eep\Service\Factory\CartaExaminadoresManagerFactory;
+use Eep\Service\CartaGenerator;
+use Eep\Service\Factory\CartaGeneratorFactory;
 use Eep\Service\UserManager;
 use Eep\Service\Factory\UserManagerFactory;
 use Eep\Service\OrderManager;
@@ -335,6 +339,8 @@ return [
             ReportManager::class => ReportManagerFactory::class,
             SatuManager::class => SatuManagerFactory::class,
             StudentGraduationManager::class => StudentGraduationManagerFactory::class,
+            CartaExaminadoresManager::class => CartaExaminadoresManagerFactory::class,
+            CartaGenerator::class => CartaGeneratorFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
         ],

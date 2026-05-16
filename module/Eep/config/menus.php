@@ -140,9 +140,19 @@ return [//ICON, MENU text
     View::EXAMEN => [
         'controller' => 'examen',
         'action' => 'index',
-        'icon' => 'fa-graduation-cap',
+        'icon' => 'fa-list-alt',
         'text' => 'Gestión de Exámenes',
-        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]],
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::CARTA_EXAMINADORES => [
+        'controller' => 'examen',
+        'action' => 'carta-examinadores',
+        'icon' => 'fa-envelope-o',
+        'text' => 'Carta de Examinadores',
+        'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
     View::STUDENT_GRADUATION => [
         'controller' => 'student-graduation',
         'action' => 'index',

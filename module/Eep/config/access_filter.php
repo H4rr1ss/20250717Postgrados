@@ -451,6 +451,15 @@ return [
             'code' => 106,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'cartaExaminadores' => [
+            'code' => 68,
+            'view' => View::CARTA_EXAMINADORES,
+            'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
+        ],
+        'verCarta' => [
+            'code' => 68,
+            'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
+        ],
     ],
     StudentGraduationController::class => [
         'index' => [
@@ -481,6 +490,32 @@ return [
         'verDocumento' => [
             'code' => 85,
             'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
+        // ---- Paso 5: Carta de Examinadores ----
+        'paso5CartaExaminadores' => [
+            'code' => 68,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE, Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'subirEvidencia' => [
+            'code' => 70,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'aprobarTrabajo' => [
+            'code' => 71,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'descargarCarta' => [
+            'code' => 72,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE, Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarEvidencia' => [
+            'code' => 74,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
         ],
     ],
 ];

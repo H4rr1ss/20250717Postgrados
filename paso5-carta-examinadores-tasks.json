@@ -1,0 +1,114 @@
+{
+  "proyecto": "Paso 5 - Carta de Examinadores",
+  "descripcion": "Implementación del paso 5 del proceso de graduación: ciclos iterativos de revisión del trabajo de graduación. El seguimiento de correcciones ocurre por CORREO EXTERNO; en la plataforma solo se guardan observaciones por ciclo y evidencias (capturas de correos). Al aprobar, se genera la carta de examinadores con PHPWord.",
+  "fecha_creacion": "2026-05-15",
+  "revision_modelo": "2026-05-15 - cambio de modelo: se eliminó la subida del PDF del trabajo corregido (riesgo de sobrecargar disco). En su lugar el coordinador adjunta capturas de correos como evidencia por ciclo.",
+  "patron_base": "StudentGraduationController + StudentGraduationManager (paso 1)",
+  "objetivo": "Llevar registro auditable del ciclo coordinador<->estudiante mediante (1) observaciones textuales por ciclo, (2) evidencias visuales adjuntas, (3) historial de ciclos. Al aprobar, generar el .docx de la carta a partir de una plantilla con merge fields.",
+
+  "modelo_datos": {
+    "examen_correccion_ciclo": "una fila por iteración de revisión (pendiente_revision -> rechazado | aprobado)",
+    "examen_correccion_evidencia": "capturas de correos asociadas a cada ciclo (jpg/png/pdf <= 5MB)",
+    "examen_carta_plantilla":  "catálogo de plantillas .docx por tipo de examen",
+    "examen_carta_examinadores": "una carta generada por proceso (estado: generada | entregada)"
+  },
+
+  "fases": [
+    {
+      "fase_id": "A",
+      "fase_nombre": "Base de datos",
+      "status": "pending",
+      "tareas": [
+        {"tarea_id": "A.1", "titulo": "Schema SQL (paso 5 + 4 tablas)", "archivos": ["database/modulo_graduacion_carta_01_schema.sql"], "status": "completed"},
+        {"tarea_id": "A.2", "titulo": "Seeds SQL (plantilla + acciones)", "archivos": ["database/modulo_graduacion_carta_02_seeds.sql"], "status": "completed"},
+        {"tarea_id": "A.3", "titulo": "CAMBIOS.md actualizado", "archivos": ["CAMBIOS.md"], "status": "completed"},
+        {"tarea_id": "A.4", "titulo": "Cargar scripts en BD (manual)", "status": "pending", "accion_manual": "docker exec -i 20250717postgrados-db-1 mysql -u user -ppassword db_postgrados < database/modulo_graduacion_carta_01_schema.sql && docker exec -i 20250717postgrados-db-1 mysql -u user -ppassword db_postgrados < database/modulo_graduacion_carta_02_seeds.sql"}
+      ]
+    },
+    {
+      "fase_id": "B",
+      "fase_nombre": "Dependencias y carpetas",
+      "status": "pending",
+      "tareas": [
+        {"tarea_id": "B.1", "titulo": "phpoffice/phpword en composer.json", "archivos": ["composer.json"], "status": "completed"},
+        {"tarea_id": "B.2", "titulo": "composer install en contenedor", "status": "pending", "accion_manual": "docker exec 20250717postgrados-web-1 composer install"},
+        {"tarea_id": "B.3", "titulo": "Carpeta de plantillas + README", "archivos": ["data/plantillas/carta-examinadores/README.md"], "status": "completed"},
+        {"tarea_id": "B.4", "titulo": "Subir plantilla(s) .docx (manual)", "archivos": ["data/plantillas/carta-examinadores/general.docx"], "status": "pending"},
+        {"tarea_id": "B.5", "titulo": "Carpeta de salida de cartas", "archivos": ["public/archivos/cartas-examinadores/.gitkeep"], "status": "completed"}
+      ]
+    },
+    {
+      "fase_id": "C",
+      "fase_nombre": "Entities y Forms",
+      "status": "skipped",
+      "nota": "Se omiten por consistencia con StudentGraduationController/Manager (arrays + $_POST/$_FILES).",
+      "tareas": []
+    },
+    {
+      "fase_id": "D",
+      "fase_nombre": "Services",
+      "status": "completed",
+      "tareas": [
+        {"tarea_id": "D.1", "titulo": "CartaExaminadoresManager", "archivos": ["module/Eep/src/Service/CartaExaminadoresManager.php"], "status": "completed", "metodos_publicos": ["iniciarPasoCarta", "registrarCorrecciones", "abrirNuevoCiclo", "aprobarTrabajo", "adjuntarEvidencia", "eliminarEvidencia", "getCicloActual", "getHistorialCiclos", "getEvidenciasPorCiclo", "getEvidenciaPorMd5", "getCartaPorProceso", "getFormatosEvidencia", "getTamanoMaxEvidenciaBytes"]},
+        {"tarea_id": "D.2", "titulo": "CartaGenerator (PHPWord)", "archivos": ["module/Eep/src/Service/CartaGenerator.php"], "status": "completed"},
+        {"tarea_id": "D.3", "titulo": "Factories + service_manager", "archivos": ["module/Eep/src/Service/Factory/CartaExaminadoresManagerFactory.php", "module/Eep/src/Service/Factory/CartaGeneratorFactory.php", "module/Eep/config/module.config.php"], "status": "completed"}
+      ]
+    },
+    {
+      "fase_id": "E",
+      "fase_nombre": "Controller, rutas, ACL",
+      "status": "completed",
+      "tareas": [
+        {"tarea_id": "E.1", "titulo": "Acciones nuevas en StudentGraduationController", "archivos": ["module/Eep/src/Controller/StudentGraduationController.php"], "status": "completed", "acciones": ["paso5CartaExaminadoresAction", "registrarCorreccionesAction", "subirEvidenciaAction", "eliminarEvidenciaAction", "abrirNuevoCicloAction", "aprobarTrabajoAction", "descargarCartaAction"]},
+        {"tarea_id": "E.2", "titulo": "Factory del controller", "archivos": ["module/Eep/src/Controller/Factory/StudentGraduationControllerFactory.php"], "status": "completed"},
+        {"tarea_id": "E.3", "titulo": "Rutas (ya cubiertas por /student-graduation[/:action])", "status": "completed"},
+        {"tarea_id": "E.4", "titulo": "ACL en access_filter.php", "archivos": ["module/Eep/config/access_filter.php"], "status": "completed"},
+        {"tarea_id": "E.5", "titulo": "Menú (no requiere ítem nuevo, se accede desde index)", "status": "completed"}
+      ]
+    },
+    {
+      "fase_id": "F",
+      "fase_nombre": "Vistas",
+      "status": "completed",
+      "tareas": [
+        {"tarea_id": "F.1", "titulo": "Partial paso5-carta-examinadores.phtml", "archivos": ["module/Eep/view/eep/student-graduation/partial/paso5-carta-examinadores.phtml"], "status": "completed"},
+        {"tarea_id": "F.2", "titulo": "Mostrar paso 5 en index del estudiante", "archivos": ["module/Eep/view/eep/student-graduation/index.phtml"], "status": "completed"}
+      ]
+    },
+    {
+      "fase_id": "G",
+      "fase_nombre": "Mantenimiento de disco",
+      "status": "skipped",
+      "nota": "Ya no aplica: las evidencias son pequeñas (capturas de correo, jpg/png/pdf ≤ 5MB) y no se versionan. Si en el futuro se ve necesario, se puede agregar un script equivalente.",
+      "tareas": []
+    },
+    {
+      "fase_id": "H",
+      "fase_nombre": "Verificación",
+      "status": "pending",
+      "tareas": [
+        {"tarea_id": "H.1", "titulo": "composer cs-check (manual)", "status": "pending", "accion_manual": "docker exec 20250717postgrados-web-1 composer cs-check"},
+        {"tarea_id": "H.2", "titulo": "Prueba end-to-end (manual)", "status": "pending"}
+      ]
+    }
+  ],
+
+  "placeholders_docx": [
+    "${estudiante_nombre}",
+    "${estudiante_carnet}",
+    "${estudiante_cui}",
+    "${titulo_trabajo}",
+    "${tipo_examen}",
+    "${fecha_examen}",
+    "${hora_examen}",
+    "${asesor_nombre}",
+    "${examinador_1_nombre}",
+    "${examinador_1_colegiado}",
+    "${examinador_2_nombre}",
+    "${examinador_2_colegiado}",
+    "${examinador_3_nombre}",
+    "${examinador_3_colegiado}",
+    "${coordinador_nombre}",
+    "${fecha_emision_carta}"
+  ]
+}

@@ -1,0 +1,7 @@
+# Cartas de examinadores generadas
+#
+# Esta carpeta contiene los archivos .docx producidos por CartaGenerator
+# (uno por proceso aprobado). No commitear los .docx generados — están
+# excluidos vía .gitignore del proyecto.
+#
+# Permisos requeridos: www-data:www-data, escritura.

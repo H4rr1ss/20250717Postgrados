@@ -39,12 +39,12 @@ $this->headTitle('Progreso del Proceso de Graduación');
 
                     <?php foreach ($proceso['pasos'] as $paso): ?>
                         <?php
-                            // Ocultar el paso de Notificación al Estudiante del proceso visible
-                            if ($paso['numero_orden'] == 4) continue;
+                            // Ocultar pasos de Notificación (aplica a examen_privado y examen_general)
+                            if (($paso['template_parcial'] ?? '') === 'paso4-notificacion') continue;
                         ?>
-                        <?php 
-                            // Mostrar solo 3 pasos (sin Notificación)
-                            $totalPasos = 3;
+                        <?php
+                            // Pasos visibles por fase: Papelería, Documentación, Terna, Carta de Examinadores
+                            $totalPasos = 4;
                             $colClass = 'col-sm-' . (12 / min($totalPasos, 4));
                             
                             // Determinar el color de la barra según el estado
@@ -70,10 +70,13 @@ $this->headTitle('Progreso del Proceso de Graduación');
                             </div>
                             
                             <?php
-                                $accionesPorPaso = [
-                                    1 => 'paso1-solicitud-examen',
+                                // Mapear por template_parcial en lugar de numero_orden
+                                // para que pasos 1 y 6 (mismo template) funcionen igual
+                                $accionesPorTemplate = [
+                                    'paso1-papeleria'          => 'paso1-solicitud-examen',
+                                    'paso5-carta-examinadores' => 'paso5-carta-examinadores',
                                 ];
-                                $accionPaso = $accionesPorPaso[$paso['numero_orden']] ?? null;
+                                $accionPaso = $accionesPorTemplate[$paso['template_parcial'] ?? ''] ?? null;
                             ?>
                             <?php if ($accionPaso && $paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
                                 <a href="<?= $this->url('student-graduation', ['action' => $accionPaso]) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
@@ -101,18 +104,20 @@ $this->headTitle('Progreso del Proceso de Graduación');
                 <table class="table table-hover table-bordered table-condensed" style="margin-bottom: 0;">
                     <thead>
                         <tr>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">#</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fase</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Paso</th>
-                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fase del Proceso</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Estado</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fecha Inicio</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fecha Completado</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($proceso['pasos'] as $paso): ?>
                             <?php
-                                // Ocultar Notificación al Estudiante de la tabla
-                                if ($paso['numero_orden'] == 4) continue;
+                                // Ocultar Notificación al Estudiante de la tabla (privado y general)
+                                if (($paso['template_parcial'] ?? '') === 'paso4-notificacion') continue;
                                 // Determinar la clase del badge según el estado
                                 $badgeClass = 'label-default';
                                 $estadoTexto = 'Pendiente';
@@ -133,9 +138,24 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 }
                                 
                                 $rowClass = ($paso['cod_paso'] == $proceso['cod_paso_actual']) ? 'info' : '';
+
+                                $faseCodigo = $paso['fase'] ?? '';
+                                $faseLabels = [
+                                    'examen_privado'      => ['label' => 'Examen Privado',   'color' => '#2980b9'],
+                                    'carta_examinadores'  => ['label' => 'Carta Examinadores','color' => '#8e44ad'],
+                                    'examen_general'      => ['label' => 'Examen General',    'color' => '#27ae60'],
+                                ];
+                                $faseInfo = $faseLabels[$faseCodigo] ?? ['label' => $faseCodigo, 'color' => '#888'];
                             ?>
                             <tr class="<?= $rowClass ?>">
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;"><?= $paso['numero_orden'] ?></td>
+                                <td style="padding: 14px 15px; font-size: 14px; text-align: center;">
+                                    <span style="display:inline-block; padding:3px 10px; border-radius:12px;
+                                                 background:<?= $faseInfo['color'] ?>22; color:<?= $faseInfo['color'] ?>;
+                                                 border:1px solid <?= $faseInfo['color'] ?>66; font-weight:600;">
+                                        <?= $this->escapeHtml($faseInfo['label']) ?>
+                                    </span>
+                                </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $this->escapeHtml($paso['nombre']) ?>
                                     <?php if ($paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
@@ -151,6 +171,16 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $paso['fecha_completado'] ? date('d/m/Y', strtotime($paso['fecha_completado'])) : '-' ?>
                                 </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <?php if (($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores' && !empty($carta)): ?>
+                                        <a href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= (int) $proceso['cod_proceso'] ?>"
+                                           class="btn btn-xs btn-success">
+                                            <i class="fa fa-download"></i> Descargar carta
+                                        </a>
+                                    <?php else: ?>
+                                        &mdash;
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -159,9 +189,12 @@ $this->headTitle('Progreso del Proceso de Graduación');
         </div><!-- /panel-green -->
 
         <?php
-            // Mostrar bloque resumen final cuando el estudiante está en terna (paso 3),
-            // notificación (paso 4) o cuando el proceso ya fue completado (cod_paso_actual = NULL)
-            if ($pasoActualOrden >= 3 || $procesoFinalizado):
+            // Mostrar bloque resumen final solo en fases examen_privado o examen_general
+            // (no en carta_examinadores ni proceso finalizado sin esas fases)
+            $faseActual = $proceso['fase_paso_actual'] ?? null;
+            $mostrarResumenFinal = in_array($faseActual, ['examen_privado', 'examen_general'], true)
+                                   || ($procesoFinalizado);
+            if ($mostrarResumenFinal):
                 // Recopilar datos de pasos para el resumen
                 $infoPasos = [];
                 foreach ($proceso['pasos'] as $p) {

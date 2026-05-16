@@ -1,0 +1,205 @@
+<?php
+/**
+ * Paso 5 — Carta de Examinadores  (vista del STAFF: director/coordinador/asistente)
+ *
+ * Variables esperadas del ViewModel (verCartaAction en ExamenController):
+ *   $proceso      datos del proceso (cod_proceso, nombres, apellidos, carne...)
+ *   $cicloActual  fila de examen_correccion_ciclo o null (interna, para cod_ciclo)
+ *   $evidencias   lista plana de evidencias del proceso, ordenada por fecha ASC
+ *   $carta        fila de examen_carta_examinadores o null
+ */
+
+$codProceso        = (int) ($proceso['cod_proceso'] ?? 0);
+$urlEvidenciasBase = $this->basePath('archivos');
+?>
+
+<!-- Paso 5: Carta de Examinadores (staff) -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                <i class="fa fa-envelope-o"></i>
+                Carta de Examinadores
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+
+                <p style="color: #555; margin-top: 0;">
+                    El intercambio de correcciones entre el estudiante y el examinador ocurre
+                    por <strong>correo electrónico</strong>. A continuación se muestra la
+                    bitácora de evidencias que el estudiante ha registrado en la plataforma.
+                    Cuando confirmes que el trabajo no tiene más correcciones pendientes,
+                    aprueba el proceso para generar la carta de examinadores.
+                </p>
+
+                <?php if ($carta): ?>
+                <!-- ── APROBADO ── -->
+                <div class="note note-success">
+                    <h4 class="box-heading"><i class="fa fa-check-circle"></i> Trabajo aprobado</h4>
+                    <p>
+                        El trabajo fue aprobado y la carta de examinadores fue generada correctamente.
+                        El estudiante ya puede ingresar a su cuenta para descargarla.
+                    </p>
+                </div>
+
+                <?php else: ?>
+                <!-- ── Botón de aprobación ── -->
+                <?php if ($cicloActual): ?>
+                <div class="note note-default" style="margin-bottom: 20px;">
+                    <h4 class="box-heading">Acción requerida</h4>
+                    <p>
+                        Cuando hayas confirmado por correo que el trabajo está listo,
+                        aprueba el proceso aquí para generar la carta de examinadores.
+                    </p>
+                    <form id="form-aprobar-trabajo" method="post"
+                          action="<?= $this->url('student-graduation', ['action' => 'aprobar-trabajo']) ?>">
+                        <input type="hidden" name="cod_proceso" value="<?= $codProceso ?>">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-check"></i> Aprobar trabajo y generar carta
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- ── Bitácora de evidencias (solo lectura) ── -->
+                <div class="panel panel-default" style="margin-top: 10px;">
+                    <div class="panel-heading">
+                        <i class="fa fa-list"></i>
+                        Bitácora del estudiante
+                        <?php if (!empty($evidencias)): ?>
+                            <span class="badge" style="margin-left:6px;"><?= count($evidencias) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="panel-body">
+                        <?php if (empty($evidencias)): ?>
+                            <p class="text-muted" style="text-align:center; padding: 20px 0;">
+                                <i class="fa fa-inbox fa-2x" style="display:block; margin-bottom:8px;"></i>
+                                El estudiante aún no ha registrado evidencias.
+                            </p>
+                        <?php else: ?>
+                        <!-- Línea de tiempo -->
+                        <div style="position:relative; padding-left:36px;">
+                            <!-- línea vertical -->
+                            <div style="position:absolute; left:15px; top:6px; bottom:6px;
+                                        width:2px; background:#dde3ef;"></div>
+
+                            <?php foreach ($evidencias as $i => $ev):
+                                $rutaPublica = $urlEvidenciasBase . '/' . $ev['archivo_md5'] . '.' . $ev['extension'];
+                                $esImagen    = in_array(strtolower($ev['extension']), ['jpg', 'jpeg', 'png'], true);
+                                $iconoExt    = $esImagen ? 'fa-file-image-o' : 'fa-file-pdf-o';
+                                $colorExt    = $esImagen ? '#2980b9' : '#c0392b';
+                            ?>
+                            <div style="position:relative; margin-bottom:20px;">
+
+                                <!-- Punto de la línea de tiempo -->
+                                <div style="position:absolute; left:-28px; top:10px;
+                                            width:14px; height:14px; border-radius:50%;
+                                            background:#4a90d9; border:2px solid #fff;
+                                            box-shadow:0 0 0 2px #4a90d9;"></div>
+
+                                <!-- Número de orden -->
+                                <div style="position:absolute; left:-50px; top:4px;
+                                            font-size:15px; color:#4a90d9; font-weight:800;
+                                            text-align:right; width:18px;">
+                                    <?= $i + 1 ?>
+                                </div>
+
+                                <!-- Card -->
+                                <div style="display:flex; align-items:center; gap:16px;
+                                            border:1px solid #e4e8ef; border-radius:8px;
+                                            padding:16px 20px; background:#fff;
+                                            min-height:80px;">
+
+                                    <!-- Ícono de tipo -->
+                                    <div style="flex:0 0 54px; text-align:center;">
+                                        <i class="fa <?= $iconoExt ?>" style="color:<?= $colorExt ?>; font-size:30px;"></i>
+                                    </div>
+
+                                    <!-- Descripción y fecha -->
+                                    <div style="flex:1; min-width:0;">
+                                        <p style="margin:0 0 6px; font-weight:600; font-size:14px;
+                                                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <?= $this->escapeHtml($ev['descripcion'] ?? $ev['nombre_original'] ?? '—') ?>
+                                        </p>
+                                        <p style="margin:0; font-size:14px; color:#888;">
+                                            <i class="fa fa-clock-o"></i>
+                                            <?= date('d/m/Y H:i', strtotime($ev['fecha_subida'])) ?>
+                                            &nbsp;·&nbsp;
+                                            <?= strtoupper($this->escapeHtml($ev['extension'])) ?>
+                                        </p>
+                                    </div>
+
+                                    <!-- Miniatura (solo imágenes) -->
+                                    <?php if ($esImagen): ?>
+                                    <div style="flex:0 0 64px;">
+                                        <a href="<?= $this->escapeHtmlAttr($rutaPublica) ?>" target="_blank">
+                                            <img src="<?= $this->escapeHtmlAttr($rutaPublica) ?>" alt=""
+                                                 style="width:64px; height:64px; object-fit:cover;
+                                                        border-radius:6px; border:1px solid #dde;">
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
+
+                                    <!-- Botón Ver -->
+                                    <div style="flex:0 0 auto;">
+                                        <a href="<?= $this->escapeHtmlAttr($rutaPublica) ?>"
+                                           target="_blank"
+                                           class="btn btn-sm btn-default"
+                                           title="Ver documento">
+                                            <i class="fa fa-eye"></i> Ver
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+            </div><!-- /panel-revision-body -->
+        </div><!-- /panel-revision -->
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+(function () {
+    'use strict';
+    var form = document.getElementById('form-aprobar-trabajo');
+    if (!form) return;
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!confirm('\u00bfConfirma que el trabajo no tiene m\u00e1s correcciones? Se generar\u00e1 la carta de examinadores.')) return;
+
+        var btn = form.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generando...';
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+            if (json.success) {
+                ToastService.success(json.message || 'Carta generada correctamente.');
+                setTimeout(function () { location.reload(); }, 1800);
+            } else {
+                ToastService.error(json.message || 'No se pudo aprobar el trabajo.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-check"></i> Aprobar trabajo y generar carta';
+            }
+        })
+        .catch(function () {
+            ToastService.error('Error de comunicaci\u00f3n. Intenta de nuevo.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-check"></i> Aprobar trabajo y generar carta';
+        });
+    });
+}());
+</script>
+

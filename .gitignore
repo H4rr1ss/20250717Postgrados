@@ -23,3 +23,6 @@ Thumbs.db
 # Archivos subidos por estudiantes (no versionar)
 /public/archivos/*
 !/public/archivos/.gitkeep
+!/public/archivos/cartas-examinadores/
+/public/archivos/cartas-examinadores/*
+!/public/archivos/cartas-examinadores/.gitkeep

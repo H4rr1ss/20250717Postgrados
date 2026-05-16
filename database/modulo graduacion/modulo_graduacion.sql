@@ -48,24 +48,32 @@ CREATE TABLE `examen_paso_catalogo` (
   `cod_paso`        tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
   `cod_tipo_examen` tinyint(3) unsigned DEFAULT NULL,
   `numero_orden`    tinyint(3) unsigned NOT NULL,
+  `fase`            ENUM('examen_privado','carta_examinadores','examen_general')
+                    NOT NULL DEFAULT 'examen_privado',
   `nombre`          varchar(150) NOT NULL,
   `fecha_finalizado`     text DEFAULT NULL,
   `template_parcial` varchar(100) DEFAULT NULL COMMENT 'Nombre del partial de vista (sin extensión)',
   `es_ultimo_paso`  tinyint(1) NOT NULL DEFAULT 0,
   `activo`          tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`cod_paso`),
-  UNIQUE KEY `unique_tipo_orden` (`cod_tipo_examen`, `numero_orden`),
+  UNIQUE KEY `unique_tipo_fase_orden` (`cod_tipo_examen`, `fase`, `numero_orden`),
   CONSTRAINT `examen_paso_catalogo_examen_tipo_fk`
     FOREIGN KEY (`cod_tipo_examen`) REFERENCES `examen_tipo` (`cod_tipo_examen`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 LOCK TABLES `examen_paso_catalogo` WRITE;
 INSERT INTO `examen_paso_catalogo`
-  (`cod_tipo_examen`, `numero_orden`, `nombre`, `fecha_finalizado`, `template_parcial`, `es_ultimo_paso`) VALUES
-  (NULL, 1, 'Revisión de Papelería', '0', 'paso1-papeleria', 0),
-  (NULL, 2, 'Entrega de Documentación Física', '0', 'paso2-documentacion', 0),
-  (NULL, 3, 'Terna Examinadora', '0', 'paso3-terna', 0),
-  (NULL, 4, 'Notificación al Estudiante', '0', 'paso4-notificacion', 1);
+  (`cod_tipo_examen`, `numero_orden`, `fase`, `nombre`, `fecha_finalizado`, `template_parcial`, `es_ultimo_paso`) VALUES
+  -- Examen Privado
+  (NULL, 1, 'examen_privado', 'Revisión de Papelería',           '0', 'paso1-papeleria',     0),
+  (NULL, 2, 'examen_privado', 'Entrega de Documentación Física', '0', 'paso2-documentacion', 0),
+  (NULL, 3, 'examen_privado', 'Terna Examinadora',               '0', 'paso3-terna',         0),
+  (NULL, 4, 'examen_privado', 'Notificación al Estudiante',      '0', 'paso4-notificacion',  0),
+  -- Examen General (carta_examinadores se inserta en modulo_graduacion_carta_01_schema.sql)
+  (NULL, 1, 'examen_general', 'Revisión de Papelería',           '0', 'paso1-papeleria',     0),
+  (NULL, 2, 'examen_general', 'Entrega de Documentación Física', '0', 'paso2-documentacion', 0),
+  (NULL, 3, 'examen_general', 'Terna Examinadora',               '0', 'paso3-terna',         0),
+  (NULL, 4, 'examen_general', 'Notificación al Estudiante',      '0', 'paso4-notificacion',  1);
 UNLOCK TABLES;
 
 
@@ -83,7 +91,6 @@ CREATE TABLE `examen_proceso` (
   `cod_paso_actual`    tinyint(3) unsigned DEFAULT NULL COMMENT 'NULL = proceso cerrado',
   `fecha_examen`       date DEFAULT NULL COMMENT 'Fecha programada del examen oral',
   `hora_inicio_examen` time DEFAULT NULL,
-  `fecha_solicitud`    date,
   `fecha_solicitud`    timestamp NOT NULL DEFAULT current_timestamp(),
   `cancelado`          tinyint(1) NOT NULL DEFAULT 0,
   `fecha_cancelacion`  timestamp NULL DEFAULT NULL,

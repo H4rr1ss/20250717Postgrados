@@ -32,5 +32,6 @@ class View {
     const EVALUACION_DOCENTE = 25;
     const EXAMEN = 26;
     const STUDENT_GRADUATION = 27;
+    const CARTA_EXAMINADORES = 28;
 
 }
