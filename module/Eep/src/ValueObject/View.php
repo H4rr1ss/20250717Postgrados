@@ -33,5 +33,6 @@ class View {
     const EXAMEN = 26;
     const STUDENT_GRADUATION = 27;
     const CARTA_EXAMINADORES = 28;
+    const AUTORIZACION_IMPRESION = 29;
 
 }

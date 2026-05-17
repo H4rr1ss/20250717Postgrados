@@ -8,11 +8,18 @@ $horaExamen   = !empty($programacion['hora']) ? date('H:i', strtotime($programac
 $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 ?>
 <!-- Paso 3: Terna de Examinadores -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+    $etiquetaFechaExamen = ($fase === 'examen_general')
+        ? 'Calendarización del Examen General (Público)'
+        : 'Calendarización del Examen Privado';
+?>
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
         <div class="panel-revision">
             <div class="panel-revision-heading">
-                Terna de examinadores
+                Terna de examinadores — <?= $this->escapeHtml($etiquetaFase) ?>
             </div>
             <div class="panel-revision-body" style="padding: 20px;">
                 
@@ -23,7 +30,7 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                             <div class="row align-items-center">
                                 <div class="col-md-12">
                                     <label style="font-weight: 600; margin-bottom: 15px; font-size: 14px; color: #333; display: block;">
-                                        Calendarización de exámen:
+                                        <?= $this->escapeHtml($etiquetaFechaExamen) ?>:
                                     </label>
                                     <div class="row">
                                         <div class="col-md-4">
@@ -97,9 +104,6 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 
                 <!-- Acciones -->
                 <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
-                    <button class="btn btn-info" id="btnEnviarCorreoTerna" style="margin-right: 10px;">
-                        <i class="fa fa-envelope"></i> Enviar Correo
-                    </button>
                     <button class="btn btn-primary" id="btnGuardarTerna">
                         <i class="fa fa-save"></i> Guardar Terna
                     </button>
@@ -285,6 +289,7 @@ $(document).ready(function() {
                 cod_proceso:     COD_PROCESO,
                 cod_paso_actual: <?= (int)($this->proceso['cod_paso_actual'] ?? 0) ?>,
                 pasoUrl: pasoDeNavegacion,
+                fase:            '<?= $fase ?>',
                 terna:           terna,
                 programacion:    programacion
             },
@@ -316,16 +321,6 @@ $(document).ready(function() {
         $(this).data('label-orig', $(this).html());
     });
 
-    // ── Enviar correo ──────────────────────────────────────────
-    $('#btnEnviarCorreoTerna').on('click', function() {
-        const ternaCompleta = verificarTernaCompleta();
-        const estadoPaso = ternaCompleta ? 'Completo' : 'Incompleto';
-        
-        alert('Simulación de envío de correo\n' + 
-              'Proceso: ' + COD_PROCESO + '\n' +
-              'Estado del paso: ' + estadoPaso);
-    });        
-
     // ── Guardar terna completa ────────────────────────────────────
     $('#btnGuardarTerna').on('click', function() {
         const terna = recopilarTerna();
@@ -348,17 +343,22 @@ $(document).ready(function() {
             return;
         }
 
-        // 2. Si se editó un examinador, debe estar completo (tipo, nombre, colegiado)
+        // 2. Si se agregó algún examinador con datos parciales, validar que ese card esté completo
         let incompleto = false;
-        $.each(terna, function(index, d) {
-            if (!d.tipo_examinador || !d.nombre || !d.colegiado || !d.correo) {
+        $('.examinador-card').each(function() {
+            const tipo      = $(this).find('.examinador-tipo').val();
+            const nombre    = $(this).find('.examinador-nombre').val().trim();
+            const colegiado = $(this).find('.examinador-colegiado').val().trim();
+            // Solo validar si el card tiene al menos un campo llenado
+            const tieneDatos = tipo || nombre || colegiado;
+            if (tieneDatos && (!tipo || !nombre || !colegiado)) {
                 incompleto = true;
-                return false;
+                return false; // break
             }
         });
 
         if (incompleto) {
-            ToastService.warning('Si edita un examinador, debe completar su tipo de examinador, nombre y número de colegiado.');
+            ToastService.warning('Si llena un examinador, debe completar su tipo, nombre y número de colegiado.');
             return;
         }
 

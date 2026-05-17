@@ -1,0 +1,334 @@
+<?php
+/**
+ * Paso 6 — Autorización de Impresión del Proyecto (vista del ESTUDIANTE).
+ *
+ * Variables del ViewModel:
+ *   $proceso        proceso activo del estudiante
+ *   $estado         fila de examen_autorizacion_proceso (con cod_profesional, estado, sub_paso)
+ *   $instrucciones  texto/HTML con instrucciones globales del director
+ *   $documentos     documentos de soporte (logos, escudos) descargables
+ *   $profesionales  catálogo de licenciados en letras (activos)
+ *   $cartas         cartas .docx descargables
+ *   $miembros       miembros de junta directiva (informativo)
+ */
+$this->headTitle('Paso 6 - Autorización de Impresión');
+
+$codProceso       = (int) ($proceso['cod_proceso'] ?? 0);
+$codProfActual    = isset($estado['cod_profesional']) ? (int) $estado['cod_profesional'] : 0;
+$yaAprobado       = ($estado['estado'] ?? 'pendiente') === 'aprobado';
+$subPaso          = (int) ($estado['sub_paso'] ?? 1);
+
+$urlSeleccionar    = $this->url('student-graduation', ['action' => 'seleccionarProfesional']);
+$urlDescargarDoc   = $this->url('examen', ['action' => 'descargarDocumentoSoporte']);
+$urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']);
+?>
+
+<div class="col-lg-12" style="padding-left: 40px; padding-right: 40px;">
+
+    <ol class="breadcrumb">
+        <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+        <li><a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>">Proceso de Graduación</a></li>
+        <li class="active">Paso 6 — Autorización de Impresión</li>
+    </ol>
+
+    <div class="panel panel-blue">
+        <div class="panel-heading">
+            <i class="fa fa-print"></i>
+            Paso 6 — Autorización de Impresión del Proyecto de Graduación
+        </div>
+        <div class="panel-body">
+
+            <?php if ($yaAprobado): ?>
+                <div class="alert alert-success">
+                    <i class="fa fa-check-circle"></i>
+                    Esta fase ya fue aprobada por el Director. Tu proceso avanzó al Examen General.
+                </div>
+            <?php else: ?>
+                <!-- Indicador de parte actual -->
+                <div class="alert <?= $subPaso === 1 ? 'alert-info' : 'alert-warning' ?>" style="margin-bottom: 20px;">
+                    <i class="fa fa-flag"></i>
+                    <strong>Estado actual:</strong>
+                    <?php if ($subPaso === 1): ?>
+                        <span class="label label-info">Parte 1</span> — Selección del profesional calificado
+                    <?php else: ?>
+                        <span class="label label-primary">Parte 2</span> — Entrega de documentos finales
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- 1) INSTRUCCIONES (varían según la parte) -->
+            <div class="note note-info" style="margin-bottom: 20px;">
+                <?php if ($subPaso === 1): ?>
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Autorización de Imprímase</h4>
+                <?php else: ?>
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Proceso Entrega de Proyecto de Graduación</h4>
+                <?php endif; ?>
+                <?php if (!empty($instrucciones)): ?>
+                    <div class="instrucciones-content"><?= $instrucciones ?></div>
+                <?php else: ?>
+                    <p class="text-muted">El Director aún no ha publicado instrucciones para esta parte.</p>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($subPaso === 1 && !$yaAprobado): ?>
+            <!-- 2) PROFESIONAL + JUNTA DIRECTIVA (solo en Parte 1) -->
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- SELECCIÓN DE PROFESIONAL -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-user-circle-o"></i> Profesional calificado (Licenciado en Letras)
+                        </div>
+                        <div class="panel-body">
+                            <p style="color:#555;">
+                                Selecciona el profesional que revisará tu proyecto. Sin esta selección
+                                el Director no podrá aprobar la Parte 1.
+                            </p>
+
+                            <?php if (empty($profesionales)): ?>
+                                <div class="alert alert-warning">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                    El Director aún no ha publicado la lista de profesionales calificados.
+                                </div>
+                            <?php else: ?>
+                                <?php
+                                // Serializar datos de profesionales para el JS
+                                $profsJs = [];
+                                foreach ($profesionales as $p) {
+                                    $profsJs[(int) $p['cod_profesional']] = [
+                                        'nombre'   => $p['nombre_completo'],
+                                        'correo'   => $p['correo']   ?? '',
+                                        'telefono' => $p['telefono'] ?? '',
+                                    ];
+                                }
+                                ?>
+                                <script>
+                                var profData = <?= json_encode($profsJs) ?>;
+                                </script>
+                                <form id="form-seleccionar-prof">
+                                    <div class="form-group">
+                                        <label>Profesional:</label>
+                                        <select name="cod_profesional" id="sel-profesional" class="form-control">
+                                            <option value="0">— Selecciona uno —</option>
+                                            <?php foreach ($profesionales as $p): ?>
+                                                <option value="<?= (int) $p['cod_profesional'] ?>"
+                                                    <?= $codProfActual === (int) $p['cod_profesional'] ? 'selected' : '' ?>>
+                                                    <?= $this->escapeHtml($p['nombre_completo']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+
+                                    <!-- Tarjeta de detalle del profesional seleccionado -->
+                                    <div id="prof-detalle" style="display:none; background:#f9f9f9; border:1px solid #ddd; border-radius:6px; padding:10px 14px; margin-bottom:12px; font-size:13px;">
+                                        <strong id="prof-detalle-nombre" style="font-size:14px;"></strong>
+                                        <div style="margin-top:6px; color:#555;">
+                                            <div id="prof-detalle-correo" style="display:none; margin-bottom:3px;">
+                                                <i class="fa fa-envelope-o" style="width:16px; color:#888;"></i>
+                                                <span id="prof-detalle-correo-val"></span>
+                                            </div>
+                                            <div id="prof-detalle-telefono" style="display:none;">
+                                                <i class="fa fa-phone" style="width:16px; color:#888;"></i>
+                                                <span id="prof-detalle-telefono-val"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fa fa-save"></i> Guardar selección
+                                    </button>
+                                    <?php if ($codProfActual): ?>
+                                        <span class="text-success" style="margin-left:10px;">
+                                            <i class="fa fa-check"></i> Tienes un profesional seleccionado
+                                        </span>
+                                    <?php endif; ?>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <!-- JUNTA DIRECTIVA (informativo) -->
+                    <?php if (!empty($miembros)): ?>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-id-badge"></i> Junta Directiva
+                        </div>
+                        <div class="panel-body">
+                            <table class="table table-condensed table-bordered" style="font-size:13px; margin-bottom:0;">
+                                <thead style="background:#f5f5f5;">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th style="width:35%;">Puesto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($miembros as $m): ?>
+                                        <tr>
+                                            <td><?= $this->escapeHtml($m['nombre_completo']) ?></td>
+                                            <td><?= $this->escapeHtml($m['puesto']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- 3) DOCUMENTOS DE SOPORTE -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-image"></i> Documentos de soporte
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($documentos)): ?>
+                        <p class="text-muted">No hay documentos publicados todavía.</p>
+                    <?php else: ?>
+                        <ul class="list-group" style="margin-bottom:0;">
+                            <?php foreach ($documentos as $d): ?>
+                                <li class="list-group-item">
+                                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                                        <div>
+                                            <strong><?= $this->escapeHtml($d['titulo']) ?></strong>
+                                            <?php if (!empty($d['descripcion'])): ?>
+                                                <br><small style="color:#444;"><?= $this->escapeHtml($d['descripcion']) ?></small>
+                                            <?php endif; ?>
+                                        </div>
+                                        <a class="btn btn-sm btn-primary"
+                                           target="_blank"
+                                           href="<?= $urlDescargarDoc ?>?h=<?= $this->escapeHtml($d['archivo_md5']) ?>">
+                                            <i class="fa fa-download"></i> Descargar
+                                        </a>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- 4) CARTAS DESCARGABLES -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-file-word-o"></i> Cartas para descarga
+                </div>
+                <div class="panel-body">
+                    <p style="color:#555;">
+                        Descarga las cartas que necesites para tu trámite. Estas son
+                        plantillas que deberás completar y entregar de forma presencial.
+                    </p>
+
+                    <?php if (empty($cartas)): ?>
+                        <p class="text-muted">No hay cartas publicadas todavía.</p>
+                    <?php else: ?>
+                        <ul class="list-group" style="margin-bottom:0;">
+                            <?php foreach ($cartas as $c): ?>
+                                <li class="list-group-item">
+                                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                                        <div>
+                                            <strong><?= $this->escapeHtml($c['titulo']) ?></strong>
+                                            <?php if (!empty($c['descripcion'])): ?>
+                                                <br><small style="color:#444;"><?= $this->escapeHtml($c['descripcion']) ?></small>
+                                            <?php endif; ?>
+                                        </div>
+                                        <a class="btn btn-sm btn-info"
+                                           href="<?= $urlDescargarCarta ?>?h=<?= $this->escapeHtml($c['archivo_md5']) ?>">
+                                            <i class="fa fa-download"></i> Descargar
+                                        </a>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+        </div><!-- /panel-body -->
+    </div><!-- /panel-blue -->
+</div>
+
+<?php if ($subPaso === 1 && !$yaAprobado): ?>
+<script>
+(function() {
+    'use strict';
+
+    function post(url, data, cb) {
+        var fd = new FormData();
+        if (data) {
+            Object.keys(data).forEach(function(k) { fd.append(k, data[k]); });
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.onload = function() {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                cb(r);
+            } catch (e) {
+                alert('Respuesta inválida del servidor');
+            }
+        };
+        xhr.send(fd);
+    }
+
+    var formProf = document.getElementById('form-seleccionar-prof');
+    if (formProf) {
+        var selProf    = document.getElementById('sel-profesional');
+        var detalle    = document.getElementById('prof-detalle');
+        var detNombre  = document.getElementById('prof-detalle-nombre');
+        var detCorreo  = document.getElementById('prof-detalle-correo');
+        var detCorreoV = document.getElementById('prof-detalle-correo-val');
+        var detTel     = document.getElementById('prof-detalle-telefono');
+        var detTelV    = document.getElementById('prof-detalle-telefono-val');
+
+        function mostrarDetalle(id) {
+            if (typeof profData === 'undefined') return;
+            var p = profData[id];
+            if (!p) { detalle.style.display = 'none'; return; }
+            detNombre.textContent = p.nombre;
+            if (p.correo) {
+                detCorreoV.textContent = p.correo;
+                detCorreo.style.display = 'block';
+            } else {
+                detCorreo.style.display = 'none';
+            }
+            if (p.telefono) {
+                detTelV.textContent = p.telefono;
+                detTel.style.display = 'block';
+            } else {
+                detTel.style.display = 'none';
+            }
+            detalle.style.display = 'block';
+        }
+
+        // Mostrar detalle al cargar si ya hay uno seleccionado
+        if (selProf && parseInt(selProf.value, 10) > 0) {
+            mostrarDetalle(parseInt(selProf.value, 10));
+        }
+
+        if (selProf) {
+            selProf.addEventListener('change', function() {
+                mostrarDetalle(parseInt(selProf.value, 10) || 0);
+            });
+        }
+
+        formProf.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var id = parseInt(selProf.value, 10) || 0;
+            if (id <= 0) {
+                alert('Debes seleccionar un profesional de la lista.');
+                return;
+            }
+            post('<?= $urlSeleccionar ?>', { cod_profesional: id }, function(r) {
+                alert(r.message);
+                if (r.success) location.reload();
+            });
+        });
+    }
+
+})();
+</script>
+<?php endif; ?>

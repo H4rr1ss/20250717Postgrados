@@ -13,6 +13,12 @@ VALUES ('1234567890012', '20250012', 'Carlos', 'Rodríguez Silva', '1999-03-22',
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('1234567890013', '20250013', 'Ana', 'Morales Castro', '2001-07-10', '5551003', 'ana.morales@email.com', '$2y$10$xlL40oothjfOPppxafkGQumCL8JhFBZOPsPvIRR1NQox9lQoXGHGu', 73, 'M', 'Bachiller en mecanica', CURDATE(), 'Ana Morales Castro');
 
+
+
+
+
+
+
 -- Estudiante 4
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('1234567890014', '20250014', 'Luis', 'Herrera Paz', '2000-11-05', '5551004', 'luis.herrera@email.com', '$2y$10$xwUBRMyrTAYBq1qPMlzIk.X12mdxhjj00TnJAnGBhgeLdJG6miR1a', 73, 'H', 'Bachiller en artes plasticas', CURDATE(), 'Luis Herrera Paz');

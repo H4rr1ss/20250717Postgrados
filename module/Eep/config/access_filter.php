@@ -419,6 +419,15 @@ return [
             'code' => 72,
             'roles' => [Role::ESTUDIANTE]
         ],
+        'iniciarProceso' => [
+            'code' => 132,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'buscarEstudiante' => [
+            'code' => 133,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
         'subirDocumento' => [
             'code' => 100,
             'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE]
@@ -459,6 +468,75 @@ return [
         'verCarta' => [
             'code' => 68,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
+        ],
+        // ---- Paso 6: Autorización de Impresión (Director) ----
+        'autorizacionImpresion' => [
+            'code' => 110,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
+        ],
+        'configurarAutorizacion' => [
+            'code' => 111,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
+        ],
+        'guardarInstruccionesAutorizacion' => [
+            'code' => 112,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'subirDocumentoSoporte' => [
+            'code' => 113,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarDocumentoSoporte' => [
+            'code' => 114,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'descargarDocumentoSoporte' => [
+            'code' => 115,
+            'roles' => [Role::AUTH]
+        ],
+        'guardarProfesional' => [
+            'code' => 116,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarProfesional' => [
+            'code' => 117,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'subirCartaDescarga' => [
+            'code' => 118,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarCartaDescarga' => [
+            'code' => 119,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'descargarCartaDescarga' => [
+            'code' => 120,
+            'roles' => [Role::AUTH]
+        ],
+        'guardarMiembroJunta' => [
+            'code' => 121,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarMiembroJunta' => [
+            'code' => 122,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'aprobarRevisionPresencial' => [
+            'code' => 123,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::COORDINADOR]
         ],
     ],
     StudentGraduationController::class => [
@@ -514,6 +592,17 @@ return [
         ],
         'eliminarEvidencia' => [
             'code' => 74,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        // ---- Paso 6: Autorización de Impresión (Estudiante) ----
+        'paso6AutorizacionImpresion' => [
+            'code' => 130,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'seleccionarProfesional' => [
+            'code' => 131,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],

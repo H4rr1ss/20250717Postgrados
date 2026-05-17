@@ -39,10 +39,11 @@ $this->headTitle('Progreso del Proceso de Graduación');
 
                     <?php foreach ($proceso['pasos'] as $paso): ?>
                         <?php
-                            // Ocultar pasos de Notificación (aplica a examen_privado y examen_general)
-                            if (($paso['template_parcial'] ?? '') === 'paso4-notificacion') continue;
-                        ?>
-                        <?php
+                            // Ocultar el paso administrativo de notificación al estudiante
+                            if (strpos($paso['template_parcial'] ?? '', 'notificacion') !== false) {
+                                continue;
+                            }
+
                             // Pasos visibles por fase: Papelería, Documentación, Terna, Carta de Examinadores
                             $totalPasos = 4;
                             $colClass = 'col-sm-' . (12 / min($totalPasos, 4));
@@ -73,12 +74,31 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 // Mapear por template_parcial en lugar de numero_orden
                                 // para que pasos 1 y 6 (mismo template) funcionen igual
                                 $accionesPorTemplate = [
-                                    'paso1-papeleria'          => 'paso1-solicitud-examen',
-                                    'paso5-carta-examinadores' => 'paso5-carta-examinadores',
+                                    'paso1-papeleria'              => 'paso1-solicitud-examen',
+                                    'paso2-documentacion'          => 'paso1-solicitud-examen',
+                                    'paso3-terna'                  => 'paso2-terna',
+                                    'paso5-carta-examinadores'     => 'paso5-carta-examinadores',
+                                    'paso6-autorizacion-impresion' => 'paso6-autorizacion-impresion',
                                 ];
                                 $accionPaso = $accionesPorTemplate[$paso['template_parcial'] ?? ''] ?? null;
+
+                                // El botón de terna permanece activo también en el paso 4 (notificación)
+                                $esTerna = ($paso['template_parcial'] ?? '') === 'paso3-terna';
+                                $esCartaExaminadores = ($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores';
+                                $pasoActualOrdenActual = (int)($proceso['paso_actual_orden'] ?? 0);
+                                $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
+                                
+                                // Botón activo si:
+                                // 1. Es el paso actual, O
+                                // 2. Es la terna y estamos en paso 4 (notificación), O
+                                // 3. Es carta de examinadores y estamos en esa fase o más avanzada
+                                $botonActivo = $accionPaso && (
+                                    $paso['cod_paso'] == $proceso['cod_paso_actual']
+                                    || ($esTerna && $pasoActualOrdenActual === 4)
+                                    || ($esCartaExaminadores && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'carta_examinadores' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
+                                );
                             ?>
-                            <?php if ($accionPaso && $paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
+                            <?php if ($botonActivo): ?>
                                 <a href="<?= $this->url('student-graduation', ['action' => $accionPaso]) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
                                     <i class="fa fa-sticky-note"></i> Resumen
                                 </a>
@@ -95,6 +115,33 @@ $this->headTitle('Progreso del Proceso de Graduación');
 
             </div><!-- /panel-body -->
         </div><!-- /panel-blue -->
+        <?php endif; ?>
+
+        <?php if ((int)($proceso['paso_actual_orden'] ?? 0) === 4): ?>
+        <!-- Aviso informativo: paso administrativo de notificación -->
+        <div class="panel" style="border: 2px solid #31708f; border-radius: 8px; margin-bottom: 24px;">
+            <div class="panel-heading" style="background: #d9edf7; color: #31708f; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #bce8f1;">
+                <i class="fa fa-info-circle"></i>&nbsp; Tu proceso está en revisión — próximamente recibirás una notificación oficial
+            </div>
+            <div class="panel-body" style="background: #f4faff; padding: 22px 28px;">
+                <p style="font-size: 15px; color: #31708f; margin-bottom: 14px;">
+                    <strong>¡Tu terna examinadora ya ha sido asignada!</strong> En este momento la coordinación está preparando la
+                    notificación oficial que indica que tu proceso de graduación ha sido formalmente programado.
+                </p>
+                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                    Dentro de esa notificación encontrarás:
+                </p>
+                <ul style="font-size: 14px; color: #555; line-height: 1.8; margin-bottom: 14px;">
+                    <li><i class="fa fa-calendar" style="color: #31708f; width: 18px;"></i> La <strong>fecha y hora</strong> confirmada de tu examen.</li>
+                    <li><i class="fa fa-map-marker" style="color: #31708f; width: 18px;"></i> El <strong>lugar o salón</strong> donde se llevará a cabo.</li>
+                    <li><i class="fa fa-list-ul" style="color: #31708f; width: 18px;"></i> Las <strong>instrucciones y requisitos</strong> para el día del examen.</li>
+                    <li><i class="fa fa-users" style="color: #31708f; width: 18px;"></i> Los <strong>miembros de la terna</strong> que te evaluarán.</li>
+                </ul>
+                <p style="font-size: 13px; color: #777; margin-bottom: 0;">
+                    <i class="fa fa-clock-o"></i> Por favor ten paciencia. Una vez que la coordinación emita la notificación, el proceso avanzará automáticamente al siguiente paso y podrás consultarlo aquí mismo.
+                </p>
+            </div>
+        </div>
         <?php endif; ?>
 
         <!-- Panel verde: tabla resumen -->
@@ -114,47 +161,44 @@ $this->headTitle('Progreso del Proceso de Graduación');
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($proceso['pasos'] as $paso): ?>
-                            <?php
-                                // Ocultar Notificación al Estudiante de la tabla (privado y general)
-                                if (($paso['template_parcial'] ?? '') === 'paso4-notificacion') continue;
-                                // Determinar la clase del badge según el estado
-                                $badgeClass = 'label-default';
-                                $estadoTexto = 'Pendiente';
-                                
-                                switch ($paso['estado']) {
-                                    case 'completado':
-                                        $badgeClass = 'label-success';
-                                        $estadoTexto = 'Completado';
-                                        break;
-                                    case 'en_progreso':
-                                        $badgeClass = 'label-warning';
-                                        $estadoTexto = 'En Progreso';
-                                        break;
-                                    case 'rechazado':
-                                        $badgeClass = 'label-danger';
-                                        $estadoTexto = 'Rechazado';
-                                        break;
-                                }
-                                
-                                $rowClass = ($paso['cod_paso'] == $proceso['cod_paso_actual']) ? 'info' : '';
+                        <?php foreach ($proceso['pasos'] as $paso):
+                            // Ocultar el paso administrativo de notificación al estudiante
+                            if (strpos($paso['template_parcial'] ?? '', 'notificacion') !== false) {
+                                continue;
+                            }
 
-                                $faseCodigo = $paso['fase'] ?? '';
-                                $faseLabels = [
-                                    'examen_privado'      => ['label' => 'Examen Privado',   'color' => '#2980b9'],
-                                    'carta_examinadores'  => ['label' => 'Carta Examinadores','color' => '#8e44ad'],
-                                    'examen_general'      => ['label' => 'Examen General',    'color' => '#27ae60'],
-                                ];
-                                $faseInfo = $faseLabels[$faseCodigo] ?? ['label' => $faseCodigo, 'color' => '#888'];
-                            ?>
+                            switch ($paso['estado']) {
+                                case 'completado':
+                                    $rowClass    = 'success';
+                                    $badgeClass  = 'label-success';
+                                    $estadoLabel = 'Completado';
+                                    break;
+                                case 'en_progreso':
+                                    $rowClass    = 'warning';
+                                    $badgeClass  = 'label-warning';
+                                    $estadoLabel = 'En Progreso';
+                                    break;
+                                case 'rechazado':
+                                    $rowClass    = 'danger';
+                                    $badgeClass  = 'label-danger';
+                                    $estadoLabel = 'Rechazado';
+                                    break;
+                                case 'pendiente':
+                                    $rowClass    = '';
+                                    $badgeClass  = 'label-default';
+                                    $estadoLabel = 'Pendiente';
+                                    break;
+                                default:
+                                    $rowClass    = '';
+                                    $badgeClass  = 'label-default';
+                                    $estadoLabel = ucfirst(str_replace('_', ' ', $paso['estado']));
+                                    break;
+                            }
+                        ?>
                             <tr class="<?= $rowClass ?>">
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;"><?= $paso['numero_orden'] ?></td>
                                 <td style="padding: 14px 15px; font-size: 14px; text-align: center;">
-                                    <span style="display:inline-block; padding:3px 10px; border-radius:12px;
-                                                 background:<?= $faseInfo['color'] ?>22; color:<?= $faseInfo['color'] ?>;
-                                                 border:1px solid <?= $faseInfo['color'] ?>66; font-weight:600;">
-                                        <?= $this->escapeHtml($faseInfo['label']) ?>
-                                    </span>
+                                    <span><?= $paso['fase'] ?></span>
                                 </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $this->escapeHtml($paso['nombre']) ?>
@@ -163,7 +207,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
-                                    <span class="label <?= $badgeClass ?>"><?= $estadoTexto ?></span>
+                                    <span class="label <?= $badgeClass ?>" style="font-size: 13px; font-weight: 700; padding: 5px 10px;"><?= $estadoLabel ?></span>
                                 </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $paso['fecha_inicio'] ? date('d/m/Y', strtotime($paso['fecha_inicio'])) : '-' ?>
@@ -188,92 +232,6 @@ $this->headTitle('Progreso del Proceso de Graduación');
             </div>
         </div><!-- /panel-green -->
 
-        <?php
-            // Mostrar bloque resumen final solo en fases examen_privado o examen_general
-            // (no en carta_examinadores ni proceso finalizado sin esas fases)
-            $faseActual = $proceso['fase_paso_actual'] ?? null;
-            $mostrarResumenFinal = in_array($faseActual, ['examen_privado', 'examen_general'], true)
-                                   || ($procesoFinalizado);
-            if ($mostrarResumenFinal):
-                // Recopilar datos de pasos para el resumen
-                $infoPasos = [];
-                foreach ($proceso['pasos'] as $p) {
-                    $infoPasos[$p['numero_orden']] = $p;
-                }
-        ?>
-        <div class="panel" style="border: 2px solid #28a745; border-radius: 8px; margin-top: 30px;">
-            <div class="panel-heading" style="background: #28a745; color: #fff; font-size: 17px; font-weight: 700; border-radius: 6px 6px 0 0;">
-                <i class="fa fa-check-circle"></i> Resumen Final del Proceso de Graduación
-            </div>
-            <div class="panel-body pan">
-                <div class="form-body pal">
-
-                    <h3>Datos del Estudiante</h3>
-                    <ul>
-                        <li><strong>Nombre:</strong> <?= $this->escapeHtml($proceso['nombres'] . ' ' . $proceso['apellidos']) ?></li>
-                        <?php if (!empty($proceso['carrera'])): ?>
-                        <li><strong>Carrera:</strong> <?= $this->escapeHtml($proceso['carrera']) ?></li>
-                        <?php endif; ?>
-                        <?php if (!empty($proceso['tipo_examen'])): ?>
-                        <li><strong>Tipo de Examen:</strong> <?= $this->escapeHtml($proceso['tipo_examen']) ?></li>
-                        <?php endif; ?>
-                    </ul>
-
-                    <h3 style="margin-top: 28px;">Programación del Examen</h3>
-                    <?php
-                        $ternaProg = $this->terna['programacion'] ?? ['fecha' => null, 'hora' => null];
-                        $ternaFecha = $ternaProg['fecha'] ? date('d/m/Y', strtotime($ternaProg['fecha'])) : null;
-                        $ternaHora  = $ternaProg['hora']  ? date('g:i A', strtotime($ternaProg['hora']))   : null;
-                    ?>
-                    <div class="note note-info">
-                        <h4 class="box-heading">Fecha y Hora</h4>
-                        <ul>
-                            <li><?= $ternaFecha ?: 'Por definir' ?></li>
-                            <li><?= $ternaHora  ?: 'Hora pendiente de asignar' ?></li>
-                        </ul>
-                    </div>
-
-                    <h3 style="margin-top: 28px;">Miembros de la Terna</h3>
-                    <?php $ternaMembers = $this->terna['examinadores'] ?? []; ?>
-                    <?php if (empty($ternaMembers)): ?>
-                    <div style="background:#fdf2f2; border:1px solid #e8b4b4; border-radius:6px; padding:14px 18px;">
-                        <strong style="color:#c0392b;">Terna aún no asignada.</strong>
-                        La terna será designada por la administración una vez aprobada tu papelería.
-                    </div>
-                    <?php else: ?>
-                    <div class="terna-cards-row">
-                        <?php foreach ($ternaMembers as $m): ?>
-                        <div class="terna-card">
-                            <div class="terna-avatar-wrap">
-                                <div class="terna-avatar-fallback"><i class="fa fa-user"></i></div>
-                            </div>
-                            <div class="terna-member-name"><?= $this->escapeHtml($m['nombre']) ?></div>
-                            <?php if (!empty($m['posicion'])): ?>
-                            <p class="terna-member-posicion"><?= $this->escapeHtml($m['posicion']) ?></p>
-                            <?php endif; ?>
-                            <?php if (!empty($m['tipo'])): ?>
-                            <p class="terna-member-titulo"><?= $this->escapeHtml($m['tipo']) ?></p>
-                            <?php endif; ?>
-                            <?php if (!empty($m['colegiado'])): ?>
-                            <p style="font-size:13px;color:#aaa;margin:4px 0 0;">Col. <?= $this->escapeHtml($m['colegiado']) ?></p>
-                            <?php endif; ?>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <style>
-                        .terna-cards-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
-                        .terna-card{flex:1;min-width:150px;background:#fff;border:1px solid #e4e8ef;border-radius:10px;padding:24px 16px;text-align:center;}
-                        .terna-avatar-fallback{width:54px;height:54px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:20px;color:#7eb8f7;}
-                        .terna-member-name{font-size:15px;font-weight:800;color:#1a2a44;text-transform:uppercase;margin-bottom:4px;}
-                        .terna-member-posicion{font-size:13px;font-weight:600;color:#1e3a5f;margin:2px 0 4px;}
-                        .terna-member-titulo{font-size:13px;color:#7a8799;margin:0;}
-                    </style>
-                    <?php endif; ?>
-
-                </div>
-            </div>
-        </div>
-        <?php endif; ?>
 
     <?php else: ?>
         <!-- Mensaje cuando no hay proceso activo -->

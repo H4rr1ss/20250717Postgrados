@@ -25,6 +25,8 @@ use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\Factory\CartaExaminadoresManagerFactory;
 use Eep\Service\CartaGenerator;
 use Eep\Service\Factory\CartaGeneratorFactory;
+use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\Factory\AutorizacionImpresionManagerFactory;
 use Eep\Service\UserManager;
 use Eep\Service\Factory\UserManagerFactory;
 use Eep\Service\OrderManager;
@@ -341,6 +343,7 @@ return [
             StudentGraduationManager::class => StudentGraduationManagerFactory::class,
             CartaExaminadoresManager::class => CartaExaminadoresManagerFactory::class,
             CartaGenerator::class => CartaGeneratorFactory::class,
+            AutorizacionImpresionManager::class => AutorizacionImpresionManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
         ],

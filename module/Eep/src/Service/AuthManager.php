@@ -195,7 +195,7 @@ class AuthManager extends Manager {
 
             $roleTable = new TableGateway(['ur' => 'usuario_rol'], $this->dbAdapter);
             $select = $roleTable->getSql()->select();
-            $select->columns(['rol' => 'cod_rol'])
+            $select->columns(['rol' => 'cod_rol', 'cod_usuario' => 'cod_usuario'])
                     ->where(['cod_usuario' => $id])
                     ->where('fecha_inicio <= curdate()')
                     ->where('(fecha_fin >= curdate() OR fecha_fin is NULL)');

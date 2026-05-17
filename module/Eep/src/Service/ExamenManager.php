@@ -27,6 +27,13 @@ class ExamenManager
         return $resultSet->toArray();
     }
 
+    /**
+     * Código del tipo de examen "Público General" (examen general).
+     * Se usa como constante porque este tipo aplica a todas las maestrías
+     * cuando el proceso entra en la fase examen_general.
+     */
+    const TIPO_PUBLICO_GENERAL = 3;
+
     public function getTiposExamen(): array
     {
         $sql = 'SELECT cod_tipo_examen, nombre, descripcion
@@ -38,11 +45,120 @@ class ExamenManager
     }
 
     /**
+     * Determina el cod_tipo_examen a usar según la fase actual del proceso.
+     *
+     * - Para examen_privado: usa el tipo asignado al proceso (1=Privado General,
+     *   2=Privado Gerencia), ya que cada maestría tiene sus propios requisitos.
+     * - Para examen_general: SIEMPRE retorna tipo 3 (Público General), que es
+     *   el único tipo de examen general en la institución.
+     * - Para otras fases (carta_examinadores, autorizacion_impresion): retorna
+     *   el tipo del proceso (no aplican requisitos por fase en esos pasos).
+     */
+    public function getTipoExamenParaFase(int $codTipoExamenProceso, string $fase): int
+    {
+        if ($fase === 'examen_general') {
+            return self::TIPO_PUBLICO_GENERAL;
+        }
+        return $codTipoExamenProceso;
+    }
+
+    /**
+     * Obtiene el cod_paso del catálogo para una fase y número de orden dados.
+     * Ejemplo: getCodPasoPorFaseYOrden('examen_general', 1) retorna 6.
+     *
+     * @param string $fase         Fase del proceso (examen_privado, examen_general, etc.)
+     * @param int    $numeroOrden  Número de orden dentro de la fase (1, 2, 3, 4)
+     * @return int|null            cod_paso del catálogo, o null si no existe
+     */
+    public function getCodPasoPorFaseYOrden(string $fase, int $numeroOrden): ?int
+    {
+        $sql = 'SELECT cod_paso
+                FROM examen_paso_catalogo
+                WHERE fase = :fase
+                  AND numero_orden = :orden
+                  AND (cod_tipo_examen IS NULL)
+                  AND activo = 1
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['fase' => $fase, 'orden' => $numeroOrden]);
+        return !empty($result) ? (int) $result[0]['cod_paso'] : null;
+    }
+
+    /**
+     * Busca estudiantes por registro académico o nombre para asignarlos
+     * a un proceso de graduación. Solo retorna usuarios con rol Estudiante (cod_rol = 6).
+     *
+     * @param string $termino  Texto de búsqueda (registro académico, nombre o apellido)
+     * @return array           Lista de estudiantes encontrados
+     */
+    public function buscarEstudiantesParaGraduacion(string $termino): array
+    {
+        $termino = trim($termino);
+        if (empty($termino)) {
+            return [];
+        }
+
+        $sql = "SELECT DISTINCT
+                    u.cod_usuario,
+                    u.registro_academico,
+                    u.cui,
+                    u.nombres,
+                    u.apellidos,
+                    CONCAT(u.nombres, ' ', u.apellidos) AS nombre_completo,
+                    u.correo,
+                    c.nombre_actual AS carrera,
+                    p.descripcion AS pensum
+                FROM usuario u
+                INNER JOIN usuario_rol ur ON ur.cod_usuario = u.cod_usuario AND ur.cod_rol = 6
+                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
+                LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
+                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
+                WHERE (
+                    u.registro_academico LIKE :termino_exacto
+                    OR u.nombres LIKE :termino_like
+                    OR u.apellidos LIKE :termino_like
+                    OR CONCAT(u.nombres, ' ', u.apellidos) LIKE :termino_like
+                )
+                ORDER BY u.apellidos, u.nombres
+                LIMIT 20";
+
+        return $this->execute($sql, [
+            'termino_exacto' => $termino,
+            'termino_like'   => '%' . $termino . '%'
+        ]);
+    }
+
+    /**
+     * Verifica si un estudiante ya tiene un proceso de graduación activo
+     * (no cancelado y no finalizado).
+     *
+     * @param int $codUsuario  Código del estudiante
+     * @return array|null      Proceso activo si existe, null si no
+     */
+    public function getProcesoActivoEstudiante(int $codUsuario): ?array
+    {
+        $sql = 'SELECT ep.cod_proceso, et.nombre AS tipo_examen, epc.nombre AS paso_actual,
+                       epc.fase AS fase_actual
+                FROM examen_proceso ep
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                WHERE ep.cod_usuario = :usuario
+                  AND ep.cancelado = 0
+                  AND ep.cod_paso_actual IS NOT NULL
+                ORDER BY ep.fecha_solicitud DESC
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['usuario' => $codUsuario]);
+        return $result[0] ?? null;
+    }
+
+    /**
      * Inicia un nuevo proceso de examen para un estudiante.
      * T-13
      */
     public function iniciarProceso(int $codUsuario, int $codTipoExamen, int $userAdminId): int
     {
+        error_log("DEBUG user id: ".print_r($userAdminId, true));
         // 1. Obtener el primer paso del catálogo para este tipo de examen
         $sqlPaso = 'SELECT cod_paso 
                     FROM examen_paso_catalogo 
@@ -78,7 +194,7 @@ class ExamenManager
         $this->registrarHistorial([
             'cod_proceso' => $codProceso,
             'cod_usuario' => $codUsuario,
-            'tipo_evento' => 'inicio_proceso',
+            'tipo_evento' => 'otro',
             'descripcion' => 'Iniciando proceso de graduación tipo ID: ' . $codTipoExamen,
             'datos_nuevos' => ['cod_tipo_examen' => $codTipoExamen, 'cod_paso_inicial' => $primerPaso]
         ]);
@@ -179,11 +295,12 @@ class ExamenManager
                     AND ed.es_version_actual = 1
                     AND ed.eliminado = 0
                 LEFT JOIN archivo_local al ON al.cod_documento = ed.cod_documento
-                LEFT JOIN examen_revision_documento er ON er.cod_documento = ed.cod_documento
-                AND er.fecha_revision = (
-                    SELECT MAX(er2.fecha_revision)
+                LEFT JOIN examen_revision_documento er ON er.cod_revision = (
+                    SELECT er2.cod_revision
                     FROM examen_revision_documento er2
                     WHERE er2.cod_documento = ed.cod_documento
+                    ORDER BY er2.fecha_revision DESC, er2.cod_revision DESC
+                    LIMIT 1
                 )
                 WHERE erd.cod_paso = :paso
                   AND erd.tipo_entrega = 'digital'
@@ -391,17 +508,20 @@ class ExamenManager
 
     /**
      * Obtiene el catálogo de requisitos (documentos) para un paso y tipo de examen específicos.
+     * Filtra por cod_paso Y cod_tipo_examen para obtener solo los requisitos
+     * que corresponden a la fase correcta del proceso.
      * T-05
      */
-    public function getRequisitosDocumento(int $codPaso, int $codTipoExamen = null): array
+    public function getRequisitosDocumento(int $codPaso, int $codTipoExamen): array
     {
         $sql = 'SELECT cod_requisito, nombre, descripcion, tipo_entrega, obligatorio, formatos_permitidos, tamano_max_mb
                 FROM examen_requisito_documento
-                WHERE cod_tipo_examen = :tipo
+                WHERE cod_paso = :paso
+                  AND cod_tipo_examen = :tipo
                   AND activo = 1
                 ORDER BY orden_display ASC';
 
-        return $this->execute($sql, ['tipo' => $codTipoExamen]);
+        return $this->execute($sql, ['paso' => $codPaso, 'tipo' => $codTipoExamen]);
     }
 
     /**
@@ -545,21 +665,41 @@ class ExamenManager
                     throw new \Exception('Debe indicar motivo de rechazo');
                 }
 
-                $sqlInsert = '
-                    INSERT INTO examen_revision_documento
-                        (cod_documento, cod_proceso, cod_requisito, estado, motivo_rechazo, revisado_por)
-                    VALUES
-                        (:doc, :proceso, :req, :estado, :motivo, :usuario)
+                // Actualizar si ya existe una revisión para este documento,
+                // insertar si no existe (evita duplicados sin requerir UNIQUE KEY).
+                $sqlUpdate = '
+                    UPDATE examen_revision_documento
+                    SET estado         = :estado,
+                        motivo_rechazo = :motivo,
+                        revisado_por   = :usuario,
+                        fecha_revision = CURRENT_TIMESTAMP
+                    WHERE cod_documento = :doc
+                    ORDER BY fecha_revision DESC
+                    LIMIT 1
                 ';
-
-                $this->adapter->createStatement($sqlInsert, [
+                $result = $this->adapter->createStatement($sqlUpdate, [
                     'doc'     => $codDocumento,
-                    'proceso' => $codProceso,
-                    'req'     => $codRequisito,
                     'estado'  => $estado,
                     'motivo'  => $motivo,
                     'usuario' => $codUsuario,
                 ])->execute();
+
+                if ($result->getAffectedRows() == 0) {
+                    $sqlInsert = '
+                        INSERT INTO examen_revision_documento
+                            (cod_documento, cod_proceso, cod_requisito, estado, motivo_rechazo, revisado_por)
+                        VALUES
+                            (:doc, :proceso, :req, :estado, :motivo, :usuario)
+                    ';
+                    $this->adapter->createStatement($sqlInsert, [
+                        'doc'     => $codDocumento,
+                        'proceso' => $codProceso,
+                        'req'     => $codRequisito,
+                        'estado'  => $estado,
+                        'motivo'  => $motivo,
+                        'usuario' => $codUsuario,
+                    ])->execute();
+                }
             }
         }
         return true;
@@ -673,12 +813,27 @@ class ExamenManager
         return true;
     }
 
-    public function guardarProgramacionTerna(int $codProceso, array $programacion, int $codUsuario): bool
+    /**
+     * Guarda la programación (fecha y hora) del examen en la columna
+     * correspondiente según la fase.
+     *
+     * - fase = 'examen_privado'  → fecha_examen_privado / hora_examen_privado
+     * - fase = 'examen_general'  → fecha_examen_general / hora_examen_general
+     */
+    public function guardarProgramacionTerna(int $codProceso, array $programacion, int $codUsuario, string $fase = 'examen_privado'): bool
     {
-        // Se actualiza la tabla maestra del proceso ya que la fecha/hora es única por examen
-        $sql = 'UPDATE examen_proceso 
-                SET fecha_examen = :fecha, hora_inicio_examen = :hora
-                WHERE cod_proceso = :proceso';
+        // Determinar las columnas correctas según la fase
+        if ($fase === 'examen_general') {
+            $colFecha = 'fecha_examen_general';
+            $colHora  = 'hora_examen_general';
+        } else {
+            $colFecha = 'fecha_examen_privado';
+            $colHora  = 'hora_examen_privado';
+        }
+
+        $sql = "UPDATE examen_proceso 
+                SET {$colFecha} = :fecha, {$colHora} = :hora
+                WHERE cod_proceso = :proceso";
 
         $params = [
             'proceso' => $codProceso,
@@ -694,11 +849,16 @@ class ExamenManager
 
     /**
      * Obtiene los examinadores asignados y la programación del examen.
+     * La terna es compartida entre ambas fases (una sola por proceso),
+     * pero la fecha/hora se obtiene de la columna correspondiente a la fase.
      * T-07
+     *
+     * @param int    $codProceso  ID del proceso
+     * @param string $fase        Fase actual ('examen_privado' o 'examen_general')
      */
-    public function getTerna(int $codProceso): array
+    public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
     {
-        // 1. Obtener los examinadores de la tabla terna
+        // 1. Obtener los examinadores de la tabla terna (compartida, sin filtro de fase)
         $sqlTerna = 'SELECT 
                         nombre_examinador,
                         numero_colegiado,
@@ -710,19 +870,29 @@ class ExamenManager
 
         $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
         
-        // 2. Obtener fecha y hora de la tabla proceso
-        $sqlProceso = 'SELECT fecha_examen, hora_inicio_examen 
-                       FROM examen_proceso 
-                       WHERE cod_proceso = :proceso 
-                       LIMIT 1';
+        // 2. Obtener fecha y hora según la fase
+        if ($fase === 'examen_general') {
+            $sqlProceso = 'SELECT fecha_examen_general AS fecha,
+                                  hora_examen_general AS hora
+                           FROM examen_proceso 
+                           WHERE cod_proceso = :proceso 
+                           LIMIT 1';
+        } else {
+            $sqlProceso = 'SELECT fecha_examen_privado AS fecha,
+                                  hora_examen_privado AS hora
+                           FROM examen_proceso 
+                           WHERE cod_proceso = :proceso 
+                           LIMIT 1';
+        }
+
         $resProceso = $this->execute($sqlProceso, ['proceso' => $codProceso]);
-        $prog = $resProceso[0] ?? ['fecha_examen' => null, 'hora_inicio_examen' => null];
+        $prog = $resProceso[0] ?? ['fecha' => null, 'hora' => null];
 
         $terna = [
             'examinadores' => [],
             'programacion' => [
-                'fecha' => $prog['fecha_examen'],
-                'hora'  => $prog['hora_inicio_examen']
+                'fecha' => $prog['fecha'],
+                'hora'  => $prog['hora']
             ]
         ];
 
@@ -744,7 +914,7 @@ class ExamenManager
      * T-10
      */
     public function avanzarPaso(int $codProceso, int $userAdminId): bool
-    {        
+    {
         // 0. Obtener el codPasoActual del proceso para validar que el paso que se intenta cerrar es el correcto
         $sqlValidar = 'SELECT cod_paso_actual FROM examen_proceso WHERE cod_proceso = :proceso';
         $resValidar = $this->execute($sqlValidar, ['proceso' => $codProceso]);
@@ -754,14 +924,14 @@ class ExamenManager
             return false;
         }
 
-        $codPasoActual = $resValidar[0]['cod_paso_actual'];
+        $codPasoActual = (int)$resValidar[0]['cod_paso_actual'];
 
         // 1. Obtener el orden y fase del paso actual
         $sqlActual = 'SELECT cod_tipo_examen, numero_orden, fase FROM examen_paso_catalogo WHERE cod_paso = :paso';
         $resActual = $this->execute($sqlActual, ['paso' => $codPasoActual]);
         if (empty($resActual)) return false;
-        $tipoExamen  = $resActual[0]['cod_tipo_examen'];
-        $ordenActual = $resActual[0]['numero_orden'];
+        $tipoExamen  = (int)$resActual[0]['cod_tipo_examen'];
+        $ordenActual = (int)$resActual[0]['numero_orden'];
         $faseActual  = $resActual[0]['fase'];
 
         // 2. Cerrar el paso actual
@@ -777,12 +947,17 @@ class ExamenManager
             'usuario' => $userAdminId
         ])->execute();
 
+        error_log("DEBUG user 1: ".print_r($codProceso, true));
+        error_log("DEBUG user 2: ".print_r($codPasoActual, true));
+        error_log("DEBUG user 3: ".print_r($userAdminId, true));
+
         // 3. Determinar el siguiente paso según la fase actual
-        //    - examen_privado  paso 1-3 → mismo fase, numero_orden + 1
-        //    - examen_privado  paso 4   → carta_examinadores (su único paso)
-        //    - carta_examinadores       → examen_general, numero_orden = 1
-        //    - examen_general  paso 1-3 → mismo fase, numero_orden + 1
-        //    - examen_general  paso 4   → fin del proceso
+        //    - examen_privado         paso 1-3 → mismo fase, numero_orden + 1
+        //    - examen_privado         paso 4   → carta_examinadores (su único paso)
+        //    - carta_examinadores              → autorizacion_impresion (paso 6)
+        //    - autorizacion_impresion          → examen_general, numero_orden = 1
+        //    - examen_general         paso 1-3 → mismo fase, numero_orden + 1
+        //    - examen_general         paso 4   → fin del proceso
         if ($faseActual === 'examen_privado' && $ordenActual < 4) {
             $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
                              WHERE fase = "examen_privado"
@@ -791,12 +966,28 @@ class ExamenManager
                                AND activo = 1 LIMIT 1';
             $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen, 'siguiente' => $ordenActual + 1]);
         } elseif ($faseActual === 'examen_privado' && $ordenActual === 4) {
-            $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
+            error_log("[avanzarPaso] Buscando paso 5 (carta_examinadores). TipoExamen={$tipoExamen}");
+            $sqlSiguiente = 'SELECT cod_paso, nombre, numero_orden, fase, cod_tipo_examen, activo 
+                             FROM examen_paso_catalogo
                              WHERE fase = "carta_examinadores"
-                               AND (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL)
-                               AND activo = 1 LIMIT 1';
-            $resSiguiente = $this->execute($sqlSiguiente, ['tipo' => $tipoExamen]);
+                               AND activo = 1 
+                             ORDER BY numero_orden 
+                             LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, []);
+            error_log("[avanzarPaso] Resultado busqueda carta_examinadores: " . json_encode($resSiguiente));
         } elseif ($faseActual === 'carta_examinadores') {
+            error_log("[avanzarPaso] Buscando paso 6 (autorizacion_impresion). TipoExamen={$tipoExamen}");
+            // De carta_examinadores avanza al paso 6 (autorizacion_impresion)
+            $sqlSiguiente = 'SELECT cod_paso, nombre, numero_orden, fase 
+                             FROM examen_paso_catalogo
+                             WHERE fase = "autorizacion_impresion"
+                               AND activo = 1 
+                             ORDER BY numero_orden 
+                             LIMIT 1';
+            $resSiguiente = $this->execute($sqlSiguiente, []);
+            error_log("[avanzarPaso] Resultado busqueda autorizacion_impresion: " . json_encode($resSiguiente));
+        } elseif ($faseActual === 'autorizacion_impresion') {
+            // De autorizacion_impresion avanza al paso 1 de examen_general
             $sqlSiguiente = 'SELECT cod_paso FROM examen_paso_catalogo
                              WHERE fase = "examen_general"
                                AND numero_orden = 1
@@ -817,6 +1008,7 @@ class ExamenManager
 
         if (!empty($resSiguiente)) {
             $codSiguiente = $resSiguiente[0]['cod_paso'];
+            error_log("[avanzarPaso] Avanzando al paso siguiente: cod_paso={$codSiguiente}");
 
             // 4. Actualizar el proceso maestro
             $sqlMaster = 'UPDATE examen_proceso SET cod_paso_actual = :siguiente WHERE cod_proceso = :proceso';
@@ -828,10 +1020,12 @@ class ExamenManager
                          ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP';
             $this->adapter->createStatement($sqlNuevo, ['proceso' => $codProceso, 'paso' => $codSiguiente])->execute();
             
+            error_log("[avanzarPaso] Paso siguiente iniciado correctamente");
             return true;
         }
 
         // Si no hay siguiente paso, el proceso finaliza
+        error_log("[avanzarPaso] No se encontró siguiente paso. Finalizando proceso.");
         $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
         $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
         return true;

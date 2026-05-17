@@ -9,6 +9,7 @@ use Zend\Authentication\AuthenticationService;
 // SERVICES
 use Eep\Service\StudentGraduationManager;
 use Eep\Service\CartaExaminadoresManager;
+use Eep\Service\AutorizacionImpresionManager;
 use Eep\Service\LogManager as LM;
 
 class StudentGraduationController extends AbstractActionController {
@@ -24,38 +25,67 @@ class StudentGraduationController extends AbstractActionController {
     private $cartaManager;
 
     /**
+     * @var AutorizacionImpresionManager
+     */
+    private $autorizacionManager;
+
+    /**
      * @var AuthenticationService
      */
     private $authService;
 
     /**
-     * Constructor: inyecta los managers del paso 1-4 (StudentGraduationManager)
-     * y del paso 5 "Carta de Examinadores" (CartaExaminadoresManager).
+     * Constructor: inyecta los managers del paso 1-4 (StudentGraduationManager),
+     * del paso 5 "Carta de Examinadores" (CartaExaminadoresManager) y del
+     * paso 6 "Autorización de Impresión" (AutorizacionImpresionManager).
      */
     public function __construct(
         StudentGraduationManager $processManager,
         CartaExaminadoresManager $cartaManager,
+        AutorizacionImpresionManager $autorizacionManager,
         AuthenticationService $authService
     )
     {
-        $this->processManager = $processManager;
-        $this->cartaManager   = $cartaManager;
-        $this->authService    = $authService;
+        $this->processManager      = $processManager;
+        $this->cartaManager        = $cartaManager;
+        $this->autorizacionManager = $autorizacionManager;
+        $this->authService         = $authService;
     }
     
     public function indexAction() {
         // Obtener el código del usuario logueado
         $codUsuario = $this->authService->getIdentity();
-        
+
         // Obtener el proceso del estudiante
         $proceso = null;
         if ($codUsuario) {
             $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
         }
-        
-        $terna = null;
+
         if ($proceso) {
-            $terna = $this->processManager->getTerna($proceso['cod_proceso']);
+            error_log('[StudentGraduation:index] cod_paso_actual=' . var_export($proceso['cod_paso_actual'], true));
+            error_log('[StudentGraduation:index] fase_paso_actual=' . var_export($proceso['fase_paso_actual'] ?? null, true));
+            foreach ($proceso['pasos'] as $idx => $p) {
+                error_log('[StudentGraduation:index] paso[' . $idx . '] cod_paso=' . var_export($p['cod_paso'], true)
+                    . ' orden=' . var_export($p['numero_orden'], true)
+                    . ' template=' . var_export($p['template_parcial'] ?? null, true)
+                    . ' estado=' . var_export($p['estado'], true));
+            }
+        }
+
+        $terna = null;
+        $faseActual = 'examen_privado';
+        if ($proceso) {
+            // Determinar la fase actual para obtener la fecha/hora correcta
+            if (!empty($proceso['pasos']) && !empty($proceso['cod_paso_actual'])) {
+                foreach ($proceso['pasos'] as $p) {
+                    if ($p['cod_paso'] == $proceso['cod_paso_actual']) {
+                        $faseActual = $p['fase'];
+                        break;
+                    }
+                }
+            }
+            $terna = $this->processManager->getTerna($proceso['cod_proceso'], $faseActual);
         }
 
         $carta = null;
@@ -115,7 +145,17 @@ class StudentGraduationController extends AbstractActionController {
             return $this->redirect()->toRoute('student-graduation', ['action' => 'index']);
         }
 
-        $terna = $this->processManager->getTerna($proceso['cod_proceso']);
+        // Determinar la fase actual para obtener la fecha/hora correcta
+        $faseActual = 'examen_privado';
+        if (!empty($proceso['pasos']) && !empty($proceso['cod_paso_actual'])) {
+            foreach ($proceso['pasos'] as $p) {
+                if ($p['cod_paso'] == $proceso['cod_paso_actual']) {
+                    $faseActual = $p['fase'];
+                    break;
+                }
+            }
+        }
+        $terna = $this->processManager->getTerna($proceso['cod_proceso'], $faseActual);
 
         $view = new ViewModel([
             'proceso' => $proceso,
@@ -541,4 +581,90 @@ class StudentGraduationController extends AbstractActionController {
         $response->setContent(file_get_contents($rutaFisica));
         return $response;
     }
+
+    // ================================================================
+    // PASO 6 — Autorización de Impresión del Proyecto de Graduación
+    //
+    // Vista del estudiante:
+    //   - Lee las instrucciones publicadas por el director
+    //   - Descarga documentos de soporte (logos/escudos)
+    //   - Selecciona un profesional calificado (licenciado en letras)
+    //   - Descarga cartas tipo .docx
+    //   - Visualiza la junta directiva (informativo)
+    //   - Confirma haber descargado los materiales
+    //
+    // La aprobación final corresponde al director (revisión presencial)
+    // y se ejecuta desde ExamenController::aprobarRevisionPresencial.
+    // ================================================================
+
+    /**
+     * Vista del paso 6 para el estudiante. Carga todos los recursos
+     * globales en sólo lectura más el estado individual del proceso.
+     */
+    public function paso6AutorizacionImpresionAction()
+    {
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return $this->redirect()->toRoute('auth', ['action' => 'login']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return $this->redirect()->toRoute('student-graduation', ['action' => 'index']);
+        }
+
+        $estado = $this->autorizacionManager->getOrCreateEstadoProceso((int) $proceso['cod_proceso']);
+        $subPaso = (int) ($estado['sub_paso'] ?? 1);
+
+        $view = new ViewModel([
+            'proceso'       => $proceso,
+            'estado'        => $estado,
+            'instrucciones' => $this->autorizacionManager->getInstrucciones($subPaso),
+            'documentos'    => $this->autorizacionManager->getDocumentosSoporte(true),
+            'profesionales' => $this->autorizacionManager->getProfesionales(true),
+            'cartas'        => $this->autorizacionManager->getCartasDescarga(true),
+            'miembros'      => $this->autorizacionManager->getMiembrosJunta(true),
+        ]);
+        $view->setTemplate('eep/student-graduation/partial/paso6-autorizacion-impresion');
+        return $view;
+    }
+
+    /**
+     * AJAX: el estudiante selecciona (o cambia) su profesional calificado.
+     */
+    public function seleccionarProfesionalAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return new JsonModel(['success' => false, 'message' => 'Usuario no autenticado']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return new JsonModel(['success' => false, 'message' => 'No tiene un proceso activo']);
+        }
+        if (!$this->autorizacionManager->procesoEstaEnFase((int) $proceso['cod_proceso'])) {
+            return new JsonModel(['success' => false, 'message' => 'Su proceso no está en la fase de Autorización de Impresión']);
+        }
+
+        $codProfesional = (int) $request->getPost('cod_profesional', 0);
+        if ($codProfesional <= 0) {
+            return new JsonModel(['success' => false, 'message' => 'Profesional inválido']);
+        }
+
+        try {
+            $this->autorizacionManager->seleccionarProfesional(
+                (int) $proceso['cod_proceso'],
+                $codProfesional
+            );
+            return new JsonModel(['success' => true, 'message' => 'Profesional seleccionado correctamente']);
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
 }

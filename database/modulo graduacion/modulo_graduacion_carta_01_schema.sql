@@ -37,10 +37,10 @@ UPDATE `examen_paso_catalogo`
 -- 2) Insertar paso 5 en el catálogo (aplica a todos los tipos)
 -- ------------------------------------------------------------
 INSERT INTO `examen_paso_catalogo`
-  (`cod_tipo_examen`, `numero_orden`, `nombre`,
+  (`cod_tipo_examen`, `numero_orden`, `fase`, `nombre`,
    `template_parcial`, `es_ultimo_paso`, `activo`)
 VALUES
-  (NULL, 5, 'Carta de Examinadores', 'paso5-carta-examinadores', 0, 1);
+  (NULL, 5, 'carta_examinadores', 'Carta de Examinadores', 'paso5-carta-examinadores', 0, 1);
 
 
 -- ------------------------------------------------------------

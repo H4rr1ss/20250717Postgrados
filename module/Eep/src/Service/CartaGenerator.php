@@ -131,8 +131,8 @@ class CartaGenerator
     {
         $sql = 'SELECT ep.cod_proceso,
                        ep.cod_tipo_examen,
-                       ep.fecha_examen,
-                       ep.hora_inicio_examen,
+                       ep.fecha_examen_privado AS fecha_examen,
+                       ep.hora_examen_privado  AS hora_inicio_examen,
                        et.nombre AS tipo_examen,
                        u.cod_usuario,
                        u.nombres,

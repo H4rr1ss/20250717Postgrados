@@ -275,7 +275,7 @@ class StudentGraduationManager
                 AND epp.cod_proceso = :proceso
             WHERE epc.cod_tipo_examen IS NULL 
                OR epc.cod_tipo_examen = :tipo_examen
-            ORDER BY FIELD(epc.fase, "examen_privado", "carta_examinadores", "examen_general"),
+            ORDER BY FIELD(epc.fase, "examen_privado", "carta_examinadores", "autorizacion_impresion", "examen_general"),
                      epc.numero_orden ASC';
 
         $pasos = $this->execute($sqlPasos, [
@@ -283,10 +283,24 @@ class StudentGraduationManager
             'tipo_examen' => $proceso['cod_tipo_examen']
         ]);
 
+        // DEBUG: Log de pasos obtenidos
+        error_log('[StudentGraduation:getProcesoEstudiante] Total pasos obtenidos de BD: ' . count($pasos));
+        foreach ($pasos as $idx => $p) {
+            error_log('[StudentGraduation:getProcesoEstudiante] Paso[' . $idx . '] cod_paso=' . $p['cod_paso'] 
+                . ' numero_orden=' . $p['numero_orden'] 
+                . ' fase=' . $p['fase'] 
+                . ' template=' . ($p['template_parcial'] ?? 'N/A'));
+        }
+
         // Determinar la fase actual del proceso para filtrar pasos visibles.
         // Solo se muestran las fases ya alcanzadas — el estudiante no debe ver
         // fases futuras que todavía no le corresponden.
-        $faseOrden = ['examen_privado' => 1, 'carta_examinadores' => 2, 'examen_general' => 3];
+        $faseOrden = [
+            'examen_privado'         => 1,
+            'carta_examinadores'     => 2,
+            'autorizacion_impresion' => 3,
+            'examen_general'         => 4,
+        ];
 
         // Detectar la fase donde está actualmente (o la última si ya finalizó)
         $faseActual = 'examen_privado'; // default
@@ -302,9 +316,16 @@ class StudentGraduationManager
         }
 
         $nivelFaseActual = $faseOrden[$faseActual] ?? 1;
+        error_log('[StudentGraduation:getProcesoEstudiante] Fase detectada: ' . $faseActual . ' (nivel: ' . $nivelFaseActual . ')');
+        
         $pasos = array_values(array_filter($pasos, function ($p) use ($faseOrden, $nivelFaseActual) {
-            return ($faseOrden[$p['fase']] ?? 99) <= $nivelFaseActual;
+            $nivelPaso = $faseOrden[$p['fase']] ?? 99;
+            $incluir = $nivelPaso <= $nivelFaseActual;
+            error_log('[StudentGraduation:getProcesoEstudiante] Filtrando paso cod_paso=' . $p['cod_paso'] . ' fase=' . $p['fase'] . ' nivel=' . $nivelPaso . ' incluir=' . ($incluir ? 'SI' : 'NO'));
+            return $incluir;
         }));
+        
+        error_log('[StudentGraduation:getProcesoEstudiante] Total pasos después de filtrar: ' . count($pasos));
 
         // Calcular el progreso total
         $totalPasos = count($pasos);
@@ -327,6 +348,7 @@ class StudentGraduationManager
         $proceso['pasos_completados'] = $pasosCompletados;
         $proceso['progreso_total'] = $totalPasos > 0 ? round(($pasosCompletados / $totalPasos) * 100) : 0;
         $proceso['paso_actual_orden'] = $pasoActualOrden;
+        $proceso['fase_paso_actual'] = $faseActual;
 
         return $proceso;
     }
@@ -392,7 +414,15 @@ class StudentGraduationManager
     /**
      * Obtiene la terna de examinadores y la programación del examen para un proceso.
      */
-    public function getTerna(int $codProceso): array
+    /**
+     * Obtiene los examinadores asignados y la programación del examen.
+     * La terna es compartida entre ambas fases, pero la fecha/hora se obtiene
+     * de la columna correspondiente a la fase.
+     *
+     * @param int    $codProceso  ID del proceso
+     * @param string $fase        Fase actual ('examen_privado' o 'examen_general')
+     */
+    public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
     {
         $sqlTerna = 'SELECT
                         nombre_examinador,
@@ -405,18 +435,29 @@ class StudentGraduationManager
 
         $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
 
-        $sqlProceso = 'SELECT fecha_examen, hora_inicio_examen
-                       FROM examen_proceso
-                       WHERE cod_proceso = :proceso
-                       LIMIT 1';
+        // Obtener fecha y hora según la fase
+        if ($fase === 'examen_general') {
+            $sqlProceso = 'SELECT fecha_examen_general AS fecha,
+                                  hora_examen_general AS hora
+                           FROM examen_proceso
+                           WHERE cod_proceso = :proceso
+                           LIMIT 1';
+        } else {
+            $sqlProceso = 'SELECT fecha_examen_privado AS fecha,
+                                  hora_examen_privado AS hora
+                           FROM examen_proceso
+                           WHERE cod_proceso = :proceso
+                           LIMIT 1';
+        }
+
         $resProceso = $this->execute($sqlProceso, ['proceso' => $codProceso]);
-        $prog = $resProceso[0] ?? ['fecha_examen' => null, 'hora_inicio_examen' => null];
+        $prog = $resProceso[0] ?? ['fecha' => null, 'hora' => null];
 
         $terna = [
             'examinadores' => [],
             'programacion' => [
-                'fecha' => $prog['fecha_examen'],
-                'hora'  => $prog['hora_inicio_examen'],
+                'fecha' => $prog['fecha'],
+                'hora'  => $prog['hora'],
             ],
         ];
 

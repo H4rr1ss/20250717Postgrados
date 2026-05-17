@@ -1,9 +1,13 @@
 <!-- Paso 1: Revisión de Papelería -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+?>
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
         <div class="panel-revision">
             <div class="panel-revision-heading">
-                Requisitos de Papelería
+                Requisitos de Papelería — <?= $this->escapeHtml($etiquetaFase) ?>
             </div>
             <div class="panel-revision-body" style="padding: 10px;">
                 <div class="alert alert-info" style="display: flex; align-items: center; gap: 5px;">
@@ -12,9 +16,6 @@
                     Debe aceptar todos los documentos de la papelería para poder habilitar el siguiente paso de <strong>Entrega de Documentación</strong>.
                 </div>
                 <div class="tabla-requisitos-revision">
-                    <pre>
-                    <?php var_dump($this->proceso); ?>
-                    </pre>
                     <table class="table table-bordered table-requisitos">
                         <thead>
                             <tr>
@@ -285,6 +286,12 @@ $(document).ready(function() {
         }
     });
 
+    //* Limpiar backdrop al ocultar el modal (respaldo garantizado)
+    $('#modalRazonRechazo').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+
     //* Confirmar razón de rechazo
     $('#confirmarRechazo').on('click', function() {
         const razonRechazo = $('#razonRechazo').val().trim();
@@ -292,8 +299,20 @@ $(document).ready(function() {
             alert('Por favor, ingrese una razón para el rechazo.');
             return;
         }
-        aplicarEstadoRechazado(filaActual, botonActual, razonRechazo);
+        try {
+            aplicarEstadoRechazado(filaActual, botonActual, razonRechazo);
+        } catch (e) {
+            console.error('[confirmarRechazo] Error al aplicar estado:', e);
+        }
+        filaActual  = null;
+        botonActual = null;
+        // Cerrar modal de forma forzada compatible con Bootstrap 3
         $('#modalRazonRechazo').modal('hide');
+        setTimeout(function() {
+            $('#modalRazonRechazo').removeClass('in').css('display', 'none').attr('aria-hidden', 'true');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        }, 300);
     });
 
     // ── Funciones de estado ────────────────────────────────────────────────────
@@ -429,7 +448,8 @@ $(document).ready(function() {
             data: {
                 cod_proceso:     '<?= $this->proceso["cod_proceso"] ?? null ?>',
                 cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?? null ?>',
-                cod_tipo_examen:   '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                cod_tipo_examen: '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                fase:            '<?= $fase ?>',
                 requisitos:      requisitos ?? []
             },
             success: function(data) {

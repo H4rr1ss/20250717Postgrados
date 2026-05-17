@@ -153,6 +153,14 @@ return [//ICON, MENU text
         'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE],
         'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
     ],
+    View::AUTORIZACION_IMPRESION => [
+        'controller' => 'examen',
+        'action' => 'autorizacion-impresion',
+        'icon' => 'fa-print',
+        'text' => 'Autorización de Impresión',
+        'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
     View::STUDENT_GRADUATION => [
         'controller' => 'student-graduation',
         'action' => 'index',

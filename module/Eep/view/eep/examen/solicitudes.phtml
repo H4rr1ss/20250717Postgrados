@@ -94,7 +94,12 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                         <tbody>
                             
                             <?php foreach ($this->procesos as $p): ?>
+                  
                             <?php
+                                // Ocultar procesos que ya pasaron el paso 4 (se gestionan en otra sección)
+                                $numeroOrden = (int)($p['numero_orden'] ?? 0);
+                                if ($numeroOrden > 4) continue;
+
                                 $estadoPaso = $p['estado_paso'] ?? 'pendiente';
                                 $labelClass = 'default';
                                 $labelTexto = ucfirst($estadoPaso);

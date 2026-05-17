@@ -1,9 +1,13 @@
-<!-- Paso 3: Entrega de Documentación -->
+<!-- Paso 2: Entrega de Documentación -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+?>
 <div class="row" style="margin-top: 20px;">
     <div class="col-lg-12">
         <div class="panel-revision">
             <div class="panel-revision-heading">
-                Entrega de Documentación Física
+                Entrega de Documentación Física — <?= $this->escapeHtml($etiquetaFase) ?>
             </div>
             <div class="panel-revision-body" style="padding: 20px;">
                 
@@ -335,6 +339,7 @@ $(document).ready(function() {
                 cod_proceso: '<?= $this->proceso["cod_proceso"] ?? null ?>',
                 cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?? null ?>',
                 cod_tipo_examen: '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                fase:            '<?= $fase ?>',
                 documentos:  documentos ?? []
             },
             success: function(response) {

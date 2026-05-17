@@ -262,7 +262,10 @@ class CartaExaminadoresManager
             ]
         );
 
+        // Marca el paso 5 como completado. Después se mueve cod_paso_actual
+        // al paso 6 (autorizacion_impresion) para que el flujo continúe.
         $this->upsertProcesoPaso($codProceso, 'completado', true);
+        $this->avanzarAPaso6($codProceso);
 
         $codCarta = $this->cartaGenerator->generar(
             $codProceso,
@@ -274,6 +277,47 @@ class CartaExaminadoresManager
             'cod_ciclo' => (int) $ciclo['cod_ciclo'],
             'cod_carta' => $codCarta,
         ];
+    }
+
+    /**
+     * Tras aprobar el paso 5, mueve el proceso al paso 6
+     * (autorizacion_impresion). Crea la fila en examen_proceso_paso e
+     * inicializa el registro en examen_autorizacion_proceso.
+     */
+    private function avanzarAPaso6(int $codProceso): void
+    {
+        $rows = $this->execute(
+            'SELECT cod_paso FROM examen_paso_catalogo
+              WHERE fase = "autorizacion_impresion"
+                AND activo = 1
+              LIMIT 1'
+        );
+        if (empty($rows)) {
+            // Si la fase no está habilitada (migración no aplicada), no rompemos
+            // el flujo: el proceso queda cerrado como antes.
+            return;
+        }
+        $codPaso6 = (int) $rows[0]['cod_paso'];
+
+        // Apuntar el proceso maestro al paso 6
+        $this->exec(
+            'UPDATE examen_proceso SET cod_paso_actual = :paso WHERE cod_proceso = :proceso',
+            ['paso' => $codPaso6, 'proceso' => $codProceso]
+        );
+
+        // Iniciar (o reiniciar) la fila de seguimiento del paso 6
+        $this->exec(
+            'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, estado, fecha_inicio)
+             VALUES (:proceso, :paso, "en_progreso", CURRENT_TIMESTAMP)
+             ON DUPLICATE KEY UPDATE estado = "en_progreso", fecha_inicio = CURRENT_TIMESTAMP',
+            ['proceso' => $codProceso, 'paso' => $codPaso6]
+        );
+
+        // Pre-crear el registro de autorización para el proceso (vacío)
+        $this->exec(
+            'INSERT IGNORE INTO examen_autorizacion_proceso (cod_proceso) VALUES (:proceso)',
+            ['proceso' => $codProceso]
+        );
     }
 
     // ----------------------------------------------------------------

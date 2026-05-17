@@ -48,7 +48,7 @@ CREATE TABLE `examen_paso_catalogo` (
   `cod_paso`        tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
   `cod_tipo_examen` tinyint(3) unsigned DEFAULT NULL,
   `numero_orden`    tinyint(3) unsigned NOT NULL,
-  `fase`            ENUM('examen_privado','carta_examinadores','examen_general')
+  `fase`            ENUM('examen_privado','carta_examinadores','autorizacion_impresion','examen_general')
                     NOT NULL DEFAULT 'examen_privado',
   `nombre`          varchar(150) NOT NULL,
   `fecha_finalizado`     text DEFAULT NULL,
@@ -80,24 +80,31 @@ UNLOCK TABLES;
 -- ------------------------------------------------------------
 -- 3. examen_proceso
 --    Registro maestro de cada proceso de examen por estudiante.
---    Contiene el folderId de Google Drive y el paso actual.
+--    Contiene el paso actual y las fechas de ambos exámenes.
 --    cod_paso_actual = NULL indica proceso cerrado o cancelado.
+--
+--    Las fechas/horas están separadas por fase porque un proceso
+--    de graduación tiene dos exámenes con fechas diferentes:
+--      - Examen privado (fase examen_privado, pasos 1-4)
+--      - Examen general/público (fase examen_general, pasos 1-4)
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `examen_proceso`;
 CREATE TABLE `examen_proceso` (
-  `cod_proceso`        int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `cod_usuario`        int(11) NOT NULL COMMENT 'FK → usuario (estudiante)',
-  `cod_tipo_examen`    tinyint(3) unsigned NOT NULL,
-  `cod_paso_actual`    tinyint(3) unsigned DEFAULT NULL COMMENT 'NULL = proceso cerrado',
-  `fecha_examen`       date DEFAULT NULL COMMENT 'Fecha programada del examen oral',
-  `hora_inicio_examen` time DEFAULT NULL,
-  `fecha_solicitud`    timestamp NOT NULL DEFAULT current_timestamp(),
-  `cancelado`          tinyint(1) NOT NULL DEFAULT 0,
-  `fecha_cancelacion`  timestamp NULL DEFAULT NULL,
-  `motivo_cancelacion` text DEFAULT NULL,
-  `registrado_por`     int(11) NOT NULL COMMENT 'FK → usuario (staff)',
-  `created_at`         timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at`         timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `cod_proceso`          int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_usuario`          int(11) NOT NULL COMMENT 'FK → usuario (estudiante)',
+  `cod_tipo_examen`      tinyint(3) unsigned NOT NULL,
+  `cod_paso_actual`      tinyint(3) unsigned DEFAULT NULL COMMENT 'NULL = proceso cerrado',
+  `fecha_examen_privado` date DEFAULT NULL COMMENT 'Fecha programada del examen privado',
+  `hora_examen_privado`  time DEFAULT NULL COMMENT 'Hora de inicio del examen privado',
+  `fecha_examen_general` date DEFAULT NULL COMMENT 'Fecha programada del examen general (público)',
+  `hora_examen_general`  time DEFAULT NULL COMMENT 'Hora de inicio del examen general (público)',
+  `fecha_solicitud`      timestamp NOT NULL DEFAULT current_timestamp(),
+  `cancelado`            tinyint(1) NOT NULL DEFAULT 0,
+  `fecha_cancelacion`    timestamp NULL DEFAULT NULL,
+  `motivo_cancelacion`   text DEFAULT NULL,
+  `registrado_por`       int(11) NOT NULL COMMENT 'FK → usuario (staff)',
+  `created_at`           timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at`           timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_proceso`),
   KEY `idx_ep_usuario`       (`cod_usuario`),
   KEY `idx_ep_tipo`          (`cod_tipo_examen`),
@@ -173,41 +180,54 @@ CREATE TABLE `examen_requisito_documento` (
     FOREIGN KEY (`cod_paso`) REFERENCES `examen_paso_catalogo` (`cod_paso`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Semilla: documentos digitales del Paso 1 (cod_paso = 1)
+-- Semilla: requisitos por tipo de examen y fase.
+--
+-- IMPORTANTE - Relación entre tipos de examen y fases:
+--   - Tipo 1 (Privado General) y Tipo 2 (Privado Gerencia):
+--     Sus requisitos se vinculan a cod_paso 1 y 2 (fase examen_privado).
+--   - Tipo 3 (Público General):
+--     Sus requisitos se vinculan a cod_paso 6 y 7 (fase examen_general,
+--     que corresponde a numero_orden 1 y 2 dentro de esa fase).
+--     El tipo 3 aplica a todas las maestrías en la fase examen_general.
+--
+-- Las siguientes son semillas de ejemplo. En producción, el director
+-- configura los requisitos desde la interfaz administrativa.
+--
 LOCK TABLES `examen_requisito_documento` WRITE;
 INSERT INTO `examen_requisito_documento`
   (`cod_tipo_examen`, `cod_paso`, `nombre`, `descripcion`, `tipo_entrega`, `formatos_permitidos`, `tamano_max_mb`, `orden_display`) VALUES
-  (NULL, 1, 'Carta de Solicitud',
-   'Carta dirigida al Coordinador solicitando la realización del examen de graduación.',
-   'digital', 'pdf', 5, 1),
-  (NULL, 1, 'Recibo de Pago',
+  -- ── Tipo 1 (Privado General) — Fase examen_privado ─────────
+  -- Documentos digitales: paso 1 de examen_privado (cod_paso = 1)
+  (1, 1, 'Recibo de Pago',
    'Comprobante de pago de los derechos de examen de graduación.',
-   'digital', 'pdf,jpg,png', 5, 2),
-  (NULL, 1, 'Constancia de Cierre de Pensum',
+   'digital', 'pdf,jpg,png', 5, 1),
+  (1, 1, 'Constancia de Cierre de Pensum',
    'Constancia emitida por la coordinación que acredita el cierre total del pensum de estudios.',
-   'digital', 'pdf', 5, 3),
-  (NULL, 1, 'Ejemplar del Trabajo de Graduación',
+   'digital', 'pdf', 5, 2),
+  (1, 1, 'Ejemplar del Trabajo de Graduación',
    'Versión digital del trabajo de graduación en formato PDF.',
-   'digital', 'pdf', 30, 4),
-  (NULL, 1, 'Factura de Impresión',
+   'digital', 'pdf', 30, 3),
+
+  -- ── Tipo 2 (Privado Gerencia) — Fase examen_privado ────────
+  -- Documentos digitales: paso 1 de examen_privado (cod_paso = 1)
+  (2, 1, 'Factura de Impresión',
    'Factura emitida por la imprenta que realizó los empastados.',
-   'digital', 'pdf,jpg,png', 5, 5),
-  (NULL, 1, 'Certificación de Notas',
+   'digital', 'pdf,jpg,png', 5, 1),
+  (2, 1, 'Certificación de Notas',
    'Certificación oficial de todas las notas obtenidas durante el programa.',
-   'digital', 'pdf', 5, 6),
--- Semilla: documentos físicos del Paso 2 (cod_paso = 2)
-  (NULL, 2, 'Empastados (3 ejemplares)',
-   'Tres copias empastadas del trabajo de graduación según normas del programa.',
-   'fisico', NULL, 0, 1),
-  (NULL, 2, 'CD con versión digital',
-   'Dos CDs con la versión digital del trabajo de graduación.',
-   'fisico', NULL, 0, 2),
-  (NULL, 2, 'Carta de Autorización de Publicación',
-   'Carta firmada por el estudiante autorizando la publicación del trabajo.',
-   'fisico', NULL, 0, 3),
-  (NULL, 2, 'Constancia de Cierre de Pensum (original)',
-   'Documento original de la constancia de cierre de pensum para el expediente.',
-   'fisico', NULL, 0, 4);
+   'digital', 'pdf', 5, 2),
+
+  -- ── Tipo 3 (Público General) — Fase examen_general ─────────
+  -- Documentos digitales: paso 1 de examen_general (cod_paso = 6)
+  (3, 6, 'Empastados (2 ejemplares)',
+   'Versión digital de los empastados del trabajo de graduación.',
+   'digital', 'pdf,jpg,png', 10, 1),
+  (3, 6, 'CD con versión digital',
+   'Imagen o scan del CD con la versión digital del trabajo.',
+   'digital', 'pdf,jpg,png', 5, 2),
+  (3, 6, 'Carta de Autorización de Publicación',
+   'Carta firmada autorizando la publicación del trabajo de graduación.',
+   'digital', 'pdf', 5, 3);
 UNLOCK TABLES;
 
 
@@ -334,10 +354,10 @@ CREATE TABLE `examen_documento_fisico` (
 -- ------------------------------------------------------------
 -- 11. examen_terna
 --     Examinadores asignados al proceso (Paso 3). Un registro
---     por rol. También almacena la fecha y hora del examen.
---     Diseñado para 3 examinadores activos (vocal1, secretario,
---     presidente) con roles adicionales preparados para los
---     pasos guardados (vocal2, asesor).
+--     por posición. La terna es COMPARTIDA entre el examen
+--     privado y el examen general (la misma terna evalúa ambos).
+--     Las fechas/horas de cada examen se almacenan por separado
+--     en examen_proceso (fecha_examen_privado, fecha_examen_general).
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `examen_terna`;
 CREATE TABLE `examen_terna` (

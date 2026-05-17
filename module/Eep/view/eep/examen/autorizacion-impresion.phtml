@@ -1,0 +1,649 @@
+<?php
+/**
+ * Autorización de Impresión — pantalla principal del Director (Paso 6)
+ *
+ * Variables disponibles:
+ *   $procesos            array  Procesos en fase 'autorizacion_impresion'
+ *   $instruccionesParte1 string Instrucciones Parte 1: Autorización de Imprímase
+ *   $instruccionesParte2 string Instrucciones Parte 2: Entrega de Proyecto
+ *   $documentos          array  Documentos soporte (logos/escudos)
+ *   $profesionales       array  Licenciados en letras
+ *   $cartas              array  Cartas tipo .docx
+ *   $miembros            array  Miembros de junta directiva
+ *   $formatosDoc         array
+ *   $formatosCarta       array
+ *   $tamanoMaxMb         int
+ */
+$this->headTitle('Autorización de Impresión');
+
+// Summernote WYSIWYG editor - CSS en head
+$this->headLink()->appendStylesheet('https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.css');
+
+$urlGuardarInstrucciones = $this->url('examen', ['action' => 'guardarInstruccionesAutorizacion']);
+$urlSubirDoc             = $this->url('examen', ['action' => 'subirDocumentoSoporte']);
+$urlEliminarDoc          = $this->url('examen', ['action' => 'eliminarDocumentoSoporte']);
+$urlDescargarDoc         = $this->url('examen', ['action' => 'descargarDocumentoSoporte']);
+$urlGuardarProf          = $this->url('examen', ['action' => 'guardarProfesional']);
+$urlEliminarProf         = $this->url('examen', ['action' => 'eliminarProfesional']);
+$urlSubirCarta           = $this->url('examen', ['action' => 'subirCartaDescarga']);
+$urlEliminarCarta        = $this->url('examen', ['action' => 'eliminarCartaDescarga']);
+$urlDescargarCarta       = $this->url('examen', ['action' => 'descargarCartaDescarga']);
+$urlGuardarMiembro       = $this->url('examen', ['action' => 'guardarMiembroJunta']);
+$urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJunta']);
+?>
+
+<div class="col-lg-12">
+
+    <ol class="breadcrumb">
+        <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+        <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+        <li class="active">Autorización de Impresión</li>
+    </ol>
+
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            <i class="fa fa-print"></i>
+            Autorización de Impresión del Proyecto — Paso 6
+        </div>
+        <div class="panel-body">
+
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="active"><a href="#tab-procesos" data-toggle="tab"><i class="fa fa-users"></i> Procesos</a></li>
+                <li><a href="#tab-instrucciones" data-toggle="tab"><i class="fa fa-file-text-o"></i> Instrucciones</a></li>
+                <li><a href="#tab-documentos" data-toggle="tab"><i class="fa fa-image"></i> Documentos de soporte</a></li>
+                <li><a href="#tab-materiales" data-toggle="tab"><i class="fa fa-folder-open"></i> Profesionales y cartas</a></li>
+                <li><a href="#tab-junta" data-toggle="tab"><i class="fa fa-id-badge"></i> Junta directiva</a></li>
+            </ul>
+
+            <div class="tab-content" style="padding-top:20px;">
+
+                <!-- ============ TAB: PROCESOS ============ -->
+                <div id="tab-procesos" class="tab-pane active">
+                    <p style="color:#555;">
+                        Estudiantes que se encuentran actualmente en la fase de Autorización de Impresión.
+                        Selecciona <strong>Revisar</strong> para registrar la aprobación tras la revisión presencial.
+                    </p>
+
+                    <?php if (empty($procesos)): ?>
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            No hay procesos activos en esta fase.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" style="font-size: 13px;">
+                                <thead style="background:#f5f5f5;">
+                                    <tr>
+                                        <th style="width:5%;">#</th>
+                                        <th>Estudiante</th>
+                                        <th style="width:13%;">Carné</th>
+                                        <th style="width:12%;">Tipo de Examen</th>
+                                        <th style="width:18%;">Profesional seleccionado</th>
+                                        <th style="width:8%;">Parte</th>
+                                        <th style="width:12%;">Estado</th>
+                                        <th style="width:10%; text-align:center;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($procesos as $i => $p): ?>
+                                    <?php $subPaso = (int) ($p['sub_paso'] ?? 1); ?>
+                                    <tr>
+                                        <td><?= $i + 1 ?></td>
+                                        <td><?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?></td>
+                                        <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                        <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
+                                        <td>
+                                            <?php if (!empty($p['profesional_nombre'])): ?>
+                                                <?= $this->escapeHtml($p['profesional_nombre']) ?>
+                                            <?php else: ?>
+                                                <span class="text-muted"><em>Sin seleccionar</em></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($subPaso === 1): ?>
+                                                <span class="label label-info">Parte 1</span>
+                                            <?php else: ?>
+                                                <span class="label label-primary">Parte 2</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
+                                                <span class="label label-success">APROBADO</span>
+                                            <?php else: ?>
+                                                <span class="label label-warning">PENDIENTE</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <a class="btn btn-xs btn-primary"
+                                               href="<?= $this->url('examen', ['action' => 'configurarAutorizacion', 'id' => $p['cod_proceso']]) ?>">
+                                                <i class="fa fa-eye"></i> Revisar
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- ============ TAB: INSTRUCCIONES ============ -->
+                <div id="tab-instrucciones" class="tab-pane">
+                    <p style="color:#555;">
+                        Instrucciones que el estudiante verá según la parte del paso 6 en que se encuentre.
+                        Puedes usar el editor para dar formato (negritas, listas, encabezados, etc.).
+                    </p>
+
+                    <!-- Parte 1: Autorización de Imprímase -->
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <i class="fa fa-file-text-o"></i> Parte 1: Autorización de Imprímase
+                        </div>
+                        <div class="panel-body">
+                            <form id="form-instrucciones-parte1" class="form-instrucciones" data-parte="1">
+                                <div class="form-group">
+                                    <div id="summernote-instrucciones-parte1"><?= $instruccionesParte1 ?? '' ?></div>
+                                    <input type="hidden" id="html-instrucciones-parte1" name="instrucciones" value="<?= $this->escapeHtmlAttr($instruccionesParte1 ?? '') ?>">
+                                    <input type="hidden" name="parte" value="1">
+                                </div>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fa fa-save"></i> Guardar instrucciones Parte 1
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Parte 2: Entrega de Proyecto de Graduación -->
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <i class="fa fa-file-text-o"></i> Parte 2: Proceso Entrega de Proyecto de Graduación
+                        </div>
+                        <div class="panel-body">
+                            <form id="form-instrucciones-parte2" class="form-instrucciones" data-parte="2">
+                                <div class="form-group">
+                                    <div id="summernote-instrucciones-parte2"><?= $instruccionesParte2 ?? '' ?></div>
+                                    <input type="hidden" id="html-instrucciones-parte2" name="instrucciones" value="<?= $this->escapeHtmlAttr($instruccionesParte2 ?? '') ?>">
+                                    <input type="hidden" name="parte" value="2">
+                                </div>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fa fa-save"></i> Guardar instrucciones Parte 2
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ TAB: DOCUMENTOS SOPORTE ============ -->
+                <div id="tab-documentos" class="tab-pane">
+                    <p style="color:#555;">
+                        Logotipos, escudos y guías visuales que el estudiante descargará para preparar
+                        su material de impresión. Formatos: <strong><?= implode(', ', $formatosDoc) ?></strong>.
+                        Tamaño máximo: <?= $tamanoMaxMb ?> MB.
+                    </p>
+
+                    <form id="form-subir-doc" enctype="multipart/form-data" class="well well-sm">
+                        <div class="row">
+                            <div class="col-sm-5">
+                                <label>Título *</label>
+                                <input type="text" name="titulo" class="form-control" required>
+                            </div>
+                            <div class="col-sm-5">
+                                <label>Descripción</label>
+                                <input type="text" name="descripcion" class="form-control">
+                            </div>
+                            <div class="col-sm-2">
+                                <label>&nbsp;</label>
+                                <div class="file-picker-wrapper">
+                                    <label class="btn btn-default btn-sm btn-block file-picker-btn" style="margin-bottom:0;">
+                                        <i class="fa fa-folder-open-o"></i> Seleccionar archivo
+                                        <input type="file" name="archivo" required style="display:none;" class="file-picker-input">
+                                    </label>
+                                    <div class="file-picker-name text-muted" style="margin-top:4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sin archivo seleccionado</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm" style="margin-top:10px;">
+                            <i class="fa fa-upload"></i> Subir documento
+                        </button>
+                    </form>
+
+                    <?php if (empty($documentos)): ?>
+                        <div class="alert alert-info">No hay documentos cargados.</div>
+                    <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" style="font-size: 13px;">
+                            <thead style="background:#f5f5f5;">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Título</th>
+                                    <th>Descripción</th>
+                                    <th>Archivo</th>
+                                    <th style="width:18%; text-align:center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($documentos as $i => $d): ?>
+                                <tr>
+                                    <td><?= $i + 1 ?></td>
+                                    <td><?= $this->escapeHtml($d['titulo']) ?></td>
+                                    <td><?= $this->escapeHtml($d['descripcion'] ?? '-') ?></td>
+                                    <td><?= $this->escapeHtml($d['nombre_original'] ?? ($d['archivo_md5'] . '.' . $d['extension'])) ?></td>
+                                    <td style="text-align:center;">
+                                        <a class="btn btn-xs btn-info" target="_blank"
+                                           href="<?= $urlDescargarDoc ?>?h=<?= $this->escapeHtml($d['archivo_md5']) ?>">
+                                            <i class="fa fa-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-xs btn-danger btn-del-doc"
+                                                data-id="<?= (int) $d['cod_documento'] ?>">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- ============ TAB: PROFESIONALES + CARTAS ============ -->
+                <div id="tab-materiales" class="tab-pane">
+                    <div class="row">
+                        <!-- COL: PROFESIONALES -->
+                        <div class="col-md-6">
+                            <h4><i class="fa fa-user-circle-o"></i> Profesionales calificados</h4>
+                            <p style="color:#555;">
+                                Licenciados en letras que el estudiante podrá seleccionar.
+                            </p>
+
+                            <form id="form-prof" class="well well-sm">
+                                <input type="hidden" name="cod_profesional" value="0">
+                                <div class="form-group">
+                                    <label>Nombre completo *</label>
+                                    <input type="text" name="nombre_completo" class="form-control" required>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label>Correo</label>
+                                        <input type="email" name="correo" class="form-control">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label>Teléfono</label>
+                                        <input type="text" name="telefono" class="form-control">
+                                    </div>
+                                </div>
+                                <div style="margin-top:10px;">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fa fa-save"></i> Guardar
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-sm" id="btn-prof-reset">
+                                        <i class="fa fa-eraser"></i> Limpiar
+                                    </button>
+                                </div>
+                            </form>
+
+                            <table class="table table-bordered table-hover" style="font-size: 12px;">
+                                <thead style="background:#f5f5f5;">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Contacto</th>
+                                        <th style="width:18%;">Estado</th>
+                                        <th style="width:18%; text-align:center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($profesionales as $p): ?>
+                                    <tr>
+                                        <td><?= $this->escapeHtml($p['nombre_completo']) ?></td>
+                                        <td>
+                                            <?= $this->escapeHtml($p['correo'] ?? '') ?><br>
+                                            <small class="text-muted"><?= $this->escapeHtml($p['telefono'] ?? '') ?></small>
+                                        </td>
+                                        <td>
+                                            <?php if ((int) $p['activo'] === 1): ?>
+                                                <span class="label label-success">ACTIVO</span>
+                                            <?php else: ?>
+                                                <span class="label label-default">INACTIVO</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <button type="button" class="btn btn-xs btn-warning btn-edit-prof"
+                                                    data-id="<?= (int) $p['cod_profesional'] ?>"
+                                                    data-nombre="<?= $this->escapeHtmlAttr($p['nombre_completo']) ?>"
+                                                    data-correo="<?= $this->escapeHtmlAttr($p['correo'] ?? '') ?>"
+                                                    data-telefono="<?= $this->escapeHtmlAttr($p['telefono'] ?? '') ?>">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                            <?php if ((int) $p['activo'] === 1): ?>
+                                            <button type="button" class="btn btn-xs btn-danger btn-del-prof"
+                                                    data-id="<?= (int) $p['cod_profesional'] ?>">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- COL: CARTAS -->
+                        <div class="col-md-6">
+                            <h4><i class="fa fa-file-word-o"></i> Cartas para descarga</h4>
+                            <p style="color:#555;">
+                                Cartas tipo en formato Word que el estudiante descargará y completará por su cuenta.
+                                Formatos: <strong><?= implode(', ', $formatosCarta) ?></strong>.
+                            </p>
+
+                            <form id="form-carta" class="well well-sm" enctype="multipart/form-data">
+                                <div class="form-group">
+                                    <label>Título *</label>
+                                    <input type="text" name="titulo" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Descripción</label>
+                                    <input type="text" name="descripcion" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Archivo *</label>
+                                    <div class="file-picker-wrapper">
+                                        <label class="btn btn-default btn-sm btn-block file-picker-btn" style="margin-bottom:0;">
+                                            <i class="fa fa-folder-open-o"></i> Seleccionar archivo
+                                            <input type="file" name="archivo" required style="display:none;" class="file-picker-input">
+                                        </label>
+                                        <div class="file-picker-name text-muted" style="margin-top:4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sin archivo seleccionado</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm" style="margin-top:10px;">
+                                    <i class="fa fa-upload"></i> Subir carta
+                                </button>
+                            </form>
+
+                            <table class="table table-bordered table-hover" style="font-size: 12px;">
+                                <thead style="background:#f5f5f5;">
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Archivo</th>
+                                        <th style="width:18%; text-align:center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($cartas as $c): ?>
+                                    <tr>
+                                        <td>
+                                            <?= $this->escapeHtml($c['titulo']) ?>
+                                            <?php if (!empty($c['descripcion'])): ?>
+                                                <br><small class="text-muted"><?= $this->escapeHtml($c['descripcion']) ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= $this->escapeHtml($c['nombre_original']) ?></td>
+                                        <td style="text-align:center;">
+                                            <a class="btn btn-xs btn-info"
+                                               href="<?= $urlDescargarCarta ?>?h=<?= $this->escapeHtml($c['archivo_md5']) ?>">
+                                                <i class="fa fa-download"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-xs btn-danger btn-del-carta"
+                                                    data-id="<?= (int) $c['cod_carta'] ?>">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ TAB: JUNTA DIRECTIVA ============ -->
+                <div id="tab-junta" class="tab-pane">
+                    <p style="color:#555;">
+                        Miembros de la junta directiva que el estudiante visualizará como información de referencia.
+                    </p>
+
+                    <form id="form-miembro" class="well well-sm">
+                        <input type="hidden" name="cod_miembro" value="0">
+                        <div class="row">
+                            <div class="col-sm-5">
+                                <label>Nombre completo *</label>
+                                <input type="text" name="nombre_completo" class="form-control" required>
+                            </div>
+                            <div class="col-sm-6">
+                                <label>Puesto *</label>
+                                <input type="text" name="puesto" class="form-control" required placeholder="Ej: Presidente">
+                            </div>
+                            <div class="col-sm-2" style="margin-top:25px;">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fa fa-save"></i> Guardar
+                                </button>
+                                <button type="button" class="btn btn-default btn-sm" id="btn-miembro-reset">
+                                    <i class="fa fa-eraser"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <table class="table table-bordered table-hover" style="font-size: 13px;">
+                        <thead style="background:#f5f5f5;">
+                            <tr>
+                                <th>Nombre completo</th>
+                                <th>Puesto</th>
+                                <th style="width:18%; text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($miembros as $m): ?>
+                            <tr>
+                                <td><?= $this->escapeHtml($m['nombre_completo']) ?></td>
+                                <td><?= $this->escapeHtml($m['puesto']) ?></td>
+                                <td style="text-align:center;">
+                                    <button type="button" class="btn btn-xs btn-warning btn-edit-miembro"
+                                            data-id="<?= (int) $m['cod_miembro'] ?>"
+                                            data-nombre="<?= $this->escapeHtmlAttr($m['nombre_completo']) ?>"
+                                            data-puesto="<?= $this->escapeHtmlAttr($m['puesto']) ?>">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-danger btn-del-miembro"
+                                            data-id="<?= (int) $m['cod_miembro'] ?>">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div><!-- /tab-content -->
+        </div><!-- /panel-body -->
+    </div><!-- /panel-green -->
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    function postForm(url, formEl, onSuccess) {
+        var fd = new FormData(formEl);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.onload = function() {
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                if (resp.status === 'success' || resp.success === true) {
+                    onSuccess(resp);
+                } else {
+                    alert(resp.message || 'Operación fallida');
+                }
+            } catch (e) {
+                alert('Respuesta inválida del servidor');
+            }
+        };
+        xhr.send(fd);
+    }
+
+    function postData(url, params, onSuccess) {
+        var fd = new FormData();
+        Object.keys(params).forEach(function(k) { fd.append(k, params[k]); });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.onload = function() {
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                if (resp.status === 'success' || resp.success === true) {
+                    onSuccess(resp);
+                } else {
+                    alert(resp.message || 'Operación fallida');
+                }
+            } catch (e) {
+                alert('Respuesta inválida del servidor');
+            }
+        };
+        xhr.send(fd);
+    }
+
+    // ---------- Instrucciones (Summernote WYSIWYG) - Parte 1 y Parte 2 ----------
+    var summernoteConfig = {
+        height: 250,
+        minHeight: 150,
+        maxHeight: 400,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['insert', ['link']],
+            ['view', ['codeview', 'help']]
+        ],
+        styleTags: ['p', 'h4', 'h5', 'h6']
+    };
+
+    // Inicializar Summernote para Parte 1
+    if (typeof $ !== 'undefined' && $.fn.summernote) {
+        $('#summernote-instrucciones-parte1').summernote(Object.assign({}, summernoteConfig, {
+            callbacks: {
+                onChange: function(contents) {
+                    document.getElementById('html-instrucciones-parte1').value = contents;
+                }
+            }
+        }));
+
+        // Inicializar Summernote para Parte 2
+        $('#summernote-instrucciones-parte2').summernote(Object.assign({}, summernoteConfig, {
+            callbacks: {
+                onChange: function(contents) {
+                    document.getElementById('html-instrucciones-parte2').value = contents;
+                }
+            }
+        }));
+    }
+
+    // Handler para ambos formularios de instrucciones
+    document.querySelectorAll('.form-instrucciones').forEach(function(formInstr) {
+        formInstr.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var parte = formInstr.dataset.parte;
+            // Obtener HTML del editor Summernote correspondiente
+            if (typeof $ !== 'undefined' && $.fn.summernote) {
+                var editorId = '#summernote-instrucciones-parte' + parte;
+                var hiddenId = 'html-instrucciones-parte' + parte;
+                document.getElementById(hiddenId).value = $(editorId).summernote('code');
+            }
+            postForm('<?= $urlGuardarInstrucciones ?>', formInstr, function(r) {
+                alert(r.message);
+            });
+        });
+    });
+
+    // ---------- Documentos soporte ----------
+    var formDoc = document.getElementById('form-subir-doc');
+    if (formDoc) {
+        formDoc.addEventListener('submit', function(e) {
+            e.preventDefault();
+            postForm('<?= $urlSubirDoc ?>', formDoc, function() { location.reload(); });
+        });
+    }
+    document.querySelectorAll('.btn-del-doc').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('¿Eliminar este documento?')) return;
+            postData('<?= $urlEliminarDoc ?>', { cod_documento: btn.dataset.id }, function() { location.reload(); });
+        });
+    });
+
+    // ---------- Profesionales ----------
+    var formProf = document.getElementById('form-prof');
+    if (formProf) {
+        formProf.addEventListener('submit', function(e) {
+            e.preventDefault();
+            postForm('<?= $urlGuardarProf ?>', formProf, function() { location.reload(); });
+        });
+    }
+    var btnProfReset = document.getElementById('btn-prof-reset');
+    if (btnProfReset) {
+        btnProfReset.addEventListener('click', function() {
+            formProf.reset();
+            formProf.elements['cod_profesional'].value = 0;
+        });
+    }
+    document.querySelectorAll('.btn-edit-prof').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            formProf.elements['cod_profesional'].value = btn.dataset.id;
+            formProf.elements['nombre_completo'].value = btn.dataset.nombre;
+            formProf.elements['correo'].value          = btn.dataset.correo;
+            formProf.elements['telefono'].value        = btn.dataset.telefono;
+            formProf.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    document.querySelectorAll('.btn-del-prof').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('¿Desactivar este profesional?')) return;
+            postData('<?= $urlEliminarProf ?>', { cod_profesional: btn.dataset.id }, function() { location.reload(); });
+        });
+    });
+
+    // ---------- Cartas ----------
+    var formCarta = document.getElementById('form-carta');
+    if (formCarta) {
+        formCarta.addEventListener('submit', function(e) {
+            e.preventDefault();
+            postForm('<?= $urlSubirCarta ?>', formCarta, function() { location.reload(); });
+        });
+    }
+    document.querySelectorAll('.btn-del-carta').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('¿Eliminar esta carta?')) return;
+            postData('<?= $urlEliminarCarta ?>', { cod_carta: btn.dataset.id }, function() { location.reload(); });
+        });
+    });
+
+    // ---------- Junta directiva ----------
+    var formMiembro = document.getElementById('form-miembro');
+    if (formMiembro) {
+        formMiembro.addEventListener('submit', function(e) {
+            e.preventDefault();
+            postForm('<?= $urlGuardarMiembro ?>', formMiembro, function() { location.reload(); });
+        });
+    }
+    var btnMiembroReset = document.getElementById('btn-miembro-reset');
+    if (btnMiembroReset) {
+        btnMiembroReset.addEventListener('click', function() {
+            formMiembro.reset();
+            formMiembro.elements['cod_miembro'].value = 0;
+        });
+    }
+    document.querySelectorAll('.btn-edit-miembro').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            formMiembro.elements['cod_miembro'].value     = btn.dataset.id;
+            formMiembro.elements['nombre_completo'].value = btn.dataset.nombre;
+            formMiembro.elements['puesto'].value          = btn.dataset.puesto;
+            formMiembro.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+    document.querySelectorAll('.btn-del-miembro').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('¿Eliminar este miembro?')) return;
+            postData('<?= $urlEliminarMiembro ?>', { cod_miembro: btn.dataset.id }, function() { location.reload(); });
+        });
+    });
+})();
+</script>

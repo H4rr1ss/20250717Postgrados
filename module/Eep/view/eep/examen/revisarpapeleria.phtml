@@ -130,6 +130,26 @@ $this->headTitle('Revisión de papelería');
     </div>
 </div>
 
+<!-- Indicador de la fase actual del proceso -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+    $esFaseGeneral = ($fase === 'examen_general');
+?>
+<?php if ($esFaseGeneral): ?>
+<div class="row" style="margin-top: 5px;">
+    <div class="col-lg-12">
+        <div class="alert" style="background-color: #fff3cd; border: 1px solid #ffc107; border-left: 5px solid #ffc107; color: #856404; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa fa-graduation-cap fa-lg"></i>
+            <div>
+                <strong>Fase actual: <?= $this->escapeHtml($etiquetaFase) ?></strong>
+                &mdash; Los datos de esta fase (documentos, fecha y hora del examen) son independientes del examen privado.
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Contenido Dinámico según el Paso Actual -->
 <?php 
     // Cargar el partial correspondiente al paso actual
@@ -138,6 +158,8 @@ $this->headTitle('Revisión de papelería');
         'proceso'        => $this->proceso,
         'estudiante'     => $this->estudiante,
         'paso'           => $this->paso,
+        'fase'           => $fase,
+        'etiquetaFase'   => $etiquetaFase,
         'estados'        => $this->estados,
         'docsDigitales'  => $this->docsDigitales,
         'docsFisicos'    => $this->docsFisicos ?? [],
