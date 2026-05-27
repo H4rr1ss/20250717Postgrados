@@ -17,6 +17,7 @@ use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
 use Eep\Controller\ExamenController;
 use Eep\Controller\StudentGraduationController;
+use Eep\Controller\EvaluacionDocenteController;
 
 return [
     //FORMAT:
@@ -604,6 +605,23 @@ return [
         'seleccionarProfesional' => [
             'code' => 131,
             'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+    ],
+    EvaluacionDocenteController::class => [
+        'index' => [
+            'code' => 140,
+            'view' => View::EVALUACION_DOCENTE,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'evaluar' => [
+            'code' => 141,
+            'view' => View::EVALUACION_DOCENTE,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'guardarEvaluacion' => [
+            'code' => 142,
+            'view' => View::EVALUACION_DOCENTE,
             'roles' => [Role::ESTUDIANTE]
         ],
     ],

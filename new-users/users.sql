@@ -52,3 +52,20 @@ INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (7,7,CURDATE
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (8,8,CURDATE());
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (9,9,CURDATE());
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (10,10,CURDATE());
+
+
+-- ESTUDIANTES:
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100000001231', '20261006', 'Javier', 'Corleto', '2001-09-01', '55510065', 'javiC@email.com', '$2y$10$60Xp29rKjbsBdAlRvTReyeXC9caP5gyUGsnWSTu3r/WAPA9eQDu8m', 73, 'M', 'Bachiller', CURDATE(), 'Javier Corleto');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100000001232', '20262006', 'Sonia', 'Gomez', '2002-06-04', '5551004', 'sogomez@email.com', '$2y$10$kWRqQMePwGfG13Zj3Gj3yevmxDsVCbFUmyRRNyS4umD.pMS6kvwAe', 73, 'M', 'Bachiller', CURDATE(), 'Sonia Gomez');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100000001233', '20263006', 'Gerber', 'Lopez', '2001-02-06', '5551003', 'geblopexz@email.com', '$2y$10$Rg8vuzcExvLC/UQ6.E.N7OmFcAgKjYAQBnjUJW1imiYtvSE3B8Yty', 73, 'M', 'Bachiller', CURDATE(), 'Gerber Lopez');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100000001234', '20264006', 'Estuardo', 'Utz', '2002-09-01', '55510022', 'utzEste@email.com', '$2y$10$9lIZeRJagds6rp4Ijzyiuu97ZV8Vcr/SCA6vjzzVOa8OQoJUzu2UO', 73, 'M', 'Bachiller', CURDATE(), 'Estuardo Utz');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100000001235', '20265006', 'Josue', 'Estrada', '2001-02-02', '55510061', 'josueE@email.com', '$2y$10$MLyPKxhPTn4oE.0ejgSLNuxcbIjDWnW3Z.n79RpxFAbMlT3w.Upe6', 73, 'M', 'Bachiller', CURDATE(), 'Josue Estrada');

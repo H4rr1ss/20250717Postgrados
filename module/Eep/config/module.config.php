@@ -49,6 +49,8 @@ use Eep\Service\GradesManager;
 use Eep\Service\Factory\GradesManagerFactory;
 use Eep\Service\GeneralManager;
 use Eep\Service\Factory\GeneralManagerFactory;
+use Eep\Service\EvaluacionDocenteManager;
+use Eep\Service\Factory\EvaluacionDocenteManagerFactory;
 //PLUGIN
 use Eep\Controller\Plugin\PluginHandler;
 use Eep\Controller\Plugin\Factory\PluginHandlerFactory;
@@ -70,6 +72,9 @@ use Eep\Controller\ExamenController;
 use Eep\Controller\Factory\ExamenControllerFactory;
 use Eep\Controller\StudentGraduationController;
 use Eep\Controller\Factory\StudentGraduationControllerFactory;
+use Eep\Controller\EvaluacionDocenteController;
+use Eep\Controller\Factory\EvaluacionDocenteControllerFactory;
+use Eep\Controller\Factory\AssignmentControllerFactory;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -77,7 +82,7 @@ return [
     'controllers' => [
         'factories' => [
             UpgCourseController::class => LazyControllerAbstractFactory::class,
-            AssignmentController::class => LazyControllerAbstractFactory::class,
+            AssignmentController::class => AssignmentControllerFactory::class,
             AuthController::class => LazyControllerAbstractFactory::class,
             CohortController::class => LazyControllerAbstractFactory::class,
             TimetableController::class => TimetableControllerFactory::class,
@@ -89,6 +94,7 @@ return [
             OfficialController::class => LazyControllerAbstractFactory::class,
             ExamenController::class => ExamenControllerFactory::class,
             StudentGraduationController::class => StudentGraduationControllerFactory::class,
+            EvaluacionDocenteController::class => EvaluacionDocenteControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -320,6 +326,20 @@ return [
                     ],
                 ],
             ],
+            'evaluacion-docente' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/evaluacion-docente[/:action[/:id]]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => EvaluacionDocenteController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [
@@ -346,6 +366,7 @@ return [
             AutorizacionImpresionManager::class => AutorizacionImpresionManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
+            EvaluacionDocenteManager::class => EvaluacionDocenteManagerFactory::class,
         ],
     ],
     'view_manager' => [
