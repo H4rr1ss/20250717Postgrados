@@ -2,6 +2,7 @@
 
 namespace Eep\Service;
 
+use Zend\Db\Adapter\Adapter;
 use Zend\Db\TableGateway\TableGateway;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Expression;
@@ -144,6 +145,210 @@ class EvaluacionDocenteManager extends Manager {
             $res->setObj(['completadas' => $evaluacionesCompletadas, 'pendientes' => $totalPendientes, 'progreso' => $progreso]);
         } catch (\Exception $ex) {
             $res->failure('No se pudo obtener el resumen del estudiante', $ex);
+        }
+        return $res;
+    }
+
+    public function getPeriodosEvaluacion(): R {
+        $res = new R();
+        try {
+            $table = new TableGateway('evaluacion_respuesta', $this->dbAdapter);
+            $select = $table->getSql()->select();
+            $select->join(['h' => 'horario'], 'evaluacion_respuesta.cod_horario = h.cod_horario', ['anio', 'mes']);
+            $select->columns([]);
+            $select->quantifier(Select::QUANTIFIER_DISTINCT);
+            $select->order('h.anio DESC');
+            $select->order('h.mes DESC');
+            $result = $table->selectWith($select)->toArray();
+            $res->success();
+            $res->setObj($result);
+        } catch (\Exception $ex) {
+            $res->failure('No se pudieron consultar los períodos de evaluación', $ex);
+        }
+        return $res;
+    }
+
+    public function getReportePorDocente($anio = null, $mes = null): R {
+        $res = new R();
+        try {
+            $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
+            $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
+
+            $sql = "
+                SELECT 
+                    h.cod_horario,
+                    h.seccion,
+                    h.anio,
+                    h.mes,
+                    cp.nombre as nombre_curso,
+                    u.cod_usuario as cod_docente,
+                    CONCAT(u.nombres, ' ', u.apellidos) as nombre_docente,
+                    COUNT(er.id) as total_evaluaciones
+                FROM horario h
+                JOIN curso_pensum cp ON h.cod_pensum = cp.cod_pensum AND h.cod_curso = cp.cod_curso
+                LEFT JOIN usuario u ON h.cod_usuario_catedratico = u.cod_usuario
+                JOIN evaluacion_respuesta er ON h.cod_horario = er.cod_horario
+                WHERE 1=1
+                " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
+                " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
+                GROUP BY h.cod_horario, h.seccion, h.anio, h.mes, cp.nombre, u.cod_usuario
+                ORDER BY nombre_docente, h.anio DESC, h.mes DESC, cp.nombre
+            ";
+            $stmt = $this->dbAdapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+            $cursos = $stmt->toArray();
+
+            if (empty($cursos)) {
+                $res->success();
+                $res->setObj([]);
+                return $res;
+            }
+
+            $horarioIds = array_column($cursos, 'cod_horario');
+            $inClause = implode(',', array_map('intval', $horarioIds));
+
+            $sqlPreguntas = "
+                SELECT 
+                    er.cod_horario,
+                    p.id as id_pregunta,
+                    p.texto,
+                    p.tipo,
+                    COUNT(erd.id) as count_respuestas,
+                    AVG(CASE WHEN p.tipo = 'escala10' THEN CAST(erd.respuesta AS DECIMAL(10,2)) END) as promedio,
+                    SUM(CASE WHEN p.tipo = 'boolean' AND erd.respuesta = 'si' THEN 1 ELSE 0 END) as count_si,
+                    SUM(CASE WHEN p.tipo = 'boolean' THEN 1 ELSE 0 END) as count_boolean_total
+                FROM evaluacion_respuesta er
+                JOIN evaluacion_respuesta_detalle erd ON er.id = erd.id_evaluacion_respuesta
+                JOIN evaluacion_pregunta p ON erd.id_pregunta = p.id
+                WHERE er.cod_horario IN ($inClause)
+                GROUP BY er.cod_horario, p.id
+                ORDER BY er.cod_horario, p.orden
+            ";
+            $stmtPreguntas = $this->dbAdapter->query($sqlPreguntas, Adapter::QUERY_MODE_EXECUTE);
+            $preguntasRows = $stmtPreguntas->toArray();
+
+            $sqlComentarios = "
+                SELECT 
+                    er.cod_horario,
+                    erd.respuesta as comentario
+                FROM evaluacion_respuesta er
+                JOIN evaluacion_respuesta_detalle erd ON er.id = erd.id_evaluacion_respuesta
+                JOIN evaluacion_pregunta p ON erd.id_pregunta = p.id
+                WHERE er.cod_horario IN ($inClause)
+                  AND p.tipo = 'texto'
+                  AND erd.respuesta IS NOT NULL
+                  AND TRIM(erd.respuesta) != ''
+                ORDER BY er.cod_horario
+            ";
+            $stmtComentarios = $this->dbAdapter->query($sqlComentarios, Adapter::QUERY_MODE_EXECUTE);
+            $comentariosRows = $stmtComentarios->toArray();
+
+            $reporte = [];
+            foreach ($cursos as $curso) {
+                $key = (int) $curso['cod_horario'];
+                $reporte[$key] = [
+                    'cod_horario' => $key,
+                    'nombre_curso' => $curso['nombre_curso'],
+                    'seccion' => $curso['seccion'],
+                    'anio' => $curso['anio'],
+                    'mes' => $curso['mes'],
+                    'nombre_docente' => $curso['nombre_docente'] ?? 'Docente no asignado',
+                    'cod_docente' => $curso['cod_docente'],
+                    'total_evaluaciones' => (int) $curso['total_evaluaciones'],
+                    'preguntas' => [],
+                    'comentarios' => [],
+                ];
+            }
+
+            foreach ($preguntasRows as $row) {
+                $key = (int) $row['cod_horario'];
+                if (!isset($reporte[$key])) {
+                    continue;
+                }
+                $reporte[$key]['preguntas'][] = [
+                    'texto' => $row['texto'],
+                    'tipo' => $row['tipo'],
+                    'promedio' => $row['promedio'] !== null ? round((float) $row['promedio'], 2) : null,
+                    'count_si' => (int) $row['count_si'],
+                    'count_boolean_total' => (int) $row['count_boolean_total'],
+                ];
+            }
+
+            foreach ($comentariosRows as $row) {
+                $key = (int) $row['cod_horario'];
+                if (!isset($reporte[$key])) {
+                    continue;
+                }
+                $reporte[$key]['comentarios'][] = $row['comentario'];
+            }
+
+            $res->success();
+            $res->setObj(array_values($reporte));
+        } catch (\Exception $ex) {
+            $res->failure('No se pudo generar el reporte por docente', $ex);
+        }
+        return $res;
+    }
+
+    public function getEvaluacionesDetalle($anio = null, $mes = null): R {
+        $res = new R();
+        try {
+            $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
+            $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
+
+            $sql = "
+                SELECT 
+                    er.id,
+                    er.fecha_evaluacion,
+                    h.anio,
+                    h.mes,
+                    h.seccion,
+                    cp.nombre as nombre_curso,
+                    CONCAT(u.nombres, ' ', u.apellidos) as nombre_docente,
+                    p.id as id_pregunta,
+                    p.texto,
+                    p.tipo,
+                    p.orden,
+                    erd.respuesta
+                FROM evaluacion_respuesta er
+                JOIN horario h ON er.cod_horario = h.cod_horario
+                JOIN curso_pensum cp ON h.cod_pensum = cp.cod_pensum AND h.cod_curso = cp.cod_curso
+                LEFT JOIN usuario u ON h.cod_usuario_catedratico = u.cod_usuario
+                JOIN evaluacion_respuesta_detalle erd ON er.id = erd.id_evaluacion_respuesta
+                JOIN evaluacion_pregunta p ON erd.id_pregunta = p.id
+                WHERE 1=1
+                " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
+                " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
+                ORDER BY er.fecha_evaluacion, h.anio DESC, h.mes DESC, p.orden
+            ";
+            $stmt = $this->dbAdapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+            $rows = $stmt->toArray();
+
+            $evaluaciones = [];
+            foreach ($rows as $row) {
+                $id = (int) $row['id'];
+                if (!isset($evaluaciones[$id])) {
+                    $evaluaciones[$id] = [
+                        'id' => $id,
+                        'fecha_evaluacion' => $row['fecha_evaluacion'],
+                        'nombre_docente' => $row['nombre_docente'] ?? 'Docente no asignado',
+                        'nombre_curso' => $row['nombre_curso'],
+                        'seccion' => $row['seccion'],
+                        'anio' => $row['anio'],
+                        'mes' => $row['mes'],
+                        'respuestas' => [],
+                    ];
+                }
+                $evaluaciones[$id]['respuestas'][$row['id_pregunta']] = [
+                    'texto' => $row['texto'],
+                    'tipo' => $row['tipo'],
+                    'valor' => $row['respuesta'],
+                ];
+            }
+
+            $res->success();
+            $res->setObj(array_values($evaluaciones));
+        } catch (\Exception $ex) {
+            $res->failure('No se pudo generar el detalle de evaluaciones', $ex);
         }
         return $res;
     }

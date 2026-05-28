@@ -80,6 +80,8 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
 (140, 'Ver evaluación docente (pendientes)'),
 (141, 'Ver formulario de evaluación docente'),
 (142, 'Guardar evaluación docente'),
-(144, 'Ver confirmación de evaluación docente');
+(144, 'Ver confirmación de evaluación docente'),
+(145, 'Ver reporte de evaluación docente'),
+(146, 'Descargar reporte de evaluación docente');
 
 SET FOREIGN_KEY_CHECKS = 1;

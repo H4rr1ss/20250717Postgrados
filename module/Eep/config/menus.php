@@ -173,4 +173,10 @@ return [//ICON, MENU text
         'icon' => 'fa-history',
         'text' => 'Bitácora',
         'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO, Role::UDICA_JEFE]],
+    View::EVALUACION_DOCENTE_REPORTE => [
+        'controller' => 'evaluacion-docente',
+        'action' => 'reporte-docente',
+        'icon' => 'fa-bar-chart',
+        'text' => 'Reporte Evaluación Docente',
+        'roles' => [Role::DIRECTOR]],
 ];

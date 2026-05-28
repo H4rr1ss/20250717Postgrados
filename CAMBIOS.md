@@ -225,3 +225,37 @@ la estructura real usa `nombres` y `apellidos` (no `nombre1`, `nombre2`,
 `apellido1`, `apellido2`). Esto generaba un error SQL silencioso que hacía
 que `getCursosPendientes()` y `getHistorial()` retornaran `failure`.
 Archivo afectado: `module/Eep/src/Service/EvaluacionDocenteManager.php`.
+
+## Reporte de Evaluación Docente para Director (2026-05-27)
+
+Nueva funcionalidad para que el director descargue un reporte CSV con los
+resultados agregados de la evaluación docente. El reporte se organiza por
+docente y curso (horario), mostrando promedios de escalas, porcentajes de
+respuestas Sí/No y comentarios textuales (anónimos).
+
+Archivos nuevos/modificados:
+- `module/Eep/src/Service/EvaluacionDocenteManager.php`
+  - `getPeriodosEvaluacion()`: devuelve años/mes distintos con evaluaciones.
+  - `getReportePorDocente($anio, $mes)`: genera el reporte agrupado.
+- `module/Eep/src/Controller/EvaluacionDocenteController.php`
+  - `reporteDocenteAction()`: vista con filtros de período y tabla resumen.
+  - `descargarReporteDocenteAction()`: genera y descarga CSV con BOM UTF-8.
+- `module/Eep/view/eep/evaluacion-docente/reporte-docente.phtml` (nueva)
+- `module/Eep/config/access_filter.php`
+  - Acciones 145 y 146 agregadas (rol DIRECTOR).
+- `module/Eep/config/menus.php`
+  - Menú "Reporte Evaluación Docente" agregado para DIRECTOR.
+- `module/Eep/src/ValueObject/View.php`
+  - Constante `EVALUACION_DOCENTE_REPORTE = 30` agregada.
+- `database/evaluacion_docente.sql`
+  - Acciones 145 y 146 documentadas.
+
+Acciones agregadas:
+```
+INSERT INTO accion (cod_accion, nombre) VALUES
+  (145, 'Ver reporte de evaluación docente'),
+  (146, 'Descargar reporte de evaluación docente');
+```
+
+Nota: ejecutar los INSERT anteriores manualmente en la base de datos si el
+schema ya está aplicado.

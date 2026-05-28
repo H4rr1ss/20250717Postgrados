@@ -110,4 +110,130 @@ class EvaluacionDocenteController extends AbstractActionController {
         }
     }
 
+    public function reporteDocenteAction() {
+        $role = $this->layout()->role;
+        if ($role == null || !$role->isDirector()) {
+            return $this->redirect()->toRoute('home');
+        }
+
+        $anio = $this->params()->fromQuery('anio');
+        $mes = $this->params()->fromQuery('mes');
+        $anio = ($anio !== null && $anio !== '') ? (int) $anio : null;
+        $mes = ($mes !== null && $mes !== '') ? (int) $mes : null;
+
+        $periodosResult = $this->evaluacionDocenteManager->getPeriodosEvaluacion();
+        $periodos = ($periodosResult->get() && is_array($periodosResult->getObj())) ? $periodosResult->getObj() : [];
+
+        $reporteResult = $this->evaluacionDocenteManager->getReportePorDocente($anio, $mes);
+        $reporte = [];
+        if ($reporteResult->get() && is_array($reporteResult->getObj())) {
+            $reporte = $reporteResult->getObj();
+        } else {
+            $msg = new Message('Error', $reporteResult->getMsg());
+        }
+
+        return new ViewModel([
+            'periodos' => $periodos,
+            'reporte' => $reporte,
+            'anio' => $anio,
+            'mes' => $mes,
+            'msg' => $msg ?? null,
+        ]);
+    }
+
+    public function descargarReporteDocenteAction() {
+        $role = $this->layout()->role;
+        if ($role == null || !$role->isDirector()) {
+            return $this->redirect()->toRoute('home');
+        }
+
+        $anio = $this->params()->fromQuery('anio');
+        $mes = $this->params()->fromQuery('mes');
+        $anio = ($anio !== null && $anio !== '') ? (int) $anio : null;
+        $mes = ($mes !== null && $mes !== '') ? (int) $mes : null;
+
+        $preguntasResult = $this->evaluacionDocenteManager->getPreguntas();
+        if (!$preguntasResult->get()) {
+            $this->flashMessenger()->addErrorMessage('No se pudieron obtener las preguntas del reporte');
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
+        }
+
+        $preguntasList = ($preguntasResult->get() && is_array($preguntasResult->getObj())) ? $preguntasResult->getObj() : [];
+        $columnasPregunta = [];
+        foreach ($preguntasList as $seccion) {
+            foreach ($seccion['preguntas'] as $pregunta) {
+                $columnasPregunta[] = [
+                    'id' => $pregunta['id'],
+                    'texto' => $pregunta['texto'],
+                    'tipo' => $pregunta['tipo'],
+                ];
+            }
+        }
+
+        $detalleResult = $this->evaluacionDocenteManager->getEvaluacionesDetalle($anio, $mes);
+        if (!$detalleResult->get()) {
+            $this->flashMessenger()->addErrorMessage('No se pudo generar el reporte');
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
+        }
+
+        $evaluaciones = is_array($detalleResult->getObj()) ? $detalleResult->getObj() : [];
+        $nombresMeses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+
+        $filename = 'reporte_evaluacion_docente' . ($anio ? "_$anio" : '') . ($mes ? "_$mes" : '') . '.csv';
+
+        $headers = ['Fecha Evaluacion', 'Docente', 'Curso', 'Seccion', 'Periodo'];
+        foreach ($columnasPregunta as $col) {
+            $headers[] = $col['texto'];
+        }
+
+        $output = fopen('php://temp', 'r+');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+
+        foreach ($evaluaciones as $ev) {
+            $row = [
+                $ev['fecha_evaluacion'],
+                $ev['nombre_docente'],
+                $ev['nombre_curso'],
+                $ev['seccion'],
+                $ev['anio'] . ' - ' . ($nombresMeses[(int) $ev['mes']] ?? 'Mes ' . $ev['mes']),
+            ];
+
+            foreach ($columnasPregunta as $col) {
+                $idPregunta = $col['id'];
+                if (isset($ev['respuestas'][$idPregunta])) {
+                    $resp = $ev['respuestas'][$idPregunta];
+                    $tipo = $resp['tipo'];
+                    $valor = $resp['valor'];
+                    if ($tipo === 'boolean') {
+                        $row[] = strtolower($valor) === 'si' ? 'Si' : 'No';
+                    } else {
+                        $row[] = $valor;
+                    }
+                } else {
+                    $row[] = '';
+                }
+            }
+
+            fputcsv($output, $row);
+        }
+
+        rewind($output);
+        $csvContent = stream_get_contents($output);
+        fclose($output);
+
+        $response = $this->getResponse();
+        $response->setContent($csvContent);
+        $responseHeaders = $response->getHeaders();
+        $responseHeaders->addHeaderLine('Content-Type', 'text/csv; charset=utf-8');
+        $responseHeaders->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        $response->setHeaders($responseHeaders);
+
+        return $response;
+    }
+
 }

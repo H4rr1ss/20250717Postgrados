@@ -624,5 +624,15 @@ return [
             'view' => View::EVALUACION_DOCENTE,
             'roles' => [Role::ESTUDIANTE]
         ],
+        'reporteDocente' => [
+            'code' => 145,
+            'view' => View::EVALUACION_DOCENTE_REPORTE,
+            'roles' => [Role::DIRECTOR]
+        ],
+        'descargarReporteDocente' => [
+            'code' => 146,
+            'view' => View::EVALUACION_DOCENTE_REPORTE,
+            'roles' => [Role::DIRECTOR]
+        ],
     ],
 ];

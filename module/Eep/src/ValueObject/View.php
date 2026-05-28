@@ -34,5 +34,6 @@ class View {
     const STUDENT_GRADUATION = 27;
     const CARTA_EXAMINADORES = 28;
     const AUTORIZACION_IMPRESION = 29;
+    const EVALUACION_DOCENTE_REPORTE = 30;
 
 }
