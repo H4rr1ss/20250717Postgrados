@@ -659,12 +659,16 @@ class ExamenController extends AbstractActionController {
         $codPaso = $this->examenManager->getCodPasoPorFaseYOrden($fase, 1) ?? 1;
 
         $data = [
-            'id'             => $request->getPost('id'),
-            'nombre'         => $request->getPost('titulo'),
-            'descripcion'    => $request->getPost('descripcion'),
-            'cod_tipo_examen'=> $codTipoExamen,
-            'cod_paso'       => $codPaso,
-            'activo'         => 1
+            'id'                 => $request->getPost('id'),
+            'nombre'             => $request->getPost('titulo'),
+            'descripcion'        => $request->getPost('descripcion'),
+            'cod_tipo_examen'    => $codTipoExamen,
+            'cod_paso'           => $codPaso,
+            'formatos_permitidos'=> 'pdf,jpg,png',
+            'tamano_max_mb'      => 10,
+            'tipo_entrega'       => 'digital',
+            'obligatorio'        => 1,
+            'activo'             => 1
         ];
 
         try {
@@ -952,7 +956,8 @@ class ExamenController extends AbstractActionController {
             $statusRes = false;
 
             if (!empty($terna)){
-                $success = $this->examenManager->guardarTerna($codProceso, $terna, $userAdminId);
+                // Guardar terna con la fase correspondiente (examen_privado o examen_general)
+                $success = $this->examenManager->guardarTerna($codProceso, $terna, $userAdminId, $fase);
                 if ($success) {
                     $statusRes = true;
                 }

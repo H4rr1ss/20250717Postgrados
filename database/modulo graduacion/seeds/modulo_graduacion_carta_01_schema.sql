@@ -64,9 +64,9 @@ CREATE TABLE `examen_correccion_ciclo` (
                            NOT NULL DEFAULT 'pendiente_revision',
   `revisado_por`           INT(11) DEFAULT NULL
                            COMMENT 'FK -> usuario (coordinador)',
-  `fecha_revision`         TIMESTAMP NULL DEFAULT NULL,
-  `created_at`             TIMESTAMP NOT NULL DEFAULT current_timestamp(),
-  `updated_at`             TIMESTAMP NOT NULL DEFAULT current_timestamp()
+  `fecha_revision`         datetime NULL DEFAULT NULL,
+  `created_at`             datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`             datetime NOT NULL DEFAULT current_timestamp()
                            ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_ciclo`),
   UNIQUE KEY `uniq_ecc_proceso` (`cod_proceso`),
@@ -100,7 +100,7 @@ CREATE TABLE `examen_correccion_evidencia` (
   `descripcion`       VARCHAR(300) DEFAULT NULL
                       COMMENT 'Nota corta del estudiante sobre la evidencia',
   `subido_por`        INT(11) NOT NULL,
-  `fecha_subida`      TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_subida`      datetime NOT NULL DEFAULT current_timestamp(),
   `eliminado`         TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`cod_evidencia`),
   UNIQUE KEY `uniq_ece_archivo` (`archivo_md5`),
@@ -125,7 +125,7 @@ CREATE TABLE `examen_carta_plantilla` (
   `archivo_plantilla` VARCHAR(255) NOT NULL,
   `descripcion`       TEXT DEFAULT NULL,
   `activo`            TINYINT(1) NOT NULL DEFAULT 1,
-  `created_at`        TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `created_at`        datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_plantilla`),
   KEY `idx_ecp_tipo_activo` (`cod_tipo_examen`, `activo`),
   CONSTRAINT `examen_carta_plantilla_tipo_fk`
@@ -145,9 +145,9 @@ CREATE TABLE `examen_carta_examinadores` (
   `cod_plantilla`        SMALLINT(5) UNSIGNED NOT NULL,
   `archivo_generado`     VARCHAR(255) NOT NULL,
   `estado`               ENUM('generada','entregada') NOT NULL DEFAULT 'generada',
-  `fecha_generacion`     TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_generacion`     datetime NOT NULL DEFAULT current_timestamp(),
   `generada_por`         INT(11) NOT NULL,
-  `fecha_entrega`        TIMESTAMP NULL DEFAULT NULL,
+  `fecha_entrega`        datetime NULL DEFAULT NULL,
   `observaciones`        TEXT DEFAULT NULL,
   PRIMARY KEY (`cod_carta`),
   UNIQUE KEY `uniq_ece_proceso` (`cod_proceso`),

@@ -1,8 +1,26 @@
 -- ============================================================
--- MÓDULO EXAMEN — Esquema de base de datos
+-- MÓDULO GRADUACIÓN — Esquema completo de base de datos
 -- Base de datos: db_postgrados
--- Creado: 2026-02-22
--- Tablas: 12 (excluye examen_notificacion)
+-- Fecha de actualización: 2026-05-27
+-- Versión: 2.0 (Ternas independientes por fase)
+--
+-- CONTENIDO:
+--   - Paso 1-4: Examen Privado (papelería, documentación, terna, notificación)
+--   - Paso 5: Carta de Examinadores (corrección ciclos, cartas)
+--   - Paso 6: Autorización de Impresión del Proyecto
+--   - Paso 1-4: Examen General (papelería, documentación, terna, notificación)
+--
+-- Tablas incluidas: 22 tablas
+--   - 12 tablas base (examen_tipo, examen_paso_catalogo, examen_proceso, etc.)
+--   - 4 tablas paso 5 (carta examinadores)
+--   - 6 tablas paso 6 (autorización impresión)
+--
+-- NOTA IMPORTANTE:
+--   La terna de examinadores ahora es INDEPENDIENTE por fase:
+--   - fase = 'examen_privado' → terna del examen privado
+--   - fase = 'examen_general' → terna del examen general
+--   Ver tabla examen_terna, columna 'fase'
+--
 -- ============================================================
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -25,7 +43,7 @@ CREATE TABLE `examen_tipo` (
   `nombre`          varchar(100) NOT NULL,
   `descripcion`     text DEFAULT NULL,
   `activo`          tinyint(1) NOT NULL DEFAULT 1,
-  `created_at`      timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_tipo_examen`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -98,13 +116,13 @@ CREATE TABLE `examen_proceso` (
   `hora_examen_privado`  time DEFAULT NULL COMMENT 'Hora de inicio del examen privado',
   `fecha_examen_general` date DEFAULT NULL COMMENT 'Fecha programada del examen general (público)',
   `hora_examen_general`  time DEFAULT NULL COMMENT 'Hora de inicio del examen general (público)',
-  `fecha_solicitud`      timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_solicitud`      datetime NOT NULL DEFAULT current_timestamp(),
   `cancelado`            tinyint(1) NOT NULL DEFAULT 0,
-  `fecha_cancelacion`    timestamp NULL DEFAULT NULL,
+  `fecha_cancelacion` timestamp NULL DEFAULT NULL,
   `motivo_cancelacion`   text DEFAULT NULL,
   `registrado_por`       int(11) NOT NULL COMMENT 'FK → usuario (staff)',
-  `created_at`           timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at`           timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at`           datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`       datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_proceso`),
   KEY `idx_ep_usuario`       (`cod_usuario`),
   KEY `idx_ep_tipo`          (`cod_tipo_examen`),
@@ -134,11 +152,11 @@ CREATE TABLE `examen_proceso_paso` (
   `cod_proceso`      int(11) unsigned NOT NULL,
   `cod_paso`         tinyint(3) unsigned NOT NULL,
   `estado`           enum('pendiente','en_progreso','completado','rechazado') NOT NULL DEFAULT 'pendiente',
-  `fecha_inicio`     timestamp NOT NULL DEFAULT current_timestamp(),
-  `fecha_completado` timestamp NULL DEFAULT NULL COMMENT 'Deadline implícito: SET cuando el staff avanza al siguiente paso',
+  `fecha_inicio`     datetime NOT NULL DEFAULT current_timestamp(),
+  `fecha_completado` datetime NULL DEFAULT NULL COMMENT 'Deadline implícito: SET cuando el staff avanza al siguiente paso',
   `completado_por`   int(11) DEFAULT NULL COMMENT 'FK → usuario (staff)',
   `observaciones`    text DEFAULT NULL,
-  `created_at`       timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_proceso_paso`),
   UNIQUE KEY `unique_epp_proceso_paso` (`cod_proceso`, `cod_paso`),
   KEY `idx_epp_estado`            (`estado`),
@@ -171,7 +189,7 @@ CREATE TABLE `examen_requisito_documento` (
   `tamano_max_mb`    tinyint(3) unsigned NOT NULL DEFAULT 10,
   `orden_display`    tinyint(3) unsigned NOT NULL DEFAULT 1,
   `activo`           tinyint(1) NOT NULL DEFAULT 1,
-  `created_at`       timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_requisito`),
   KEY `idx_erd_paso_activo` (`cod_paso`, `activo`),
   CONSTRAINT `examen_requisito_tipo_fk`
@@ -218,16 +236,26 @@ INSERT INTO `examen_requisito_documento`
    'digital', 'pdf', 5, 2),
 
   -- ── Tipo 3 (Público General) — Fase examen_general ─────────
-  -- Documentos digitales: paso 1 de examen_general (cod_paso = 6)
-  (3, 6, 'Empastados (2 ejemplares)',
-   'Versión digital de los empastados del trabajo de graduación.',
-   'digital', 'pdf,jpg,png', 10, 1),
-  (3, 6, 'CD con versión digital',
-   'Imagen o scan del CD con la versión digital del trabajo.',
-   'digital', 'pdf,jpg,png', 5, 2),
-  (3, 6, 'Carta de Autorización de Publicación',
-   'Carta firmada autorizando la publicación del trabajo de graduación.',
-   'digital', 'pdf', 5, 3);
+  -- Paso 1 (cod_paso = 5): Revisión de Papelería — Requisitos digitales
+  (3, 5, 'Empastados (2 ejemplares)',
+   'Dos ejemplares empastados del trabajo de graduación.',
+   'digital', 'pdf', 10, 1),
+  (3, 5, 'CD con versión digital',
+   'CD con la versión digital del trabajo de graduación.',
+   'digital', 'pdf', 10, 2),
+  (3, 5, 'Carta de Autorización de Publicación',
+   'Carta de autorización para publicar el trabajo en el repositorio.',
+   'digital', 'pdf', 5, 3),
+  -- Paso 2 (cod_paso = 6): Entrega de Documentación Física — Mismos documentos, entrega física
+  -- (3, 6, 'Empastados (2 ejemplares)',
+  --  'Versión digital de los empastados del trabajo de graduación.',
+  --  'digital', 'pdf,jpg,png', 10, 1),
+  -- (3, 6, 'CD con versión digital',
+  --  'Imagen o scan del CD con la versión digital del trabajo.',
+  --  'digital', 'pdf,jpg,png', 5, 2),
+  -- (3, 6, 'Carta de Autorización de Publicación',
+  --  'Carta firmada autorizando la publicación del trabajo de graduación.',
+  --  'digital', 'pdf', 5, 3);
 UNLOCK TABLES;
 
 
@@ -283,7 +311,7 @@ CREATE TABLE `archivo_local` (
   `cod_documento` int(11) unsigned NOT NULL,
   `nombre_md5`    varchar(32) NOT NULL COMMENT 'Hash MD5 = nombre físico del archivo en disk/archivos/',
   `extension`     varchar(10) NOT NULL COMMENT 'Sin punto: pdf, jpg, png',
-  `created_at`    timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_archivo`),
   UNIQUE KEY `unique_al_documento` (`cod_documento`),
   UNIQUE KEY `unique_al_nombre`    (`nombre_md5`),
@@ -338,8 +366,8 @@ CREATE TABLE `examen_documento_fisico` (
   `recibido`        tinyint(1) NOT NULL DEFAULT 0,
   `fecha_recepcion` timestamp NULL DEFAULT NULL,
   `recibido_por`    int(11) DEFAULT NULL COMMENT 'FK → usuario (staff)',
-  `created_at`      timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at`      timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`       datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_doc_fisico`),
   UNIQUE KEY `unique_edf_proceso_req` (`cod_proceso`, `cod_requisito`),
   CONSTRAINT `examen_doc_fisico_proceso_fk`
@@ -354,8 +382,10 @@ CREATE TABLE `examen_documento_fisico` (
 -- ------------------------------------------------------------
 -- 11. examen_terna
 --     Examinadores asignados al proceso (Paso 3). Un registro
---     por posición. La terna es COMPARTIDA entre el examen
---     privado y el examen general (la misma terna evalúa ambos).
+--     por posición y por fase. Ahora las ternas son INDEPENDIENTES:
+--     - Examen privado tiene su propia terna (fase = 'examen_privado')
+--     - Examen general tiene su propia terna (fase = 'examen_general')
+--     Esto permite que sean examinadores diferentes en cada fase.
 --     Las fechas/horas de cada examen se almacenan por separado
 --     en examen_proceso (fecha_examen_privado, fecha_examen_general).
 -- ------------------------------------------------------------
@@ -363,16 +393,17 @@ DROP TABLE IF EXISTS `examen_terna`;
 CREATE TABLE `examen_terna` (
   `cod_terna`          int(11) unsigned NOT NULL AUTO_INCREMENT,
   `cod_proceso`        int(11) unsigned NOT NULL,
+  `fase`               enum('examen_privado','examen_general') NOT NULL DEFAULT 'examen_privado' COMMENT 'Distingue la terna del examen privado vs la del examen general',
   `nombre_examinador`  varchar(200) NOT NULL,
   `numero_colegiado`   varchar(50) DEFAULT NULL,
   `correo`             varchar(150) DEFAULT NULL COMMENT 'Para notificaciones futuras',
   `tipo_examinador`    enum('interno','externo') NOT NULL DEFAULT 'externo' COMMENT 'Distingue si es personal de la institución o externo',
   `posicion`           tinyint(1) unsigned NOT NULL,
   `registrado_por`     int(11) NOT NULL COMMENT 'FK → usuario (staff)',
-  `created_at`         timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at`         timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`       datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_terna`),
-  UNIQUE KEY unique_proceso_posicion (cod_proceso, posicion),
+  UNIQUE KEY unique_proceso_fase_posicion (cod_proceso, fase, posicion),
   CONSTRAINT `examen_terna_proceso_fk`
     FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`),
   CONSTRAINT `examen_terna_usuario_fk`
@@ -410,7 +441,7 @@ CREATE TABLE `examen_historial` (
                      CHECK (json_valid(`datos_nuevos`)),
   `ip_address`       varchar(45) DEFAULT NULL COMMENT 'Soporta IPv4 e IPv6',
   `user_agent`       varchar(300) DEFAULT NULL,
-  `created_at`       timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Sin updated_at — registro inmutable',
+  `created_at`       datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Sin updated_at — registro inmutable',
   PRIMARY KEY (`cod_historial`),
   KEY `idx_eh_proceso`            (`cod_proceso`),
   KEY `idx_eh_usuario`            (`cod_usuario`),
@@ -422,6 +453,329 @@ CREATE TABLE `examen_historial` (
   CONSTRAINT `examen_historial_usuario_fk`
     FOREIGN KEY (`cod_usuario`) REFERENCES `usuario` (`cod_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ============================================================
+-- PASO 5: CARTA DE EXAMINADORES
+-- ============================================================
+-- El seguimiento de correcciones se realiza por correo electrónico
+-- EXTERNO a la plataforma. En la plataforma sólo se guardan evidencias
+-- (capturas/PDFs de correos) como bitácora del seguimiento.
+
+-- ------------------------------------------------------------
+-- 13. examen_correccion_ciclo
+--     Ciclo interno único por proceso. El usuario NUNCA ve el
+--     concepto de "ciclo" en la plataforma. Se crea automáticamente
+--     el primer ciclo al entrar al paso 5 (iniciarPasoCarta) y se
+--     mantiene en estado 'pendiente_revision' hasta que el director
+--     aprueba el trabajo. El campo observaciones queda NULL.
+--
+--     El intercambio de correcciones ocurre FUERA de la plataforma
+--     (correo electrónico). El estudiante registra evidencias
+--     (capturas/PDFs) en examen_correccion_evidencia como bitácora
+--     del seguimiento.
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_correccion_ciclo`;
+CREATE TABLE `examen_correccion_ciclo` (
+  `cod_ciclo`              INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cod_proceso`            INT(11) UNSIGNED NOT NULL,
+  `estado`                 ENUM('pendiente_revision','aprobado')
+                           NOT NULL DEFAULT 'pendiente_revision',
+  `revisado_por`           INT(11) DEFAULT NULL
+                           COMMENT 'FK -> usuario (coordinador)',
+  `fecha_revision`         datetime NULL DEFAULT NULL,
+  `created_at`             datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`             datetime NOT NULL DEFAULT current_timestamp()
+                           ON UPDATE current_timestamp(),
+  PRIMARY KEY (`cod_ciclo`),
+  UNIQUE KEY `uniq_ecc_proceso` (`cod_proceso`),
+  KEY `idx_ecc_proceso_estado` (`cod_proceso`, `estado`),
+  KEY `idx_ecc_estado` (`estado`),
+  CONSTRAINT `examen_correccion_ciclo_proceso_fk`
+    FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`),
+  CONSTRAINT `examen_correccion_ciclo_usuario_fk`
+    FOREIGN KEY (`revisado_por`) REFERENCES `usuario` (`cod_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ------------------------------------------------------------
+-- 14. examen_correccion_evidencia
+--     Adjuntos (capturas de correos) por ciclo. Cada captura es una
+--     imagen o pdf pequeño que evidencia la comunicación con el
+--     estudiante. Los archivos físicos se guardan en
+--     public/archivos/ con nombre MD5 (mismo patrón que el resto
+--     del módulo).
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_correccion_evidencia`;
+CREATE TABLE `examen_correccion_evidencia` (
+  `cod_evidencia`     INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cod_ciclo`         INT(11) UNSIGNED NOT NULL,
+  `archivo_md5`       VARCHAR(32) NOT NULL
+                      COMMENT 'Nombre físico (sin extensión) en public/archivos/',
+  `extension`         VARCHAR(10) NOT NULL
+                      COMMENT 'Sin punto: jpg, png, pdf',
+  `nombre_original`   VARCHAR(255) DEFAULT NULL,
+  `tamano_bytes`      INT(10) UNSIGNED DEFAULT NULL,
+  `descripcion`       VARCHAR(300) DEFAULT NULL
+                      COMMENT 'Nota corta del estudiante sobre la evidencia',
+  `subido_por`        INT(11) NOT NULL,
+  `fecha_subida`      datetime NOT NULL DEFAULT current_timestamp(),
+  `eliminado`         TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`cod_evidencia`),
+  UNIQUE KEY `uniq_ece_archivo` (`archivo_md5`),
+  KEY `idx_ece_ciclo` (`cod_ciclo`),
+  CONSTRAINT `examen_correccion_evidencia_ciclo_fk`
+    FOREIGN KEY (`cod_ciclo`) REFERENCES `examen_correccion_ciclo` (`cod_ciclo`),
+  CONSTRAINT `examen_correccion_evidencia_usuario_fk`
+    FOREIGN KEY (`subido_por`) REFERENCES `usuario` (`cod_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ------------------------------------------------------------
+-- 15. examen_carta_plantilla
+--     Catálogo de plantillas .docx con merge fields (PHPWord
+--     TemplateProcessor).
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_carta_plantilla`;
+CREATE TABLE `examen_carta_plantilla` (
+  `cod_plantilla`     SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cod_tipo_examen`   TINYINT(3) UNSIGNED DEFAULT NULL,
+  `nombre`            VARCHAR(150) NOT NULL,
+  `archivo_plantilla` VARCHAR(255) NOT NULL,
+  `descripcion`       TEXT DEFAULT NULL,
+  `activo`            TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at`        datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_plantilla`),
+  KEY `idx_ecp_tipo_activo` (`cod_tipo_examen`, `activo`),
+  CONSTRAINT `examen_carta_plantilla_tipo_fk`
+    FOREIGN KEY (`cod_tipo_examen`) REFERENCES `examen_tipo` (`cod_tipo_examen`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ------------------------------------------------------------
+-- 16. examen_carta_examinadores
+--     Carta generada (una por proceso). Se crea al aprobar el ciclo.
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_carta_examinadores`;
+CREATE TABLE `examen_carta_examinadores` (
+  `cod_carta`            INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cod_proceso`          INT(11) UNSIGNED NOT NULL,
+  `cod_ciclo_aprobacion` INT(11) UNSIGNED NOT NULL,
+  `cod_plantilla`        SMALLINT(5) UNSIGNED NOT NULL,
+  `archivo_generado`     VARCHAR(255) NOT NULL,
+  `estado`               ENUM('generada','entregada') NOT NULL DEFAULT 'generada',
+  `fecha_generacion`     datetime NOT NULL DEFAULT current_timestamp(),
+  `generada_por`         INT(11) NOT NULL,
+  `fecha_entrega`        datetime NULL DEFAULT NULL,
+  `observaciones`        TEXT DEFAULT NULL,
+  PRIMARY KEY (`cod_carta`),
+  UNIQUE KEY `uniq_ece_proceso` (`cod_proceso`),
+  KEY `idx_ece_estado` (`estado`),
+  CONSTRAINT `examen_carta_examinadores_proceso_fk`
+    FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`),
+  CONSTRAINT `examen_carta_examinadores_ciclo_fk`
+    FOREIGN KEY (`cod_ciclo_aprobacion`) REFERENCES `examen_correccion_ciclo` (`cod_ciclo`),
+  CONSTRAINT `examen_carta_examinadores_plantilla_fk`
+    FOREIGN KEY (`cod_plantilla`) REFERENCES `examen_carta_plantilla` (`cod_plantilla`),
+  CONSTRAINT `examen_carta_examinadores_usuario_fk`
+    FOREIGN KEY (`generada_por`) REFERENCES `usuario` (`cod_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- ============================================================
+-- PASO 6: AUTORIZACIÓN DE IMPRESIÓN DEL PROYECTO
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 17. examen_autorizacion_config
+--     Configuración GLOBAL de instrucciones (un único registro).
+--     El director edita los bloques de texto que el estudiante visualiza
+--     en cada parte del paso 6:
+--       - Parte 1: Autorización de Imprímase
+--       - Parte 2: Proceso Entrega de Proyecto de Graduación
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_autorizacion_config`;
+CREATE TABLE `examen_autorizacion_config` (
+  `cod_config`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `instrucciones_parte1`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 1: Autorización de Imprímase',
+  `instrucciones_parte2`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 2: Entrega de Proyecto de Graduación',
+  `updated_at`            datetime NOT NULL DEFAULT current_timestamp()
+                          ON UPDATE current_timestamp(),
+  `updated_by`            INT DEFAULT NULL COMMENT 'FK → usuario que modificó',
+  PRIMARY KEY (`cod_config`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Configuración global del paso 6: instrucciones por parte';
+
+-- Seed: fila única (cod_config = 1) que se editará vía UPDATE
+INSERT INTO `examen_autorizacion_config` (`cod_config`, `instrucciones_parte1`, `instrucciones_parte2`, `updated_by`)
+VALUES (1, NULL, NULL, NULL);
+
+
+-- ------------------------------------------------------------
+-- 18. examen_autorizacion_documento_soporte
+--     Documentos GLOBALES de soporte que el estudiante puede descargar.
+--     Ejemplos: logotipo de universidad, escudo, guía visual.
+--     Archivos físicos se guardan en:
+--       public/archivos/autorizacion_impresion/documentos_soporte/<md5>.<ext>
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_autorizacion_documento_soporte`;
+CREATE TABLE `examen_autorizacion_documento_soporte` (
+  `cod_documento`    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `titulo`           VARCHAR(200) NOT NULL  COMMENT 'Título descriptivo visible al estudiante',
+  `descripcion`      VARCHAR(500) DEFAULT NULL,
+  `archivo_md5`      VARCHAR(32)  NOT NULL  COMMENT 'Nombre físico (hash MD5)',
+  `extension`        VARCHAR(10)  NOT NULL  COMMENT 'Sin punto: jpg, png, pdf, docx',
+  `nombre_original`  VARCHAR(255) DEFAULT NULL,
+  `tamano_bytes`     INT UNSIGNED DEFAULT NULL,
+  `activo`           TINYINT(1) NOT NULL DEFAULT 1,
+  `subido_por`       INT NOT NULL COMMENT 'FK → usuario (director/asistente)',
+  `fecha_subida`     datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_documento`),
+  UNIQUE KEY `uniq_eads_md5` (`archivo_md5`),
+  KEY `idx_eads_activo_fecha` (`activo`, `fecha_subida`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Documentos de soporte globales (logos, escudos, guías visuales)';
+
+
+-- ------------------------------------------------------------
+-- 19. examen_profesional_calificado
+--     Licenciados en letras calificados (catálogo GLOBAL).
+--     El estudiante selecciona uno de esta lista durante el paso 6.
+--     NOTA: por requerimiento, NO se almacena número de colegiado.
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_profesional_calificado`;
+CREATE TABLE `examen_profesional_calificado` (
+  `cod_profesional`   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre_completo`   VARCHAR(200) NOT NULL,
+  `correo`            VARCHAR(150) DEFAULT NULL,
+  `telefono`          VARCHAR(20)  DEFAULT NULL,
+  `activo`            TINYINT(1) NOT NULL DEFAULT 1,
+  `creado_por`        INT NOT NULL COMMENT 'FK → usuario (director/asistente)',
+  `fecha_creacion`    datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_profesional`),
+  KEY `idx_epc_activo` (`activo`),
+  KEY `idx_epc_nombre` (`nombre_completo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Catálogo global de licenciados en letras (sin nº colegiado)';
+
+
+-- ------------------------------------------------------------
+-- 20. examen_carta_descarga
+--     Cartas tipo GENÉRICAS en formato .docx que el director sube y
+--     el estudiante descarga. NO se generan dinámicamente.
+--     Archivos físicos se guardan en:
+--       public/archivos/autorizacion_impresion/cartas_descarga/<md5>.<ext>
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_carta_descarga`;
+CREATE TABLE `examen_carta_descarga` (
+  `cod_carta`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `titulo`           VARCHAR(200) NOT NULL  COMMENT 'Título visible para el estudiante',
+  `descripcion`      VARCHAR(500) DEFAULT NULL COMMENT 'Para qué sirve la carta',
+  `archivo_md5`      VARCHAR(32)  NOT NULL,
+  `extension`        VARCHAR(10)  NOT NULL DEFAULT 'docx',
+  `nombre_original`  VARCHAR(255) NOT NULL,
+  `tamano_bytes`     INT UNSIGNED DEFAULT NULL,
+  `activo`           TINYINT(1) NOT NULL DEFAULT 1,
+  `subido_por`       INT NOT NULL,
+  `fecha_subida`     datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_carta`),
+  UNIQUE KEY `uniq_ecd_md5` (`archivo_md5`),
+  KEY `idx_ecd_activo_fecha` (`activo`, `fecha_subida`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Cartas genéricas .docx para descarga del estudiante';
+
+
+-- ------------------------------------------------------------
+-- 21. examen_junta_directiva
+--     Miembros de la junta directiva (información extra GLOBAL).
+--     El director realiza CRUD. El estudiante sólo los visualiza.
+--     No se usa en lógica de proceso; es estrictamente informativo.
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_junta_directiva`;
+CREATE TABLE `examen_junta_directiva` (
+  `cod_miembro`     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre_completo` VARCHAR(200) NOT NULL,
+  `puesto`          VARCHAR(100) NOT NULL COMMENT 'Ej: Presidente, Secretario, Vocal I',
+  `activo`          TINYINT(1) NOT NULL DEFAULT 1,
+  `creado_por`      INT NOT NULL,
+  `fecha_creacion`  datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`cod_miembro`),
+  KEY `idx_ejd_activo_fecha` (`activo`, `fecha_creacion`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Miembros de junta directiva (informativo, sólo lectura para estudiante)';
+
+
+-- ------------------------------------------------------------
+-- 22. examen_autorizacion_proceso
+--     Estado POR PROCESO del paso 6.
+--     Registra: profesional seleccionado por el estudiante y
+--     aprobación final del director (revisión presencial).
+--
+--     El paso 6 tiene 2 sub-pasos (partes):
+--       - Parte 1 (sub_paso=1): Estudiante selecciona profesional,
+--                               director aprueba revisión presencial.
+--       - Parte 2 (sub_paso=2): Preparación final para examen general,
+--                               director confirma culminación y avanza.
+--
+--     Reglas de negocio para aprobar Parte 1:
+--       - El proceso debe estar en fase 'autorizacion_impresion'
+--       - cod_profesional IS NOT NULL (estudiante ya seleccionó)
+--     Reglas de negocio para aprobar Parte 2:
+--       - El proceso debe estar en fase 'autorizacion_impresion'
+--       - sub_paso = 2
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_autorizacion_proceso`;
+CREATE TABLE `examen_autorizacion_proceso` (
+  `cod_autorizacion`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cod_proceso`            INT UNSIGNED NOT NULL,
+  `cod_profesional`        INT UNSIGNED DEFAULT NULL
+                           COMMENT 'FK → profesional seleccionado por el estudiante',
+  `sub_paso`               TINYINT UNSIGNED NOT NULL DEFAULT 1
+                           COMMENT '1=Parte1 (selección profesional), 2=Parte2 (culminación)',
+  `estado`                 ENUM('pendiente','aprobado') NOT NULL DEFAULT 'pendiente',
+  `fecha_aprobacion`       datetime NULL DEFAULT NULL,
+  `aprobado_por`           INT DEFAULT NULL COMMENT 'FK → usuario que aprobó (director)',
+  `observaciones`          TEXT DEFAULT NULL COMMENT 'Notas sobre la revisión presencial',
+  `created_at`             datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`             datetime NOT NULL DEFAULT current_timestamp()
+                           ON UPDATE current_timestamp(),
+  PRIMARY KEY (`cod_autorizacion`),
+  UNIQUE KEY `uniq_eap_proceso` (`cod_proceso`),
+  KEY `idx_eap_estado` (`estado`),
+  KEY `idx_eap_subpaso` (`sub_paso`),
+  KEY `idx_eap_profesional` (`cod_profesional`),
+  CONSTRAINT `examen_autorizacion_proceso_proceso_fk`
+    FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`)
+    ON DELETE CASCADE,
+  CONSTRAINT `examen_autorizacion_proceso_profesional_fk`
+    FOREIGN KEY (`cod_profesional`) REFERENCES `examen_profesional_calificado` (`cod_profesional`)
+    ON DELETE SET NULL,
+  CONSTRAINT `examen_autorizacion_proceso_aprobado_fk`
+    FOREIGN KEY (`aprobado_por`) REFERENCES `usuario` (`cod_usuario`)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+  COMMENT='Estado del paso 6 por proceso de graduación (2 sub-pasos)';
+
+
+-- ============================================================
+-- SEMILLAS OPCIONALES (ejemplos de datos iniciales)
+-- ============================================================
+-- Nota: Estos seeds son opcionales. En producción el director
+-- configurará estos catálogos desde la interfaz administrativa.
+
+-- Licenciados en Letras Calificados (catálogo inicial)
+-- INSERT INTO `examen_profesional_calificado`
+--   (`nombre_completo`, `correo`, `telefono`, `activo`, `creado_por`)
+-- VALUES
+--   ('Lic. Virsa Valenzuela', 'virvalen@hotmail.com', '5982-4483', 1, 1),
+--   ('Lic. Carlos Antonio Mendoza Estrada', 'cmendoza@correo.edu.gt', '5421-8932', 1, 1);
+
+-- Miembros de Junta Directiva (ejemplo)
+-- INSERT INTO `examen_junta_directiva`
+--   (`nombre_completo`, `puesto`, `activo`, `creado_por`)
+-- VALUES
+--   ('Dra. Ana Lucía Fernández Contreras', 'Presidenta de Junta Directiva', 1, 1),
+--   ('Dr. Miguel Ángel Soto Estrada', 'Secretario General', 1, 1);
 
 
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

@@ -150,12 +150,15 @@ class CartaGenerator
         }
         $proceso = $result[0];
 
+        // La carta de examinadores siempre utiliza la terna del examen privado
+        // (fase = 'examen_privado'), independientemente de la fase actual del proceso
         $terna = $this->execute(
             'SELECT nombre_examinador, numero_colegiado, tipo_examinador, posicion
                FROM examen_terna
               WHERE cod_proceso = :proceso
+                AND fase = :fase
               ORDER BY posicion ASC',
-            ['proceso' => $codProceso]
+            ['proceso' => $codProceso, 'fase' => 'examen_privado']
         );
         $proceso['terna'] = $terna;
         return $proceso;

@@ -22,6 +22,14 @@ $this->headTitle('Progreso del Proceso de Graduación');
         <?php
             $pasoActualOrden = $proceso['paso_actual_orden'] ?? 0;
             $procesoFinalizado = empty($proceso['cod_paso_actual']);
+
+            // Nombres formales para las fases
+            $nombresFase = [
+                'examen_privado'         => 'Examen Privado',
+                'carta_examinadores'     => 'Carta de Examinadores',
+                'autorizacion_impresion' => 'Autorización de Impresión',
+                'examen_general'         => 'Examen General',
+            ];
         ?>
 
         <?php if (!$procesoFinalizado): ?>
@@ -83,18 +91,20 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 $accionPaso = $accionesPorTemplate[$paso['template_parcial'] ?? ''] ?? null;
 
                                 // El botón de terna permanece activo también en el paso 4 (notificación)
+                                // SOLO si estamos en la fase examen_privado
                                 $esTerna = ($paso['template_parcial'] ?? '') === 'paso3-terna';
                                 $esCartaExaminadores = ($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores';
                                 $pasoActualOrdenActual = (int)($proceso['paso_actual_orden'] ?? 0);
                                 $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
+                                $fasePaso = $paso['fase'] ?? 'examen_privado'; // Fase a la que pertenece este paso específico
                                 
                                 // Botón activo si:
                                 // 1. Es el paso actual, O
-                                // 2. Es la terna y estamos en paso 4 (notificación), O
+                                // 2. Es la terna y estamos en paso 4 (notificación) DENTRO de examen_privado, O
                                 // 3. Es carta de examinadores y estamos en esa fase o más avanzada
                                 $botonActivo = $accionPaso && (
                                     $paso['cod_paso'] == $proceso['cod_paso_actual']
-                                    || ($esTerna && $pasoActualOrdenActual === 4)
+                                    || ($esTerna && $pasoActualOrdenActual === 4 && $faseActual === 'examen_privado' && $fasePaso === 'examen_privado')
                                     || ($esCartaExaminadores && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'carta_examinadores' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
                                 );
                             ?>
@@ -198,7 +208,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
                             <tr class="<?= $rowClass ?>">
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;"><?= $paso['numero_orden'] ?></td>
                                 <td style="padding: 14px 15px; font-size: 14px; text-align: center;">
-                                    <span><?= $paso['fase'] ?></span>
+                                    <span><?= $this->escapeHtml($nombresFase[$paso['fase']] ?? $paso['fase']) ?></span>
                                 </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $this->escapeHtml($paso['nombre']) ?>

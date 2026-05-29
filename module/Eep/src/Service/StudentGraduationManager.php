@@ -424,6 +424,8 @@ class StudentGraduationManager
      */
     public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
     {
+        // Obtener los examinadores filtrados por fase
+        // Ahora las ternas son independientes: examen_privado y examen_general pueden tener ternas diferentes
         $sqlTerna = 'SELECT
                         nombre_examinador,
                         numero_colegiado,
@@ -431,9 +433,10 @@ class StudentGraduationManager
                         tipo_examinador,
                         posicion
                     FROM examen_terna
-                    WHERE cod_proceso = :proceso';
+                    WHERE cod_proceso = :proceso
+                      AND fase = :fase';
 
-        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso, 'fase' => $fase]);
 
         // Obtener fecha y hora según la fase
         if ($fase === 'examen_general') {

@@ -111,23 +111,53 @@ class StudentGraduationController extends AbstractActionController {
         // Obtener el proceso del estudiante
         $proceso = null;
         $requisitos = [];
+        $requisitosReferencia = []; // Documentos del paso anterior para referencia
+        $esPasoFisico = false;
         
         if ($codUsuario) {
             $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
             
-            // Si existe un proceso activo, obtener los requisitos digitales del paso 1
+            // Si existe un proceso activo, obtener los requisitos digitales
             if ($proceso) {
+                // Determinar la fase actual para usar el tipo de examen correcto
+                $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
+                
+                // Para examen_general, siempre usar tipo 3 (Público General)
+                // Para examen_privado, usar el tipo del proceso (1 o 2)
+                if ($faseActual === 'examen_general') {
+                    $codTipoExamenFase = 3;  // TIPO_PUBLICO_GENERAL
+                    // Actualizar el nombre del tipo de examen para la vista
+                    $proceso['tipo_examen'] = 'General';
+                } else {
+                    $codTipoExamenFase = $proceso['cod_tipo_examen'];
+                }
+                
+                // Determinar si es un paso de entrega física (paso 2 o 6)
+                $codPasoActual = (int) $proceso['cod_paso_actual'];
+                if (in_array($codPasoActual, [2, 6])) {
+                    $esPasoFisico = true;
+                    // Cargar requisitos del paso anterior para referencia
+                    $pasoAnterior = ($codPasoActual === 2) ? 1 : 5;
+                    $requisitosReferencia = $this->processManager->getRequisitosDigitales(
+                        $proceso['cod_proceso'],
+                        $pasoAnterior,
+                        $codTipoExamenFase
+                    );
+                }
+                
                 $requisitos = $this->processManager->getRequisitosDigitales(
                     $proceso['cod_proceso'],
-                    1, // Paso 1: Solicitud de Examen
-                    $proceso['cod_tipo_examen']
+                    $proceso['cod_paso_actual'], // Usar el paso actual del proceso
+                    $codTipoExamenFase
                 );
             }
         }
         
         $view = new ViewModel([
             'proceso' => $proceso,
-            'requisitos' => $requisitos
+            'requisitos' => $requisitos,
+            'requisitosReferencia' => $requisitosReferencia,
+            'esPasoFisico' => $esPasoFisico
         ]);
         $view->setTemplate('eep/student-graduation/partial/paso1-solicitud-examen');
         return $view;

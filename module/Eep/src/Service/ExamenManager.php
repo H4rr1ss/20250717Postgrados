@@ -402,8 +402,19 @@ class ExamenManager
         }
 
         $whereTipo = '';
+        // Inicializar params aquí para poder agregar fase_tipo antes
+        $params = [];
         if ($codTipoExamen) {
-            $whereTipo = 'AND ep.cod_tipo_examen = :cod_tipo_examen';
+            // Filtrar por tipo de examen basado en la fase actual del paso
+            // Tipo 3 (Público General) = fase examen_general
+            // Tipos 1-2 (Privado) = fase examen_privado
+            if ($codTipoExamen == 3) {
+                $whereTipo = 'AND epc.fase = :fase_tipo';
+                $params['fase_tipo'] = 'examen_general';
+            } else {
+                $whereTipo = 'AND epc.fase = :fase_tipo AND ep.cod_tipo_examen = :cod_tipo_examen';
+                $params['fase_tipo'] = 'examen_privado';
+            }
         }
 
         $wherePaso = '';
@@ -417,11 +428,20 @@ class ExamenManager
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
-                    et.cod_tipo_examen   AS tipo_cod_examen,
-                    et.nombre            AS tipo_examen,
+                    -- Tipo de examen de la fase actual (3 para general, original para privado)
+                    CASE
+                        WHEN epc.fase = 'examen_general' THEN 3
+                        ELSE ep.cod_tipo_examen
+                    END AS tipo_cod_examen,
+                    -- Nombre del tipo según la fase actual
+                    CASE
+                        WHEN epc.fase = 'examen_general' THEN 'Público General'
+                        ELSE et.nombre
+                    END AS tipo_examen,
                     ep.fecha_solicitud,
                     ep.cod_paso_actual,
                     epc.numero_orden,
+                    epc.fase AS fase_actual,
                     CASE
                         WHEN ep.cod_paso_actual IS NULL THEN 'completado'
                         ELSE COALESCE(epp.estado, 'pendiente')
@@ -445,11 +465,11 @@ class ExamenManager
                 ORDER BY ep.fecha_solicitud DESC
                 LIMIT $limite OFFSET $offset";
 
-        $params = [];
         if ($estado) {
             $params['estado'] = $estado;
         }
-        if ($codTipoExamen) {
+        // Solo agregar cod_tipo_examen cuando el filtro lo usa (no para tipo 3 que usa solo fase)
+        if ($codTipoExamen && $codTipoExamen != 3) {
             $params['cod_tipo_examen'] = $codTipoExamen;
         }
         if ($numeroPaso !== null) {
@@ -547,18 +567,26 @@ class ExamenManager
     public function upsertRequisito($data): int
     {
         if (isset($data['id']) && (int)$data['id'] > 0) {
-            $this->execute('UPDATE examen_requisito_documento SET nombre = :nombre, descripcion = :descripcion WHERE cod_requisito = :id', [
+            $this->execute('UPDATE examen_requisito_documento SET nombre = :nombre, descripcion = :descripcion, formatos_permitidos = :formatos, tamano_max_mb = :tamano, tipo_entrega = :tipo_entrega, obligatorio = :obligatorio WHERE cod_requisito = :id', [
                 'id' => $data['id'],
                 'nombre' => $data['nombre'],
-                'descripcion' => $data['descripcion']
+                'descripcion' => $data['descripcion'],
+                'formatos' => $data['formatos_permitidos'] ?? null,
+                'tamano' => $data['tamano_max_mb'] ?? 10,
+                'tipo_entrega' => $data['tipo_entrega'] ?? 'digital',
+                'obligatorio' => $data['obligatorio'] ?? 1
             ]);
             return (int)$data['id'];
         } else {
-            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_tipo_examen, cod_paso, activo) VALUES (:nombre, :descripcion, :tipo, :paso, 1)', [
+            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_tipo_examen, cod_paso, formatos_permitidos, tamano_max_mb, tipo_entrega, obligatorio, activo) VALUES (:nombre, :descripcion, :tipo, :paso, :formatos, :tamano, :tipo_entrega, :obligatorio, 1)', [
                 'nombre'          => $data['nombre'],
                 'descripcion'     => $data['descripcion'],
                 'tipo'            => $data['cod_tipo_examen'] ?? null,
-                'paso'            => $data['cod_paso']
+                'paso'            => $data['cod_paso'],
+                'formatos'        => $data['formatos_permitidos'] ?? null,
+                'tamano'          => $data['tamano_max_mb'] ?? 10,
+                'tipo_entrega'    => $data['tipo_entrega'] ?? 'digital',
+                'obligatorio'     => $data['obligatorio'] ?? 1
             ]);
             return $this->getLastInsertId();
         }
@@ -782,14 +810,19 @@ class ExamenManager
     /**
      * Guarda la terna de examinadores y la programación del examen (Paso 3).
      * T-09
+     * 
+     * @param int    $codProceso  ID del proceso de graduación
+     * @param array  $terna       Array de examinadores (nombre, colegiado, correo, tipo, posicion)
+     * @param int    $codUsuario  ID del usuario que registra la terna
+     * @param string $fase        Fase del examen: 'examen_privado' o 'examen_general'
      */
-    public function guardarTerna(int $codProceso, array $terna, int $codUsuario): bool
+    public function guardarTerna(int $codProceso, array $terna, int $codUsuario, string $fase = 'examen_privado'): bool
     {
         foreach ($terna as $datos) {
             $sql = 'INSERT INTO examen_terna 
-                        (cod_proceso, nombre_examinador, numero_colegiado, correo, tipo_examinador, posicion, registrado_por)
+                        (cod_proceso, fase, nombre_examinador, numero_colegiado, correo, tipo_examinador, posicion, registrado_por)
                     VALUES 
-                        (:proceso, :nombre, :colegiado, :correo, :tipo, :posicion, :usuario)
+                        (:proceso, :fase, :nombre, :colegiado, :correo, :tipo, :posicion, :usuario)
                     ON DUPLICATE KEY UPDATE 
                         nombre_examinador = VALUES(nombre_examinador),
                         numero_colegiado = VALUES(numero_colegiado), 
@@ -799,6 +832,7 @@ class ExamenManager
 
             $params = [
                 'proceso'   => $codProceso,
+                'fase'      => $fase,
                 'nombre'    => $datos['nombre'],
                 'colegiado' => $datos['colegiado'] ?? null,
                 'correo'    => $datos['correo'] ?? null,
@@ -858,7 +892,8 @@ class ExamenManager
      */
     public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
     {
-        // 1. Obtener los examinadores de la tabla terna (compartida, sin filtro de fase)
+        // 1. Obtener los examinadores de la tabla terna filtrados por fase
+        // Ahora las ternas son independientes: examen_privado y examen_general pueden tener ternas diferentes
         $sqlTerna = 'SELECT 
                         nombre_examinador,
                         numero_colegiado,
@@ -866,9 +901,10 @@ class ExamenManager
                         tipo_examinador,
                         posicion
                     FROM examen_terna 
-                    WHERE cod_proceso = :proceso';
+                    WHERE cod_proceso = :proceso 
+                      AND fase = :fase';
 
-        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso, 'fase' => $fase]);
         
         // 2. Obtener fecha y hora según la fase
         if ($fase === 'examen_general') {

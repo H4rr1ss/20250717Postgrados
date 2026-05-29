@@ -74,7 +74,7 @@ CREATE TABLE `examen_autorizacion_config` (
   `cod_config`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `instrucciones_parte1`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 1: Autorización de Imprímase',
   `instrucciones_parte2`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 2: Entrega de Proyecto de Graduación',
-  `updated_at`            TIMESTAMP NOT NULL DEFAULT current_timestamp()
+  `updated_at`            datetime NOT NULL DEFAULT current_timestamp()
                           ON UPDATE current_timestamp(),
   `updated_by`            INT DEFAULT NULL COMMENT 'FK → usuario que modificó',
   PRIMARY KEY (`cod_config`)
@@ -104,7 +104,7 @@ CREATE TABLE `examen_autorizacion_documento_soporte` (
   `tamano_bytes`     INT UNSIGNED DEFAULT NULL,
   `activo`           TINYINT(1) NOT NULL DEFAULT 1,
   `subido_por`       INT NOT NULL COMMENT 'FK → usuario (director/asistente)',
-  `fecha_subida`     TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_subida`     datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_documento`),
   UNIQUE KEY `uniq_eads_md5` (`archivo_md5`),
   KEY `idx_eads_activo_fecha` (`activo`, `fecha_subida`)
@@ -126,7 +126,7 @@ CREATE TABLE `examen_profesional_calificado` (
   `telefono`          VARCHAR(20)  DEFAULT NULL,
   `activo`            TINYINT(1) NOT NULL DEFAULT 1,
   `creado_por`        INT NOT NULL COMMENT 'FK → usuario (director/asistente)',
-  `fecha_creacion`    TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_creacion`    datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_profesional`),
   KEY `idx_epc_activo` (`activo`),
   KEY `idx_epc_nombre` (`nombre_completo`)
@@ -152,7 +152,7 @@ CREATE TABLE `examen_carta_descarga` (
   `tamano_bytes`     INT UNSIGNED DEFAULT NULL,
   `activo`           TINYINT(1) NOT NULL DEFAULT 1,
   `subido_por`       INT NOT NULL,
-  `fecha_subida`     TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_subida`     datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_carta`),
   UNIQUE KEY `uniq_ecd_md5` (`archivo_md5`),
   KEY `idx_ecd_activo_fecha` (`activo`, `fecha_subida`)
@@ -173,7 +173,7 @@ CREATE TABLE `examen_junta_directiva` (
   `puesto`          VARCHAR(100) NOT NULL COMMENT 'Ej: Presidente, Secretario, Vocal I',
   `activo`          TINYINT(1) NOT NULL DEFAULT 1,
   `creado_por`      INT NOT NULL,
-  `fecha_creacion`  TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+  `fecha_creacion`  datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_miembro`),
   KEY `idx_ejd_activo_fecha` (`activo`, `fecha_creacion`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
@@ -208,11 +208,11 @@ CREATE TABLE `examen_autorizacion_proceso` (
   `sub_paso`               TINYINT UNSIGNED NOT NULL DEFAULT 1
                            COMMENT '1=Parte1 (selección profesional), 2=Parte2 (culminación)',
   `estado`                 ENUM('pendiente','aprobado') NOT NULL DEFAULT 'pendiente',
-  `fecha_aprobacion`       TIMESTAMP NULL DEFAULT NULL,
+  `fecha_aprobacion`       datetime NULL DEFAULT NULL,
   `aprobado_por`           INT DEFAULT NULL COMMENT 'FK → usuario que aprobó (director)',
   `observaciones`          TEXT DEFAULT NULL COMMENT 'Notas sobre la revisión presencial',
-  `created_at`             TIMESTAMP NOT NULL DEFAULT current_timestamp(),
-  `updated_at`             TIMESTAMP NOT NULL DEFAULT current_timestamp()
+  `created_at`             datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`             datetime NOT NULL DEFAULT current_timestamp()
                            ON UPDATE current_timestamp(),
   PRIMARY KEY (`cod_autorizacion`),
   UNIQUE KEY `uniq_eap_proceso` (`cod_proceso`),
