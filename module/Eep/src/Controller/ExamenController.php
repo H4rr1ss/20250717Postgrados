@@ -631,11 +631,13 @@ class ExamenController extends AbstractActionController {
 
         $requisitos = $this->examenManager->getTodosRequisitos($codTipoExamen);
         $nombreExamen = $this->examenManager->getNombreTipoExamen($codTipoExamen);
+        $instrucciones = $this->examenManager->getInstruccionesEntregaFisica($codTipoExamen);
 
         return new ViewModel([
             'requisitos'    => $requisitos,
             'codTipoExamen' => $codTipoExamen,
-            'nombreExamen'  => $nombreExamen
+            'nombreExamen'  => $nombreExamen,
+            'instrucciones' => $instrucciones
         ]);
     }
 
@@ -643,41 +645,80 @@ class ExamenController extends AbstractActionController {
      * T-22.1: AJAX para guardar/actualizar requisito
      */
     public function guardarRequisitoAction() {
-        $request = $this->getRequest();
-        if (!$request->isPost()) {
-            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
-        }
-
-        $codTipoExamen = (int) $request->getPost('cod_tipo_examen');
-
-        // Determinar la fase y cod_paso correcto según el tipo de examen:
-        // Tipo 3 (Público General) → fase examen_general (cod_paso del paso 1 = 6)
-        // Tipo 1, 2              → fase examen_privado  (cod_paso del paso 1 = 1)
-        $fase = ($codTipoExamen === ExamenManager::TIPO_PUBLICO_GENERAL) ? 'examen_general' : 'examen_privado';
-        $codPaso = $this->examenManager->getCodPasoPorFaseYOrden($fase, 1) ?? 1;
-
-        $data = [
-            'id'                 => $request->getPost('id'),
-            'nombre'             => $request->getPost('titulo'),
-            'descripcion'        => $request->getPost('descripcion'),
-            'cod_tipo_examen'    => $codTipoExamen,
-            'cod_paso'           => $codPaso,
-            'formatos_permitidos'=> 'pdf,jpg,png',
-            'tamano_max_mb'      => 10,
-            'tipo_entrega'       => 'digital',
-            'obligatorio'        => 1,
-            'activo'             => 1
-        ];
-
         try {
+            $request = $this->getRequest();
+            if (!$request->isPost()) {
+                return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+            }
+
+            $codTipoExamen = (int) $request->getPost('cod_tipo_examen');
+
+            // Determinar la fase y cod_paso correcto según el tipo de examen:
+            // Tipo 3 (Público General) → fase examen_general (cod_paso del paso 1 = 6)
+            // Tipo 1, 2              → fase examen_privado  (cod_paso del paso 1 = 1)
+            $fase = ($codTipoExamen === ExamenManager::TIPO_PUBLICO_GENERAL) ? 'examen_general' : 'examen_privado';
+            $codPaso = $this->examenManager->getCodPasoPorFaseYOrden($fase, 1) ?? 1;
+
+            $data = [
+                'id'                 => $request->getPost('id'),
+                'nombre'             => $request->getPost('titulo'),
+                'descripcion'        => $request->getPost('descripcion'),
+                'cod_tipo_examen'    => $codTipoExamen,
+                'cod_paso'           => $codPaso,
+                'formatos_permitidos'=> 'pdf,jpg,png',
+                'tamano_max_mb'      => 10,
+                'tipo_entrega'       => 'digital',
+                'obligatorio'        => 1,
+                'activo'             => 1
+            ];
+
+            // Procesar archivo de apoyo si se envió
+            $files = $request->getFiles()->toArray();
+            if (!empty($files['archivo_apoyo']) && (int)$files['archivo_apoyo']['error'] === UPLOAD_ERR_OK) {
+                $archivo = $files['archivo_apoyo'];
+                $ext = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
+                $permitidos = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+                if (!in_array($ext, $permitidos, true)) {
+                    return new JsonModel(['status' => 'error', 'message' => 'Formato no permitido. Aceptados: ' . implode(', ', $permitidos)]);
+                }
+                if ($archivo['size'] > 10 * 1024 * 1024) {
+                    return new JsonModel(['status' => 'error', 'message' => 'El archivo supera los 10 MB permitidos.']);
+                }
+
+                $directorio = $_SERVER['DOCUMENT_ROOT'] . '/archivos/requisitos-apoyo/';
+                if (!is_dir($directorio)) {
+                    if (!@mkdir($directorio, 0755, true)) {
+                        error_log('[guardarRequisito] No se pudo crear directorio: ' . $directorio);
+                        return new JsonModel(['status' => 'error', 'message' => 'Error del servidor al preparar el directorio de archivos.']);
+                    }
+                }
+
+                // Verificar permisos de escritura
+                if (!is_writable($directorio)) {
+                    error_log('[guardarRequisito] Directorio sin permisos de escritura: ' . $directorio);
+                    return new JsonModel(['status' => 'error', 'message' => 'Error del servidor: no hay permisos para guardar archivos.']);
+                }
+
+                $nombreSeguro = 'req-' . (int)$request->getPost('id', 0) . '-' . md5(uniqid('', true)) . '.' . $ext;
+                $rutaDestino = $directorio . $nombreSeguro;
+
+                if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
+                    error_log('[guardarRequisito] move_uploaded_file falló. tmp_name=' . $archivo['tmp_name'] . ' destino=' . $rutaDestino);
+                    return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar el archivo de apoyo en el servidor.']);
+                }
+
+                $data['archivo_apoyo'] = 'archivos/requisitos-apoyo/' . $nombreSeguro;
+            }
+
             $id = $this->examenManager->upsertRequisito($data);
             return new JsonModel([
-                'status' => 'success', 
+                'status' => 'success',
                 'message' => $data['id'] ? 'Requisito actualizado' : 'Requisito creado',
                 'id' => $id
             ]);
         } catch (\Exception $e) {
-            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+            error_log('[guardarRequisito] Excepción: ' . $e->getMessage() . ' | Traza: ' . $e->getTraceAsString());
+            return new JsonModel(['status' => 'error', 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
         }
     }
 
@@ -694,6 +735,30 @@ class ExamenController extends AbstractActionController {
         try {
             $this->examenManager->desactivarRequisito($id);
             return new JsonModel(['status' => 'success', 'message' => 'Requisito eliminado']);
+        } catch (\Exception $e) {
+            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * T-22.3: AJAX para guardar instrucciones generales de entrega física
+     */
+    public function guardarInstruccionesAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+        }
+
+        $codTipoExamen = (int) $request->getPost('cod_tipo_examen');
+        $instrucciones = $request->getPost('instrucciones');
+
+        if ($codTipoExamen <= 0) {
+            return new JsonModel(['status' => 'error', 'message' => 'Tipo de examen no válido']);
+        }
+
+        try {
+            $this->examenManager->guardarInstruccionesEntregaFisica($codTipoExamen, $instrucciones ?: null);
+            return new JsonModel(['status' => 'success', 'message' => 'Instrucciones guardadas']);
         } catch (\Exception $e) {
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
@@ -1191,6 +1256,11 @@ class ExamenController extends AbstractActionController {
             // Determinar la fase actual del proceso
             $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
 
+            // Si la fase actual es examen_general, actualizar el nombre del tipo de examen
+            if ($faseActual === 'examen_general') {
+                $proceso['tipo_examen'] = 'General';
+            }
+
             // Etiqueta legible de la fase para el encabezado de las vistas
             $etiquetaFase = ($faseActual === 'examen_general')
                 ? 'Examen General (Público)'
@@ -1247,16 +1317,20 @@ class ExamenController extends AbstractActionController {
             // T-18: Cargar terna de examinadores y fecha/hora según la fase actual
             $terna = $this->examenManager->getTerna($idProceso, $faseActual);
 
+            // Instrucciones generales para entrega física
+            $instruccionesEntrega = $this->examenManager->getInstruccionesEntregaFisica($codTipoExamenFase);
+
             $vm = new ViewModel([
-                'proceso'       => $proceso,
-                'estudiante'    => $estudiante,
-                'paso'          => $paso,
-                'fase'          => $faseActual,
-                'etiquetaFase'  => $etiquetaFase,
-                'estados'       => $estados,
-                'docsDigitales' => $documentos,
-                'docsFisicos'   => $docsFisicos,
-                'terna'         => $terna,
+                'proceso'               => $proceso,
+                'estudiante'            => $estudiante,
+                'paso'                  => $paso,
+                'fase'                  => $faseActual,
+                'etiquetaFase'          => $etiquetaFase,
+                'estados'               => $estados,
+                'docsDigitales'         => $documentos,
+                'docsFisicos'           => $docsFisicos,
+                'terna'                 => $terna,
+                'instruccionesEntrega'  => $instruccionesEntrega,
             ]);
             $vm->setTemplate('eep/examen/revisarpapeleria');
             return $vm;

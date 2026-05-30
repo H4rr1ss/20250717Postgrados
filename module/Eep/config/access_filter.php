@@ -461,6 +461,10 @@ return [
             'code' => 106,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'guardarInstrucciones' => [
+            'code' => 108,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
         'cartaExaminadores' => [
             'code' => 68,
             'view' => View::CARTA_EXAMINADORES,

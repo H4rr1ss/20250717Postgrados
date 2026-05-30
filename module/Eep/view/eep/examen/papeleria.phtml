@@ -57,13 +57,21 @@ $this->headTitle('Gestión de Requisitos de Papelería');
                     <tbody>
                         <?php foreach ($this->requisitos as $req): ?>
                         <tr data-id="<?= $req['cod_requisito'] ?>">
-                            <td><?= $this->escapeHtml($req['nombre']) ?></td>
+                            <td>
+                                <?= $this->escapeHtml($req['nombre']) ?>
+                                <?php if (!empty($req['archivo_apoyo'])): ?>
+                                    <span style="display:inline-block; background:#31708f; color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:10px; margin-left:8px; vertical-align:middle;">
+                                        <i class="fa fa-paperclip" style="margin-right:4px;"></i>DOCUMENTO ADJUNTO
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= $this->escapeHtml($req['descripcion']) ?></td>
                             <td style="text-align: center;">
                                 <button class="btn-accion btn-editar-accion" title="Editar" 
                                     data-id="<?= $req['cod_requisito'] ?>"
                                     data-nombre="<?= $this->escapeHtmlAttr($req['nombre']) ?>"
-                                    data-descripcion="<?= $this->escapeHtmlAttr($req['descripcion']) ?>">
+                                    data-descripcion="<?= $this->escapeHtmlAttr($req['descripcion']) ?>"
+                                    data-archivo="<?= $this->escapeHtmlAttr($req['archivo_apoyo'] ?? '') ?>">
                                     <i class="fa fa-edit"></i>
                                 </button>
                                 <button class="btn-accion btn-eliminar-accion" title="Eliminar" data-id="<?= $req['cod_requisito'] ?>">
@@ -74,6 +82,28 @@ $this->headTitle('Gestión de Requisitos de Papelería');
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instrucciones generales para entrega física -->
+<div class="row" style="margin-top: 30px;">
+    <div class="col-lg-12">
+        <div class="panel panel-info" style="border: 2px solid #31708f; border-radius: 4px;">
+            <div class="panel-heading" style="background-color: #31708f; color: white; padding: 12px 20px; font-size: 15px; font-weight: normal;">
+                <i class="fa fa-info-circle"></i> Instrucciones para entrega de documentos físicos
+            </div>
+            <div class="panel-body" style="padding: 20px; background: #fff;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+                    Utilice este espacio para indicar al estudiante instrucciones especiales sobre documentos de vigencia corta, restricciones, o cualquier indicación relevante para la entrega física.
+                </p>
+                <textarea class="form-control" id="instruccionesEntregaFisica" rows="6" placeholder="Ej: Los documentos de pago (orden de SIIF) tienen vigencia de 24 horas. El estudiante debe entregarlos el mismo día de su generación..."><?= $this->escapeHtml($this->instrucciones ?? '') ?></textarea>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button class="btn btn-primary" id="btnGuardarInstrucciones">
+                        <i class="fa fa-save"></i> Guardar instrucciones
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -90,7 +120,7 @@ $this->headTitle('Gestión de Requisitos de Papelería');
                 <h4 class="modal-title" id="modalCrearRequisitoLabel">Crear Requisito</h4>
             </div>
             <div class="modal-body">
-                <form id="formRequisito">
+                <form id="formRequisito" enctype="multipart/form-data">
                     <input type="hidden" id="idRequisito" name="id">
                     <input type="hidden" name="cod_tipo_examen" value="<?= (int) $this->codTipoExamen ?>">
                     <div class="form-group">
@@ -104,6 +134,17 @@ $this->headTitle('Gestión de Requisitos de Papelería');
                         <label for="descripcion">Descripción</label>
                         <div class="input-icon">
                             <textarea class="form-control" id="descripcion" name="descripcion" rows="4" placeholder="Ej: Valor Q. 250.00 generado desde su usuario de SIIF..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="archivo_apoyo">
+                            <i class="fa fa-paperclip" style="color:#5b9bd5;"></i> Archivo de apoyo (opcional)
+                        </label>
+                        <input type="file" class="form-control" id="archivo_apoyo" name="archivo_apoyo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <small class="text-muted">Sube formularios, instructivos o cualquier documento de apoyo que el estudiante deba usar para este requisito. Formatos: PDF, Word, JPG, PNG. Máx: 10 MB.</small>
+                        <div id="archivoActualContainer" style="margin-top: 8px; display: none;">
+                            <span style="font-size: 12px; color: #666;">Archivo actual:</span>
+                            <a id="archivoActualLink" href="#" target="_blank" style="font-size: 12px;"></a>
                         </div>
                     </div>
                 </form>
@@ -280,20 +321,47 @@ $(document).ready(function() {
         $('#modalCrearRequisito').modal('show');
     });
 
-    // Guardar nuevo requisito o actualizar
+    // Guardar nuevo requisito o actualizar (con archivo de apoyo)
     $('#btnGuardarRequisito').on('click', function() {
         var form = $('#formRequisito');
+        var btn = $(this);
+        
         if (form[0].checkValidity()) {
-            // Garantizar que el cod_tipo_examen de la URL siempre se envíe
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+            
             $('input[name="cod_tipo_examen"]').val(codTipoExamen);
-            var formData = form.serialize();
-            $.post('<?= $this->url('examen', ['action' => 'guardarRequisito']) ?>', formData, function(response) {
-                if (response.status === 'success') {
-                    location.reload();
-                } else {
-                    alert('Error: ' + response.message);
+            
+            var formData = new FormData(form[0]);
+            
+            $.ajax({
+                url: '<?= $this->url('examen', ['action' => 'guardarRequisito']) ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                        btn.prop('disabled', false).html('Guardar');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', status, error);
+                    console.error('Response Text:', xhr.responseText);
+                    var msg = 'Error de comunicación con el servidor.';
+                    if (xhr.responseText && xhr.responseText.indexOf('<') !== 0) {
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if (resp.message) msg = resp.message;
+                        } catch(e) {}
+                    }
+                    alert(msg + ' (Status: ' + xhr.status + ')');
+                    btn.prop('disabled', false).html('Guardar');
                 }
-            }, 'json');
+            });
         } else {
             form[0].reportValidity();
         }
@@ -304,10 +372,19 @@ $(document).ready(function() {
         var id = $(this).data('id');
         var nombre = $(this).data('nombre');
         var descripcion = $(this).data('descripcion');
+        var archivo = $(this).data('archivo') || '';
         
         $('#idRequisito').val(id);
         $('#titulo').val(nombre);
         $('#descripcion').val(descripcion);
+        $('#archivo_apoyo').val('');
+        
+        if (archivo) {
+            $('#archivoActualLink').attr('href', '/' + archivo).text(archivo.split('/').pop());
+            $('#archivoActualContainer').show();
+        } else {
+            $('#archivoActualContainer').hide();
+        }
         
         $('#modalCrearRequisitoLabel').text('Editar Requisito');
         $('#modalCrearRequisito').modal('show');
@@ -325,6 +402,28 @@ $(document).ready(function() {
                 }
             }, 'json');
         }
+    });
+
+    // Guardar instrucciones generales de entrega física
+    $('#btnGuardarInstrucciones').on('click', function() {
+        var btn = $(this);
+        var instrucciones = $('#instruccionesEntregaFisica').val();
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        
+        $.post('<?= $this->url('examen', ['action' => 'guardarInstrucciones']) ?>', {
+            cod_tipo_examen: codTipoExamen,
+            instrucciones: instrucciones
+        }, function(response) {
+            if (response.status === 'success') {
+                alert('Instrucciones guardadas correctamente');
+            } else {
+                alert('Error: ' + response.message);
+            }
+        }, 'json')
+        .always(function() {
+            btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar instrucciones');
+        });
     });
 });
 </script>

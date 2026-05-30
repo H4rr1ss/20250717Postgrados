@@ -112,12 +112,6 @@ if ($subPaso === 1) {
                                 <?php endif; ?>
                             </td>
                         </tr>
-                        <?php if (!empty($estado['observaciones'])): ?>
-                        <tr>
-                            <th style="background:#f5f5f5;">Observaciones</th>
-                            <td><?= nl2br($this->escapeHtml($estado['observaciones'])) ?></td>
-                        </tr>
-                        <?php endif; ?>
                     </table>
                 </div>
             </div>
@@ -155,11 +149,6 @@ if ($subPaso === 1) {
 
                     <form id="form-aprobar">
                         <input type="hidden" name="cod_proceso" value="<?= (int) $proceso['cod_proceso'] ?>">
-                        <div class="form-group">
-                            <label>Observaciones (opcional)</label>
-                            <textarea name="observaciones" class="form-control" rows="3"
-                                      placeholder="Notas sobre la revisión de Parte 1"></textarea>
-                        </div>
                         <button type="submit" class="btn btn-info" <?= $puedeAprobar ? '' : 'disabled' ?>>
                             <i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2
                         </button>
@@ -177,11 +166,6 @@ if ($subPaso === 1) {
 
                     <form id="form-aprobar">
                         <input type="hidden" name="cod_proceso" value="<?= (int) $proceso['cod_proceso'] ?>">
-                        <div class="form-group">
-                            <label>Observaciones (opcional)</label>
-                            <textarea name="observaciones" class="form-control" rows="3"
-                                      placeholder="Notas sobre la entrega de documentos"></textarea>
-                        </div>
                         <button type="submit" class="btn btn-success" <?= $puedeAprobar ? '' : 'disabled' ?>>
                             <i class="fa fa-check"></i> Aprobar y Avanzar a Examen General
                         </button>

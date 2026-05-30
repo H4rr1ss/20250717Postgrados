@@ -9,8 +9,7 @@
  *   $carta        fila de examen_carta_examinadores o null
  */
 
-$codProceso        = (int) ($proceso['cod_proceso'] ?? 0);
-$urlEvidenciasBase = $this->basePath('archivos');
+$codProceso = (int) ($proceso['cod_proceso'] ?? 0);
 ?>
 
 <!-- Paso 5: Carta de Examinadores (staff) -->
@@ -84,7 +83,7 @@ $urlEvidenciasBase = $this->basePath('archivos');
                                         width:2px; background:#dde3ef;"></div>
 
                             <?php foreach ($evidencias as $i => $ev):
-                                $rutaPublica = $urlEvidenciasBase . '/' . $ev['archivo_md5'] . '.' . $ev['extension'];
+                                $urlVerDoc   = $this->url('student-graduation', ['action' => 'ver-documento']) . '?h=' . $ev['archivo_md5'];
                                 $esImagen    = in_array(strtolower($ev['extension']), ['jpg', 'jpeg', 'png'], true);
                                 $iconoExt    = $esImagen ? 'fa-file-image-o' : 'fa-file-pdf-o';
                                 $colorExt    = $esImagen ? '#2980b9' : '#c0392b';
@@ -132,8 +131,8 @@ $urlEvidenciasBase = $this->basePath('archivos');
                                     <!-- Miniatura (solo imágenes) -->
                                     <?php if ($esImagen): ?>
                                     <div style="flex:0 0 64px;">
-                                        <a href="<?= $this->escapeHtmlAttr($rutaPublica) ?>" target="_blank">
-                                            <img src="<?= $this->escapeHtmlAttr($rutaPublica) ?>" alt=""
+                                        <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" target="_blank">
+                                            <img src="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" alt=""
                                                  style="width:64px; height:64px; object-fit:cover;
                                                         border-radius:6px; border:1px solid #dde;">
                                         </a>
@@ -142,7 +141,7 @@ $urlEvidenciasBase = $this->basePath('archivos');
 
                                     <!-- Botón Ver -->
                                     <div style="flex:0 0 auto;">
-                                        <a href="<?= $this->escapeHtmlAttr($rutaPublica) ?>"
+                                        <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>"
                                            target="_blank"
                                            class="btn btn-sm btn-default"
                                            title="Ver documento">

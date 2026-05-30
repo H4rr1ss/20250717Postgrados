@@ -279,6 +279,7 @@ class ExamenManager
                     erd.cod_requisito,
                     erd.nombre            AS nombre_requisito,
                     erd.descripcion,
+                    erd.archivo_apoyo,
                     erd.formatos_permitidos,
                     erd.tamano_max_mb,
                     erd.obligatorio,
@@ -534,7 +535,7 @@ class ExamenManager
      */
     public function getRequisitosDocumento(int $codPaso, int $codTipoExamen): array
     {
-        $sql = 'SELECT cod_requisito, nombre, descripcion, tipo_entrega, obligatorio, formatos_permitidos, tamano_max_mb
+        $sql = 'SELECT cod_requisito, nombre, descripcion, archivo_apoyo, tipo_entrega, obligatorio, formatos_permitidos, tamano_max_mb
                 FROM examen_requisito_documento
                 WHERE cod_paso = :paso
                   AND cod_tipo_examen = :tipo
@@ -549,7 +550,7 @@ class ExamenManager
      */
     public function getTodosRequisitos($examenTipo): array
     {
-        $sql = 'SELECT cod_requisito, nombre, descripcion 
+        $sql = 'SELECT cod_requisito, nombre, descripcion, archivo_apoyo 
                 FROM examen_requisito_documento 
                 WHERE activo = 1 AND cod_tipo_examen = :tipo';
 
@@ -564,30 +565,69 @@ class ExamenManager
         return $result[0]['nombre'] ?? null;
     }
 
+    public function getInstruccionesEntregaFisica(int $codTipoExamen): ?string
+    {
+        $sql = 'SELECT instrucciones_entrega_fisica FROM examen_tipo WHERE cod_tipo_examen = :tipo';
+        $result = $this->execute($sql, ['tipo' => $codTipoExamen]);
+        return $result[0]['instrucciones_entrega_fisica'] ?? null;
+    }
+
+    public function guardarInstruccionesEntregaFisica(int $codTipoExamen, ?string $instrucciones): bool
+    {
+        $this->execute(
+            'UPDATE examen_tipo SET instrucciones_entrega_fisica = :instrucciones WHERE cod_tipo_examen = :tipo',
+            ['tipo' => $codTipoExamen, 'instrucciones' => $instrucciones]
+        );
+        return true;
+    }
+
     public function upsertRequisito($data): int
     {
         if (isset($data['id']) && (int)$data['id'] > 0) {
-            $this->execute('UPDATE examen_requisito_documento SET nombre = :nombre, descripcion = :descripcion, formatos_permitidos = :formatos, tamano_max_mb = :tamano, tipo_entrega = :tipo_entrega, obligatorio = :obligatorio WHERE cod_requisito = :id', [
+            $sql = 'UPDATE examen_requisito_documento SET nombre = :nombre, descripcion = :descripcion';
+            $params = [
                 'id' => $data['id'],
                 'nombre' => $data['nombre'],
                 'descripcion' => $data['descripcion'],
-                'formatos' => $data['formatos_permitidos'] ?? null,
-                'tamano' => $data['tamano_max_mb'] ?? 10,
-                'tipo_entrega' => $data['tipo_entrega'] ?? 'digital',
-                'obligatorio' => $data['obligatorio'] ?? 1
-            ]);
+            ];
+
+            if (array_key_exists('archivo_apoyo', $data)) {
+                $sql .= ', archivo_apoyo = :archivo';
+                $params['archivo'] = $data['archivo_apoyo'] ?? null;
+            }
+
+            $sql .= ', formatos_permitidos = :formatos, tamano_max_mb = :tamano, tipo_entrega = :tipo_entrega, obligatorio = :obligatorio WHERE cod_requisito = :id';
+            $params['formatos'] = $data['formatos_permitidos'] ?? null;
+            $params['tamano'] = $data['tamano_max_mb'] ?? 10;
+            $params['tipo_entrega'] = $data['tipo_entrega'] ?? 'digital';
+            $params['obligatorio'] = $data['obligatorio'] ?? 1;
+
+            $this->execute($sql, $params);
             return (int)$data['id'];
         } else {
-            $this->execute('INSERT INTO examen_requisito_documento (nombre, descripcion, cod_tipo_examen, cod_paso, formatos_permitidos, tamano_max_mb, tipo_entrega, obligatorio, activo) VALUES (:nombre, :descripcion, :tipo, :paso, :formatos, :tamano, :tipo_entrega, :obligatorio, 1)', [
+            $columns = 'nombre, descripcion, cod_tipo_examen, cod_paso, formatos_permitidos, tamano_max_mb';
+            $values  = ':nombre, :descripcion, :tipo, :paso, :formatos, :tamano';
+            $params = [
                 'nombre'          => $data['nombre'],
                 'descripcion'     => $data['descripcion'],
                 'tipo'            => $data['cod_tipo_examen'] ?? null,
                 'paso'            => $data['cod_paso'],
                 'formatos'        => $data['formatos_permitidos'] ?? null,
                 'tamano'          => $data['tamano_max_mb'] ?? 10,
-                'tipo_entrega'    => $data['tipo_entrega'] ?? 'digital',
-                'obligatorio'     => $data['obligatorio'] ?? 1
-            ]);
+            ];
+
+            if (array_key_exists('archivo_apoyo', $data)) {
+                $columns .= ', archivo_apoyo';
+                $values  .= ', :archivo';
+                $params['archivo'] = $data['archivo_apoyo'] ?? null;
+            }
+
+            $columns .= ', tipo_entrega, obligatorio, activo';
+            $values  .= ', :tipo_entrega, :obligatorio, 1';
+            $params['tipo_entrega'] = $data['tipo_entrega'] ?? 'digital';
+            $params['obligatorio']  = $data['obligatorio'] ?? 1;
+
+            $this->execute("INSERT INTO examen_requisito_documento ({$columns}) VALUES ({$values})", $params);
             return $this->getLastInsertId();
         }
     }

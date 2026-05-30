@@ -155,15 +155,16 @@ $this->headTitle('Revisión de papelería');
     // Cargar el partial correspondiente al paso actual
     $partialActual = $this->estados[$this->paso]['partial'] ?? 'eep/examen/partial/paso1-papeleria';
     echo $this->partial($partialActual, [
-        'proceso'        => $this->proceso,
-        'estudiante'     => $this->estudiante,
-        'paso'           => $this->paso,
-        'fase'           => $fase,
-        'etiquetaFase'   => $etiquetaFase,
-        'estados'        => $this->estados,
-        'docsDigitales'  => $this->docsDigitales,
-        'docsFisicos'    => $this->docsFisicos ?? [],
-        'terna'          => $this->terna ?? ['examinadores' => [], 'programacion' => ['fecha' => null, 'hora' => null]]
+        'proceso'               => $this->proceso,
+        'estudiante'            => $this->estudiante,
+        'paso'                  => $this->paso,
+        'fase'                  => $fase,
+        'etiquetaFase'          => $etiquetaFase,
+        'estados'               => $this->estados,
+        'docsDigitales'         => $this->docsDigitales,
+        'docsFisicos'           => $this->docsFisicos ?? [],
+        'terna'                 => $this->terna ?? ['examinadores' => [], 'programacion' => ['fecha' => null, 'hora' => null]],
+        'instruccionesEntrega'  => $this->instruccionesEntrega ?? null
     ]);
 ?>
 

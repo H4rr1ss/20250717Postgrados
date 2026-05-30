@@ -14,14 +14,26 @@
                 <!-- Estado de entrega -->
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="alert alert-info" style="display: flex; align-items: center; gap: 15px;">
-                            <i class="fa fa-info-circle fa-2x"></i>
-                            <div>
-                                <strong>Instrucciones:</strong> El estudiante debe entregar la documentación física en la oficina de Postgrados durante horario hábil (8:00 - 16:00 hrs).
-                            </div>
+                        <div style="padding: 8px 12px; margin-bottom: 12px; font-size: 12px; color: #666; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #aaa;">
+                            <i class="fa fa-info-circle" style="margin-right: 6px; font-size: 13px; color: #888;"></i>
+                            Entregar documentación física en la oficina de Postgrados. Horario: 8:00 – 16:00 hrs. (Lun – Vie).
                         </div>
                     </div>
                 </div>
+
+                <?php if (!empty($this->instruccionesEntrega)): ?>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div style="padding: 16px 20px; margin-bottom: 20px; font-size: 13px; color: #856404; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; border-left: 4px solid #e67e22;">
+                            <i class="fa fa-exclamation-circle" style="margin-right: 10px; font-size: 16px; color: #e67e22;"></i>
+                            <strong style="font-size: 14px;">Instrucciones especiales para documentos físicos:</strong>
+                            <span style="display: block; margin-top: 8px; font-size: 14px; line-height: 1.6; white-space: pre-line;">
+                                <?= nl2br($this->escapeHtml($this->instruccionesEntrega)) ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Checklist de documentos físicos -->
                 <div class="row" style="margin-top: 20px;">
@@ -79,14 +91,6 @@
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <!-- Observaciones -->
-                <div class="row" style="margin-top: 20px;">
-                    <div class="col-md-12">
-                        <h5 style="font-weight: 600; margin-bottom: 10px;">Observaciones</h5>
-                        <textarea class="form-control" rows="3" placeholder="Agregar observaciones sobre la entrega de documentación..."></textarea>
                     </div>
                 </div>
 

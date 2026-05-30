@@ -256,7 +256,10 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                                 Licenciados en letras que el estudiante podrá seleccionar.
                             </p>
 
-                            <form id="form-prof" class="well well-sm">
+                            <form id="form-prof" class="well well-sm" data-mode="create">
+                                <div class="form-editing-indicator" style="display:none; margin-bottom:10px; padding:6px 10px; background:#d9edf7; color:#31708f; border-radius:4px; font-size:12px; font-weight:600;">
+                                    <i class="fa fa-pencil-square-o"></i> Modo edición activo
+                                </div>
                                 <input type="hidden" name="cod_profesional" value="0">
                                 <div class="form-group">
                                     <label>Nombre completo *</label>
@@ -401,7 +404,10 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                         Miembros de la junta directiva que el estudiante visualizará como información de referencia.
                     </p>
 
-                    <form id="form-miembro" class="well well-sm">
+                    <form id="form-miembro" class="well well-sm" data-mode="create">
+                        <div class="form-editing-indicator" style="display:none; margin-bottom:10px; padding:6px 10px; background:#d9edf7; color:#31708f; border-radius:4px; font-size:12px; font-weight:600;">
+                            <i class="fa fa-pencil-square-o"></i> Modo edición activo
+                        </div>
                         <input type="hidden" name="cod_miembro" value="0">
                         <div class="row">
                             <div class="col-sm-5">
@@ -417,7 +423,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                                     <i class="fa fa-save"></i> Guardar
                                 </button>
                                 <button type="button" class="btn btn-default btn-sm" id="btn-miembro-reset">
-                                    <i class="fa fa-eraser"></i>
+                                    <i class="fa fa-eraser"></i> Limpiar
                                 </button>
                             </div>
                         </div>
@@ -579,10 +585,25 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
         });
     }
     var btnProfReset = document.getElementById('btn-prof-reset');
+    var profEditingIndicator = formProf.querySelector('.form-editing-indicator');
+    
+    function setProfEditMode(isEditing) {
+        if (isEditing) {
+            formProf.classList.add('prof-editing');
+            formProf.setAttribute('data-mode', 'edit');
+            if (profEditingIndicator) profEditingIndicator.style.display = 'block';
+        } else {
+            formProf.classList.remove('prof-editing');
+            formProf.setAttribute('data-mode', 'create');
+            if (profEditingIndicator) profEditingIndicator.style.display = 'none';
+        }
+    }
+    
     if (btnProfReset) {
         btnProfReset.addEventListener('click', function() {
             formProf.reset();
             formProf.elements['cod_profesional'].value = 0;
+            setProfEditMode(false);
         });
     }
     document.querySelectorAll('.btn-edit-prof').forEach(function(btn) {
@@ -591,6 +612,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
             formProf.elements['nombre_completo'].value = btn.dataset.nombre;
             formProf.elements['correo'].value          = btn.dataset.correo;
             formProf.elements['telefono'].value        = btn.dataset.telefono;
+            setProfEditMode(true);
             formProf.scrollIntoView({ behavior: 'smooth' });
         });
     });
@@ -618,6 +640,20 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
 
     // ---------- Junta directiva ----------
     var formMiembro = document.getElementById('form-miembro');
+    var miembroEditingIndicator = formMiembro.querySelector('.form-editing-indicator');
+    
+    function setMiembroEditMode(isEditing) {
+        if (isEditing) {
+            formMiembro.classList.add('miembro-editing');
+            formMiembro.setAttribute('data-mode', 'edit');
+            if (miembroEditingIndicator) miembroEditingIndicator.style.display = 'block';
+        } else {
+            formMiembro.classList.remove('miembro-editing');
+            formMiembro.setAttribute('data-mode', 'create');
+            if (miembroEditingIndicator) miembroEditingIndicator.style.display = 'none';
+        }
+    }
+    
     if (formMiembro) {
         formMiembro.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -629,6 +665,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
         btnMiembroReset.addEventListener('click', function() {
             formMiembro.reset();
             formMiembro.elements['cod_miembro'].value = 0;
+            setMiembroEditMode(false);
         });
     }
     document.querySelectorAll('.btn-edit-miembro').forEach(function(btn) {
@@ -636,6 +673,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
             formMiembro.elements['cod_miembro'].value     = btn.dataset.id;
             formMiembro.elements['nombre_completo'].value = btn.dataset.nombre;
             formMiembro.elements['puesto'].value          = btn.dataset.puesto;
+            setMiembroEditMode(true);
             formMiembro.scrollIntoView({ behavior: 'smooth' });
         });
     });
@@ -645,5 +683,76 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
             postData('<?= $urlEliminarMiembro ?>', { cod_miembro: btn.dataset.id }, function() { location.reload(); });
         });
     });
+
+    // ---------- File picker: mostrar nombre de archivo seleccionado ----------
+    document.querySelectorAll('.file-picker-input').forEach(function(input) {
+        input.addEventListener('change', function() {
+            var wrapper = input.closest('.file-picker-wrapper');
+            if (wrapper) {
+                var nameDisplay = wrapper.querySelector('.file-picker-name');
+                if (nameDisplay) {
+                    if (input.files && input.files.length > 0) {
+                        nameDisplay.textContent = input.files[0].name;
+                        nameDisplay.classList.remove('text-muted');
+                        nameDisplay.style.color = '#31708f';
+                        nameDisplay.style.fontWeight = '600';
+                    } else {
+                        nameDisplay.textContent = 'Sin archivo seleccionado';
+                        nameDisplay.classList.add('text-muted');
+                        nameDisplay.style.color = '';
+                        nameDisplay.style.fontWeight = '';
+                    }
+                }
+            }
+        });
+    });
 })();
 </script>
+
+<style>
+/* Modo edición para profesionales calificados */
+#form-prof.prof-editing {
+    background-color: #e3f2fd !important; /* Azul suave */
+    border: 2px solid #2196f3 !important;
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.2) !important;
+    transition: all 0.3s ease;
+}
+
+#form-prof.prof-editing .form-group label {
+    color: #1565c0;
+    font-weight: 600;
+}
+
+#form-prof.prof-editing input.form-control {
+    border-color: #90caf9;
+    background-color: #ffffff;
+}
+
+#form-prof.prof-editing input.form-control:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Modo edición para junta directiva */
+#form-miembro.miembro-editing {
+    background-color: #e3f2fd !important; /* Azul suave */
+    border: 2px solid #2196f3 !important;
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.2) !important;
+    transition: all 0.3s ease;
+}
+
+#form-miembro.miembro-editing label {
+    color: #1565c0;
+    font-weight: 600;
+}
+
+#form-miembro.miembro-editing input.form-control {
+    border-color: #90caf9;
+    background-color: #ffffff;
+}
+
+#form-miembro.miembro-editing input.form-control:focus {
+    border-color: #2196f3;
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
+}
+</style>

@@ -116,6 +116,7 @@ class StudentGraduationManager
      */
     public function getArchivoByHash(string $hash): ?array
     {
+        // 1. Buscar primero en documentos del paso 1 (archivo_local)
         $sql = 'SELECT
                     al.nombre_md5,
                     al.extension,
@@ -125,6 +126,23 @@ class StudentGraduationManager
                 JOIN examen_documento ed ON ed.cod_documento = al.cod_documento
                 WHERE al.nombre_md5 = :hash
                   AND ed.eliminado  = 0
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['hash' => $hash]);
+        if (!empty($result)) {
+            return $result[0];
+        }
+
+        // 2. Fallback: buscar en evidencias de bitácora (paso 5)
+        $sql = 'SELECT
+                    ev.archivo_md5 AS nombre_md5,
+                    ev.extension,
+                    ev.nombre_original,
+                    ec.cod_proceso
+                FROM examen_correccion_evidencia ev
+                JOIN examen_correccion_ciclo ec ON ec.cod_ciclo = ev.cod_ciclo
+                WHERE ev.archivo_md5 = :hash
+                  AND ev.eliminado = 0
                 LIMIT 1';
 
         $result = $this->execute($sql, ['hash' => $hash]);
@@ -382,6 +400,7 @@ class StudentGraduationManager
                     erd.cod_requisito,
                     erd.nombre            AS nombre_requisito,
                     erd.descripcion,
+                    erd.archivo_apoyo,
                     erd.formatos_permitidos,
                     erd.tamano_max_mb,
                     ed.cod_documento,
@@ -476,5 +495,16 @@ class StudentGraduationManager
         }
 
         return $terna;
+    }
+
+    /**
+     * Obtiene las instrucciones generales para entrega de documentos físicos
+     * configuradas para un tipo de examen.
+     */
+    public function getInstruccionesEntregaFisica(int $codTipoExamen): ?string
+    {
+        $sql = 'SELECT instrucciones_entrega_fisica FROM examen_tipo WHERE cod_tipo_examen = :tipo';
+        $result = $this->execute($sql, ['tipo' => $codTipoExamen]);
+        return $result[0]['instrucciones_entrega_fisica'] ?? null;
     }
 }

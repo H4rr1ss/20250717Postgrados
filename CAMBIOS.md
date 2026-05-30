@@ -259,3 +259,113 @@ INSERT INTO accion (cod_accion, nombre) VALUES
 
 Nota: ejecutar los INSERT anteriores manualmente en la base de datos si el
 schema ya está aplicado.
+
+## Simplificación de Carta de Examinadores — sin autorelleno de placeholders (2026-05-30)
+
+Se eliminó el reemplazo automático de placeholders en la generación de la carta de examinadores. Ahora la plantilla `.docx` se copia tal cual y se descarga para que el estudiante o el staff completen los datos manualmente.
+
+### Motivación
+La coordinación requiere flexibilidad para ajustar nombres, colegiados y demás información directamente en el documento, sin depender de la estructura rígida de placeholders predefinidos.
+
+### Archivos modificados
+- `module/Eep/src/Service/CartaGenerator.php`
+  - Eliminada la dependencia `PhpOffice\PhpWord\TemplateProcessor` y toda la lógica de reemplazo de placeholders.
+  - Eliminados los métodos privados `getDatosProceso()`, `construirValores()` y `getNombreUsuarioGenerador()`.
+  - Agregado método privado `getTipoExamenDeProceso()` (consulta mínima para resolver la plantilla).
+  - El método `generar()` ahora usa `copy()` para duplicar la plantilla sin alterar su contenido.
+
+### Uso
+1. El staff sube una plantilla `.docx` a la carpeta deseada (por ejemplo `data/graduacion/plantillas/carta-examinadores/mi-plantilla.docx`).
+2. Registra la plantilla en `examen_carta_plantilla` vía SQL.
+3. Al presionar **"Aprobar trabajo y generar carta"**, el sistema registra en `examen_carta_examinadores` que la carta fue generada, pero **no copia el archivo** a la carpeta del proceso.
+4. El estudiante descarga la **plantilla original** directamente y la completa manualmente en Word.
+
+### Nota técnica
+Al no personalizar la carta automáticamente, no es necesario duplicar la plantilla por cada proceso. El campo `archivo_generado` en `examen_carta_examinadores` ahora apunta directamente a la ruta de la plantilla original registrada en `examen_carta_plantilla`.
+
+## Instrucciones para entrega de documentos físicos — columna en `examen_tipo` (2026-05-30)
+
+Se agregó la columna `instrucciones_entrega_fisica` a `examen_tipo` para permitir que la coordinación escriba instrucciones generales sobre documentos de vigencia corta o restricciones especiales para la entrega física.
+
+### Cambios en base de datos
+```sql
+ALTER TABLE examen_tipo
+ADD COLUMN instrucciones_entrega_fisica TEXT NULL
+COMMENT 'Instrucciones generales para entrega de documentos fisicos (vigencias, restricciones, etc.)';
+```
+Script actualizado: `database/modulo graduacion/modulo_graduacion.sql`.
+
+### Archivos PHP modificados
+- `module/Eep/src/Service/ExamenManager.php`
+  - `getInstruccionesEntregaFisica()` — lee las instrucciones por tipo de examen.
+  - `guardarInstruccionesEntregaFisica()` — guarda las instrucciones por tipo de examen.
+- `module/Eep/src/Service/StudentGraduationManager.php`
+  - `getInstruccionesEntregaFisica()` — lee las instrucciones para mostrarlas al estudiante.
+- `module/Eep/src/Controller/ExamenController.php`
+  - `papeleriaAction()` — pasa las instrucciones a la vista de gestión de papelería.
+  - `guardarInstruccionesAction()` — endpoint AJAX para guardar instrucciones.
+  - `solicitudesAction()` — pasa las instrucciones a la vista de revisión paso 2.
+- `module/Eep/src/Controller/StudentGraduationController.php`
+  - `paso1SolicitudExamenAction()` — pasa las instrucciones a la vista del estudiante en paso físico.
+
+### Vistas modificadas
+- `module/Eep/view/eep/examen/papeleria.phtml` — textarea con botón "Guardar instrucciones" debajo de la tabla de requisitos.
+- `module/Eep/view/eep/examen/partial/paso2-documentacion.phtml` — muestra recuadro amarillo con instrucciones especiales en el paso 2 de revisión.
+- `module/Eep/view/eep/examen/revisarpapeleria.phtml` — pasa la variable `instruccionesEntrega` al partial.
+- `module/Eep/view/eep/student-graduation/partial/paso1-solicitud-examen.phtml` — muestra recuadro amarillo con instrucciones especiales en la vista del estudiante durante entrega física.
+
+### Permisos
+- `module/Eep/config/access_filter.php` — agregada acción `guardarInstrucciones` (código 108) para roles DIRECTOR y ASISTENTE.
+
+### Uso
+El administrador accede a *Gestión de Exámenes > Requisitos de Papelería*, edita el tipo de examen deseado y escribe en el panel inferior las instrucciones que el estudiante debe seguir para la entrega física de documentos (por ejemplo: vigencia de órdenes de pago, documentos que no deben digitalizarse, etc.).
+
+## Fix: Visualización de evidencias en bitácora (paso 5) — error 404 (2026-05-30)
+
+Las evidencias subidas a la bitácora del paso 5 (Carta de Examinadores) daban error 404 al intentar visualizarlas porque las vistas apuntaban a la ruta directa `/archivos/{md5}.{ext}`, pero los archivos se almacenan fuera de la web root en `data/graduacion/procesos/{cod_proceso}/`.
+
+### Archivos modificados
+- `module/Eep/src/Service/StudentGraduationManager.php`
+  - `getArchivoByHash()` — ahora busca primero en `archivo_local` (documentos del paso 1) y, si no encuentra, realiza un fallback a `examen_correccion_evidencia` (evidencias de la bitácora del paso 5).
+- `module/Eep/src/Controller/StudentGraduationController.php`
+  - `subirEvidenciaAction()` — revirtió ruta de subida a `data/graduacion/procesos/{cod_proceso}/`.
+  - `eliminarEvidenciaAction()` — revirtió ruta de borrado a `data/graduacion/procesos/{cod_proceso}/`.
+- `module/Eep/view/eep/student-graduation/partial/paso5-carta-examinadores.phtml`
+  - Los links de imagen y botones "Ver" ahora apuntan a `/student-graduation/ver-documento?h={md5}` en lugar de `/archivos/{md5}.{ext}`.
+- `module/Eep/view/eep/examen/partial/paso5-carta-examinadores.phtml`
+  - Idem para la vista del staff (admin).
+
+### Nota técnica
+El action `verDocumentoAction` ya servía archivos de forma segura leyendo de `data/graduacion/procesos/`; solo faltaba que las vistas de bitácora apuntaran a él en lugar de intentar acceso directo al directorio público.
+
+## Archivo de apoyo por requisito de papelería (2026-05-30)
+
+Se agregó la posibilidad de adjuntar un **documento de apoyo** (formulario, instructivo, etc.) a cada requisito de papelería. El estudiante puede descargarlo directamente desde la tarjeta del documento antes de subir su archivo.
+
+### Cambios en base de datos
+```sql
+ALTER TABLE examen_requisito_documento
+ADD COLUMN archivo_apoyo VARCHAR(255) NULL
+COMMENT 'Ruta relativa al archivo de apoyo (formulario, instructivo, etc.)';
+```
+Script actualizado: `database/modulo graduacion/modulo_graduacion.sql`.
+
+### Archivos PHP modificados
+- `module/Eep/src/Service/ExamenManager.php`
+  - `getDocumentosYRequisitos()` — incluye `archivo_apoyo` en el SELECT.
+  - `getRequisitosDocumento()` — incluye `archivo_apoyo` en el SELECT.
+  - `getTodosRequisitos()` — incluye `archivo_apoyo` en el SELECT.
+  - `upsertRequisito()` — soporta guardar/actualizar `archivo_apoyo` de forma condicional.
+- `module/Eep/src/Controller/ExamenController.php`
+  - `guardarRequisitoAction()` — procesa `$_FILES['archivo_apoyo']`, valida formato (pdf, doc, docx, jpg, png) y tamaño (10 MB), mueve el archivo a `public/archivos/requisitos-apoyo/` y guarda la ruta relativa.
+
+### Vistas modificadas
+- `module/Eep/view/eep/examen/papeleria.phtml`
+  - Modal de creación/edición: nuevo campo file input "Archivo de apoyo (opcional)" con enlace al archivo actual en modo edición.
+  - Tabla de requisitos: ícono de clip (`fa-paperclip`) cuando un requisito tiene archivo adjunto.
+  - JavaScript: usa `FormData` + `$.ajax` para enviar el archivo vía POST.
+- `module/Eep/view/eep/student-graduation/partial/paso1-solicitud-examen.phtml`
+  - En la tarjeta de cada documento, si el requisito tiene `archivo_apoyo`, aparece un recuadro azul con botón **"Descargar formulario"**.
+
+### Uso
+En *Gestión de Exámenes > Requisitos de Papelería*, al crear o editar un requisito se puede subir opcionalmente un archivo de apoyo. El estudiante lo verá destacado en su vista de solicitud de examen, facilitando la entrega de formularios oficiales.

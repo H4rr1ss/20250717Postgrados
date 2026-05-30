@@ -91,6 +91,11 @@ class StudentGraduationController extends AbstractActionController {
         $carta = null;
         if ($proceso) {
             $carta = $this->cartaManager->getCartaPorProceso((int) $proceso['cod_proceso']);
+
+            // Si la fase actual es examen_general, mostrar "General" como tipo de examen
+            if ($faseActual === 'examen_general') {
+                $proceso['tipo_examen'] = 'General';
+            }
         }
 
         return new ViewModel([
@@ -153,11 +158,17 @@ class StudentGraduationController extends AbstractActionController {
             }
         }
         
+        $instruccionesEntrega = null;
+        if ($proceso && $esPasoFisico) {
+            $instruccionesEntrega = $this->processManager->getInstruccionesEntregaFisica($codTipoExamenFase);
+        }
+
         $view = new ViewModel([
             'proceso' => $proceso,
             'requisitos' => $requisitos,
             'requisitosReferencia' => $requisitosReferencia,
-            'esPasoFisico' => $esPasoFisico
+            'esPasoFisico' => $esPasoFisico,
+            'instruccionesEntrega' => $instruccionesEntrega
         ]);
         $view->setTemplate('eep/student-graduation/partial/paso1-solicitud-examen');
         return $view;

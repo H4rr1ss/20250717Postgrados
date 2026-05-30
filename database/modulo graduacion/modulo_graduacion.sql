@@ -42,6 +42,7 @@ CREATE TABLE `examen_tipo` (
   `cod_tipo_examen` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
   `nombre`          varchar(100) NOT NULL,
   `descripcion`     text DEFAULT NULL,
+  `instrucciones_entrega_fisica` text DEFAULT NULL COMMENT 'Instrucciones generales para entrega de documentos fisicos (vigencias, restricciones, etc.)',
   `activo`          tinyint(1) NOT NULL DEFAULT 1,
   `created_at`       datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`cod_tipo_examen`)
@@ -187,6 +188,7 @@ CREATE TABLE `examen_requisito_documento` (
   `obligatorio`      tinyint(1) NOT NULL DEFAULT 1,
   `formatos_permitidos` varchar(100) DEFAULT NULL COMMENT 'Ej: pdf,jpg,png',
   `tamano_max_mb`    tinyint(3) unsigned NOT NULL DEFAULT 10,
+  `archivo_apoyo`    varchar(255) DEFAULT NULL COMMENT 'Ruta relativa al archivo de apoyo (formulario, instructivo, etc.)',
   `orden_display`    tinyint(3) unsigned NOT NULL DEFAULT 1,
   `activo`           tinyint(1) NOT NULL DEFAULT 1,
   `created_at`       datetime NOT NULL DEFAULT current_timestamp(),

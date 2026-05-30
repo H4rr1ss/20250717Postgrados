@@ -242,6 +242,25 @@ $this->headTitle('Progreso del Proceso de Graduación');
             </div>
         </div><!-- /panel-green -->
 
+        <?php if ($procesoFinalizado): ?>
+        <!-- Aviso: proceso finalizado, revisar correo -->
+        <div class="panel" style="border: 2px solid #5cb85c; border-radius: 8px; margin-top: 24px;">
+            <div class="panel-heading" style="background: #dff0d8; color: #3c763d; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #d6e9c6;">
+                <i class="fa fa-check-circle"></i>&nbsp; ¡Proceso completado con éxito!
+            </div>
+            <div class="panel-body" style="background: #f4faf4; padding: 22px 28px;">
+                <p style="font-size: 15px; color: #3c763d; margin-bottom: 14px;">
+                    <strong>Tu proceso de graduación ha finalizado correctamente.</strong> Se ha enviado un correo electrónico a tu cuenta institucional con las instrucciones finales.
+                </p>
+                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                    <i class="fa fa-envelope" style="color: #3c763d; margin-right: 8px;"></i>Revisa tu bandeja de entrada y también la carpeta de <strong>spam/correo no deseado</strong>.
+                </p>
+                <p style="font-size: 13px; color: #777; margin-bottom: 0;">
+                    <i class="fa fa-info-circle" style="color: #3c763d; margin-right: 6px;"></i>Si no encuentras el correo en las próximas 24 horas, contacta a la coordinación de postgrados.
+                </p>
+            </div>
+        </div>
+        <?php endif; ?>
 
     <?php else: ?>
         <!-- Mensaje cuando no hay proceso activo -->

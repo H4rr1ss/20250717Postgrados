@@ -4,17 +4,12 @@ namespace Eep\Service;
 
 use Zend\Db\Adapter\AdapterInterface;
 use Zend\Db\ResultSet\ResultSet;
-use PhpOffice\PhpWord\TemplateProcessor;
-
 /**
- * Genera la carta de examinadores a partir de una plantilla .docx con
- * placeholders ${nombre_variable} (PHPWord TemplateProcessor).
+ * Genera la carta de examinadores copiando la plantilla .docx tal cual.
  *
- * Resuelve la plantilla aplicable (específica del tipo de examen o
- * genérica), recolecta los datos del proceso/estudiante/terna y produce
- * un archivo en data/graduacion/procesos/{cod}/carta-examinadores.docx.
- *
- * Inserta el registro en examen_carta_examinadores.
+ * La plantilla se descarga sin modificaciones; el estudiante o el staff
+ * completan los datos manualmente. Se mantiene el registro en BD para
+ * controlar que el proceso ya fue aprobado y la carta está disponible.
  */
 class CartaGenerator
 {
@@ -60,12 +55,12 @@ class CartaGenerator
             return (int) $existente[0]['cod_carta'];
         }
 
-        $datosProceso = $this->getDatosProceso($codProceso);
-        if ($datosProceso === null) {
+        $tipoExamen = $this->getTipoExamenDeProceso($codProceso);
+        if ($tipoExamen === null) {
             throw new \RuntimeException('Proceso no encontrado al generar carta: ' . $codProceso);
         }
 
-        $plantilla = $this->getPlantillaParaTipo((int) $datosProceso['cod_tipo_examen']);
+        $plantilla = $this->getPlantillaParaTipo((int) $tipoExamen);
         if ($plantilla === null) {
             throw new \RuntimeException('No hay plantilla registrada para el tipo de examen.');
         }
@@ -75,22 +70,9 @@ class CartaGenerator
             throw new \RuntimeException('Plantilla .docx no encontrada en disco: ' . $rutaPlantilla);
         }
 
-        $valores      = $this->construirValores($datosProceso);
-        
-        // NUEVA RUTA: data/graduacion/procesos/{cod}/carta-examinadores.docx
-        $rutaRelativa = 'data/graduacion/procesos/' . $codProceso . '/carta-examinadores.docx';
-        $rutaSalida   = $this->rutaProyecto . '/' . $rutaRelativa;
-
-        $dirSalida = dirname($rutaSalida);
-        if (!is_dir($dirSalida)) {
-            @mkdir($dirSalida, 0775, true);
-        }
-
-        $processor = new TemplateProcessor($rutaPlantilla);
-        foreach ($valores as $placeholder => $valor) {
-            $processor->setValue($placeholder, $valor);
-        }
-        $processor->saveAs($rutaSalida);
+        // La plantilla se sirve directamente (sin copiar por proceso) ya que
+        // no se personaliza automáticamente; el estudiante la completa manualmente.
+        $rutaRelativa = ltrim($plantilla['archivo_plantilla'], '/');
 
         $this->exec(
             'INSERT INTO examen_carta_examinadores
@@ -127,111 +109,14 @@ class CartaGenerator
     }
 
     /**
-     * Recolecta datos del proceso, estudiante, tipo de examen y terna.
+     * Obtiene únicamente el cod_tipo_examen de un proceso.
      */
-    private function getDatosProceso(int $codProceso): ?array
+    private function getTipoExamenDeProceso(int $codProceso): ?int
     {
-        $sql = 'SELECT ep.cod_proceso,
-                       ep.cod_tipo_examen,
-                       ep.fecha_examen_privado AS fecha_examen,
-                       ep.hora_examen_privado  AS hora_inicio_examen,
-                       et.nombre AS tipo_examen,
-                       u.cod_usuario,
-                       u.nombres,
-                       u.apellidos,
-                       u.registro_academico,
-                       u.cui
-                FROM examen_proceso ep
-                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
-                JOIN usuario u      ON u.cod_usuario      = ep.cod_usuario
-                WHERE ep.cod_proceso = :proceso
-                LIMIT 1';
-        $result = $this->execute($sql, ['proceso' => $codProceso]);
-        if (empty($result)) {
-            return null;
-        }
-        $proceso = $result[0];
-
-        // La carta de examinadores siempre utiliza la terna del examen privado
-        // (fase = 'examen_privado'), independientemente de la fase actual del proceso
-        $terna = $this->execute(
-            'SELECT nombre_examinador, numero_colegiado, tipo_examinador, posicion
-               FROM examen_terna
-              WHERE cod_proceso = :proceso
-                AND fase = :fase
-              ORDER BY posicion ASC',
-            ['proceso' => $codProceso, 'fase' => 'examen_privado']
+        $result = $this->execute(
+            'SELECT cod_tipo_examen FROM examen_proceso WHERE cod_proceso = :proceso LIMIT 1',
+            ['proceso' => $codProceso]
         );
-        $proceso['terna'] = $terna;
-        return $proceso;
-    }
-
-    /**
-     * Construye el mapa placeholder=>valor pasado al TemplateProcessor.
-     * Cualquier placeholder definido en data/plantillas/.../README.md
-     * tiene su valor aquí; si no hay dato en BD, se envía cadena vacía.
-     */
-    private function construirValores(array $proceso): array
-    {
-        $nombreEstudiante = trim(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? ''));
-
-        // Por convención: posicion 1 = examinador 1, 2 = examinador 2,
-        // 3 = examinador 3. Si se utilizan otras posiciones (asesor, etc.)
-        // en el catálogo, el orden lo determina la columna 'posicion'.
-        $examinadores = [1 => ['', ''], 2 => ['', ''], 3 => ['', '']];
-        $asesor = '';
-        foreach ($proceso['terna'] as $miembro) {
-            $pos = (int) $miembro['posicion'];
-            if (isset($examinadores[$pos])) {
-                $examinadores[$pos] = [
-                    (string) $miembro['nombre_examinador'],
-                    (string) ($miembro['numero_colegiado'] ?? ''),
-                ];
-            }
-            // Heurística simple: si en el futuro se agrega un rol 'asesor'
-            // con tipo_examinador específico, se mapea aquí.
-            if (strtolower((string) $miembro['tipo_examinador']) === 'asesor') {
-                $asesor = (string) $miembro['nombre_examinador'];
-            }
-        }
-
-        $fechaExamen = !empty($proceso['fecha_examen'])
-            ? date('d/m/Y', strtotime($proceso['fecha_examen']))
-            : '';
-        $horaExamen = !empty($proceso['hora_inicio_examen'])
-            ? date('H:i', strtotime($proceso['hora_inicio_examen']))
-            : '';
-
-        $coordinadorNombre = $this->getNombreUsuarioGenerador();
-
-        return [
-            'estudiante_nombre'        => $nombreEstudiante,
-            'estudiante_carnet'        => (string) ($proceso['registro_academico'] ?? ''),
-            'estudiante_cui'           => (string) ($proceso['cui'] ?? ''),
-            'titulo_trabajo'           => '',
-            'tipo_examen'              => (string) ($proceso['tipo_examen'] ?? ''),
-            'fecha_examen'             => $fechaExamen,
-            'hora_examen'              => $horaExamen,
-            'asesor_nombre'            => $asesor,
-            'examinador_1_nombre'      => $examinadores[1][0],
-            'examinador_1_colegiado'   => $examinadores[1][1],
-            'examinador_2_nombre'      => $examinadores[2][0],
-            'examinador_2_colegiado'   => $examinadores[2][1],
-            'examinador_3_nombre'      => $examinadores[3][0],
-            'examinador_3_colegiado'   => $examinadores[3][1],
-            'coordinador_nombre'       => $coordinadorNombre,
-            'fecha_emision_carta'      => date('d/m/Y'),
-        ];
-    }
-
-    /**
-     * Nombre del coordinador que aprueba. Hoy no se persiste aún (el
-     * registro se hace en aprobarTrabajo via examen_carta_examinadores
-     * después). Para evitar acoplar más, se deja vacío y se rellena
-     * desde la sesión en una mejora posterior.
-     */
-    private function getNombreUsuarioGenerador(): string
-    {
-        return '';
+        return empty($result) ? null : (int) $result[0]['cod_tipo_examen'];
     }
 }
