@@ -376,16 +376,14 @@ class ExamenController extends AbstractActionController {
 
     private function getRutaDocumentosSoporte(): string
     {
-        return rtrim($_SERVER['DOCUMENT_ROOT'], '/')
-            . '/archivos/autorizacion-impresion/'
-            . AutorizacionImpresionManager::SUBDIR_DOCUMENTOS;
+        return rtrim(dirname($_SERVER['DOCUMENT_ROOT']), '/')
+            . '/' . AutorizacionImpresionManager::SUBDIR_DOCUMENTOS;
     }
 
     private function getRutaCartasDescarga(): string
     {
-        return rtrim($_SERVER['DOCUMENT_ROOT'], '/')
-            . '/archivos/autorizacion-impresion/'
-            . AutorizacionImpresionManager::SUBDIR_CARTAS;
+        return rtrim(dirname($_SERVER['DOCUMENT_ROOT']), '/')
+            . '/' . AutorizacionImpresionManager::SUBDIR_CARTAS;
     }
 
     /**
@@ -583,7 +581,7 @@ class ExamenController extends AbstractActionController {
                 return $this->redirect()->toRoute('examen', [
                     'action' => 'solicitudes',
                     'id'     => $idProceso
-                ]);
+                ], ['query' => ['paso' => 1]]);
             } catch (\Exception $e) {
                 $this->flashMessenger()->addErrorMessage('Error al iniciar el proceso: ' . $e->getMessage());
                 return $this->redirect()->toRoute('examen', ['action' => 'iniciar-proceso']);

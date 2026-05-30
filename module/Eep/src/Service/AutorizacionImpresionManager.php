@@ -26,7 +26,7 @@ use Zend\Db\ResultSet\ResultSet;
  *     fase 'autorizacion_impresion'. La aprobación final dispara el
  *     avance al paso 1 de 'examen_general' a través de ExamenManager.
  *   - Los archivos físicos se guardan en
- *     public/archivos/autorizacion-impresion/{documentos-soporte,cartas-descarga}/
+ *     data/graduacion/global/{documentos-soporte,cartas-descarga}/
  *     con nombre <md5>.<ext>. El controller los descarga sirviendo
  *     bytes; nunca expone la ruta física.
  */
@@ -47,9 +47,9 @@ class AutorizacionImpresionManager
     /** Tamaño máximo por archivo (MB). */
     private const TAMANO_MAX_MB = 10;
 
-    /** Subdirectorios bajo public/archivos/autorizacion-impresion/. */
-    public const SUBDIR_DOCUMENTOS = 'documentos-soporte';
-    public const SUBDIR_CARTAS     = 'cartas-descarga';
+    /** Subdirectorios bajo data/graduacion/global/ */
+    public const SUBDIR_DOCUMENTOS = 'data/graduacion/global/documentos-soporte';
+    public const SUBDIR_CARTAS     = 'data/graduacion/global/cartas-descarga';
 
     /** @var AdapterInterface */
     private $adapter;

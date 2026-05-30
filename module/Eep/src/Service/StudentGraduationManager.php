@@ -119,7 +119,8 @@ class StudentGraduationManager
         $sql = 'SELECT
                     al.nombre_md5,
                     al.extension,
-                    ed.nombre_original
+                    ed.nombre_original,
+                    ed.cod_proceso
                 FROM archivo_local al
                 JOIN examen_documento ed ON ed.cod_documento = al.cod_documento
                 WHERE al.nombre_md5 = :hash

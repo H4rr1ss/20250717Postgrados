@@ -12,7 +12,7 @@ use PhpOffice\PhpWord\TemplateProcessor;
  *
  * Resuelve la plantilla aplicable (específica del tipo de examen o
  * genérica), recolecta los datos del proceso/estudiante/terna y produce
- * un archivo en public/archivos/cartas-examinadores/proceso-{cod}.docx.
+ * un archivo en data/graduacion/procesos/{cod}/carta-examinadores.docx.
  *
  * Inserta el registro en examen_carta_examinadores.
  */
@@ -76,7 +76,9 @@ class CartaGenerator
         }
 
         $valores      = $this->construirValores($datosProceso);
-        $rutaRelativa = 'public/archivos/cartas-examinadores/proceso-' . $codProceso . '.docx';
+        
+        // NUEVA RUTA: data/graduacion/procesos/{cod}/carta-examinadores.docx
+        $rutaRelativa = 'data/graduacion/procesos/' . $codProceso . '/carta-examinadores.docx';
         $rutaSalida   = $this->rutaProyecto . '/' . $rutaRelativa;
 
         $dirSalida = dirname($rutaSalida);

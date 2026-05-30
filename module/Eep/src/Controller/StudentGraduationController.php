@@ -267,7 +267,8 @@ class StudentGraduationController extends AbstractActionController {
         // 8. Generar nombre MD5 único y mover archivo a disco
         $nombreBase = pathinfo($archivo['name'], PATHINFO_FILENAME);
         $nombreMd5  = md5($nombreBase . date('YmdHis') . uniqid('', true));
-        $directorio = $_SERVER['DOCUMENT_ROOT'] . '/archivos/';
+        // NUEVA RUTA: data/graduacion/procesos/{cod_proceso}/
+        $directorio = dirname($_SERVER['DOCUMENT_ROOT']) . '/data/graduacion/procesos/' . $proceso['cod_proceso'] . '/';
 
         if (!is_dir($directorio)) {
             mkdir($directorio, 0755, true);
@@ -337,7 +338,9 @@ class StudentGraduationController extends AbstractActionController {
         }
 
         // 4. Construir ruta física y verificar que existe
-        $rutaFisica = $_SERVER['DOCUMENT_ROOT'] . '/archivos/'
+        // NUEVA RUTA: data/graduacion/procesos/{cod_proceso}/
+        $rutaFisica = dirname($_SERVER['DOCUMENT_ROOT']) . '/data/graduacion/procesos/'
+                    . $archivoInfo['cod_proceso'] . '/'
                     . $archivoInfo['nombre_md5'] . '.' . $archivoInfo['extension'];
         error_log('[verDocumento] rutaFisica=' . $rutaFisica . ' exists=' . var_export(is_file($rutaFisica), true));
 
@@ -468,7 +471,8 @@ class StudentGraduationController extends AbstractActionController {
         }
 
         $nombreMd5 = md5(pathinfo($archivo['name'], PATHINFO_FILENAME) . date('YmdHis') . uniqid('', true));
-        $directorio = $_SERVER['DOCUMENT_ROOT'] . '/archivos/';
+        // NUEVA RUTA: data/graduacion/procesos/{cod_proceso}/
+        $directorio = dirname($_SERVER['DOCUMENT_ROOT']) . '/data/graduacion/procesos/' . $proceso['cod_proceso'] . '/';
         if (!is_dir($directorio)) {
             mkdir($directorio, 0755, true);
         }
@@ -529,7 +533,9 @@ class StudentGraduationController extends AbstractActionController {
             return new JsonModel(['success' => false, 'message' => 'No autorizado']);
         }
 
-        $this->cartaManager->eliminarEvidencia($codEvidencia, rtrim($_SERVER['DOCUMENT_ROOT'] . '/archivos', '/'));
+        // NUEVA RUTA: data/graduacion/procesos/{cod_proceso}/
+        $rutaBase = dirname($_SERVER['DOCUMENT_ROOT']) . '/data/graduacion/procesos/' . $proceso['cod_proceso'];
+        $this->cartaManager->eliminarEvidencia($codEvidencia, rtrim($rutaBase, '/'));
         return new JsonModel(['success' => true, 'message' => 'Evidencia eliminada.']);
     }
 
@@ -593,7 +599,7 @@ class StudentGraduationController extends AbstractActionController {
         }
 
         // Resolver ruta absoluta. archivo_generado se guarda como ruta relativa
-        // al proyecto: 'public/archivos/cartas-examinadores/proceso-N.docx'.
+        // al proyecto: 'data/graduacion/procesos/{cod}/carta-examinadores.docx'.
         $rutaProyecto = dirname($_SERVER['DOCUMENT_ROOT']);
         $rutaFisica   = $rutaProyecto . '/' . ltrim($carta['archivo_generado'], '/');
         if (!is_file($rutaFisica)) {
