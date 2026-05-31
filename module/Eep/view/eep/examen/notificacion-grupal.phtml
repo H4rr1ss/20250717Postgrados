@@ -1,0 +1,191 @@
+<?php
+$estudiantes = $this->estudiantes ?? [];
+?>
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                <i class="fa fa-envelope"></i> Notificación Grupal — Acto de Graduación
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+
+                <?php if (empty($estudiantes)): ?>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i> No hay estudiantes con el proceso de examen general completado.
+                    </div>
+                <?php else: ?>
+
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i> Seleccione los estudiantes a notificar y complete la información del acto de graduación.
+                </div>
+
+                <!-- Tabla de estudiantes -->
+                <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <table class="table table-bordered table-striped" style="font-size: 13px; margin-bottom: 0;">
+                        <thead style="background: #f5f5f5;">
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="seleccionarTodos">
+                                </th>
+                                <th>Carné</th>
+                                <th>Nombre</th>
+                                <th>Carrera</th>
+                                <th>Fecha completado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($estudiantes as $est): ?>
+                            <tr>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" class="sel-estudiante" value="<?= (int)$est['cod_proceso'] ?>">
+                                </td>
+                                <td><?= htmlspecialchars($est['registro_academico'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars(($est['apellidos'] ?? '') . ', ' . ($est['nombres'] ?? '')) ?></td>
+                                <td><?= htmlspecialchars($est['carrera'] ?? '-') ?></td>
+                                <td><?= !empty($est['fecha_completado']) ? date('d/m/Y H:i', strtotime($est['fecha_completado'])) : '-' ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Formulario de envío -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <h5 style="font-weight: 600; margin-bottom: 15px;">Información del Acto de Graduación</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Fecha del acto <span style="color:red">*</span></label>
+                                <input type="date" class="form-control" id="ngFecha" min="<?= date('Y-m-d') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Hora del acto <span style="color:red">*</span></label>
+                                <input type="time" class="form-control" id="ngHora">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Lugar <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" id="ngLugar" placeholder="Ej: Auditorio Universidad, Ciudad de Guatemala">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nota sobre presentación antes del horario</label>
+                        <textarea class="form-control" id="ngNotaPresentacion" rows="3" placeholder="Ej: GRADUANDO, PADRINO(S) Y MADRINA(S) DEBEN PRESENTARSE 01 HORA ANTES DEL HORARIO ASIGNADO"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Información adicional / saludo</label>
+                        <textarea class="form-control" id="ngInfoExtra" rows="4" placeholder="Saludo personalizado, indicaciones, vestimenta, documentos requeridos, etc."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Correos adicionales (CC)</label>
+                        <textarea class="form-control" id="ngCorreosCc" rows="3" placeholder="Ingrese los correos separados por coma, punto y coma o salto de línea..."></textarea>
+                        <small class="text-muted">No se guardarán en base de datos. Solo se usarán en el envío actual.</small>
+                    </div>
+
+                    <div class="text-right">
+                        <button type="button" class="btn btn-success btn-lg" id="btnEnviarNotificacionGrupal">
+                            <i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resumen -->
+                <div id="resumenNotificacion" style="display: none; margin-top: 20px;"></div>
+
+                <?php endif; ?>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Seleccionar/deseleccionar todos
+    $('#seleccionarTodos').on('change', function() {
+        $('.sel-estudiante').prop('checked', $(this).is(':checked'));
+    });
+
+    $('#btnEnviarNotificacionGrupal').on('click', function() {
+        var btn = $(this);
+        var seleccionados = [];
+        $('.sel-estudiante:checked').each(function() {
+            seleccionados.push($(this).val());
+        });
+
+        if (seleccionados.length === 0) {
+            alert('Debe seleccionar al menos un estudiante.');
+            return;
+        }
+
+        var fecha = $('#ngFecha').val();
+        var hora = $('#ngHora').val();
+        var lugar = $('#ngLugar').val().trim();
+
+        if (!fecha || !hora || !lugar) {
+            alert('Fecha, hora y lugar son obligatorios.');
+            return;
+        }
+
+        // Validar fecha no anterior a hoy
+        var hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        var partes = fecha.split('-');
+        var fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
+        if (fechaSel < hoy) {
+            alert('La fecha no puede ser anterior al día de hoy.');
+            return;
+        }
+
+        if (!confirm('¿Confirma que desea enviar la notificación a ' + seleccionados.length + ' estudiante(s)?')) {
+            return;
+        }
+
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
+
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "enviar-notificacion-grupal"]) ?>',
+            method: 'POST',
+            data: {
+                cod_procesos: seleccionados,
+                fecha: fecha,
+                hora: hora,
+                lugar: lugar,
+                nota_presentacion: $('#ngNotaPresentacion').val(),
+                info_extra: $('#ngInfoExtra').val(),
+                correos_cc: $('#ngCorreosCc').val()
+            },
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.success) {
+                    var html = '<div class="alert alert-success">' +
+                        '<h4><i class="fa fa-check-circle"></i> ' + resp.message + '</h4>' +
+                        '<p><strong>Enviados:</strong> ' + resp.enviados + '</p>' +
+                        '<p><strong>Fallidos:</strong> ' + resp.fallidos + '</p>';
+                    if (resp.errores && resp.errores.length > 0) {
+                        html += '<ul>';
+                        resp.errores.forEach(function(err) {
+                            html += '<li>' + err + '</li>';
+                        });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                    $('#resumenNotificacion').html(html).show();
+                } else {
+                    alert(resp.message || 'Error al enviar la notificación.');
+                }
+            },
+            error: function() {
+                alert('Error de conexión. Inténtelo de nuevo.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados');
+            }
+        });
+    });
+});
+</script>

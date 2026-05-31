@@ -168,14 +168,17 @@ class CartaExaminadoresManager
 
     public function getCartaPorProceso(int $codProceso): ?array
     {
-        $sql = 'SELECT cod_carta, cod_proceso, cod_ciclo_aprobacion, cod_plantilla,
-                       archivo_generado, estado, fecha_generacion, generada_por,
-                       fecha_entrega, observaciones
-                FROM examen_carta_examinadores
-                WHERE cod_proceso = :proceso
-                LIMIT 1';
-        $result = $this->execute($sql, ['proceso' => $codProceso]);
-        return $result[0] ?? null;
+        // Ya no se guarda la carta en BD; se descarga directamente desde disco.
+        // Devuelve info si la plantilla existe.
+        $ruta = $this->cartaGenerator->obtenerRutaPlantilla();
+        if ($ruta === null) {
+            return null;
+        }
+        return [
+            'cod_proceso'      => $codProceso,
+            'archivo_generado' => $ruta,
+            'estado'           => 'generada',
+        ];
     }
 
     public function getEvidenciaPorMd5(string $md5): ?array
@@ -267,7 +270,7 @@ class CartaExaminadoresManager
         $this->upsertProcesoPaso($codProceso, 'completado', true);
         $this->avanzarAPaso6($codProceso);
 
-        $codCarta = $this->cartaGenerator->generar(
+        $rutaCarta = $this->cartaGenerator->generar(
             $codProceso,
             (int) $ciclo['cod_ciclo'],
             $codUsuarioCoordinador
@@ -275,7 +278,7 @@ class CartaExaminadoresManager
 
         return [
             'cod_ciclo' => (int) $ciclo['cod_ciclo'],
-            'cod_carta' => $codCarta,
+            'ruta_carta' => $rutaCarta,
         ];
     }
 

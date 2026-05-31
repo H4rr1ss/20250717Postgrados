@@ -628,7 +628,7 @@ class ExamenManager
             $params['obligatorio']  = $data['obligatorio'] ?? 1;
 
             $this->execute("INSERT INTO examen_requisito_documento ({$columns}) VALUES ({$values})", $params);
-            return $this->getLastInsertId();
+            return (int) $this->adapter->getDriver()->getLastGeneratedValue();
         }
     }
 
@@ -1130,5 +1130,42 @@ class ExamenManager
         ];
 
         $this->adapter->createStatement($sql, $params)->execute();
+    }
+
+    /**
+     * Obtiene los procesos de examen general (tipo 3) que completaron
+     * el paso 2 (entrega de documentación) y están listos para recibir
+     * la notificación grupal de acto de graduación.
+     */
+    public function getProcesosGeneralCompletados(): array
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    u.correo,
+                    c.nombre_actual AS carrera,
+                    ep.fecha_solicitud,
+                    MAX(epp.fecha_completado) AS fecha_completado
+                FROM examen_proceso ep
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                LEFT JOIN carrera c ON c.cod_carrera = (
+                    SELECT p.cod_carrera FROM asignacion_carrera ac
+                    JOIN pensum p ON p.cod_pensum = ac.cod_pensum
+                    WHERE ac.cod_usuario = u.cod_usuario LIMIT 1
+                )
+                JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
+                JOIN examen_paso_catalogo epc ON epc.cod_paso = epp.cod_paso
+                WHERE ep.cancelado = 0
+                  AND ep.cod_tipo_examen = 3
+                  AND epc.fase = "examen_general"
+                  AND epp.estado = "completado"
+                  AND ep.cod_paso_actual IS NULL
+                GROUP BY ep.cod_proceso, u.nombres, u.apellidos, u.registro_academico, u.correo, c.nombre_actual, ep.fecha_solicitud
+                ORDER BY u.apellidos, u.nombres';
+
+        return $this->execute($sql, []);
     }
 }

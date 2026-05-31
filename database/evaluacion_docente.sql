@@ -77,11 +77,12 @@ INSERT INTO `evaluacion_pregunta` (`id_seccion`, `texto`, `tipo`, `orden`, `acti
 -- ========================================================
 
 INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
-(140, 'Ver evaluación docente (pendientes)'),
-(141, 'Ver formulario de evaluación docente'),
-(142, 'Guardar evaluación docente'),
-(144, 'Ver confirmación de evaluación docente'),
-(145, 'Ver reporte de evaluación docente'),
-(146, 'Descargar reporte de evaluación docente');
+(80, 'Ver evaluación docente (pendientes)'),
+(81, 'Ver formulario de evaluación docente'),
+(82, 'Guardar evaluación docente'),
+(83, 'Ver historial de evaluaciones docentes'),
+(84, 'Ver confirmación de evaluación docente'),
+(85, 'Ver reporte de evaluación docente'),
+(86, 'Descargar reporte de evaluación docente');
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -380,7 +380,8 @@ $(document).ready(function() {
         $('#archivo_apoyo').val('');
         
         if (archivo) {
-            $('#archivoActualLink').attr('href', '/' + archivo).text(archivo.split('/').pop());
+            var nombreArchivo = archivo.split('/').pop();
+            $('#archivoActualLink').attr('href', '<?= $this->url('examen', ['action' => 'descargar-requisito-apoyo']) ?>?file=' + encodeURIComponent(nombreArchivo)).text(nombreArchivo);
             $('#archivoActualContainer').show();
         } else {
             $('#archivoActualContainer').hide();

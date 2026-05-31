@@ -395,246 +395,275 @@ return [
             'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
         ],
     ],
+    // ============================================================
+    // MÓDULO DE GRADUACIÓN (códigos 100–147)
+    // ============================================================
     ExamenController::class => [
         'index' => [
-            'code' => 68,
+            'code' => 100,
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
         'papeleria' => [
-            'code' => 69,
+            'code' => 101,
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
         'solicitudes' => [
-            'code' => 70,
+            'code' => 102,
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
         'revisarpapeleria' => [
-            'code' => 71,
+            'code' => 103,
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
         'inscripcion' => [
-            'code' => 72,
+            'code' => 104,
             'roles' => [Role::ESTUDIANTE]
         ],
         'iniciarProceso' => [
-            'code' => 132,
+            'code' => 105,
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'buscarEstudiante' => [
-            'code' => 133,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'subirDocumento' => [
-            'code' => 100,
-            'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'guardarRevision' => [
-            'code' => 101,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'guardarDocFisico' => [
-            'code' => 102,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'guardarTerna' => [
-            'code' => 103,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'avanzarPaso' => [
-            'code' => 104,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
-        ],
-        'notificarEstudiante' => [
-            'code' => 107,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'guardarRequisito' => [
-            'code' => 105,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'eliminarRequisito' => [
             'code' => 106,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'guardarInstrucciones' => [
+        'subirDocumento' => [
+            'code' => 107,
+            'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarRevision' => [
             'code' => 108,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'guardarDocFisico' => [
+            'code' => 109,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarTerna' => [
+            'code' => 110,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'avanzarPaso' => [
+            'code' => 111,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::ESTUDIANTE]
+        ],
+        'notificarEstudiante' => [
+            'code' => 112,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarRequisito' => [
+            'code' => 113,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarRequisito' => [
+            'code' => 114,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarInstrucciones' => [
+            'code' => 115,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
         'cartaExaminadores' => [
-            'code' => 68,
+            'code' => 116,
             'view' => View::CARTA_EXAMINADORES,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
         ],
         'verCarta' => [
-            'code' => 68,
+            'code' => 117,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
         ],
         // ---- Paso 6: Autorización de Impresión (Director) ----
         'autorizacionImpresion' => [
-            'code' => 110,
+            'code' => 118,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
         ],
         'configurarAutorizacion' => [
-            'code' => 111,
+            'code' => 119,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE]
         ],
         'guardarInstruccionesAutorizacion' => [
-            'code' => 112,
+            'code' => 120,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
         'subirDocumentoSoporte' => [
-            'code' => 113,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'eliminarDocumentoSoporte' => [
-            'code' => 114,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'descargarDocumentoSoporte' => [
-            'code' => 115,
-            'roles' => [Role::AUTH]
-        ],
-        'guardarProfesional' => [
-            'code' => 116,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'eliminarProfesional' => [
-            'code' => 117,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'subirCartaDescarga' => [
-            'code' => 118,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'eliminarCartaDescarga' => [
-            'code' => 119,
-            'view' => View::AUTORIZACION_IMPRESION,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'descargarCartaDescarga' => [
-            'code' => 120,
-            'roles' => [Role::AUTH]
-        ],
-        'guardarMiembroJunta' => [
             'code' => 121,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'eliminarMiembroJunta' => [
+        'eliminarDocumentoSoporte' => [
             'code' => 122,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
-        'aprobarRevisionPresencial' => [
+        'descargarDocumentoSoporte' => [
             'code' => 123,
+            'roles' => [Role::AUTH]
+        ],
+        'descargarRequisitoApoyo' => [
+            'code' => 124,
+            'roles' => [Role::AUTH]
+        ],
+        'guardarProfesional' => [
+            'code' => 125,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarProfesional' => [
+            'code' => 126,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'subirCartaDescarga' => [
+            'code' => 127,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarCartaDescarga' => [
+            'code' => 128,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'descargarCartaDescarga' => [
+            'code' => 129,
+            'roles' => [Role::AUTH]
+        ],
+        'guardarMiembroJunta' => [
+            'code' => 130,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'eliminarMiembroJunta' => [
+            'code' => 131,
+            'view' => View::AUTORIZACION_IMPRESION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'aprobarRevisionPresencial' => [
+            'code' => 132,
             'view' => View::AUTORIZACION_IMPRESION,
             'roles' => [Role::DIRECTOR, Role::COORDINADOR]
+        ],
+        'notificacionGrupal' => [
+            'code' => 133,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'enviarNotificacionGrupal' => [
+            'code' => 134,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
     ],
     StudentGraduationController::class => [
         'index' => [
-            'code' => 80,
+            'code' => 135,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'proceso' => [
-            'code' => 81,
+            'code' => 136,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'paso1SolicitudExamen' => [
-            'code' => 82,
+            'code' => 137,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'paso2Terna' => [
-            'code' => 83,
+            'code' => 138,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'subirDocumento' => [
-            'code' => 84,
+            'code' => 139,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'verDocumento' => [
-            'code' => 85,
+            'code' => 140,
             'roles' => [Role::ESTUDIANTE, Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
         // ---- Paso 5: Carta de Examinadores ----
         'paso5CartaExaminadores' => [
-            'code' => 68,
+            'code' => 141,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE, Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
         ],
         'subirEvidencia' => [
-            'code' => 70,
+            'code' => 142,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'aprobarTrabajo' => [
-            'code' => 71,
+            'code' => 143,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
         ],
         'descargarCarta' => [
-            'code' => 72,
+            'code' => 144,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE, Role::COORDINADOR, Role::DIRECTOR, Role::ASISTENTE]
         ],
         'eliminarEvidencia' => [
-            'code' => 74,
+            'code' => 145,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         // ---- Paso 6: Autorización de Impresión (Estudiante) ----
         'paso6AutorizacionImpresion' => [
-            'code' => 130,
+            'code' => 146,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
         'seleccionarProfesional' => [
-            'code' => 131,
+            'code' => 147,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],
     ],
+    // ============================================================
+    // MÓDULO EVALUACIÓN DOCENTE (códigos 80–86)
+    // ============================================================
     EvaluacionDocenteController::class => [
         'index' => [
-            'code' => 140,
+            'code' => 80,
             'view' => View::EVALUACION_DOCENTE,
             'roles' => [Role::ESTUDIANTE]
         ],
         'evaluar' => [
-            'code' => 141,
+            'code' => 81,
             'view' => View::EVALUACION_DOCENTE,
             'roles' => [Role::ESTUDIANTE]
         ],
         'guardarEvaluacion' => [
-            'code' => 142,
+            'code' => 82,
+            'view' => View::EVALUACION_DOCENTE,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'verHistorial' => [
+            'code' => 83,
+            'view' => View::EVALUACION_DOCENTE,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'verConfirmacion' => [
+            'code' => 84,
             'view' => View::EVALUACION_DOCENTE,
             'roles' => [Role::ESTUDIANTE]
         ],
         'reporteDocente' => [
-            'code' => 145,
+            'code' => 85,
             'view' => View::EVALUACION_DOCENTE_REPORTE,
             'roles' => [Role::DIRECTOR]
         ],
         'descargarReporteDocente' => [
-            'code' => 146,
+            'code' => 86,
             'view' => View::EVALUACION_DOCENTE_REPORTE,
             'roles' => [Role::DIRECTOR]
         ],

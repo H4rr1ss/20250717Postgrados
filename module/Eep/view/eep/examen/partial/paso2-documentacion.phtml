@@ -358,7 +358,12 @@ $(document).ready(function() {
                     // Si el proceso avanzó, redirigir al siguiente paso
                     if (response.avanzado) {
                         setTimeout(function() {
-                            window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=3';
+                            <?php if ($fase === 'examen_general'): ?>
+                                // Examen general solo tiene 2 pasos; volver a la lista
+                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes"]) ?>';
+                            <?php else: ?>
+                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=3';
+                            <?php endif; ?>
                         }, 1000);
                     }
                 } else {

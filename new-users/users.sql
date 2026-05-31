@@ -80,3 +80,7 @@ VALUES ('100140001234', '20264224', 'Pablo', 'Reyes', '2003-01-03', '55510022', 
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('100430001235', '20265135', 'Samuel', 'Zea', '2000-01-09', '55510061', 'sisalesa19@gmail.com', '$2y$10$0QJqbCHy1WPvG0bbRN.0ue5VpHfR4hdeZct4u6Qno4F1/gkuThW/y', 73, 'M', 'Bachiller', CURDATE(), 'Samuel Zea');
+
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('36013209999', '202109918', 'Harry', 'Zea', '2002-01-09', '55510061', 'sisalesa19@gmail.com', '$2y$10$dGQgiklBYLwQHBd3id9OkOhYNPxH8yxZ9a7pEaCO2hxyqDflMHpWe', 73, 'M', 'Bachiller', CURDATE(), 'Harry Zea');

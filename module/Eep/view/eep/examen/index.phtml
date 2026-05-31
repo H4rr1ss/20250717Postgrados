@@ -90,8 +90,9 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                         <tr>
                             <th style="width: 15%;">Tipo</th>
                             <th style="width: 25%;">Nombre</th>
-                            <th style="width: 30%; text-align: center;">Papelería</th>
-                            <th style="width: 30%; text-align: center;">Solicitudes</th>
+                            <th style="width: 20%; text-align: center;">Papelería</th>
+                            <th style="width: 20%; text-align: center;">Solicitudes</th>
+                            <th style="width: 20%; text-align: center;">Notificación Grupal</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,6 +109,11 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                                 <td style="text-align: center;">
                                     <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= $tipo['cod_tipo_examen'] ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
                                         <i class="fa fa-eye"></i>
+                                    </a>
+                                </td>
+                                <td style="text-align: center;">
+                                    <a href="<?= $this->url('examen', ['action' => 'notificacion-grupal']) ?>" class="btn-accion-examen" style="background-color: #f0ad4e;" title="Notificación Grupal">
+                                        <i class="fa fa-envelope"></i>
                                     </a>
                                 </td>
                             </tr>

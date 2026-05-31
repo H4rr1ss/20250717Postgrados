@@ -263,7 +263,7 @@ if ($esPasoFisico && !empty($requisitosReferencia)) {
                         <!-- Archivo de apoyo -->
                         <?php if ($tieneAdjunto): ?>
                         <div style="margin-bottom: 14px;">
-                            <a href="/<?= htmlspecialchars($doc['archivo_apoyo']) ?>" target="_blank" class="btn btn-info btn-sm btn-block" style="font-weight: 700; letter-spacing: 0.3px;">
+                            <a href="<?= $this->url('examen', ['action' => 'descargar-requisito-apoyo']) ?>?file=<?= urlencode($doc['archivo_apoyo']) ?>" target="_blank" class="btn btn-info btn-sm btn-block" style="font-weight: 700; letter-spacing: 0.3px;">
                                 <i class="fa fa-paperclip" style="margin-right: 6px;"></i>Documento de apoyo
                             </a>
                         </div>

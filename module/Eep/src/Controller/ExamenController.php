@@ -206,6 +206,47 @@ class ExamenController extends AbstractActionController {
     }
 
     /**
+     * GET: descarga un requisito de apoyo por su nombre de archivo.
+     * Los archivos se almacenan en data/graduacion/global/requisitos-apoyo/
+     */
+    public function descargarRequisitoApoyoAction()
+    {
+        $nombreArchivo = basename((string) $this->params()->fromQuery('file', ''));
+        if (!preg_match('/^[a-zA-Z0-9._-]+$/', $nombreArchivo)) {
+            $this->getResponse()->setStatusCode(400);
+            return $this->getResponse();
+        }
+
+        $directorio = getcwd() . '/data/graduacion/global/requisitos-apoyo/';
+        $rutaFisica = $directorio . $nombreArchivo;
+
+        if (!is_file($rutaFisica)) {
+            $this->getResponse()->setStatusCode(404);
+            return $this->getResponse();
+        }
+
+        $ext = strtolower(pathinfo($nombreArchivo, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        $contentType = $mimeTypes[$ext] ?? 'application/octet-stream';
+
+        $response = $this->getResponse();
+        $response->getHeaders()
+            ->addHeaderLine('Content-Type', $contentType)
+            ->addHeaderLine('Content-Disposition', 'inline; filename="' . $nombreArchivo . '"')
+            ->addHeaderLine('Content-Length', (string) filesize($rutaFisica))
+            ->addHeaderLine('X-Content-Type-Options', 'nosniff');
+        $response->setContent(file_get_contents($rutaFisica));
+        return $response;
+    }
+
+    /**
      * AJAX: alta o edición de un profesional calificado.
      */
     public function guardarProfesionalAction()
@@ -741,7 +782,7 @@ class ExamenController extends AbstractActionController {
                     return new JsonModel(['status' => 'error', 'message' => 'El archivo supera los 10 MB permitidos.']);
                 }
 
-                $directorio = $_SERVER['DOCUMENT_ROOT'] . '/archivos/requisitos-apoyo/';
+                $directorio = getcwd() . '/data/graduacion/global/requisitos-apoyo/';
                 if (!is_dir($directorio)) {
                     if (!@mkdir($directorio, 0755, true)) {
                         error_log('[guardarRequisito] No se pudo crear directorio: ' . $directorio);
@@ -763,7 +804,7 @@ class ExamenController extends AbstractActionController {
                     return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar el archivo de apoyo en el servidor.']);
                 }
 
-                $data['archivo_apoyo'] = 'archivos/requisitos-apoyo/' . $nombreSeguro;
+                $data['archivo_apoyo'] = $nombreSeguro;
             }
 
             $id = $this->examenManager->upsertRequisito($data);
@@ -1480,17 +1521,21 @@ class ExamenController extends AbstractActionController {
                     'subtitulo' => 'Sin fecha',
                     'partial'   => 'eep/examen/partial/paso2-documentacion',
                 ],
-                3 => [
+            ];
+
+            // Examen privado tiene 4 pasos; examen general solo 2 pasos
+            if ($faseActual !== 'examen_general') {
+                $estados[3] = [
                     'titulo'    => 'Terna Examinadora',
                     'subtitulo' => 'Sin fecha',
                     'partial'   => 'eep/examen/partial/paso3-terna',
-                ],
-                4 => [
+                ];
+                $estados[4] = [
                     'titulo'    => 'Notificación',
                     'subtitulo' => 'Sin fecha',
                     'partial'   => 'eep/examen/partial/paso4-notificacion',
-                ],
-            ];
+                ];
+            }
 
             if (!empty($fechas)) {
                 foreach ($estados as $num => &$e) {
@@ -1624,6 +1669,123 @@ class ExamenController extends AbstractActionController {
             'cicloActual' => $this->cartaManager->getCicloActual($idProceso),
             'evidencias'  => $this->cartaManager->getEvidenciasPlanas($idProceso),
             'carta'       => $this->cartaManager->getCartaPorProceso($idProceso),
+        ]);
+    }
+
+    /**
+     * Vista de notificación grupal para acto de graduación (examen general).
+     * Permite seleccionar múltiples estudiantes y enviar correo masivo.
+     */
+    public function notificacionGrupalAction()
+    {
+        $estudiantes = $this->examenManager->getProcesosGeneralCompletados();
+        return new ViewModel([
+            'estudiantes' => $estudiantes,
+        ]);
+    }
+
+    /**
+     * AJAX: envía notificación grupal a los estudiantes seleccionados.
+     */
+    public function enviarNotificacionGrupalAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $userId = $this->layout()->role->getUserCode();
+        $codProcesos = $request->getPost('cod_procesos', []);
+        $fecha = trim((string) $request->getPost('fecha', ''));
+        $hora = trim((string) $request->getPost('hora', ''));
+        $lugar = trim((string) $request->getPost('lugar', ''));
+        $notaPresentacion = trim((string) $request->getPost('nota_presentacion', ''));
+        $infoExtra = trim((string) $request->getPost('info_extra', ''));
+        $correosCcRaw = trim((string) $request->getPost('correos_cc', ''));
+
+        if (empty($codProcesos) || !is_array($codProcesos)) {
+            return new JsonModel(['success' => false, 'message' => 'Debe seleccionar al menos un estudiante.']);
+        }
+        if (empty($fecha) || empty($hora) || empty($lugar)) {
+            return new JsonModel(['success' => false, 'message' => 'Fecha, hora y lugar son obligatorios.']);
+        }
+
+        // Validar fecha (no anterior a hoy)
+        $fechaSel = new \DateTime($fecha);
+        $hoy = new \DateTime('today');
+        if ($fechaSel < $hoy) {
+            return new JsonModel(['success' => false, 'message' => 'La fecha no puede ser anterior al día de hoy.']);
+        }
+
+        // Parsear correos CC
+        $correosCc = [];
+        if ($correosCcRaw !== '') {
+            $partes = preg_split('/[,;\n]+/', $correosCcRaw);
+            foreach ($partes as $cc) {
+                $cc = trim($cc);
+                if ($cc !== '' && filter_var($cc, FILTER_VALIDATE_EMAIL)) {
+                    $correosCc[] = $cc;
+                }
+            }
+        }
+
+        $fechaFormateada = $fechaSel->format('d/m/Y');
+        $horaFormateada = date('g:i A', strtotime($hora));
+
+        $enviados = 0;
+        $fallidos = 0;
+        $errores = [];
+
+        foreach ($codProcesos as $codProceso) {
+            $codProceso = (int) $codProceso;
+            if ($codProceso <= 0) continue;
+
+            $estudiante = $this->examenManager->getEstudiantePorProceso($codProceso);
+            if (empty($estudiante['correo'])) {
+                $fallidos++;
+                $errores[] = 'Proceso ' . $codProceso . ': sin correo del estudiante.';
+                continue;
+            }
+
+            // Guardar fecha/hora en el proceso
+            $this->examenManager->guardarProgramacionTerna($codProceso, [
+                'fecha' => $fecha,
+                'hora'  => $hora,
+            ], $userId, 'examen_general');
+
+            $html = '<p>Estimado(a) graduando,</p>';
+            if (!empty($infoExtra)) {
+                $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
+            }
+            $html .= '<p><strong>FECHA:</strong> ' . htmlspecialchars($fechaFormateada) . '</p>'
+                   . '<p><strong>HORA:</strong> ' . htmlspecialchars($horaFormateada) . '</p>';
+            if (!empty($notaPresentacion)) {
+                $html .= '<p>' . nl2br(htmlspecialchars($notaPresentacion)) . '</p>';
+            }
+            $html .= '<p><strong>LUGAR:</strong> ' . htmlspecialchars($lugar) . '</p>'
+                   . '<p>Saludos cordiales.</p>';
+
+            try {
+                $this->mailManager->sendHtmlMessage(
+                    $estudiante['correo'],
+                    'Acto de Graduación - Examen General',
+                    $html,
+                    [],
+                    $correosCc
+                );
+                $enviados++;
+            } catch (\Exception $e) {
+                $fallidos++;
+                $errores[] = 'Proceso ' . $codProceso . ': ' . $e->getMessage();
+            }
+        }
+
+        return new JsonModel([
+            'success'   => true,
+            'enviados'  => $enviados,
+            'fallidos'  => $fallidos,
+            'errores'   => $errores,
+            'message'   => "Se notificaron {$enviados} estudiantes correctamente." . ($fallidos > 0 ? " ({$fallidos} fallidos)" : ''),
         ]);
     }
 
