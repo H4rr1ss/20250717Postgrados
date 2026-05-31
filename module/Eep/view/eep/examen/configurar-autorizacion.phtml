@@ -133,6 +133,13 @@ if ($subPaso === 1) {
                 <?php if ($subPaso === 1): ?>
                     <!-- PARTE 1: Requiere profesional -->
                     <h4><i class="fa fa-gavel"></i> Aprobar Parte 1</h4>
+
+                    <div class="alert alert-danger" style="margin-bottom: 20px;">
+                        <i class="fa fa-hand-o-right"></i>
+                        <strong>Importante:</strong> Hasta que se aprueben los documentos llevados físicamente por el estudiante, <strong>no se podrá avanzar a la Parte 2</strong>.
+                        Verifique que la entrega presencial esté completa antes de aprobar.
+                    </div>
+
                     <p style="color:#555;">
                         Verificar que el estudiante haya seleccionado al profesional calificado (Licenciado en Letras)
                         y que toda la documentación de la Parte 1 esté en orden.
@@ -159,6 +166,12 @@ if ($subPaso === 1) {
                 <?php else: ?>
                     <!-- PARTE 2: Entrega de documentos finales -->
                     <h4><i class="fa fa-gavel"></i> Aprobar Parte 2 - Entrega de Documentos</h4>
+
+                    <div class="alert alert-danger" style="margin-bottom: 20px;">
+                        <i class="fa fa-hand-o-right"></i>
+                        <strong>Importante:</strong> Se debe aprobar el paso hasta que el estudiante se le haya firmado y sellado la constancia de recepción de que se recibió los ejemplares correspondientes del libro y CD.
+                    </div>
+
                     <p style="color:#555;">
                         El estudiante debe entregar los documentos finales (empastados, CDs, etc.) de forma presencial.
                         Una vez verificada la entrega completa, aprobar para avanzar al <strong>Examen General</strong>.

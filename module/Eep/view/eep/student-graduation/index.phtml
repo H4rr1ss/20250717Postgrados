@@ -93,7 +93,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 // El botón de terna permanece activo también en el paso 4 (notificación)
                                 // SOLO si estamos en la fase examen_privado
                                 $esTerna = ($paso['template_parcial'] ?? '') === 'paso3-terna';
-                                $esCartaExaminadores = ($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores';
+                                $esAutorizacionImpresion = ($paso['template_parcial'] ?? '') === 'paso6-autorizacion-impresion';
                                 $pasoActualOrdenActual = (int)($proceso['paso_actual_orden'] ?? 0);
                                 $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
                                 $fasePaso = $paso['fase'] ?? 'examen_privado'; // Fase a la que pertenece este paso específico
@@ -101,11 +101,11 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 // Botón activo si:
                                 // 1. Es el paso actual, O
                                 // 2. Es la terna y estamos en paso 4 (notificación) DENTRO de examen_privado, O
-                                // 3. Es carta de examinadores y estamos en esa fase o más avanzada
+                                // 3. Es autorización de impresión (siempre disponible, documentos requeridos para examen público)
                                 $botonActivo = $accionPaso && (
                                     $paso['cod_paso'] == $proceso['cod_paso_actual']
                                     || ($esTerna && $pasoActualOrdenActual === 4 && $faseActual === 'examen_privado' && $fasePaso === 'examen_privado')
-                                    || ($esCartaExaminadores && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'carta_examinadores' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
+                                    || ($esAutorizacionImpresion && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
                                 );
                             ?>
                             <?php if ($botonActivo): ?>

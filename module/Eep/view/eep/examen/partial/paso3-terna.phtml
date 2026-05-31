@@ -36,7 +36,7 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label>Fecha del Examen</label>
-                                                <input type="date" class="form-control" id="fechaExamen" value="<?= htmlspecialchars($fechaExamen) ?>">
+                                                <input type="date" class="form-control" id="fechaExamen" value="<?= htmlspecialchars($fechaExamen) ?>" min="<?= date('Y-m-d') ?>">
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -90,7 +90,7 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 
                             <div class="form-group">
                                 <label>Número de colegiado</label>
-                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>" required>
+                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>" required inputmode="numeric" pattern="[0-9]*">
                             </div>
 
                             <div class="form-group">
@@ -204,6 +204,11 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 <script>
 $(document).ready(function() {
     const COD_PROCESO = <?= $codProceso ?>;
+
+    // ── Solo números en colegiado (UX en tiempo real) ─────────────
+    $(document).on('input', '.examinador-colegiado', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
 
     // ── Helpers ──────────────────────────────────────────────────
     function validarExaminadoresDuplicados() {
@@ -362,11 +367,37 @@ $(document).ready(function() {
             return;
         }
 
-        // 3. Validar duplicados si hay más de uno
+        // 3. Validar que los colegiados sean solo números
+        let colegiadoInvalido = false;
+        $('.examinador-card').each(function() {
+            const colegiado = $(this).find('.examinador-colegiado').val().trim();
+            if (colegiado !== '' && !/^\d+$/.test(colegiado)) {
+                colegiadoInvalido = true;
+                return false;
+            }
+        });
+        if (colegiadoInvalido) {
+            ToastService.error('El número de colegiado solo puede contener dígitos numéricos.');
+            return;
+        }
+
+        // 4. Validar duplicados si hay más de uno
         const validacion = validarExaminadoresDuplicados();
         if (validacion) {
             ToastService.error('No puede haber examinadores con el mismo número de colegiado.');
             return;
+        }
+
+        // Validar que la fecha no sea anterior a hoy
+        if (cambioProgramacion && fecha) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            const partes = fecha.split('-');
+            const fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
+            if (fechaSel < hoy) {
+                ToastService.error('La fecha del examen no puede ser anterior al día de hoy.');
+                return;
+            }
         }
 
         const programacionFinal = cambioProgramacion ? { fecha: fecha, hora: hora } : null;

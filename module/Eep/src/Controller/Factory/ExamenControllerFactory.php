@@ -8,6 +8,8 @@ use Eep\Controller\ExamenController;
 use Eep\Service\ExamenManager;
 use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\UserManager;
+use Eep\Service\MailManager;
 
 class ExamenControllerFactory implements FactoryInterface
 {
@@ -16,6 +18,15 @@ class ExamenControllerFactory implements FactoryInterface
         $examenManager       = $container->get(ExamenManager::class);
         $cartaManager        = $container->get(CartaExaminadoresManager::class);
         $autorizacionManager = $container->get(AutorizacionImpresionManager::class);
-        return new ExamenController($examenManager, $cartaManager, $autorizacionManager);
+        $userManager         = $container->get(UserManager::class);
+        $mailManager         = $container->get(MailManager::class);
+
+        return new ExamenController(
+            $examenManager,
+            $cartaManager,
+            $autorizacionManager,
+            $userManager,
+            $mailManager
+        );
     }
 }

@@ -369,3 +369,70 @@ Script actualizado: `database/modulo graduacion/modulo_graduacion.sql`.
 
 ### Uso
 En *Gestión de Exámenes > Requisitos de Papelería*, al crear o editar un requisito se puede subir opcionalmente un archivo de apoyo. El estudiante lo verá destacado en su vista de solicitud de examen, facilitando la entrega de formularios oficiales.
+
+## Sistema de notificaciones por correo electrónico (2026-06-01)
+
+Se implementó el envío automático de correos HTML durante el flujo de graduación usando Gmail SMTP.
+
+### Nueva dependencia Composer
+
+```bash
+composer require zendframework/zend-mail
+```
+
+`composer.json` actualizado con `"zendframework/zend-mail": "^2.10"`.
+
+### Archivos nuevos
+
+- `module/Eep/src/Service/MailManager.php` — Servicio centralizado para envío de correos HTML con:
+  - Footer automático con imagen inline (`cid:footer-image`).
+  - Soporte para CC (copia a examinadores en paso 4).
+  - Envío asíncrono vía `register_shutdown_function` para no bloquear HTTP.
+- `module/Eep/src/Service/Factory/MailManagerFactory.php` — Factory que inyecta configuración SMTP y ruta de la imagen del footer.
+
+### Archivos modificados
+
+- `module/Eep/src/Controller/ExamenController.php`
+  - `iniciarProcesoAction()` — notifica al estudiante cuando se inicia el proceso.
+  - `guardarRevisionAction()` — envía resumen de revisión de papelería (Paso 1).
+  - `guardarDocFisicoAction()` — notifica cuando se completa la entrega física (Paso 2).
+  - `notificarEstudianteAction()` — envía notificación final con datos de la terna (Paso 4).
+- `module/Eep/src/Controller/StudentGraduationController.php`
+  - `aprobarTrabajoAction()` — notifica al estudiante cuando el director aprueba el trabajo y genera la carta de examinadores.
+
+### Configuración requerida
+
+Crear o editar `config/autoload/local.php`:
+
+```php
+return [
+    'smtp' => [
+        'host'             => 'smtp.gmail.com',
+        'port'             => 587,
+        'connection_class' => 'login',
+        'connection_config' => [
+            'username' => 'tucorreo@gmail.com',
+            'password' => 'tu-app-password',
+            'ssl'      => 'tls',
+        ],
+        'from'      => 'tucorreo@gmail.com',
+        'from_name' => 'Coordinación de Postgrados',
+    ],
+];
+```
+
+> **Nota:** En producción usar una contraseña de aplicación (App Password) de Google, no la contraseña normal de la cuenta.
+
+### Archivo de imagen
+
+- `public/img/email-footer.jpg` — Imagen del pie de página que se incluye inline en todos los correos. Debe existir en producción.
+
+### Asuntos de correo por fase
+
+Los asuntos incluyen la fase actual para diferenciar entre examen privado y público:
+
+- `Proceso de Graduacion Iniciado - Examen Privado`
+- `Revision de Papeleria - Resultado ... - Examen General`
+- `Documentacion fisica completada ... - Examen Privado`
+- `Notificacion Examen de Graduacion - Examen General`
+- `Trabajo de Graduacion Aprobado ... - Carta De Examinadores`

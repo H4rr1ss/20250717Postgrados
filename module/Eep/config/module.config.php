@@ -51,6 +51,8 @@ use Eep\Service\GeneralManager;
 use Eep\Service\Factory\GeneralManagerFactory;
 use Eep\Service\EvaluacionDocenteManager;
 use Eep\Service\Factory\EvaluacionDocenteManagerFactory;
+use Eep\Service\MailManager;
+use Eep\Service\Factory\MailManagerFactory;
 //PLUGIN
 use Eep\Controller\Plugin\PluginHandler;
 use Eep\Controller\Plugin\Factory\PluginHandlerFactory;
@@ -367,6 +369,7 @@ return [
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
             EvaluacionDocenteManager::class => EvaluacionDocenteManagerFactory::class,
+            MailManager::class => MailManagerFactory::class,
         ],
     ],
     'view_manager' => [

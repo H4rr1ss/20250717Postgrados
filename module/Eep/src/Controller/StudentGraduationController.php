@@ -10,6 +10,7 @@ use Zend\Authentication\AuthenticationService;
 use Eep\Service\StudentGraduationManager;
 use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\MailManager;
 use Eep\Service\LogManager as LM;
 
 class StudentGraduationController extends AbstractActionController {
@@ -30,6 +31,11 @@ class StudentGraduationController extends AbstractActionController {
     private $autorizacionManager;
 
     /**
+     * @var MailManager
+     */
+    private $mailManager;
+
+    /**
      * @var AuthenticationService
      */
     private $authService;
@@ -43,12 +49,14 @@ class StudentGraduationController extends AbstractActionController {
         StudentGraduationManager $processManager,
         CartaExaminadoresManager $cartaManager,
         AutorizacionImpresionManager $autorizacionManager,
+        MailManager $mailManager,
         AuthenticationService $authService
     )
     {
         $this->processManager      = $processManager;
         $this->cartaManager        = $cartaManager;
         $this->autorizacionManager = $autorizacionManager;
+        $this->mailManager         = $mailManager;
         $this->authService         = $authService;
     }
     
@@ -573,6 +581,29 @@ class StudentGraduationController extends AbstractActionController {
 
         try {
             $resultado = $this->cartaManager->aprobarTrabajo($codProceso, $codUsuario);
+
+            // Notificar al estudiante que su trabajo fue aprobado y se generó la carta
+            $proceso = $this->processManager->getProceso($codProceso);
+            if ($proceso && !empty($proceso['correo'])) {
+                $nombreEstudiante = htmlspecialchars(
+                    ($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '')
+                );
+
+                $html = '<p>Estimado(a) <strong>' . $nombreEstudiante . '</strong>,</p>'
+                      . '<p>Se le informa que su <strong>trabajo de graduación</strong> ha sido <strong>aprobado</strong>.</p>'
+                      . '<p>Se ha generado la <strong>carta de examinadores</strong> correspondiente a su proceso.</p>'
+                      . '<p>Puede ingresar a la plataforma para descargarla y revisar los pasos a seguir.'
+                      . ' <a href="http://localhost:8080/" style="color:#003366;text-decoration:underline;">Ir a la plataforma</a></p>';
+
+                $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $proceso['fase_paso_actual'] ?? 'examen_privado');
+                $faseLabel = ucwords(trim($faseLabel));
+
+                $this->mailManager->sendHtmlMessage(
+                    $proceso['correo'],
+                    'Trabajo de Graduacion Aprobado - Carta de Examinadores Generada - ' . htmlspecialchars($faseLabel),
+                    $html
+                );
+            }
         } catch (\Exception $e) {
             return new JsonModel(['success' => false, 'message' => $e->getMessage()]);
         }

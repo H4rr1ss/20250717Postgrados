@@ -69,3 +69,14 @@ VALUES ('100000001234', '20264006', 'Estuardo', 'Utz', '2002-09-01', '55510022',
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('100000001235', '20265006', 'Josue', 'Estrada', '2001-02-02', '55510061', 'josueE@email.com', '$2y$10$MLyPKxhPTn4oE.0ejgSLNuxcbIjDWnW3Z.n79RpxFAbMlT3w.Upe6', 73, 'M', 'Bachiller', CURDATE(), 'Josue Estrada');
+
+-- NUEVOS ESTUDIANTES PARA TESTING DE CORREOS
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100012001233', '20263318', 'Damian', 'Peña', '2001-05-01', '5551003', '3601320810101@ingenieria.usac.edu.gt', '$2y$10$ibFZlD20DLfsxDhpS4OQp.b68v0.832z5RWnRaBS34B9uvXsZcvUy', 73, 'M', 'Bachiller', CURDATE(), 'Damian Peña');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100140001234', '20264224', 'Pablo', 'Reyes', '2003-01-03', '55510022', 'h4rrissss.gs@email.com', '$2y$10$bDAi2MGqZMNZDl.EaiOstuQvYIrVL9wPnJog28LSJUtd.rdWMXDua', 73, 'M', 'Bachiller', CURDATE(), 'Pablo Reyes');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('100430001235', '20265135', 'Samuel', 'Zea', '2000-01-09', '55510061', 'sisalesa19@gmail.com', '$2y$10$0QJqbCHy1WPvG0bbRN.0ue5VpHfR4hdeZct4u6Qno4F1/gkuThW/y', 73, 'M', 'Bachiller', CURDATE(), 'Samuel Zea');

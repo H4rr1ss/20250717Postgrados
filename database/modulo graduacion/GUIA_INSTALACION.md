@@ -51,10 +51,41 @@ docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/cre
 # - 22 tablas del módulo creadas
 # - Columna 'fase' en examen_terna con valores ENUM correctos
 
-### PASO 5: Reiniciar Servidor Web
+### PASO 5: Instalar dependencia de correos (zend-mail)
+# El sistema envía notificaciones automáticas por correo durante el flujo de graduación.
+# Asegúrate de que composer.json incluya "zendframework/zend-mail" y ejecuta:
+
+docker-compose exec web composer install
+
+### PASO 5b: Configurar SMTP para envío de correos
+# Crear/editar config/autoload/local.php con las credenciales de Gmail (o SMTP de tu institución):
+# 
+# return [
+#     'smtp' => [
+#         'host'              => 'smtp.gmail.com',
+#         'port'              => 587,
+#         'connection_class'  => 'login',
+#         'connection_config' => [
+#             'username' => 'tucorreo@gmail.com',
+#             'password' => 'tu-app-password',
+#             'ssl'      => 'tls',
+#         ],
+#         'from'      => 'tucorreo@gmail.com',
+#         'from_name' => 'Coordinación de Postgrados',
+#     ],
+# ];
+#
+# NOTA: En producción usar una contraseña de aplicación (App Password) de Google.
+
+### PASO 5c: Verificar imagen del footer de correos
+# Asegúrate de que exista el archivo:
+#   public/img/email-footer.jpg
+# Este archivo se incluye automáticamente como pie de página en todos los correos enviados.
+
+### PASO 6: Reiniciar Servidor Web
 docker-compose restart web
 
-### PASO 6: Verificar Archivos PHP
+### PASO 7: Verificar Archivos PHP
 # Asegúrate de que estos archivos estén actualizados:
 # (Deberían estar ya si seguiste el desarrollo)
 
@@ -76,6 +107,12 @@ docker-compose restart web
 #
 # - module/Eep/src/Controller/StudentGraduationController.php
 #   * Ya estaba correcto (pasa $faseActual)
+#
+# Servicios de correo (nuevo):
+# - module/Eep/src/Service/MailManager.php
+#   * Envío de correos HTML con footer automático e imagen inline.
+# - module/Eep/src/Service/Factory/MailManagerFactory.php
+#   * Inyección de configuración SMTP y ruta del footer.
 
 ### ¡LISTO! La instalación está completa.
 
@@ -100,14 +137,20 @@ docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/cre
 docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/creacion_usuarios/verificar_ternas_fase.sql"
 
 ### PASO 4: Actualizar Código PHP
-# Asegúrate de tener los archivos PHP actualizados (ver Sección 1, Paso 6)
+# Asegúrate de tener los archivos PHP actualizados (ver Sección 1, Paso 7)
 # Si usas git:
 # git pull origin main
 
-### PASO 5: Limpiar Caché (si aplica)
+### PASO 5: Instalar dependencia de correos (si no estaba instalada)
+docker-compose exec web composer install
+
+### PASO 6: Configurar SMTP y verificar footer de correos
+# Revisa la sección 1, Pasos 5b y 5c para configurar SMTP y la imagen del footer.
+
+### PASO 7: Limpiar Caché (si aplica)
 docker-compose exec web rm -rf data/cache/*
 
-### PASO 6: Reiniciar Servidor
+### PASO 8: Reiniciar Servidor
 docker-compose restart web
 
 ### ¡LISTO! La migración está completa.

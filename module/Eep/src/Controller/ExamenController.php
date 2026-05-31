@@ -9,6 +9,8 @@ use Zend\View\Model\JsonModel;
 use Eep\Service\ExamenManager;
 use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\UserManager;
+use Eep\Service\MailManager;
 use Eep\Service\LogManager as LM;
 
 class ExamenController extends AbstractActionController {
@@ -29,17 +31,31 @@ class ExamenController extends AbstractActionController {
     private $autorizacionManager;
 
     /**
+     * @var UserManager
+     */
+    private $userManager;
+
+    /**
+     * @var MailManager
+     */
+    private $mailManager;
+
+    /**
      * Constructor: inyecta los managers de los distintos pasos del módulo
      * de graduación (papelería 1-4, carta examinadores 5, autorización 6).
      */
     public function __construct(
         ExamenManager $examenManager,
         CartaExaminadoresManager $cartaManager,
-        AutorizacionImpresionManager $autorizacionManager
+        AutorizacionImpresionManager $autorizacionManager,
+        UserManager $userManager,
+        MailManager $mailManager
     ) {
         $this->examenManager       = $examenManager;
         $this->cartaManager        = $cartaManager;
         $this->autorizacionManager = $autorizacionManager;
+        $this->userManager         = $userManager;
+        $this->mailManager         = $mailManager;
     }
 
     // ================================================================
@@ -577,7 +593,47 @@ class ExamenController extends AbstractActionController {
             try {
                 $idProceso = $this->examenManager->iniciarProceso($codUsuario, $codTipoExamen, $userAdminId);
 
-                $this->flashMessenger()->addSuccessMessage('Proceso de graduación iniciado correctamente.');
+                // Notificar al estudiante por correo electronico
+                $estudiante = $this->userManager->getUser($codUsuario);
+                $correo = $estudiante->getCorreo();
+
+                if (!empty($correo)) {
+                    $nombreTipoExamenTexto = 'Privado';
+                    foreach ($tiposExamen as $tipo) {
+                        if ((int) $tipo['cod_tipo_examen'] === $codTipoExamen) {
+                            $nombreTipoExamenTexto = $tipo['nombre'];
+                            break;
+                        }
+                    }
+
+                    $procesoRecienCreado = $this->examenManager->getProceso((int) $idProceso);
+                    $faseProceso = $procesoRecienCreado['fase_paso_actual'] ?? 'examen_privado';
+                    $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $faseProceso);
+                    $faseLabel = ucwords(trim($faseLabel));
+
+                    $html = '<p>Estimado(a) <strong>' . htmlspecialchars($estudiante->getNombreCompleto()) . '</strong>,</p>'
+                        . '<p>Se le notifica que su <strong>proceso de graduacion</strong> ha sido iniciado en la plataforma.</p>'
+                        . '<p><strong>Tipo de examen:</strong> ' . htmlspecialchars($nombreTipoExamenTexto) . '</p>'
+                        . '<p><strong>Fase:</strong> ' . htmlspecialchars($faseLabel) . '</p>'
+                        . '<p><strong>Fecha de inicio:</strong> ' . date('d/m/Y H:i') . '</p>'
+                        . '<p>Puede ingresar a la plataforma para revisar los pasos a seguir.'
+                        . ' <a href="http://localhost:8080/" style="color:#003366;text-decoration:underline;">Ir a la plataforma</a></p>';
+
+                    $enviado = $this->mailManager->sendHtmlMessage(
+                        $correo,
+                        'Proceso de Graduacion Iniciado - ' . htmlspecialchars($faseLabel),
+                        $html
+                    );
+
+                    if (!$enviado) {
+                        error_log('[ExamenController::iniciarProcesoAction] ' .
+                            'Fallo envio de correo a ' . $correo .
+                            ' para estudiante cod=' . $codUsuario .
+                            ' proceso=' . $idProceso);
+                    }
+                }
+
+                $this->flashMessenger()->addSuccessMessage('Proceso de graduacion iniciado correctamente.');
                 return $this->redirect()->toRoute('examen', [
                     'action' => 'solicitudes',
                     'id'     => $idProceso
@@ -881,6 +937,69 @@ class ExamenController extends AbstractActionController {
                     // 1. Guardar/actualizar revisiones en bloque (INSERT si no existe, UPDATE si existe)
                     $this->examenManager->guardarRevisionesBulk($codProceso, $requisitos, $userRolId);
 
+                    // 2. Notificar al estudiante por correo con resumen de revisiones
+                    $estudiante = $this->examenManager->getEstudiantePorProceso((int) $codProceso);
+                    if ($estudiante && !empty($estudiante['correo'])) {
+                        $catalogoRequisitos = $this->examenManager->getRequisitosDocumento(
+                            (int) $codPasoActual,
+                            (int) $cod_tipo_examen
+                        );
+                        $mapaNombres = [];
+                        foreach ($catalogoRequisitos as $reqCat) {
+                            $mapaNombres[(int) $reqCat['cod_requisito']] = $reqCat['nombre'];
+                        }
+
+                        $filasHtml = '';
+                        foreach ($requisitos as $req) {
+                            $estado = $req['estado_evaluacion'] ?? 'pendiente';
+                            if ($estado === 'pendiente') {
+                                continue;
+                            }
+                            $codReq = (int) $req['cod_requisito'];
+                            $nombreReq = $mapaNombres[$codReq] ?? 'Requisito #' . $codReq;
+                            $color = ($estado === 'aprobado') ? '#28a745' : '#dc3545';
+                            $estadoTexto = ($estado === 'aprobado') ? 'Aprobado' : 'Rechazado';
+                            $filasHtml .= '<tr>'
+                                . '<td style="padding:8px;border:1px solid #ddd;">' . htmlspecialchars($nombreReq) . '</td>'
+                                . '<td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:bold;color:' . $color . ';">' . $estadoTexto . '</td>'
+                                . '</tr>';
+                        }
+
+                        if ($filasHtml !== '') {
+                            $html = '<p>Estimado(a) <strong>' . htmlspecialchars($estudiante['nombre_completo']) . '</strong>,</p>'
+                                . '<p>Se ha realizado una revisión de sus documentos en el <strong>Paso 1: Revisión de Papelería</strong>.</p>'
+                                . '<p>Resultado:</p>'
+                                . '<table style="border-collapse:collapse;width:100%;max-width:600px;">'
+                                . '<thead>'
+                                . '<tr style="background:#003366;color:#fff;">'
+                                . '<th style="padding:10px;border:1px solid #ddd;text-align:left;">Documento</th>'
+                                . '<th style="padding:10px;border:1px solid #ddd;text-align:center;">Estado</th>'
+                                . '</tr>'
+                                . '</thead>'
+                                . '<tbody>' . $filasHtml . '</tbody>'
+                                . '</tbody>'
+                                . '</table>'
+                                . '<p><strong>Para más detalles ingrese a la plataforma:</strong> '
+                                . '<a href="http://localhost:8080/" style="color:#003366;text-decoration:underline;">Ir a la plataforma</a></p>';
+
+                            $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $faseActual);
+                            $faseLabel = ucwords(trim($faseLabel));
+
+                            $enviado = $this->mailManager->sendHtmlMessage(
+                                $estudiante['correo'],
+                                'Revision de Papeleria - Resultado de documentos revisados - ' . htmlspecialchars($faseLabel),
+                                $html
+                            );
+
+                            if (!$enviado) {
+                                error_log('[ExamenController::guardarRevisionAction] ' .
+                                    'Fallo envio de correo a ' . $estudiante['correo'] .
+                                    ' para estudiante cod=' . $estudiante['cod_usuario'] .
+                                    ' proceso=' . $codProceso);
+                            }
+                        }
+                    }
+
                     // 3. Verificar si todos los requisitos fueron aprobados
                     $todosAprobados = $this->examenManager->todosRequisitosAceptados($codProceso, $codPasoActual, $cod_tipo_examen);
 
@@ -967,8 +1086,28 @@ class ExamenController extends AbstractActionController {
                     // Solo avanzar paso si todos los documentos fueron recibidos
                     if ($todosRecibidos && !empty($docsFisicosRes)) {
                         $this->examenManager->avanzarPaso($codProceso, $userId);
+
+                        // Notificar al estudiante que avanzo de paso
+                        $estudiante = $this->examenManager->getEstudiantePorProceso((int) $codProceso);
+                        if ($estudiante && !empty($estudiante['correo'])) {
+                            $html = '<p>Estimado(a) <strong>' . htmlspecialchars($estudiante['nombre_completo']) . '</strong>,</p>'
+                                . '<p>Se le informa que ha completado exitosamente la <strong>entrega de documentación física</strong></p>'
+                                . '<p>Su proceso de graduación ha <strong>avanzado al siguiente paso</strong>.</p>'
+                                . '<p>Puede ingresar a la plataforma para revisar los pasos a seguir.'
+                                . ' <a href="http://localhost:8080/" style="color:#003366;text-decoration:underline;">Ir a la plataforma</a></p>';
+
+                            $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $faseActual);
+                            $faseLabel = ucwords(trim($faseLabel));
+
+                            $this->mailManager->sendHtmlMessage(
+                                $estudiante['correo'],
+                                'Documentacion fisica completada - Proceso avanzado - ' . htmlspecialchars($faseLabel),
+                                $html
+                            );
+                        }
+
                         return new JsonModel([
-                            'status' => 'success', 
+                            'status' => 'success',
                             'message' => 'Documentación física completada. El proceso ha avanzado al siguiente paso.',
                             'avanzado' => true
                         ]);
@@ -1015,6 +1154,14 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Datos de la terna inválidos']);
         }
 
+        // Validar que los números de colegiado sean solo numéricos
+        foreach ($terna as $datos) {
+            $colegiado = $datos['colegiado'] ?? '';
+            if ($colegiado !== '' && !ctype_digit((string)$colegiado)) {
+                return new JsonModel(['status' => 'error', 'message' => 'El número de colegiado solo puede contener dígitos numéricos.']);
+            }
+        }
+
         try {
             $statusRes = false;
 
@@ -1027,6 +1174,15 @@ class ExamenController extends AbstractActionController {
             }
 
             if (!empty($programacion)) {
+                // Validar que la fecha no sea anterior al día actual
+                if (!empty($programacion['fecha'])) {
+                    $fechaSeleccionada = new \DateTime($programacion['fecha']);
+                    $hoy = new \DateTime('today');
+                    if ($fechaSeleccionada < $hoy) {
+                        return new JsonModel(['status' => 'error', 'message' => 'La fecha del examen no puede ser anterior al día de hoy.']);
+                    }
+                }
+
                 $successProg = $this->examenManager->guardarProgramacionTerna($codProceso, $programacion, $userAdminId, $fase);
                 if ($successProg) {
                     $statusRes = true;
@@ -1113,21 +1269,68 @@ class ExamenController extends AbstractActionController {
         }
 
         $codProceso = (int) $request->getPost('cod_proceso');
+        $infoExtra    = trim((string) $request->getPost('info_extra', ''));
 
         if ($codProceso <= 0) {
             return new JsonModel(['success' => false, 'message' => 'Identificador de proceso inválido']);
         }
 
         try {
+            // Obtener datos ANTES de avanzar el paso, ya que avanzarPaso cambia la fase
+            $procesoInfo = $this->examenManager->getProceso($codProceso);
+            $faseActual  = $procesoInfo['fase_paso_actual'] ?? 'examen_privado';
+            $estudiante  = $this->examenManager->getEstudiantePorProceso($codProceso);
+            $terna       = $this->examenManager->getTerna($codProceso, $faseActual);
+
             $advanced = $this->examenManager->avanzarPaso($codProceso, $userId);
 
             if ($advanced) {
-                // $this->examenManager->registrarHistorial([
-                //     'cod_proceso' => $codProceso,
-                //     'cod_usuario' => $userId,
-                //     'tipo_evento' => 'notificacion_estudiante',
-                //     'descripcion' => 'Estudiante notificado y paso 4 cerrado',
-                // ]);
+
+                if ($estudiante && !empty($estudiante['correo'])) {
+                    $correosCc = [];
+                    $listaExaminadoresHtml = '<ul style="list-style:none; padding-left:0; margin-top:5px;">';
+                    foreach ($terna['examinadores'] ?? [] as $ex) {
+                        $listaExaminadoresHtml .= '<li style="margin-bottom:4px;"><strong>' . htmlspecialchars($ex['nombre'] ?? '') . '</strong></li>';
+                        if (!empty($ex['correo'])) {
+                            $correosCc[] = $ex['correo'];
+                        }
+                    }
+                    $listaExaminadoresHtml .= '</ul>';
+
+                    $fechaExamen = !empty($terna['programacion']['fecha'])
+                        ? date('d/m/Y', strtotime($terna['programacion']['fecha']))
+                        : 'Por definir';
+                    $horaExamen = !empty($terna['programacion']['hora'])
+                        ? date('g:i A', strtotime($terna['programacion']['hora']))
+                        : 'Por definir';
+
+                    $html = '<p>Estimado(a) <strong>' . htmlspecialchars($estudiante['nombre_completo']) . '</strong>,</p>';
+
+                    if (!empty($infoExtra)) {
+                        $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
+                    }
+
+                    $html .= '<p>Para la evaluación de su examen han sido designados los siguientes profesionales:</p>' . $listaExaminadoresHtml
+                           . '<p>Se le solicita proporcionar una copia de su proyecto a cada uno de los examinadores a la mayor brevedad posible, '
+                           . 'con el fin de que puedan revisarlo previamente y preparar las consultas correspondientes. '
+                           . 'Preferentemente, deberá entregarse una copia impresa; sin embargo, también puede compartir una versión digital '
+                           . 'con anticipación y entregar la copia física el día del examen.</p>'
+                           . '<p>Finalmente, para su comodidad durante la jornada, se recomienda llevar agua para consumo personal. '
+                           . 'Si desea proporcionar algún refrigerio adicional, queda a su consideración.</p>'
+                           . '<p>Saludos cordiales y éxito</p>';
+
+                    $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $faseActual);
+                    $faseLabel = ucwords(trim($faseLabel));
+
+                    error_log('[Notificar] CC examinadores: ' . implode(', ', $correosCc));
+                    $this->mailManager->sendHtmlMessage(
+                        $estudiante['correo'],
+                        'Notificacion Examen de Graduacion - ' . htmlspecialchars($faseLabel),
+                        $html,
+                        [],
+                        $correosCc
+                    );
+                }
 
                 return new JsonModel(['success' => true, 'message' => 'Estudiante notificado y proceso cerrado correctamente']);
             }

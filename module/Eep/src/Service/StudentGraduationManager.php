@@ -39,6 +39,7 @@ class StudentGraduationManager
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
+                    u.correo,
                     et.cod_tipo_examen     AS tipo_cod_examen,
                     et.nombre              AS tipo_examen,
                     ep.fecha_solicitud,

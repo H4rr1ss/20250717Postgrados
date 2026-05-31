@@ -118,6 +118,10 @@ $etiquetaFechaExamen = ($fase === 'examen_general')
                         </h5>
                         <div style="background: #f8f9fa; padding: 18px; border-radius: 4px; border: 1px solid #e0e0e0;">
 
+                            <div class="alert alert-info" style="margin-bottom: 15px;">
+                                <i class="fa fa-info-circle"></i> <strong>Importante:</strong> La lista de examinadores asignados se incluirá automáticamente en el correo. No es necesario escribirlos en el texto.
+                            </div>
+
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label for="infoExtra">Información adicional</label>
                                 <textarea class="form-control" id="infoExtra" name="info_extra" rows="8"
@@ -152,11 +156,14 @@ $(document).ready(function () {
 
         if (!confirm('¿Confirma que desea notificar al estudiante sobre su examen de graduación?')) return;
 
+        var infoExtra = $('#infoExtra').val();
+
         $.ajax({
             url: '/examen/notificar-estudiante',
             method: 'POST',
             data: {
-                cod_proceso: codProceso
+                cod_proceso: codProceso,
+                info_extra: infoExtra
             },
             dataType: 'json',
             success: function (resp) {
