@@ -135,9 +135,18 @@
                                         <ul id="<?= $groupId ?>" class="nav nav-second-level <?= $menu->isActive() ? 'in' : 'collapse' ?>">
                                             <?php foreach ($menu->getItems() as $child): ?>
                                             <li class="<?= $child->isActive() ? 'active' : '' ?>">
+                                                <?php
+                                                    $badgeCount = 0;
+                                                    if ($child->getName() === 'Gestión de Exámenes' && isset($this->procesosDocCompleta)) {
+                                                        $badgeCount = (int) $this->procesosDocCompleta;
+                                                    }
+                                                ?>
                                                 <a href="<?= $this->url($child->getSection(), ['action' => $child->getAction()]) ?>">
                                                     <i class="fa <?= $child->getIcon() ?>"></i>
                                                     <?= $child->getName() ?>
+                                                    <?php if ($badgeCount > 0): ?>
+                                                        <span class="badge" style="margin-left:8px; background:#d9534f; color:#fff; font-size:11px; padding:2px 6px; border-radius:10px;"><?= $badgeCount ?></span>
+                                                    <?php endif; ?>
                                                 </a>
                                             </li>
                                             <?php endforeach; ?>

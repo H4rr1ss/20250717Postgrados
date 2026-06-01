@@ -456,6 +456,14 @@ return [
             'code' => 112,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'previewNotificacion' => [
+            'code' => 148,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'previewNotificacionGrupal' => [
+            'code' => 149,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
         'guardarRequisito' => [
             'code' => 113,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]

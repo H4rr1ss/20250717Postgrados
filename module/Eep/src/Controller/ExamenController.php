@@ -1289,6 +1289,80 @@ class ExamenController extends AbstractActionController {
     }
 
     /**
+     * Formatea una fecha Y-m-d a español: "Jueves 28 de Mayo del 2026".
+     */
+    private function formatearFechaEspanol(string $fecha): string
+    {
+        $dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        $ts   = strtotime($fecha);
+        $diaS = $dias[(int)date('w', $ts)];
+        $dia  = (int)date('j', $ts);
+        $mes  = $meses[(int)date('n', $ts) - 1];
+        $anio = (int)date('Y', $ts);
+
+        return "{$diaS} {$dia} de {$mes} del {$anio}";
+    }
+
+    /**
+     * Construye el HTML del correo de notificación de examen.
+     */
+    private function construirCuerpoNotificacion(array $estudiante, array $terna, string $infoExtra, string $fase, string $ubicacion): array
+    {
+        $correosCc = [];
+        $listaExaminadoresHtml = '<ul style="list-style:none; padding-left:0; margin-top:5px;">';
+        foreach ($terna['examinadores'] ?? [] as $ex) {
+            $listaExaminadoresHtml .= '<li style="margin-bottom:4px;"><strong>' . htmlspecialchars($ex['nombre'] ?? '') . '</strong></li>';
+            if (!empty($ex['correo'])) {
+                $correosCc[] = $ex['correo'];
+            }
+        }
+        $listaExaminadoresHtml .= '</ul>';
+
+        $fechaExamen = !empty($terna['programacion']['fecha'])
+            ? $this->formatearFechaEspanol($terna['programacion']['fecha'])
+            : 'Por definir';
+        $horaExamen = !empty($terna['programacion']['hora'])
+            ? date('g:i A', strtotime($terna['programacion']['hora']))
+            : 'Por definir';
+
+        $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $fase);
+        $faseLabel = ucwords(trim($faseLabel));
+
+        $html = '<p>Estimado(a) graduando:</p>'
+              . '<p>Reciba un cordial saludo de parte de la administración de Escuela de Estudios de Posgrado, le extendemos desde ya una felicitación por haber llegado a esta etapa.</p>';
+
+        $html .= '<p>Adjunto encontrará información de interés relacionada con la sustentación de su ' . htmlspecialchars($faseLabel) . '. '
+               . 'Asimismo, le confirmo que su examen se realizará el <strong>' . $fechaExamen . '</strong>, '
+               . 'a las <strong>' . $horaExamen . '</strong>';
+        if (!empty($ubicacion)) {
+            $html .= ', en <strong>' . htmlspecialchars($ubicacion) . '</strong>';
+        }
+        $html .= '.</p>';
+
+        if (!empty($infoExtra)) {
+            $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
+        }
+
+        $html .= '<p>Para la evaluación de su examen han sido designados los siguientes profesionales:</p>' . $listaExaminadoresHtml
+               . '<p>Se le solicita proporcionar una copia de su proyecto a cada uno de los examinadores a la mayor brevedad posible, '
+               . 'con el fin de que puedan revisarlo previamente y preparar las consultas correspondientes. '
+               . 'Preferentemente, deberá entregarse una copia impresa; sin embargo, también puede compartir una versión digital '
+               . 'con anticipación y entregar la copia física el día del examen.</p>'
+               . '<p>Finalmente, para su comodidad durante la jornada, se recomienda llevar agua para consumo personal. '
+               . 'Si desea proporcionar algún refrigerio adicional, queda a su consideración.</p>'
+               . '<p>Saludos cordiales y éxito</p>';
+
+        return [
+            'html'      => $html,
+            'asunto'    => 'Notificacion Examen de Graduacion - ' . htmlspecialchars($faseLabel),
+            'correosCc' => $correosCc,
+        ];
+    }
+
+    /**
      * Notifica al estudiante cerrando el paso 4 (último) del proceso.
      * Retorna JSON para manejo vía AJAX.
      */
@@ -1310,7 +1384,8 @@ class ExamenController extends AbstractActionController {
         }
 
         $codProceso = (int) $request->getPost('cod_proceso');
-        $infoExtra    = trim((string) $request->getPost('info_extra', ''));
+        $infoExtra  = trim((string) $request->getPost('info_extra', ''));
+        $ubicacion  = trim((string) $request->getPost('ubicacion', ''));
 
         if ($codProceso <= 0) {
             return new JsonModel(['success' => false, 'message' => 'Identificador de proceso inválido']);
@@ -1328,48 +1403,15 @@ class ExamenController extends AbstractActionController {
             if ($advanced) {
 
                 if ($estudiante && !empty($estudiante['correo'])) {
-                    $correosCc = [];
-                    $listaExaminadoresHtml = '<ul style="list-style:none; padding-left:0; margin-top:5px;">';
-                    foreach ($terna['examinadores'] ?? [] as $ex) {
-                        $listaExaminadoresHtml .= '<li style="margin-bottom:4px;"><strong>' . htmlspecialchars($ex['nombre'] ?? '') . '</strong></li>';
-                        if (!empty($ex['correo'])) {
-                            $correosCc[] = $ex['correo'];
-                        }
-                    }
-                    $listaExaminadoresHtml .= '</ul>';
+                    $cuerpo = $this->construirCuerpoNotificacion($estudiante, $terna, $infoExtra, $faseActual, $ubicacion);
 
-                    $fechaExamen = !empty($terna['programacion']['fecha'])
-                        ? date('d/m/Y', strtotime($terna['programacion']['fecha']))
-                        : 'Por definir';
-                    $horaExamen = !empty($terna['programacion']['hora'])
-                        ? date('g:i A', strtotime($terna['programacion']['hora']))
-                        : 'Por definir';
-
-                    $html = '<p>Estimado(a) <strong>' . htmlspecialchars($estudiante['nombre_completo']) . '</strong>,</p>';
-
-                    if (!empty($infoExtra)) {
-                        $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
-                    }
-
-                    $html .= '<p>Para la evaluación de su examen han sido designados los siguientes profesionales:</p>' . $listaExaminadoresHtml
-                           . '<p>Se le solicita proporcionar una copia de su proyecto a cada uno de los examinadores a la mayor brevedad posible, '
-                           . 'con el fin de que puedan revisarlo previamente y preparar las consultas correspondientes. '
-                           . 'Preferentemente, deberá entregarse una copia impresa; sin embargo, también puede compartir una versión digital '
-                           . 'con anticipación y entregar la copia física el día del examen.</p>'
-                           . '<p>Finalmente, para su comodidad durante la jornada, se recomienda llevar agua para consumo personal. '
-                           . 'Si desea proporcionar algún refrigerio adicional, queda a su consideración.</p>'
-                           . '<p>Saludos cordiales y éxito</p>';
-
-                    $faseLabel = str_replace(['_', 'examen'], [' ', 'Examen'], $faseActual);
-                    $faseLabel = ucwords(trim($faseLabel));
-
-                    error_log('[Notificar] CC examinadores: ' . implode(', ', $correosCc));
+                    error_log('[Notificar] CC examinadores: ' . implode(', ', $cuerpo['correosCc']));
                     $this->mailManager->sendHtmlMessage(
                         $estudiante['correo'],
-                        'Notificacion Examen de Graduacion - ' . htmlspecialchars($faseLabel),
-                        $html,
+                        $cuerpo['asunto'],
+                        $cuerpo['html'],
                         [],
-                        $correosCc
+                        $cuerpo['correosCc']
                     );
                 }
 
@@ -1378,6 +1420,45 @@ class ExamenController extends AbstractActionController {
 
             return new JsonModel(['success' => false, 'message' => 'No se pudo cerrar el paso']);
 
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Vista previa del correo de notificación. No envía el correo ni avanza el paso.
+     */
+    public function previewNotificacionAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $codProceso = (int) $request->getPost('cod_proceso');
+        $infoExtra  = trim((string) $request->getPost('info_extra', ''));
+        $ubicacion  = trim((string) $request->getPost('ubicacion', ''));
+
+        if ($codProceso <= 0) {
+            return new JsonModel(['success' => false, 'message' => 'Identificador de proceso inválido']);
+        }
+
+        try {
+            $procesoInfo = $this->examenManager->getProceso($codProceso);
+            $faseActual  = $procesoInfo['fase_paso_actual'] ?? 'examen_privado';
+            $estudiante  = $this->examenManager->getEstudiantePorProceso($codProceso);
+            $terna       = $this->examenManager->getTerna($codProceso, $faseActual);
+
+            if (!$estudiante) {
+                return new JsonModel(['success' => false, 'message' => 'No se encontró información del estudiante']);
+            }
+
+            $cuerpo = $this->construirCuerpoNotificacion($estudiante, $terna, $infoExtra, $faseActual, $ubicacion);
+
+            return new JsonModel([
+                'success' => true,
+                'html'    => $cuerpo['html'],
+                'asunto'  => $cuerpo['asunto'],
+            ]);
         } catch (\Exception $e) {
             return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
@@ -1685,6 +1766,59 @@ class ExamenController extends AbstractActionController {
     }
 
     /**
+     * Construye el HTML del correo de notificación grupal (acto de graduación).
+     */
+    private function construirCuerpoNotificacionGrupal(string $fecha, string $hora, string $lugar, string $infoExtra): string
+    {
+        $html = '<p>Estimado(a) graduando:</p>'
+              . '<p>Reciba un cordial saludo de parte de la administración de Escuela de Estudios de Posgrado, le extendemos desde ya una felicitación por haber llegado a esta etapa.</p>'
+              . '<p><strong>FECHA:</strong> ' . htmlspecialchars($fecha) . '</p>'
+              . '<p><strong>HORA:</strong> ' . htmlspecialchars($hora) . '</p>'
+              . '<p><strong>LUGAR:</strong> ' . htmlspecialchars($lugar) . '</p>';
+        if (!empty($infoExtra)) {
+            $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
+        }
+        $html .= '<p>Saludos cordiales.</p>';
+        return $html;
+    }
+
+    /**
+     * Vista previa del correo de notificación grupal. No envía correos.
+     */
+    public function previewNotificacionGrupalAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $fecha = trim((string) $request->getPost('fecha', ''));
+        $hora  = trim((string) $request->getPost('hora', ''));
+        $lugar = trim((string) $request->getPost('lugar', ''));
+        $infoExtra = trim((string) $request->getPost('info_extra', ''));
+
+        if (empty($fecha) || empty($hora) || empty($lugar)) {
+            return new JsonModel(['success' => false, 'message' => 'Fecha, hora y lugar son obligatorios.']);
+        }
+
+        try {
+            $fechaSel = new \DateTime($fecha);
+            $fechaFormateada = $fechaSel->format('d/m/Y');
+            $horaFormateada = date('g:i A', strtotime($hora));
+
+            $html = $this->construirCuerpoNotificacionGrupal($fechaFormateada, $horaFormateada, $lugar, $infoExtra);
+
+            return new JsonModel([
+                'success' => true,
+                'html'    => $html,
+                'asunto'  => 'Acto de Graduación - Examen General',
+            ]);
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * AJAX: envía notificación grupal a los estudiantes seleccionados.
      */
     public function enviarNotificacionGrupalAction()
@@ -1699,7 +1833,6 @@ class ExamenController extends AbstractActionController {
         $fecha = trim((string) $request->getPost('fecha', ''));
         $hora = trim((string) $request->getPost('hora', ''));
         $lugar = trim((string) $request->getPost('lugar', ''));
-        $notaPresentacion = trim((string) $request->getPost('nota_presentacion', ''));
         $infoExtra = trim((string) $request->getPost('info_extra', ''));
         $correosCcRaw = trim((string) $request->getPost('correos_cc', ''));
 
@@ -1753,17 +1886,7 @@ class ExamenController extends AbstractActionController {
                 'hora'  => $hora,
             ], $userId, 'examen_general');
 
-            $html = '<p>Estimado(a) graduando,</p>';
-            if (!empty($infoExtra)) {
-                $html .= '<p>' . nl2br(htmlspecialchars($infoExtra)) . '</p>';
-            }
-            $html .= '<p><strong>FECHA:</strong> ' . htmlspecialchars($fechaFormateada) . '</p>'
-                   . '<p><strong>HORA:</strong> ' . htmlspecialchars($horaFormateada) . '</p>';
-            if (!empty($notaPresentacion)) {
-                $html .= '<p>' . nl2br(htmlspecialchars($notaPresentacion)) . '</p>';
-            }
-            $html .= '<p><strong>LUGAR:</strong> ' . htmlspecialchars($lugar) . '</p>'
-                   . '<p>Saludos cordiales.</p>';
+            $html = $this->construirCuerpoNotificacionGrupal($fechaFormateada, $horaFormateada, $lugar, $infoExtra);
 
             try {
                 $this->mailManager->sendHtmlMessage(

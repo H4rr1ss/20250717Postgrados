@@ -55,12 +55,14 @@ $urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']
                     <?php endif; ?>
                 </div>
 
-                <!-- Aviso de entrega física -->
+                <?php if ($subPaso === 1): ?>
+                <!-- Aviso de entrega física (solo Parte 1) -->
                 <div class="alert alert-warning" style="margin-bottom: 20px;">
                     <i class="fa fa-hand-o-right"></i>
                     <strong>Todo lo indicado en este paso es entrega física.</strong>
                     El Decano revisará los documentos anteriores, y si está todo completo firmará la autorización para que el Proyecto sea impreso.
                 </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <!-- 1) INSTRUCCIONES (varían según la parte) -->
@@ -68,7 +70,7 @@ $urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']
                 <?php if ($subPaso === 1): ?>
                     <h4 class="box-heading"><i class="fa fa-info-circle"></i> Autorización de Imprímase</h4>
                 <?php else: ?>
-                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Proceso Entrega de Proyecto de Graduación</h4>
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha.</h4>
                 <?php endif; ?>
                 <?php if (!empty($instrucciones)): ?>
                     <div class="instrucciones-content"><?= $instrucciones ?></div>

@@ -162,7 +162,9 @@ INSERT IGNORE INTO `accion` (`cod_accion`, `nombre`) VALUES
   (144, 'Descargar carta de examinadores'),
   (145, 'Eliminar evidencia de la bitácora'),
   (146, 'Autorización de Impresión (estudiante)'),
-  (147, 'Seleccionar Profesional');
+  (147, 'Seleccionar Profesional'),
+  (148, 'Vista previa de notificación de examen'),
+  (149, 'Vista previa de notificación grupal');
 
 
 -- ============================================================

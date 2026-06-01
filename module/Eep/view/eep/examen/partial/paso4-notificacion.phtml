@@ -122,19 +122,29 @@ $etiquetaFechaExamen = ($fase === 'examen_general')
                                 <i class="fa fa-info-circle"></i> <strong>Importante:</strong> La lista de examinadores asignados se incluirá automáticamente en el correo. No es necesario escribirlos en el texto.
                             </div>
 
+                            <div class="form-group">
+                                <label for="ubicacionExamen">Ubicación del examen <small class="text-primary">(obligatorio)</small></label>
+                                <textarea class="form-control" id="ubicacionExamen" name="ubicacion" rows="3"
+                                          placeholder="Ej: salón A-11 del Edificio T-2 de Arquitectura" required></textarea>
+                            </div>
+
                             <div class="form-group" style="margin-bottom: 0;">
                                 <label for="infoExtra">Información adicional</label>
-                                <textarea class="form-control" id="infoExtra" name="info_extra" rows="8"
-                                          placeholder="Escriba aquí toda la información adicional que se enviará al estudiante en el correo (lugar, vestimenta, documentos requeridos, instrucciones, etc.)..."></textarea>
+                                <textarea class="form-control" id="infoExtra" name="info_extra" rows="6"
+                                          placeholder="Escriba aquí toda la información adicional que se enviará al estudiante en el correo (vestimenta, documentos requeridos, instrucciones, etc.)..."></textarea>
                             </div>
 
                         </div>
                     </div>
                 </div>
 
-                <!-- Botón notificar -->
+                <!-- Botones notificar / preview -->
                 <div class="row" style="margin-top: 25px;">
                     <div class="col-md-12 text-right">
+                        <button type="button" id="btnVistaPrevia" class="btn btn-info btn-lg"
+                                <?= (empty($examinadores) || !$fechaExamen) ? 'disabled title="Complete la terna y la fecha antes de previsualizar"' : '' ?>>
+                            <i class="fa fa-eye"></i> Vista previa del correo
+                        </button>
                         <button type="button" id="btnNotificarEstudiante" class="btn btn-success btn-lg"
                                 data-cod-proceso="<?= $codProceso ?>"
                                 <?= (empty($examinadores) || !$fechaExamen) ? 'disabled title="Complete la terna y la fecha antes de notificar"' : '' ?>>
@@ -148,22 +158,103 @@ $etiquetaFechaExamen = ($fase === 'examen_general')
     </div>
 </div>
 
+<!-- Modal Vista Previa del Correo -->
+<div class="modal fade" id="modalVistaPrevia" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">Vista previa del correo</h4>
+            </div>
+            <div class="modal-body">
+                <p><strong>Asunto:</strong> <span id="previewAsunto"></span></p>
+                <div id="previewCuerpo" style="border:1px solid #ddd; padding:20px; background:#fff; border-radius:4px;">
+                    <!-- Aquí se inyecta el HTML del correo -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function () {
+    // ── Validar ubicación obligatoria ──────────────────────────
+    function obtenerUbicacion() {
+        var val = $('#ubicacionExamen').val().trim();
+        return val;
+    }
+
+    function validarUbicacion() {
+        var u = obtenerUbicacion();
+        if (!u) {
+            alert('Debe ingresar la ubicación del examen antes de continuar.');
+            $('#ubicacionExamen').focus();
+            return false;
+        }
+        return true;
+    }
+
+    // ── Vista previa del correo ──────────────────────────────
+    $('#btnVistaPrevia').on('click', function () {
+        var codProceso = $('#btnNotificarEstudiante').data('cod-proceso');
+        if (!codProceso) return;
+        if (!validarUbicacion()) return;
+
+        var infoExtra = $('#infoExtra').val();
+        var ubicacion = obtenerUbicacion();
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Cargando...');
+
+        $.ajax({
+            url: '/examen/preview-notificacion',
+            method: 'POST',
+            data: {
+                cod_proceso: codProceso,
+                info_extra: infoExtra,
+                ubicacion: ubicacion
+            },
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.success && resp.html) {
+                    $('#previewAsunto').text(resp.asunto || '');
+                    $('#previewCuerpo').html(resp.html);
+                    $('#modalVistaPrevia').modal('show');
+                } else {
+                    alert(resp.message || 'No se pudo generar la vista previa.');
+                }
+            },
+            error: function () {
+                alert('Error de conexión al obtener la vista previa.');
+            },
+            complete: function () {
+                btn.prop('disabled', false).html('<i class="fa fa-eye"></i> Vista previa del correo');
+            }
+        });
+    });
+
+    // ── Notificar estudiante ─────────────────────────────────
     $('#btnNotificarEstudiante').on('click', function () {
         var codProceso = $(this).data('cod-proceso');
         if (!codProceso) return;
+        if (!validarUbicacion()) return;
 
         if (!confirm('¿Confirma que desea notificar al estudiante sobre su examen de graduación?')) return;
 
         var infoExtra = $('#infoExtra').val();
+        var ubicacion = obtenerUbicacion();
 
         $.ajax({
             url: '/examen/notificar-estudiante',
             method: 'POST',
             data: {
                 cod_proceso: codProceso,
-                info_extra: infoExtra
+                info_extra: infoExtra,
+                ubicacion: ubicacion
             },
             dataType: 'json',
             success: function (resp) {

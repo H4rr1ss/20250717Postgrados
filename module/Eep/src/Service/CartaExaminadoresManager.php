@@ -168,8 +168,13 @@ class CartaExaminadoresManager
 
     public function getCartaPorProceso(int $codProceso): ?array
     {
-        // Ya no se guarda la carta en BD; se descarga directamente desde disco.
-        // Devuelve info si la plantilla existe.
+        // La carta solo "existe" si el ciclo de correcciones fue aprobado.
+        // De lo contrario, el paso sigue en revisión.
+        $ciclo = $this->getCicloActual($codProceso);
+        if ($ciclo === null || $ciclo['estado'] !== 'aprobado') {
+            return null;
+        }
+
         $ruta = $this->cartaGenerator->obtenerRutaPlantilla();
         if ($ruta === null) {
             return null;

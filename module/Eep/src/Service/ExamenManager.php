@@ -1159,7 +1159,6 @@ class ExamenManager
                 JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
                 JOIN examen_paso_catalogo epc ON epc.cod_paso = epp.cod_paso
                 WHERE ep.cancelado = 0
-                  AND ep.cod_tipo_examen = 3
                   AND epc.fase = "examen_general"
                   AND epp.estado = "completado"
                   AND ep.cod_paso_actual IS NULL
@@ -1167,5 +1166,53 @@ class ExamenManager
                 ORDER BY u.apellidos, u.nombres';
 
         return $this->execute($sql, []);
+    }
+
+    /**
+     * Cuenta cuántos procesos activos tienen TODOS los requisitos digitales
+     * del paso actual ya subidos por el estudiante.
+     */
+    public function contarProcesosConDocumentacionCompleta(): int
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_paso_actual,
+                    ep.cod_tipo_examen,
+                    (SELECT COUNT(*)
+                     FROM examen_requisito_documento erd
+                     WHERE erd.cod_paso = ep.cod_paso_actual
+                       AND erd.cod_tipo_examen = ep.cod_tipo_examen
+                       AND erd.activo = 1
+                       AND erd.tipo_entrega = "digital") AS req_total,
+                    (SELECT COUNT(DISTINCT ed.cod_requisito)
+                     FROM examen_documento ed
+                     WHERE ed.cod_proceso = ep.cod_proceso
+                       AND ed.es_version_actual = 1
+                       AND ed.eliminado = 0
+                       AND ed.cod_requisito IN (
+                           SELECT erd2.cod_requisito
+                           FROM examen_requisito_documento erd2
+                           WHERE erd2.cod_paso = ep.cod_paso_actual
+                             AND erd2.cod_tipo_examen = ep.cod_tipo_examen
+                             AND erd2.activo = 1
+                             AND erd2.tipo_entrega = "digital"
+                       )) AS docs_subidos
+                FROM examen_proceso ep
+                JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                WHERE ep.cancelado = 0
+                  AND ep.cod_paso_actual IS NOT NULL
+                  AND epc.fase IN ("examen_privado", "examen_general")';
+
+        $rows = $this->execute($sql, []);
+
+        $completos = 0;
+        foreach ($rows as $row) {
+            $reqTotal    = (int) ($row['req_total'] ?? 0);
+            $docsSubidos = (int) ($row['docs_subidos'] ?? 0);
+            if ($reqTotal > 0 && $docsSubidos === $reqTotal) {
+                $completos++;
+            }
+        }
+        return $completos;
     }
 }

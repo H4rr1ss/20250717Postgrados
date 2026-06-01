@@ -67,13 +67,13 @@ ON DUPLICATE KEY UPDATE
 --    El director edita los bloques de texto que el estudiante visualiza
 --    en cada parte del paso 6:
 --      - Parte 1: Autorización de Imprímase
---      - Parte 2: Proceso Entrega de Proyecto de Graduación
+--      - Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha.
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `examen_autorizacion_config`;
 CREATE TABLE `examen_autorizacion_config` (
   `cod_config`            TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `instrucciones_parte1`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 1: Autorización de Imprímase',
-  `instrucciones_parte2`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 2: Entrega de Proyecto de Graduación',
+  `instrucciones_parte2`  TEXT DEFAULT NULL COMMENT 'Instrucciones Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha',
   `updated_at`            datetime NOT NULL DEFAULT current_timestamp()
                           ON UPDATE current_timestamp(),
   `updated_by`            INT DEFAULT NULL COMMENT 'FK → usuario que modificó',

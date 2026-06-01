@@ -594,7 +594,7 @@ CREATE TABLE `examen_carta_examinadores` (
 --     El director edita los bloques de texto que el estudiante visualiza
 --     en cada parte del paso 6:
 --       - Parte 1: Autorización de Imprímase
---       - Parte 2: Proceso Entrega de Proyecto de Graduación
+--       - Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha.
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `examen_autorizacion_config`;
 CREATE TABLE `examen_autorizacion_config` (

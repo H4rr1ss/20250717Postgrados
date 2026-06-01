@@ -72,24 +72,50 @@ $estudiantes = $this->estudiantes ?? [];
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Nota sobre presentación antes del horario</label>
-                        <textarea class="form-control" id="ngNotaPresentacion" rows="3" placeholder="Ej: GRADUANDO, PADRINO(S) Y MADRINA(S) DEBEN PRESENTARSE 01 HORA ANTES DEL HORARIO ASIGNADO"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Información adicional / saludo</label>
-                        <textarea class="form-control" id="ngInfoExtra" rows="4" placeholder="Saludo personalizado, indicaciones, vestimenta, documentos requeridos, etc."></textarea>
-                    </div>
+
                     <div class="form-group">
                         <label>Correos adicionales (CC)</label>
-                        <textarea class="form-control" id="ngCorreosCc" rows="3" placeholder="Ingrese los correos separados por coma, punto y coma o salto de línea..."></textarea>
-                        <small class="text-muted">No se guardarán en base de datos. Solo se usarán en el envío actual.</small>
+                        <textarea class="form-control" id="ngCorreosCc" rows="3" placeholder="Ej: director@eep.edu.gt&#10;asistente@eep.edu.gt&#10;secretaria@eep.edu.gt"></textarea>
+                        <small class="text-muted">
+                            Separe los correos con <strong>coma (,)</strong>, <strong>punto y coma (;)</strong> o <strong>salto de línea (Enter)</strong>.
+                            Los correos incorrectos se omitirán automáticamente.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Información adicional</label>
+                        <textarea class="form-control" id="ngInfoExtra" rows="4" placeholder="Indicaciones, vestimenta, documentos requeridos, etc."></textarea>
                     </div>
 
                     <div class="text-right">
+                        <button type="button" class="btn btn-info btn-lg" id="btnVistaPreviaGrupal">
+                            <i class="fa fa-eye"></i> Vista previa del correo
+                        </button>
                         <button type="button" class="btn btn-success btn-lg" id="btnEnviarNotificacionGrupal">
                             <i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados
                         </button>
+                    </div>
+                </div>
+
+                <!-- Modal Vista Previa -->
+                <div class="modal fade" id="modalVistaPreviaGrupal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                                <h4 class="modal-title">Vista previa del correo</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Asunto:</strong> <span id="previewAsuntoGrupal"></span></p>
+                                <div id="previewCuerpoGrupal" style="border:1px solid #ddd; padding:20px; background:#fff; border-radius:4px;">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -110,6 +136,64 @@ $(document).ready(function() {
         $('.sel-estudiante').prop('checked', $(this).is(':checked'));
     });
 
+    // ── Helpers comunes ─────────────────────────────
+    function obtenerDatosFormulario() {
+        return {
+            fecha: $('#ngFecha').val(),
+            hora: $('#ngHora').val(),
+            lugar: $('#ngLugar').val().trim(),
+            info_extra: $('#ngInfoExtra').val()
+        };
+    }
+
+    function validarFormulario(datos) {
+        if (!datos.fecha || !datos.hora || !datos.lugar) {
+            alert('Fecha, hora y lugar son obligatorios.');
+            return false;
+        }
+        var hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        var partes = datos.fecha.split('-');
+        var fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
+        if (fechaSel < hoy) {
+            alert('La fecha no puede ser anterior al día de hoy.');
+            return false;
+        }
+        return true;
+    }
+
+    // ── Vista previa del correo ──────────────────────
+    $('#btnVistaPreviaGrupal').on('click', function() {
+        var datos = obtenerDatosFormulario();
+        if (!validarFormulario(datos)) return;
+
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Cargando...');
+
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "preview-notificacion-grupal"]) ?>',
+            method: 'POST',
+            data: datos,
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.success && resp.html) {
+                    $('#previewAsuntoGrupal').text(resp.asunto || '');
+                    $('#previewCuerpoGrupal').html(resp.html);
+                    $('#modalVistaPreviaGrupal').modal('show');
+                } else {
+                    alert(resp.message || 'No se pudo generar la vista previa.');
+                }
+            },
+            error: function() {
+                alert('Error de conexión al obtener la vista previa.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-eye"></i> Vista previa del correo');
+            }
+        });
+    });
+
+    // ── Enviar notificación grupal ───────────────────
     $('#btnEnviarNotificacionGrupal').on('click', function() {
         var btn = $(this);
         var seleccionados = [];
@@ -122,24 +206,8 @@ $(document).ready(function() {
             return;
         }
 
-        var fecha = $('#ngFecha').val();
-        var hora = $('#ngHora').val();
-        var lugar = $('#ngLugar').val().trim();
-
-        if (!fecha || !hora || !lugar) {
-            alert('Fecha, hora y lugar son obligatorios.');
-            return;
-        }
-
-        // Validar fecha no anterior a hoy
-        var hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        var partes = fecha.split('-');
-        var fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
-        if (fechaSel < hoy) {
-            alert('La fecha no puede ser anterior al día de hoy.');
-            return;
-        }
+        var datos = obtenerDatosFormulario();
+        if (!validarFormulario(datos)) return;
 
         if (!confirm('¿Confirma que desea enviar la notificación a ' + seleccionados.length + ' estudiante(s)?')) {
             return;
@@ -152,11 +220,10 @@ $(document).ready(function() {
             method: 'POST',
             data: {
                 cod_procesos: seleccionados,
-                fecha: fecha,
-                hora: hora,
-                lugar: lugar,
-                nota_presentacion: $('#ngNotaPresentacion').val(),
-                info_extra: $('#ngInfoExtra').val(),
+                fecha: datos.fecha,
+                hora: datos.hora,
+                lugar: datos.lugar,
+                info_extra: datos.info_extra,
                 correos_cc: $('#ngCorreosCc').val()
             },
             dataType: 'json',

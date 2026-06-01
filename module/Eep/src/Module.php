@@ -13,6 +13,7 @@ use Zend\Mvc\Controller\AbstractActionController;
 use Zend\Authentication\AuthenticationService;
 use Zend\Session\SessionManager;
 use Eep\Service\AuthManager;
+use Eep\Service\ExamenManager;
 use Eep\Form\LoginForm;
 use Eep\Controller\Plugin\PluginHandler;
 use Eep\Service\LogManager as LM;
@@ -127,6 +128,12 @@ class Module {// implements ConfigProviderInterface{
                 $layout->setTemplate('eep/layout');
                 $layout->setVariable("menus", $menus);
                 $layout->setVariable("role", $layout->role);
+
+                $roleObj = $layout->role;
+                if ($roleObj && ($roleObj->isDirector() || $roleObj->isAsistente() || $roleObj->isUdicaJefe())) {
+                    $examenManager = $serviceManager->get(ExamenManager::class);
+                    $layout->setVariable("procesosDocCompleta", $examenManager->contarProcesosConDocumentacionCompleta());
+                }
             }
         }
     }
