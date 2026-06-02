@@ -1,0 +1,196 @@
+<?php
+$this->headTitle('Respuestas del Formulario');
+$role = $this->layout()->role;
+
+// Determinar si el formulario está activo
+$formularioActivo = $formulario->getActivo();
+?>
+
+<div class="col-md-12">
+    <div class="panel panel-<?= ($role->hasAdminRole()) ? 'green' : 'blue' ?>">
+        <div class="panel-heading">
+            <i class="fa fa-users"></i> 
+            <?= $this->escapeHtml($formulario->getNombre()) ?>
+            <small class="text-muted" style="color: #fff;">
+                (Período: <?= $formulario->getPeriodoFormateado() ?>)
+            </small>
+            <?php if (!$formularioActivo): ?>
+                <span class="label label-warning pull-right" style="margin-top: 2px;">
+                    <i class="fa fa-lock"></i> INACTIVO
+                </span>
+            <?php endif; ?>
+        </div>
+        <div class="panel-body">
+            <?php if (!$formularioActivo): ?>
+                <div class="alert alert-warning">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <strong>Atención:</strong> Este formulario está inactivo. 
+                    Las respuestas solo pueden ser visualizadas, no pueden ser editadas ni eliminadas.
+                </div>
+            <?php endif; ?>
+            
+            <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
+            <?= $this->partial('partial/msg', ['msg' => $respuestasMsg ?? null]) ?>
+            
+            <?php if (!empty($respuestas)): ?>
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>CUI</th>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th class="text-center">Fecha Envío</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($respuestas as $respuesta): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= $this->escapeHtml($respuesta->getCuiAspirante()) ?></strong>
+                                </td>
+                                <td>
+                                    <?= $this->escapeHtml($respuesta->getNombreCompletoAspirante()) ?>
+                                </td>
+                                <td>
+                                    <a href="mailto:<?= $respuesta->getCorreoAspirante() ?>">
+                                        <?= $this->escapeHtml($respuesta->getCorreoAspirante()) ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <?= $this->escapeHtml($respuesta->getTelefonoAspirante()) ?>
+                                </td>
+                                <td class="text-center">
+                                    <small><?= $respuesta->getFechaEnvioFormateada() ?></small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group">
+                                        <?php if ($formularioActivo): ?>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                               class="btn btn-primary btn-sm" title="Editar Respuesta">
+                                                <i class="fa fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-danger btn-sm" 
+                                                    onclick="eliminarRespuesta(<?= $respuesta->getIdRespuesta() ?>)" 
+                                                    title="Eliminar Respuesta">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                               class="btn btn-info btn-sm" title="Ver Respuesta (Solo Lectura)">
+                                                <i class="fa fa-eye"></i> Ver
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <!-- Paginación simple -->
+                <?php if ($totalPages > 1): ?>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted">Mostrando página <?= $page ?> de <?= $totalPages ?> (<?= $totalRecords ?> registros)</p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <nav>
+                                <ul class="pagination pagination-sm" style="margin-top: 0;">
+                                    <?php if ($page > 1): ?>
+                                        <li>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page - 1]]) ?>">
+                                                &laquo; Anterior
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="disabled"><span>&laquo; Anterior</span></li>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <?php if ($i == $page): ?>
+                                            <li class="active"><span><?= $i ?></span></li>
+                                        <?php else: ?>
+                                            <li>
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $i]]) ?>">
+                                                    <?= $i ?>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $totalPages): ?>
+                                        <li>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page + 1]]) ?>">
+                                                Siguiente &raquo;
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="disabled"><span>Siguiente &raquo;</span></li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted"><?= $totalRecords ?> respuesta(s) en total</p>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> No hay respuestas para este formulario aún.
+                </div>
+            <?php endif; ?>
+            
+            <div class="row">
+                <div class="col-md-12 text-right">
+                    <a href="<?= $this->url('formulario-admision')?>" class="btn btn-default">
+                        <i class="fa fa-arrow-left"></i> Volver a Formularios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.aspirante-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function registrarAspirantesSeleccionados() {
+    const checkboxes = document.querySelectorAll('.aspirante-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        alert('Debe seleccionar al menos un aspirante para registrar.');
+        return;
+    }
+    
+    if (confirm(`¿Está seguro que desea registrar ${checkboxes.length} aspirante(s) como estudiantes en el sistema?`)) {
+        document.getElementById('formRegistrarAspirantes').submit();
+    }
+}
+
+function eliminarRespuesta(idRespuesta) {
+    if (confirm('¿Está seguro que desea eliminar esta respuesta? Esta acción no se puede deshacer.')) {
+        // Crear formulario temporal para eliminación
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.href;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'eliminar_respuesta';
+        input.value = idRespuesta;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>

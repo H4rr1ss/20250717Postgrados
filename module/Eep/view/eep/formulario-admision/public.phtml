@@ -1,0 +1,174 @@
+<?php
+$this->headTitle('Formulario de Admisión');
+?>
+<?php
+$now = new \DateTime();
+if (isset($formulario)) {
+    $start = new \DateTime($formulario->getFechaInicioAdmision());
+    $end   = new \DateTime($formulario->getFechaFinAdmision());
+    if ($now < $start || $now > $end) {
+        echo '<div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">'
+           . '<i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>'
+           . '<h3 style="margin-top: 20px;">El período de admisiones está inactivo en este momento.</h3>'
+           . '</div>';
+        return;
+    }
+}
+?>
+
+<?php if (isset($message) && !isset($formulario)): ?>
+    <!-- Mostrar solo mensaje cuando no hay formulario disponible -->
+    <div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">
+        <i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>
+        <h3 style="margin-top: 20px;">No hay formularios de admisión disponibles en este momento.</h3>
+        <p class="text-muted"><?= $message->getMessage() ?></p>
+    </div>
+    <?php return; ?>
+<?php endif; ?>
+
+<?php if (!isset($formulario)): ?>
+    <!-- Fallback si no hay formulario ni mensaje -->
+    <div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">
+        <i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>
+        <h3 style="margin-top: 20px;">No hay formularios de admisión disponibles en este momento.</h3>
+    </div>
+    <?php return; ?>
+<?php endif; ?>
+
+<div class="col-md-8 col-md-offset-2">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3><?= $this->escapeHtml($formulario->getNombre()) ?></h3>
+            <small>Período: <?= $this->escapeHtml($formulario->getPeriodoFormateado()) ?></small>
+        </div>
+        <div class="panel-body">
+            <?php if (isset($message)): ?>
+                <div class="alert alert-info">
+                    <?= $message->getMessage() ?>
+                </div>
+            <?php endif; ?>
+            <form method="post" enctype="multipart/form-data" action="<?= $this->url('admisiones') ?>" id="form-publico">
+                <div id="cui-mensaje" class="alert alert-danger" style="display:none;"></div>
+                <?php foreach ($campos as $campo): ?>
+                    <div class="form-group">
+                        <label for="<?= $campo->getNombreCampo() ?>"><?= $this->escapeHtml($campo->getEtiqueta()) ?>
+                            <?php if ($campo->getRequerido()): ?><span class="text-danger">*</span><?php endif; ?>
+                        </label>
+                        <?php switch ($campo->getTipoCampo()):
+                            case 'texto': ?>
+                                <input type="text" class="form-control"
+                                       name="<?= $campo->getNombreCampo() ?>"
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'email': ?>
+                                <input type="email" class="form-control"
+                                       name="<?= $campo->getNombreCampo() ?>"
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'telefono': ?>
+                                <input type="tel" class="form-control"
+                                       name="<?= $campo->getNombreCampo() ?>"
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'fecha': ?>
+                                <input type="date" class="form-control"
+                                       name="<?= $campo->getNombreCampo() ?>"
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <?php break;
+                            case 'textarea': ?>
+                                <textarea class="form-control"
+                                          name="<?= $campo->getNombreCampo() ?>"
+                                          id="<?= $campo->getNombreCampo() ?>"
+                                          <?= $campo->getRequerido() ? 'required' : '' ?>></textarea>
+                                <?php break;
+                            case 'select': ?>
+                                <select class="form-control"
+                                        name="<?= $campo->getNombreCampo() ?>"
+                                        id="<?= $campo->getNombreCampo() ?>"
+                                        <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                    <option value="">-- Seleccione --</option>
+                                    <?php foreach (explode(',', $campo->getOpciones()) as $opt): ?>
+                                        <option value="<?= $this->escapeHtml($opt) ?>"><?= $this->escapeHtml($opt) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php break;
+                            case 'archivo': ?>
+                                <input type="file" class="form-control"
+                                       name="<?= $campo->getNombreCampo() ?>"
+                                       id="<?= $campo->getNombreCampo() ?>"
+                                       accept="image/jpeg,image/png,image/gif,application/pdf"
+                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
+                                <small class="form-text text-muted">Formatos permitidos: JPG, JPEG, PNG, GIF, PDF. Máximo 5MB.</small>
+                                <?php break;
+                        endswitch; ?>
+                    </div>
+                <?php endforeach; ?>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const cuiInput = document.getElementById('cui');
+    const cuiMensaje = document.getElementById('cui-mensaje');
+    const form = document.getElementById('form-publico');
+
+    if (cuiInput && cuiMensaje) {
+        let timeout = null;
+
+        cuiInput.addEventListener('blur', function() {
+            const cui = cuiInput.value.trim();
+            if (cui.length === 0) {
+                cuiMensaje.style.display = 'none';
+                return;
+            }
+
+            // Pequeña demora para no saturar peticiones
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?= $this->url('verificar-cui') ?>', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        try {
+                            const resp = JSON.parse(xhr.responseText);
+                            if (!resp.disponible) {
+                                cuiMensaje.textContent = resp.mensaje || 'Este DPI/CUI ya tiene una respuesta registrada.';
+                                cuiMensaje.style.display = 'block';
+                            } else {
+                                cuiMensaje.style.display = 'none';
+                            }
+                        } catch (e) {
+                            cuiMensaje.style.display = 'none';
+                        }
+                    }
+                };
+                xhr.send('cui=' + encodeURIComponent(cui));
+            }, 300);
+        });
+
+        // Ocultar mensaje al escribir de nuevo
+        cuiInput.addEventListener('input', function() {
+            cuiMensaje.style.display = 'none';
+        });
+
+        // Validar antes de enviar
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (cuiMensaje.style.display === 'block') {
+                    e.preventDefault();
+                    alert(cuiMensaje.textContent);
+                    return false;
+                }
+            });
+        }
+    }
+})();
+</script>

@@ -1,0 +1,97 @@
+<?php
+
+use Eep\Form\FormularioAdmisionForm as FAF;
+
+$this->headTitle('Crear Formulario de Admisión');
+$form->prepare();
+?>
+
+<div class="row">
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                Crear Nuevo Formulario de Admisión
+            </div>
+            <div class="panel-body pan">
+                
+                <?= $this->form()->openTag($form) ?>
+                <div class="form-body pal">
+                    
+                    <?php if(isset($message)): ?>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <div class="note note-<?= $message->getType() ?>">
+                                        <h4 class="box-heading">
+                                            <?= $message->getTitle() ?>
+                                        </h4>
+                                        <p>
+                                            <?= $message->getMessage() ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(FAF::NOMBRE)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-file-text-o"></i>
+                                    <?= $this->formElement($form->get(FAF::NOMBRE)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(FAF::NOMBRE)) ?></font>
+                                </div>
+                                <span class="help-block">Nombre descriptivo del formulario</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(FAF::FECHA_INICIO_ADMISION)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar"></i>
+                                    <?= $this->formElement($form->get(FAF::FECHA_INICIO_ADMISION)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(FAF::FECHA_INICIO_ADMISION)) ?></font>
+                                </div>
+                                <span class="help-block">Fecha y hora de inicio del período</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <?= $this->formLabel($form->get(FAF::FECHA_FIN_ADMISION)) ?>
+                                <div class="input-icon">
+                                    <i class="fa fa-calendar"></i>
+                                    <?= $this->formElement($form->get(FAF::FECHA_FIN_ADMISION)) ?>
+                                    <font color="red"><?= $this->formElementErrors($form->get(FAF::FECHA_FIN_ADMISION)) ?></font>
+                                </div>
+                                <span class="help-block">Fecha y hora de cierre del período</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h3>Importante</h3>
+                    <ul>
+                        
+                        <li>Al crear un nuevo formulario, el formulario se podrá visualizar solamente durante el rango de fechas establecido.</li>
+                        <li>Una vez creado, el formulario podrá recibir respuestas de aspirantes durante el período establecido.</li>
+                    </ul>
+                    
+                </div>
+                <div class="form-actions text-right pal">
+                    <?= $this->formElement($form->get(FAF::SUBMIT)) ?>
+                    <a href="<?= $this->url('formulario-admision') ?>" class="btn btn-default">
+                        <i class="fa fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+                <?= $this->form()->closeTag($form) ?>                
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-1"></div>
+</div>
