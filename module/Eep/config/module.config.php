@@ -49,6 +49,8 @@ use Eep\Service\GradesManager;
 use Eep\Service\Factory\GradesManagerFactory;
 use Eep\Service\GeneralManager;
 use Eep\Service\Factory\GeneralManagerFactory;
+use Eep\Service\FormularioAdmisionManager;
+use Eep\Service\Factory\FormularioAdmisionManagerFactory;
 use Eep\Service\EvaluacionDocenteManager;
 use Eep\Service\Factory\EvaluacionDocenteManagerFactory;
 use Eep\Service\MailManager;
@@ -70,6 +72,8 @@ use Eep\Controller\MassiveLoadController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\FormularioAdmisionController;
+use Eep\Controller\Factory\FormularioAdmisionControllerFactory;
 use Eep\Controller\ExamenController;
 use Eep\Controller\Factory\ExamenControllerFactory;
 use Eep\Controller\StudentGraduationController;
@@ -97,6 +101,7 @@ return [
             ExamenController::class => ExamenControllerFactory::class,
             StudentGraduationController::class => StudentGraduationControllerFactory::class,
             EvaluacionDocenteController::class => EvaluacionDocenteControllerFactory::class,
+            FormularioAdmisionController::class => FormularioAdmisionControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -210,6 +215,26 @@ return [
                     ],
                 ],
             ],
+            'admisiones' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/admisiones',
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action'     => 'public',
+                    ],
+                ],
+            ],
+            'verificar-cui' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/admisiones/verificar-cui',
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action'     => 'verificarCui',
+                    ],
+                ],
+            ],
             'timetable' => [
                 'type' => Segment::class,
                 'options' => [
@@ -285,6 +310,20 @@ return [
                     'defaults' => [
                         'controller' => UserController::class,
                         'action' => 'profile',
+                    ],
+                ],
+            ],
+            'formulario-admision' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/formulario-admision[/:action][/:id]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action' => 'index',
                     ],
                 ],
             ],
@@ -368,25 +407,27 @@ return [
             AutorizacionImpresionManager::class => AutorizacionImpresionManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
+            FormularioAdmisionManager::class => FormularioAdmisionManagerFactory::class,
             EvaluacionDocenteManager::class => EvaluacionDocenteManagerFactory::class,
             MailManager::class => MailManagerFactory::class,
         ],
     ],
     'view_manager' => [
-        //        'display_not_found_reason' => true,
-//        'display_exceptions'       => true,
-//        'doctype'                  => 'HTML5',
-//        'not_found_template'       => 'error/404',
-//        'exception_template'       => 'error/index',
         'template_map' => [
-            'eep/layout' => __DIR__ . '/../view/layout/layout.phtml',
+            // Layout minimal disponible (sin sidebar)
+            'layout/empty' => __DIR__ . '/../view/layout/empty.phtml',
+            // Alias para layout minimal con prefijo de módulo
             'eep/empty-layout' => __DIR__ . '/../view/layout/empty.phtml',
-            'eep/msg' => __DIR__ . '/../view/partial/msg.phtml',
-            'eep/order' => __DIR__ . '/../view/partial/payment-order.phtml',
-            'eep/act' => __DIR__ . '/../view/partial/official-act.phtml',
-            //            'application/index/index' => __DIR__ . '/../view/application/index/index.phtml',
-            'error/404' => __DIR__ . '/../view/error/404.phtml',
-            'error/index' => __DIR__ . '/../view/error/index.phtml',
+            // Layout público para admisiones (alias de empty)
+            'layout/login' => __DIR__ . '/../view/layout/empty.phtml',
+            'layout/layout'           => __DIR__ . '/../view/layout/layout.phtml',
+            'layout/flash'            => __DIR__ . '/../view/layout/flash.phtml',
+            'error/404'               => __DIR__ . '/../view/error/404.phtml',
+            'error/index'             => __DIR__ . '/../view/error/index.phtml',
+            // Alias para el partial de mensajes usado en muchas vistas
+            'eep/msg'                 => __DIR__ . '/../view/partial/msg.phtml',
+            // Alias para layout por defecto (fallback)
+            'eep/layout'              => __DIR__ . '/../view/layout/layout.phtml',
         ],
         'template_path_stack' => [
             'Eep' => __DIR__ . '/../view',
