@@ -153,16 +153,6 @@ class FormularioAdmisionForm extends Form {
                         'messages' => FieldError::DATE
                     ],
                 ],
-                [
-                    'name' => GreaterThan::class,
-                    'options' => [
-                        'min' => date('Y-m-d'),
-                        'inclusive' => true,
-                        'messages' => [
-                            GreaterThan::NOT_GREATER_INCLUSIVE => 'La fecha de inicio debe ser posterior a la fecha actual'
-                        ]
-                    ],
-                ],
             ],
         ]);
 

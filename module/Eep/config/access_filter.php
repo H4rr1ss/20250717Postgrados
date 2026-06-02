@@ -429,5 +429,15 @@ return [
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::ALL]
         ],
+        'verificarCui' => [
+            'code' => 74,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::ALL]
+        ],
+        'descargar' => [
+            'code' => 75,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
     ],
 ];

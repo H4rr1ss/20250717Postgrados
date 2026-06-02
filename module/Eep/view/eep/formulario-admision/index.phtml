@@ -116,8 +116,8 @@ $role = $this->layout()->role;
                                        class="btn btn-default btn-sm" title="Ver Respuestas">
                                         <i class="fa fa-eye"></i> Solo Lectura
                                    </a>
-                                   <form method="POST" action="<?= $this->url('formulario-admision', ['action' => 'eliminar', 'id' => $formulario->getIdFormulario()]) ?>" style="display:inline; margin-left:5px;">
-                                       <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Formulario">
+                                   <form method="POST" action="<?= $this->url('formulario-admision', ['action' => 'eliminar', 'id' => $formulario->getIdFormulario()]) ?>" style="display:inline; margin-left:5px;" class="form-eliminar" data-respuestas="<?= $formulario->getTotalRespuestas() ?>">
+                                       <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Formulario" onclick="return confirmarEliminarFormulario(this);">
                                            <i class="fa fa-trash"></i>
                                        </button>
                                    </form>
@@ -140,4 +140,17 @@ $role = $this->layout()->role;
 </script>
 <?php endif; ?>
 
+<script>
+function confirmarEliminarFormulario(btn) {
+    const form = btn.closest('form');
+    const totalRespuestas = parseInt(form.getAttribute('data-respuestas')) || 0;
+    let mensaje = '¿Está seguro que desea eliminar este formulario?';
+    if (totalRespuestas > 0) {
+        mensaje = 'Este formulario tiene ' + totalRespuestas + ' respuesta(s). ' + mensaje + ' Esta acción no se puede deshacer y también eliminará los archivos adjuntos.';
+    } else {
+        mensaje = mensaje + ' Esta acción no se puede deshacer.';
+    }
+    return confirm(mensaje);
+}
+</script>
 

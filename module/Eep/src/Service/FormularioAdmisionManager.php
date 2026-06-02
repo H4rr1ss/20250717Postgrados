@@ -7,11 +7,15 @@ use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Expression;
 use Eep\Entity\Result as R;
 use Eep\Entity\FormularioAdmision;
-use Eep\Entity\Aspirante;
 use Eep\Entity\RespuestaAspirante;
 use Eep\Entity\CampoFormulario;
 
 class FormularioAdmisionManager extends Manager {
+
+    const RUTA_ARCHIVOS = './data/admisiones';
+    const TAMANO_MAXIMO = 5 * 1024 * 1024; // 5MB
+    const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+
     /**
      * Archiva (deshabilita) un formulario de admisión
      */
@@ -30,14 +34,21 @@ class FormularioAdmisionManager extends Manager {
         }
         return $res;
     }
+
     /**
-     * Elimina un formulario y sus datos relacionados
+     * Elimina un formulario y sus datos relacionados (incluyendo archivos físicos)
      */
     public function eliminarFormulario($idFormulario) {
         $res = new R();
         try {
-            // Eliminar respuestas asociadas
+            // Eliminar archivos físicos de todas las respuestas antes de borrar registros
             $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+            $respuestas = $respTable->select(['id_formulario' => $idFormulario]);
+            foreach ($respuestas as $respuesta) {
+                $this->eliminarCarpetaRespuesta($idFormulario, $respuesta['id_respuesta']);
+            }
+
+            // Eliminar respuestas asociadas (cascada en BD también)
             $respTable->delete(['id_formulario' => $idFormulario]);
             // Eliminar campos de formulario
             $campoTable = new TableGateway('campo_formulario', $this->dbAdapter);
@@ -55,7 +66,7 @@ class FormularioAdmisionManager extends Manager {
         }
         return $res;
     }
-    
+
     /**
      * Obtiene información del formulario por ID de respuesta
      */
@@ -64,7 +75,7 @@ class FormularioAdmisionManager extends Manager {
         try {
             $respuestaTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
             $respuestaData = $respuestaTable->select(['id_respuesta' => $idRespuesta])->current();
-            
+
             if ($respuestaData) {
                 return $this->getFormulario($respuestaData['id_formulario']);
             } else {
@@ -73,12 +84,12 @@ class FormularioAdmisionManager extends Manager {
         } catch (\Exception $ex) {
             $res->failure('Error al obtener el formulario: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     // MÉTODOS PARA VISTA 1: Lista de formularios
-    
+
     /**
      * Obtiene formularios activos con cantidad de respuestas
      */
@@ -87,36 +98,36 @@ class FormularioAdmisionManager extends Manager {
         try {
             $table = new TableGateway(['f' => 'formulario_admision'], $this->dbAdapter);
             $select = $table->getSql()->select();
-            
+
             // JOIN para contar respuestas
-            $select->join(['r' => 'respuesta_aspirante'], 'f.id_formulario = r.id_formulario', 
+            $select->join(['r' => 'respuesta_aspirante'], 'f.id_formulario = r.id_formulario',
                          ['total_respuestas' => new Expression('COUNT(r.id_respuesta)')], Select::JOIN_LEFT);
-            
+
             // JOIN para obtener datos del creador
-            $select->join(['u' => 'usuario'], 'f.creado_por = u.cod_usuario', 
+            $select->join(['u' => 'usuario'], 'f.creado_por = u.cod_usuario',
                          ['creador_nombres' => 'nombres', 'creador_apellidos' => 'apellidos'], Select::JOIN_LEFT);
-            
+
             $select->where(['f.activo' => 1]);
             $select->group('f.id_formulario');
             $select->order('f.fecha_creacion DESC');
-            
+
             $result = $table->selectWith($select)->toArray();
-            
+
             $formularios = [];
             foreach ($result as $row) {
                 $formularios[] = new FormularioAdmision($row);
             }
-            
+
             $res->success();
             $res->setObj($formularios);
-            
+
         } catch (\Exception $ex) {
             $res->failure('No se pudieron obtener los formularios activos: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     /**
      * Obtiene formularios archivados
      */
@@ -125,60 +136,83 @@ class FormularioAdmisionManager extends Manager {
         try {
             $table = new TableGateway(['f' => 'formulario_admision'], $this->dbAdapter);
             $select = $table->getSql()->select();
-            
+
             // JOIN para contar respuestas
-            $select->join(['r' => 'respuesta_aspirante'], 'f.id_formulario = r.id_formulario', 
+            $select->join(['r' => 'respuesta_aspirante'], 'f.id_formulario = r.id_formulario',
                          ['total_respuestas' => new Expression('COUNT(r.id_respuesta)')], Select::JOIN_LEFT);
-            
+
             $select->where(['f.activo' => 0]);
             $select->group('f.id_formulario');
             $select->order('f.fecha_creacion DESC');
-            
+
             $result = $table->selectWith($select)->toArray();
-            
+
             $formularios = [];
             foreach ($result as $row) {
                 $formularios[] = new FormularioAdmision($row);
             }
-            
+
             $res->success();
             $res->setObj($formularios);
-            
+
         } catch (\Exception $ex) {
             $res->failure('No se pudieron obtener los formularios archivados: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     // MÉTODOS PARA VISTA 2: Lista de respuestas
-    
+
     /**
-     * Obtiene todas las respuestas de un formulario específico desde respuesta_campo
+     * Cuenta el total de respuestas de un formulario
      */
-    public function getRespuestasFormulario($idFormulario) {
+    public function countRespuestasFormulario($idFormulario) {
         $res = new R();
         try {
-            // Obtener todas las respuestas del formulario
+            $table = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+            $count = $table->select(['id_formulario' => $idFormulario])->count();
+            $res->success();
+            $res->setObj((int)$count);
+        } catch (\Exception $ex) {
+            $res->failure('Error al contar respuestas: ' . $ex->getMessage());
+        }
+        return $res;
+    }
+
+    /**
+     * Obtiene respuestas paginadas de un formulario específico
+     */
+    public function getRespuestasFormulario($idFormulario, $page = 1, $perPage = 20) {
+        $res = new R();
+        try {
+            $offset = ($page - 1) * $perPage;
+
+            // Obtener respuestas paginadas del formulario
             $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
-            $respuestas = $respTable->select(['id_formulario' => $idFormulario]);
-            
+            $respuestas = $respTable->select(function (Select $select) use ($idFormulario, $offset, $perPage) {
+                $select->where(['id_formulario' => $idFormulario]);
+                $select->order('fecha_envio DESC');
+                $select->limit($perPage);
+                $select->offset($offset);
+            });
+
             $resultado = [];
-            
+
             foreach ($respuestas as $respuesta) {
                 $idRespuesta = $respuesta['id_respuesta'];
-                
+
                 // Obtener todos los campos de esta respuesta
                 $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
                 $select = $camposTable->getSql()->select();
-                
-                $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo', 
+
+                $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo',
                              ['nombre_campo', 'etiqueta', 'tipo_campo']);
-                
+
                 $select->where(['rc.id_respuesta' => $idRespuesta]);
-                
+
                 $campos = $camposTable->selectWith($select)->toArray();
-                
+
                 // Construir objeto con datos principales extraídos de campos
                 $datosRespuesta = [
                     'id_respuesta' => $idRespuesta,
@@ -191,7 +225,7 @@ class FormularioAdmisionManager extends Manager {
                     'aspirante_telefono' => '',
                     'aspirante_photo_dpi' => '',
                 ];
-                
+
                 // Extraer datos principales de los campos
                 foreach ($campos as $campo) {
                     switch ($campo['nombre_campo']) {
@@ -215,20 +249,20 @@ class FormularioAdmisionManager extends Manager {
                             break;
                     }
                 }
-                
+
                 $resultado[] = new RespuestaAspirante($datosRespuesta);
             }
-            
+
             $res->success();
             $res->setObj($resultado);
-            
+
         } catch (\Exception $ex) {
             $res->failure('No se pudieron obtener las respuestas del formulario: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     /**
      * Obtiene información completa del formulario
      */
@@ -237,7 +271,7 @@ class FormularioAdmisionManager extends Manager {
         try {
             $table = new TableGateway('formulario_admision', $this->dbAdapter);
             $result = $table->select(['id_formulario' => $idFormulario]);
-            
+
             if ($result->count() > 0) {
                 $formulario = new FormularioAdmision($result->current());
                 $res->success();
@@ -245,69 +279,70 @@ class FormularioAdmisionManager extends Manager {
             } else {
                 $res->failure('Formulario no encontrado');
             }
-            
+
         } catch (\Exception $ex) {
             $res->failure('Error al obtener el formulario: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     // MÉTODOS PARA VISTA 3: Respuesta detallada
-    
+
     /**
      * Obtiene respuesta detallada con todos los campos - solo desde respuesta_campo
      */
     public function getRespuestaDetallada($idRespuesta) {
         $res = new R();
         try {
-            // Obtener solo respuestas por campo sin JOIN con aspirante
+            // Obtener respuestas por campo con JOIN para metadatos
             $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
             $select = $camposTable->getSql()->select();
-            
-            // JOIN con campo_formulario para obtener metadatos
-            $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo', 
+
+            // Seleccionar columnas de respuesta_campo y metadatos de campo_formulario
+            $select->columns(['id_respuesta', 'id_campo', 'valor_respuesta', 'archivo_adjunto']);
+            $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo',
                          ['nombre_campo', 'etiqueta', 'tipo_campo', 'opciones', 'requerido', 'orden_campo']);
-            
+
             $select->where(['rc.id_respuesta' => $idRespuesta]);
             $select->order('cf.orden_campo ASC');
-            
+
             $respuestasCampos = $camposTable->selectWith($select)->toArray();
-            
+
             if (empty($respuestasCampos)) {
                 $res->failure('Respuesta no encontrada');
                 return $res;
             }
-            
+
             $res->success();
             $res->setObj($respuestasCampos);
-            
+
         } catch (\Exception $ex) {
             $res->failure('Error al obtener la respuesta detallada: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     // MÉTODOS AUXILIARES
-    
+
     /**
-     * Actualiza las respuestas de un formulario
+     * Actualiza las respuestas de un formulario (solo campos de texto, no archivos)
      */
     public function actualizarRespuesta($idRespuesta, array $data, array $files = []) {
         $res = new R();
         $connection = $this->dbAdapter->getDriver()->getConnection();
         $connection->beginTransaction();
-        
+
         try {
             $campoRespTable = new TableGateway('respuesta_campo', $this->dbAdapter);
-            
+
             // Iterar sobre los datos enviados
             foreach ($data as $key => $value) {
                 // Los campos vienen como "campo_ID"
                 if (strpos($key, 'campo_') === 0) {
                     $idCampo = (int) str_replace('campo_', '', $key);
-                    
+
                     // Actualizar el valor en respuesta_campo
                     $campoRespTable->update(
                         ['valor_respuesta' => $value],
@@ -318,98 +353,84 @@ class FormularioAdmisionManager extends Manager {
                     );
                 }
             }
-            
-            // Manejar archivos si hay
-            if (!empty($files)) {
-                foreach ($files as $key => $fileInfo) {
-                    if (strpos($key, 'campo_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
-                        $idCampo = (int) str_replace('campo_', '', $key);
-                        
-                        // Aquí podrías mover el archivo y guardar el nombre
-                        $fileName = $fileInfo['name'];
-                        
-                        $campoRespTable->update(
-                            ['archivo_adjunto' => $fileName],
-                            [
-                                'id_respuesta' => $idRespuesta,
-                                'id_campo' => $idCampo
-                            ]
-                        );
-                    }
-                }
-            }
-            
+
+            // NOTA: Los archivos NO son editables. Se ignoran en actualizaciones.
+            // El admin no puede reemplazar documentos ya adjuntos.
+
             $connection->commit();
             $res->success('Respuesta actualizada correctamente');
-            
+
         } catch (\Exception $ex) {
             $connection->rollback();
             $res->failure('Error al actualizar la respuesta: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     /**
-     * Elimina una respuesta completa
+     * Elimina una respuesta completa y sus archivos físicos
      */
     public function eliminarRespuesta($idRespuesta) {
         $res = new R();
         try {
-            $table = new TableGateway('respuesta_aspirante', $this->dbAdapter);
-            $deleted = $table->delete(['id_respuesta' => $idRespuesta]);
-            
+            // Obtener id_formulario antes de eliminar para borrar archivos
+            $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
+            $respData = $respTable->select(['id_respuesta' => $idRespuesta])->current();
+            if ($respData) {
+                $this->eliminarCarpetaRespuesta($respData['id_formulario'], $idRespuesta);
+            }
+
+            $deleted = $respTable->delete(['id_respuesta' => $idRespuesta]);
+
             if ($deleted > 0) {
                 $res->success('Respuesta eliminada correctamente');
             } else {
                 $res->failure('No se pudo eliminar la respuesta');
             }
-            
+
         } catch (\Exception $ex) {
             $res->failure('Error al eliminar la respuesta: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     /**
-     * Obtiene los campos de un formulario
+     * Obtiene los campos globales predefinidos del formulario de admisión
      */
-    public function getCamposFormulario($idFormulario) {
+    public function getCamposFormulario($idFormulario = null) {
         $res = new R();
         try {
             $table = new TableGateway('campo_formulario', $this->dbAdapter);
-            $result = $table->select([
-                'id_formulario' => $idFormulario,
-                'activo' => 1
-            ]);
-            
+            $result = $table->select();
+
             $campos = [];
             foreach ($result as $row) {
                 $campos[] = new CampoFormulario($row);
             }
-            
+
             // Ordenar por orden_campo
             usort($campos, function($a, $b) {
                 return $a->getOrdenCampo() <=> $b->getOrdenCampo();
             });
-            
+
             $res->success();
             $res->setObj($campos);
-            
+
         } catch (\Exception $ex) {
             $res->failure('Error al obtener los campos del formulario: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
-    
+
     /**
      * Crear un nuevo formulario de admisión
      */
     public function crearFormulario($datos) {
         $res = new R();
-        
+
         try {
             $table = new TableGateway('formulario_admision', $this->dbAdapter);
             // Validar que no exista otro formulario activo
@@ -418,7 +439,7 @@ class FormularioAdmisionManager extends Manager {
                 $res->failure('Ya existe un formulario activo. Por favor archive primero el formulario actual antes de crear uno nuevo.');
                 return $res;
             }
-            
+
             $formularioId = $table->insert([
                 'nombre' => $datos['nombre'],
                 'fecha_inicio_admision' => $datos['fecha_inicio_admision'],
@@ -426,27 +447,22 @@ class FormularioAdmisionManager extends Manager {
                 'creado_por' => $datos['creado_por'],
                 'activo' => 1
             ]);
-            
+
             // Obtener el ID del formulario recién creado
             $nuevoId = $this->dbAdapter->getDriver()->getLastGeneratedValue();
-            
-            // Ejecutar procedimiento que crea los campos predefinidos para este formulario
-            try {
-                $this->dbAdapter->createStatement('CALL CrearCamposPredefinidos(?)', [$nuevoId])->execute();
-            } catch (\Exception $e) {
-                // Ignorar error de procedimiento, ya se creó el formulario
-            }
+
             $res->success('Formulario creado correctamente. ID: ' . $nuevoId);
             $res->setObj($nuevoId);
-            
+
         } catch (\Exception $ex) {
             $res->failure('Error al crear el formulario: ' . $ex->getMessage());
         }
-        
+
         return $res;
     }
+
     /**
-     * Registra la respuesta pública: crea aspirante, respuesta_aspirante y respuesta_campo
+     * Registra la respuesta pública: verifica CUI, crea respuesta_aspirante y respuesta_campo
      */
     public function registrarRespuestaPublica($idFormulario, array $campos, array $data, array $files)
     {
@@ -454,48 +470,30 @@ class FormularioAdmisionManager extends Manager {
         $connection = $this->dbAdapter->getDriver()->getConnection();
         $connection->beginTransaction();
         try {
-            // Verificar si aspirante ya existe por CUI
-            $aspTable = new TableGateway('aspirante', $this->dbAdapter);
-            $existingAspirante = $aspTable->select(['cui' => $data['cui'] ?? null])->current();
-            if ($existingAspirante) {
-                // Verificar si ya respondió a este formulario
-                $respCheck = new TableGateway('respuesta_aspirante', $this->dbAdapter);
-                $count = $respCheck->select([
-                    'id_formulario' => $idFormulario,
-                    'aspirante_id'  => $existingAspirante['id'],
-                ])->count();
-                if ($count > 0) {
-                    $connection->rollback();
-                    $res->failure('Ya registró una respuesta. Si desea volver a enviar, comuníquese con el administrador.');
-                    return $res;
-                }
-                $aspiranteId = $existingAspirante['id'];
-            } else {
-                // Insertar nuevo aspirante
-                $aspData = [
-                    'cui' => $data['cui'] ?? null,
-                    'photo_dpi' => $files['photo_dpi']['name'] ?? null,
-                    'nombres' => $data['nombres'] ?? null,
-                    'apellidos' => $data['apellidos'] ?? null,
-                    'correo_electronico' => $data['correo_electronico'] ?? null,
-                    'telefono' => $data['telefono'] ?? null,
-                ];
-                $aspTable->insert($aspData);
-                $aspiranteId = $this->dbAdapter->getDriver()->getLastGeneratedValue();
+            // Verificar si el CUI ya existe en este formulario
+            $duplicado = $this->verificarCuiDuplicado($data['cui'] ?? null, $idFormulario);
+            if ($duplicado) {
+                $connection->rollback();
+                $res->failure('Ya registró una respuesta. Si desea volver a enviar, comuníquese con el administrador.');
+                return $res;
             }
+
             // Insertar registro de respuesta
             $respTable = new TableGateway('respuesta_aspirante', $this->dbAdapter);
             $respTable->insert([
                 'id_formulario' => $idFormulario,
-                'aspirante_id' => $aspiranteId,
             ]);
             $respuestaId = $this->dbAdapter->getDriver()->getLastGeneratedValue();
+
             // Insertar cada campo de respuesta
             $campoRespTable = new TableGateway('respuesta_campo', $this->dbAdapter);
             foreach ($campos as $campo) {
                 $nombre = $campo->getNombreCampo();
                 if ($campo->getTipoCampo() === 'archivo') {
-                    $valorArchivo = $files[$nombre]['name'] ?? null;
+                    $valorArchivo = null;
+                    if (isset($files[$nombre]) && $files[$nombre]['error'] === UPLOAD_ERR_OK) {
+                        $valorArchivo = $this->guardarArchivoSeguro($files[$nombre], $idFormulario, $respuestaId);
+                    }
                     $campoRespTable->insert([
                         'id_respuesta' => $respuestaId,
                         'id_campo' => $campo->getIdCampo(),
@@ -515,9 +513,131 @@ class FormularioAdmisionManager extends Manager {
             $res->setObj($respuestaId);
         } catch (\Exception $ex) {
             $connection->rollback();
-            // Error genérico al registrar respuesta
             $res->failure('Error al registrar respuesta: ' . $ex->getMessage());
         }
         return $res;
+    }
+
+    /**
+     * Verifica si un CUI ya tiene respuesta en un formulario
+     */
+    public function verificarCuiDuplicado($cui, $idFormulario) {
+        if (empty($cui)) {
+            return false;
+        }
+        try {
+            $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
+            $select = $camposTable->getSql()->select();
+            $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo', []);
+            $select->join(['ra' => 'respuesta_aspirante'], 'rc.id_respuesta = ra.id_respuesta', []);
+            $select->where([
+                'cf.nombre_campo' => 'cui',
+                'rc.valor_respuesta' => $cui,
+                'ra.id_formulario' => $idFormulario,
+            ]);
+            $result = $camposTable->selectWith($select);
+            return $result->count() > 0;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Guarda un archivo de forma segura con nombre MD5
+     */
+    private function guardarArchivoSeguro($fileInfo, $idFormulario, $idRespuesta) {
+        $tmpName = $fileInfo['tmp_name'];
+        $originalName = $fileInfo['name'];
+        $mimeType = mime_content_type($tmpName);
+
+        if (!in_array($mimeType, self::TIPOS_PERMITIDOS)) {
+            throw new \Exception('Tipo de archivo no permitido: ' . $mimeType);
+        }
+        if ($fileInfo['size'] > self::TAMANO_MAXIMO) {
+            throw new \Exception('El archivo excede el tamaño máximo permitido de 5MB');
+        }
+
+        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+        if (empty($ext)) {
+            $ext = 'bin';
+        }
+        $fileName = md5(uniqid('', true)) . '.' . strtolower($ext);
+
+        $dir = self::RUTA_ARCHIVOS . '/formularios/' . (int)$idFormulario . '/' . (int)$idRespuesta;
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $destPath = $dir . '/' . $fileName;
+        if (!move_uploaded_file($tmpName, $destPath)) {
+            throw new \Exception('No se pudo guardar el archivo adjunto');
+        }
+
+        return 'admisiones/formularios/' . (int)$idFormulario . '/' . (int)$idRespuesta . '/' . $fileName;
+    }
+
+    /**
+     * Elimina la carpeta de archivos de una respuesta
+     */
+    private function eliminarCarpetaRespuesta($idFormulario, $idRespuesta) {
+        $dir = self::RUTA_ARCHIVOS . '/formularios/' . (int)$idFormulario . '/' . (int)$idRespuesta;
+        if (!is_dir($dir)) {
+            return;
+        }
+        // Eliminar archivos dentro de la carpeta
+        $files = glob($dir . '/*');
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+        // Eliminar carpeta vacía
+        rmdir($dir);
+    }
+
+    /**
+     * Obtiene la ruta física completa de un archivo relativo
+     */
+    public function getRutaArchivoFisico($rutaRelativa) {
+        $ruta = self::RUTA_ARCHIVOS . '/' . ltrim($rutaRelativa, '/');
+        if (file_exists($ruta) && is_file($ruta)) {
+            return $ruta;
+        }
+        return null;
+    }
+
+    /**
+     * Obtiene información del archivo adjunto de un campo específico de una respuesta
+     */
+    public function obtenerArchivoAdjunto($idRespuesta, $nombreCampo) {
+        try {
+            $camposTable = new TableGateway(['rc' => 'respuesta_campo'], $this->dbAdapter);
+            $select = $camposTable->getSql()->select();
+            $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo', []);
+            $select->where([
+                'rc.id_respuesta' => $idRespuesta,
+                'cf.nombre_campo' => $nombreCampo,
+            ]);
+            $result = $camposTable->selectWith($select)->current();
+
+            if (!$result || empty($result['archivo_adjunto'])) {
+                return null;
+            }
+
+            $rutaFisica = $this->getRutaArchivoFisico($result['archivo_adjunto']);
+            if (!$rutaFisica || !file_exists($rutaFisica)) {
+                return null;
+            }
+
+            return [
+                'ruta_relativa' => $result['archivo_adjunto'],
+                'ruta_fisica' => $rutaFisica,
+                'mime_type' => mime_content_type($rutaFisica),
+                'nombre' => basename($rutaFisica),
+                'tamano' => filesize($rutaFisica),
+            ];
+        } catch (\Exception $ex) {
+            return null;
+        }
     }
 }

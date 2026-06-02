@@ -4,6 +4,8 @@ namespace Eep\Controller;
 
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
+use Zend\View\Model\JsonModel;
+use Zend\Session\Container;
 use Eep\Service\FormularioAdmisionManager;
 use Eep\ValueObject\Message;
 use Eep\Service\LogManager as LM;
@@ -11,27 +13,10 @@ use Eep\Form\FormularioAdmisionForm;
 
 class FormularioAdmisionController extends AbstractActionController {
     private $formularioAdmisionManager;
-    
+
     public function __construct(FormularioAdmisionManager $formularioAdmisionManager) {
         $this->formularioAdmisionManager = $formularioAdmisionManager;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * VISTA 5: Archivar formulario de admisión
@@ -65,6 +50,7 @@ class FormularioAdmisionController extends AbstractActionController {
         $view->setTemplate('eep/formulario-admision/index');
         return $view;
     }
+
     /**
      * VISTA 6: Eliminar formulario de admisión
      */
@@ -97,37 +83,6 @@ class FormularioAdmisionController extends AbstractActionController {
         $view->setTemplate('eep/formulario-admision/index');
         return $view;
     }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
 
     /**
      * VISTA 1: Lista de formularios (activos y archivados)
@@ -136,14 +91,14 @@ class FormularioAdmisionController extends AbstractActionController {
         // Obtener formularios activos
         $formulariosActivosResult = $this->formularioAdmisionManager->getFormulariosActivos();
         $formulariosActivos = $formulariosActivosResult->get() ? $formulariosActivosResult->getObj() : [];
-        
+
         // Obtener formularios archivados
         $formulariosArchivadosResult = $this->formularioAdmisionManager->getFormulariosArchivados();
         $formulariosArchivados = $formulariosArchivadosResult->get() ? $formulariosArchivadosResult->getObj() : [];
-        
+
         // Log de acceso
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
-        
+
         return new ViewModel([
             'formulariosActivos' => $formulariosActivos,
             'formulariosArchivados' => $formulariosArchivados,
@@ -151,18 +106,22 @@ class FormularioAdmisionController extends AbstractActionController {
             'archivadosMsg' => $formulariosArchivadosResult->get() ? null : new Message('Error', $formulariosArchivadosResult->getMsg(), Message::RED)
         ]);
     }
-    
+
     /**
      * VISTA 2: Lista de respuestas de un formulario específico
      */
     public function respuestasAction() {
         $idFormulario = (int) $this->params()->fromRoute('id', 0);
-        
+        $page = (int) $this->params()->fromQuery('page', 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
         if ($idFormulario <= 0) {
             $this->pg()->log('ID de formulario inválido', LM::FAILURE, LM::READ);
             return $this->redirect()->toRoute('formulario-admision');
         }
-        
+
         // Obtener información del formulario
         $formularioResult = $this->formularioAdmisionManager->getFormulario($idFormulario);
         if (!$formularioResult->get()) {
@@ -170,58 +129,80 @@ class FormularioAdmisionController extends AbstractActionController {
             return $this->redirect()->toRoute('formulario-admision');
         }
         $formulario = $formularioResult->getObj();
-        
-        // Obtener respuestas del formulario
-        $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario);
+
+        // Contar total para paginación
+        $countResult = $this->formularioAdmisionManager->countRespuestasFormulario($idFormulario);
+        $totalRecords = ($countResult->get()) ? (int)$countResult->getObj() : 0;
+        $perPage = 20;
+        $totalPages = ($totalRecords > 0) ? (int)ceil($totalRecords / $perPage) : 1;
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+
+        // Obtener respuestas del formulario paginadas
+        $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario, $page, $perPage);
         $respuestas = $respuestasResult->get() ? $respuestasResult->getObj() : [];
-        
+
         // Manejar acciones POST (eliminar respuesta)
         $message = null;
         if ($this->getRequest()->isPost()) {
             $data = $this->params()->fromPost();
-            
+
             if (isset($data['eliminar_respuesta'])) {
                 $idRespuesta = (int) $data['eliminar_respuesta'];
                 $eliminarResult = $this->formularioAdmisionManager->eliminarRespuesta($idRespuesta);
-                
+
                 $message = new Message(
                     $eliminarResult->get() ? 'Respuesta Eliminada' : 'Error al Eliminar',
                     $eliminarResult->getMsg(),
                     $eliminarResult->get() ? Message::GREEN : Message::RED
                 );
-                
-                $this->pg()->log($eliminarResult->get() ? null : $eliminarResult->getMsg(), 
+
+                $this->pg()->log($eliminarResult->get() ? null : $eliminarResult->getMsg(),
                                $eliminarResult->get() ? LM::SUCCESS : LM::FAILURE, LM::DELETE);
-                
+
                 // Refrescar lista de respuestas
                 if ($eliminarResult->get()) {
-                    $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario);
+                    $countResult = $this->formularioAdmisionManager->countRespuestasFormulario($idFormulario);
+                    $totalRecords = ($countResult->get()) ? (int)$countResult->getObj() : 0;
+                    $totalPages = ($totalRecords > 0) ? (int)ceil($totalRecords / $perPage) : 1;
+                    if ($page > $totalPages) {
+                        $page = $totalPages;
+                    }
+                    if ($page < 1) {
+                        $page = 1;
+                    }
+                    $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario, $page, $perPage);
                     $respuestas = $respuestasResult->get() ? $respuestasResult->getObj() : [];
                 }
             }
         }
-        
+
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
-        
+
         return new ViewModel([
             'formulario' => $formulario,
             'respuestas' => $respuestas,
             'message' => $message,
-            'respuestasMsg' => $respuestasResult->get() ? null : new Message('Error', $respuestasResult->getMsg(), Message::RED)
+            'respuestasMsg' => $respuestasResult->get() ? null : new Message('Error', $respuestasResult->getMsg(), Message::RED),
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'totalRecords' => $totalRecords,
+            'perPage' => $perPage,
         ]);
     }
-    
+
     /**
      * VISTA 3: Ver/Editar respuesta específica de un aspirante
      */
     public function editarRespuestaAction() {
         $idRespuesta = (int) $this->params()->fromRoute('id', 0);
-        
+
         if ($idRespuesta <= 0) {
             $this->pg()->log('ID de respuesta inválido', LM::FAILURE, LM::READ);
             return $this->redirect()->toRoute('formulario-admision');
         }
-        
+
         // Obtener respuesta detallada (ahora solo campos)
         $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
         if (!$respuestaResult->get()) {
@@ -229,38 +210,34 @@ class FormularioAdmisionController extends AbstractActionController {
             return $this->redirect()->toRoute('formulario-admision');
         }
         $respuesta = $respuestaResult->getObj();
-        
-        // Obtener información del formulario - usamos un método en el manager
+
+        // Obtener información del formulario
         $formulario = null;
         if (!empty($respuesta)) {
-            // Usar método existente para obtener el formulario por respuesta
             $formularioResult = $this->formularioAdmisionManager->getFormularioPorRespuesta($idRespuesta);
             $formulario = $formularioResult->get() ? $formularioResult->getObj() : null;
         }
-        
+
         $message = null;
-        
+
         // Manejar edición de respuesta - SOLO SI EL FORMULARIO ESTÁ ACTIVO
         if ($this->getRequest()->isPost()) {
-            // Validar que el formulario esté activo antes de procesar cambios
             if ($formulario && !$formulario->getActivo()) {
-                $message = new Message('Formulario Inactivo', 
-                    'Este formulario está inactivo. No se pueden realizar cambios en las respuestas.', 
+                $message = new Message('Formulario Inactivo',
+                    'Este formulario está inactivo. No se pueden realizar cambios en las respuestas.',
                     Message::YELLOW);
                 $this->pg()->log($message, LM::FAILURE, LM::UPDATE);
             } else {
                 $data = $this->params()->fromPost();
-                $files = $this->getRequest()->getFiles()->toArray();
-                
-                // Verificar qué botón se presionó
+
                 if (isset($data['guardar_cambios'])) {
-                    // Actualizar respuesta
-                    $result = $this->formularioAdmisionManager->actualizarRespuesta($idRespuesta, $data, $files);
-                    
+                    // Actualizar respuesta (solo textos; archivos se ignoran en el manager)
+                    $result = $this->formularioAdmisionManager->actualizarRespuesta($idRespuesta, $data, []);
+
                     if ($result->get()) {
                         $message = new Message('Cambios Guardados', 'Los cambios se guardaron correctamente', Message::GREEN);
                         $this->pg()->log($message, LM::SUCCESS, LM::UPDATE);
-                        
+
                         // Recargar datos actualizados
                         $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
                         $respuesta = $respuestaResult->get() ? $respuestaResult->getObj() : $respuesta;
@@ -268,52 +245,46 @@ class FormularioAdmisionController extends AbstractActionController {
                         $message = new Message('Error', $result->getMsg(), Message::RED);
                         $this->pg()->log($message, LM::FAILURE, LM::UPDATE);
                     }
-                } elseif (isset($data['aprobar_aspirante'])) {
-                    // TODO: Implementar lógica de aprobación
-                    $message = new Message('Función en desarrollo', 'La aprobación de aspirantes se implementará próximamente', Message::YELLOW);
-                } elseif (isset($data['rechazar_aspirante'])) {
-                    // TODO: Implementar lógica de rechazo
-                    $message = new Message('Función en desarrollo', 'El rechazo de aspirantes se implementará próximamente', Message::YELLOW);
                 }
             }
         }
-        
+
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
-        
+
         return new ViewModel([
             'respuesta' => $respuesta,
             'formulario' => $formulario,
             'message' => $message
         ]);
     }
-    
+
     /**
      * VISTA 4: Crear nuevo formulario de admisión
      */
     public function crearAction() {
-    // Crear formulario usando la clase Zend Form
-    $formUrl = $this->url()->fromRoute('formulario-admision', ['action' => 'crear']);
-    $form = new FormularioAdmisionForm($formUrl);
-        
+        // Crear formulario usando la clase Zend Form
+        $formUrl = $this->url()->fromRoute('formulario-admision', ['action' => 'crear']);
+        $form = new FormularioAdmisionForm($formUrl);
+
         $message = null;
-        
+
         if ($this->getRequest()->isPost()) {
             $data = $this->params()->fromPost();
             $form->setData($data);
             $status = LM::SUCCESS;
-            
+
             if ($form->isValid()) {
                 $validData = $form->getData();
-                
+
                 // Agregar usuario que crea
                 $validData['creado_por'] = $this->identity();
-                
+
                 $result = $this->formularioAdmisionManager->crearFormulario($validData);
-                
+
                 if ($result->get()) {
                     $formularioId = $result->getObj();
-                    $message = new Message('Formulario Creado', 
-                        "Formulario creado correctamente", 
+                    $message = new Message('Formulario Creado',
+                        "Formulario creado correctamente",
                         Message::GREEN);
                     $form->clearData();
                 } else {
@@ -324,17 +295,18 @@ class FormularioAdmisionController extends AbstractActionController {
                 $message = new Message('Campos faltantes', 'Hay campos que requieren corrección', Message::YELLOW);
                 $status = LM::FAILURE;
             }
-            
+
             $this->pg()->log($message ?? null, $status, LM::CREATE);
         } else {
             $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
         }
-        
+
         return new ViewModel([
             'form' => $form,
             'message' => $message
         ]);
     }
+
     /**
      * VISTA PÚBLICA: Mostrar formulario activo para aspirantes
      */
@@ -353,7 +325,16 @@ class FormularioAdmisionController extends AbstractActionController {
         // Obtener campos activos
         $camposResult = $this->formularioAdmisionManager->getCamposFormulario($formulario->getIdFormulario());
         $campos = $camposResult->get() ? $camposResult->getObj() : [];
+
+        // Recuperar mensaje de sesion (POST-Redirect-GET)
+        $session = new Container('admisiones');
         $message = null;
+        if (!empty($session->mensaje)) {
+            $msgData = $session->mensaje;
+            $message = new Message($msgData['titulo'], $msgData['texto'], $msgData['tipo']);
+            unset($session->mensaje);
+        }
+
         // Manejar envío público
         if ($this->getRequest()->isPost()) {
             // Obtener datos y archivos enviados
@@ -376,11 +357,14 @@ class FormularioAdmisionController extends AbstractActionController {
                 }
             }
             if (!empty($errors)) {
-                $message = new Message('Errores en el formulario', 'Faltan campos obligatorios: ' . implode(', ', $errors), Message::RED);
-                $this->pg()->log($message, LM::FAILURE, LM::CREATE);
+                $session->mensaje = [
+                    'titulo' => 'Errores en el formulario',
+                    'texto'  => 'Faltan campos obligatorios: ' . implode(', ', $errors),
+                    'tipo'   => Message::RED
+                ];
+                $this->pg()->log('Errores en formulario publico', LM::FAILURE, LM::CREATE);
             } else {
                 // Guardar respuesta en la base de datos
-                $files = $this->getRequest()->getFiles()->toArray();
                 $result = $this->formularioAdmisionManager
                     ->registrarRespuestaPublica(
                         $formulario->getIdFormulario(),
@@ -389,15 +373,25 @@ class FormularioAdmisionController extends AbstractActionController {
                         $files
                     );
                 if ($result->get()) {
-                    $message = new Message('Enviado', 'Formulario enviado correctamente', Message::GREEN);
-                    $this->pg()->log($message, LM::SUCCESS, LM::CREATE);
+                    $session->mensaje = [
+                        'titulo' => 'Enviado',
+                        'texto'  => 'Formulario enviado correctamente',
+                        'tipo'   => Message::GREEN
+                    ];
+                    $this->pg()->log('Formulario enviado correctamente', LM::SUCCESS, LM::CREATE);
                 } else {
-                    // Limpiar etiquetas HTML de mensaje de error
-                    $message = new Message('Error', $result->getMsg(), Message::RED);
-                    $this->pg()->log($message, LM::FAILURE, LM::CREATE);
+                    $session->mensaje = [
+                        'titulo' => 'Error',
+                        'texto'  => $result->getMsg(),
+                        'tipo'   => Message::RED
+                    ];
+                    $this->pg()->log($result->getMsg(), LM::FAILURE, LM::CREATE);
                 }
-             }
+            }
+            // Redirect para evitar reenvio al refrescar (POST-Redirect-GET)
+            return $this->redirect()->toRoute('admisiones');
         }
+
         $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'formulario' => $formulario,
@@ -405,5 +399,63 @@ class FormularioAdmisionController extends AbstractActionController {
             'message'    => $message,
         ]);
     }
+
+    /**
+     * AJAX: Verificar si un CUI ya tiene respuesta en el formulario activo
+     */
+    public function verificarCuiAction() {
+        $cui = $this->params()->fromPost('cui', '');
+        $activosResult = $this->formularioAdmisionManager->getFormulariosActivos();
+        $formularios = $activosResult->get() ? $activosResult->getObj() : [];
+
+        if (empty($formularios)) {
+            return new JsonModel(['disponible' => true]);
+        }
+
+        $idFormulario = $formularios[0]->getIdFormulario();
+        $duplicado = $this->formularioAdmisionManager->verificarCuiDuplicado($cui, $idFormulario);
+
+        if ($duplicado) {
+            return new JsonModel([
+                'disponible' => false,
+                'mensaje' => 'Ya registró una respuesta. Si desea volver a enviar, comuníquese con el administrador.'
+            ]);
+        }
+
+        return new JsonModel(['disponible' => true]);
+    }
+
+    /**
+     * Ver archivo adjunto de forma segura desde data/admisiones (inline para imagenes, descarga para otros)
+     */
+    public function descargarAction() {
+        $idRespuesta = (int) $this->params()->fromRoute('id', 0);
+        $nombreCampo = $this->params()->fromQuery('campo', '');
+
+        if ($idRespuesta <= 0 || empty($nombreCampo)) {
+            return $this->getResponse()->setStatusCode(404);
+        }
+
+        $archivo = $this->formularioAdmisionManager->obtenerArchivoAdjunto($idRespuesta, $nombreCampo);
+
+        if (!$archivo) {
+            return $this->getResponse()->setStatusCode(404);
+        }
+
+        $response = $this->getResponse();
+        $headers = $response->getHeaders();
+        $headers->addHeaderLine('Content-Type: ' . $archivo['mime_type']);
+
+        // Para imagenes, no enviar Content-Disposition para que se vean inline
+        // Para PDF u otros, usar inline para visualizar en el navegador
+        if (strpos($archivo['mime_type'], 'image/') !== 0) {
+            $headers->addHeaderLine('Content-Disposition: inline; filename="' . $archivo['nombre'] . '"');
+        }
+
+        $headers->addHeaderLine('Content-Length: ' . $archivo['tamano']);
+        $headers->addHeaderLine('Cache-Control: private, max-age=3600');
+
+        $response->setContent(file_get_contents($archivo['ruta_fisica']));
+        return $response;
+    }
 }
-                    

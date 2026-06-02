@@ -202,6 +202,16 @@ return [
                     ],
                 ],
             ],
+            'verificar-cui' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/admisiones/verificar-cui',
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action'     => 'verificarCui',
+                    ],
+                ],
+            ],
             'timetable' => [
                 'type' => Segment::class,
                 'options' => [
