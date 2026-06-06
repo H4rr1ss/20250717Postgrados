@@ -1,0 +1,110 @@
+<?php
+$this->headTitle('Evaluación Examen Privado');
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li class="active">Evaluación Examen Privado</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Evaluación Examen Privado</h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h4 style="font-weight: bold; margin-bottom: 15px;">Información</h4>
+        <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
+            <li>En esta sección se listan los estudiantes con examen privado notificado.</li>
+            <li>Puede registrar la evaluación de cada uno de los 3 examinadores por proceso.</li>
+            <li>La matriz de preguntas se carga automáticamente según la maestría del estudiante.</li>
+        </ul>
+    </div>
+</div>
+
+<br>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                Procesos de Examen Privado
+            </div>
+            <div style="padding: 15px; background-color: white;">
+                <table class="table table-bordered table-hover" style="margin-bottom: 0;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 120px;">Registro</th>
+                            <th>Estudiante</th>
+                            <th>Carrera / Maestría</th>
+                            <th>Tipo de Examen</th>
+                            <th style="width: 140px;">Evaluaciones</th>
+                            <th style="width: 160px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($this->procesos)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center" style="padding: 20px; color: #999;">No hay procesos disponibles para evaluación.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($this->procesos as $p): ?>
+                                <tr>
+                                    <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                    <td>
+                                        <?= $this->escapeHtml(($p['apellidos'] ?? '') . ', ' . ($p['nombres'] ?? '')) ?>
+                                    </td>
+                                    <td><?= $this->escapeHtml($p['carrera'] ?? 'N/A') ?></td>
+                                    <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
+                                    <td class="text-center">
+                                        <?php
+                                        $completadas = (int) ($p['evaluaciones_completadas'] ?? 0);
+                                        $clase = ($completadas >= 3) ? 'label-success' : 'label-warning';
+                                        ?>
+                                        <span class="label <?= $clase ?>" style="font-size: 13px;">
+                                            <?= $completadas ?> / 3
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="<?= $this->url('examen', ['action' => 'matriz-evaluacion', 'id' => (int) $p['cod_proceso']]) ?>"
+                                           class="btn btn-sm btn-primary" title="Evaluar">
+                                            <i class="fa fa-star"></i> Evaluar
+                                        </a>
+                                        <a href="<?= $this->url('examen', ['action' => 'ver-matriz', 'id' => (int) $p['cod_proceso']]) ?>"
+                                           class="btn btn-sm btn-info" title="Ver" style="margin-left: 4px;">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+
+                <!-- Paginación -->
+                <?php if ($this->paginacion['paginas_total'] > 1): ?>
+                    <nav class="text-center" style="margin-top: 15px;">
+                        <ul class="pagination" style="margin: 0;">
+                            <?php for ($i = 1; $i <= $this->paginacion['paginas_total']; $i++): ?>
+                                <li class="<?= $i === $this->paginacion['pagina'] ? 'active' : '' ?>">
+                                    <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>?page=<?= $i ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>

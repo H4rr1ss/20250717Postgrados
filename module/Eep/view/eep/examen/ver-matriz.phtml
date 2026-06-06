@@ -1,0 +1,168 @@
+<?php
+$this->headTitle('Ver Matriz de Evaluación');
+$examinadores = $this->terna['examinadores'] ?? [];
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li><a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>">Evaluación Examen Privado</a></li>
+            <li class="active">Ver Matriz</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Resumen de Evaluación del Examen Privado</h3>
+    </div>
+</div>
+
+<!-- Datos del estudiante -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading" style="font-weight: 700; background-color: #f5f5f5;">Datos del Estudiante</div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Estudiante:</strong><br>
+                        <?= $this->escapeHtml(($this->estudiante['nombre_completo'] ?? '-')) ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Registro:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['registro_academico'] ?? '-') ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Maestría:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-2">
+                        <p><strong>Tipo:</strong><br>
+                        <?= $this->escapeHtml($this->proceso['tipo_examen'] ?? '-') ?></p>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-md-12">
+                        <p><strong>Tema del Trabajo de Graduación:</strong><br>
+                        <?= $this->escapeHtml($this->temaTesis ?? 'Sin registrar') ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php if (empty($this->preguntas)): ?>
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i> No se encontró una matriz de evaluación configurada para esta maestría.
+    </div>
+<?php else: ?>
+
+<!-- Resumen comparativo -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                <i class="fa fa-list-alt"></i> Comparativo de Evaluaciones
+            </div>
+            <div class="panel-body" style="overflow-x: auto;">
+                <table class="table table-bordered table-striped" style="min-width: 800px;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 35%;">Criterio / Pregunta</th>
+                            <th style="width: 21.6%;">Examinador 1</th>
+                            <th style="width: 21.6%;">Examinador 2</th>
+                            <th style="width: 21.6%;">Examinador 3</th>
+                        </tr>
+                        <tr>
+                            <th class="text-muted" style="font-weight: 400;">Nombre</th>
+                            <?php for ($i = 1; $i <= 3; $i++): ?>
+                                <th><?= $this->escapeHtml($examinadores[$i - 1]['nombre'] ?? 'No asignado') ?></th>
+                            <?php endfor; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($this->preguntas as $pregunta): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= (int) $pregunta['numero_orden'] ?>.</strong>
+                                    <?= $this->escapeHtml($pregunta['texto_pregunta']) ?>
+                                    <br>
+                                    <small class="text-muted"><?= $pregunta['tipo_campo'] === 'numero' ? 'Punteo ' . $this->escapeHtml($pregunta['punteo_maximo']) : 'Texto libre' ?></small>
+                                </td>
+                                <?php for ($i = 1; $i <= 3; $i++): ?>
+                                    <?php
+                                    $eval = $this->evaluaciones[$i] ?? null;
+                                    $valor = '-';
+                                    if ($eval && !empty($eval['respuestas'])) {
+                                        foreach ($eval['respuestas'] as $r) {
+                                            if ((int) $r['cod_pregunta'] === (int) $pregunta['cod_pregunta']) {
+                                                if ($pregunta['tipo_campo'] === 'numero') {
+                                                    $valor = ($r['punteo'] !== null && $r['punteo'] !== '') ? number_format((float) $r['punteo'], 2) : '-';
+                                                } else {
+                                                    $valor = nl2br($this->escapeHtml($r['respuesta_texto'] ?? '-'));
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                    <td style="vertical-align: middle;">
+                                        <?php if ($pregunta['tipo_campo'] === 'numero'): ?>
+                                            <span class="label label-primary" style="font-size: 14px;"><?= $valor ?></span>
+                                        <?php else: ?>
+                                            <div style="max-height: 100px; overflow-y: auto; font-size: 13px;"><?= $valor ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endfor; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Observaciones generales -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading" style="background-color: #f9f9f9;">Observaciones Generales por Examinador</div>
+            <div class="panel-body">
+                <div class="row">
+                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                        <div class="col-md-4">
+                            <h5 style="font-weight: 700;"><?= $this->escapeHtml($examinadores[$i - 1]['nombre'] ?? 'Examinador ' . $i) ?></h5>
+                            <?php
+                            $eval = $this->evaluaciones[$i] ?? null;
+                            $obs = ($eval && !empty($eval['observaciones_generales'])) ? $eval['observaciones_generales'] : 'Sin observaciones.';
+                            ?>
+                            <p style="font-size: 13px; color: #555;"><?= nl2br($this->escapeHtml($obs)) ?></p>
+                        </div>
+                    <?php endfor; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 text-right" style="margin-bottom: 30px;">
+        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Volver al listado
+        </a>
+        <a href="<?= $this->url('examen', ['action' => 'matriz-evaluacion', 'id' => (int) ($this->proceso['cod_proceso'] ?? 0)]) ?>" class="btn btn-primary" style="margin-left: 8px;">
+            <i class="fa fa-pencil"></i> Editar Evaluación
+        </a>
+    </div>
+</div>
+
+<?php endif; ?>
+
+</div>

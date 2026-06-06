@@ -1912,5 +1912,188 @@ class ExamenController extends AbstractActionController {
         ]);
     }
 
+    // ================================================================
+    // MATRIZ DE EVALUACIÓN DEL EXAMEN PRIVADO
+    // ================================================================
+
+    /**
+     * Listado de procesos de examen privado listos para evaluación
+     * (notificación completada, terna asignada).
+     */
+    public function evaluacionPrivadoAction()
+    {
+        $pagina = (int) $this->params()->fromQuery('page', 1);
+        $resultado = $this->examenManager->getProcesosEvaluables([
+            'pagina' => $pagina,
+            'limite' => 15,
+        ]);
+
+        return new ViewModel([
+            'procesos' => $resultado['procesos'],
+            'paginacion' => [
+                'total'         => $resultado['total'],
+                'pagina'        => $resultado['pagina'],
+                'limite'        => $resultado['limite'],
+                'paginas_total' => $resultado['paginas_total'],
+            ],
+        ]);
+    }
+
+    /**
+     * Formulario de matriz de evaluación para un proceso específico.
+     * Permite llenar la evaluación de cada examinador (1, 2, 3).
+     */
+    public function matrizEvaluacionAction()
+    {
+        $codProceso = (int) $this->params()->fromRoute('id', 0);
+        if ($codProceso <= 0) {
+            return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+        }
+
+        $proceso = $this->examenManager->getProceso($codProceso);
+        if (!$proceso) {
+            $this->flashMessenger()->addErrorMessage('Proceso no encontrado.');
+            return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+        }
+
+        $estudiante = $this->examenManager->getEstudiantePorProceso($codProceso);
+        $terna = $this->examenManager->getTerna($codProceso, 'examen_privado');
+        $temaTesis = $this->examenManager->getTemaTesis($codProceso);
+
+        // Detectar matriz según cod_carrera del estudiante
+        $codMatrizTipo = null;
+        $preguntas = [];
+        $codCarrera = (int) ($estudiante['cod_carrera'] ?? 0);
+        if ($codCarrera > 0) {
+            $codMatrizTipo = $this->examenManager->getMatrizTipoPorCarrera($codCarrera);
+            if ($codMatrizTipo) {
+                $preguntas = $this->examenManager->getMatrizPreguntas($codMatrizTipo);
+            }
+        }
+
+        // Cargar evaluaciones existentes por examinador
+        $evaluaciones = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $eval = $this->examenManager->getMatrizEvaluacion($codProceso, $i);
+            $evaluaciones[$i] = $eval;
+        }
+
+        return new ViewModel([
+            'proceso'       => $proceso,
+            'estudiante'    => $estudiante,
+            'terna'         => $terna,
+            'temaTesis'     => $temaTesis,
+            'codMatrizTipo' => $codMatrizTipo,
+            'preguntas'     => $preguntas,
+            'evaluaciones'  => $evaluaciones,
+        ]);
+    }
+
+    /**
+     * AJAX: guarda el tema de tesis y/o las respuestas de la matriz de evaluación.
+     */
+    public function guardarMatrizAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+        }
+
+        $userId = $this->layout()->role->getCode();
+        $codProceso = (int) $request->getPost('cod_proceso', 0);
+        $guardarTema = (int) $request->getPost('guardar_tema', 0);
+        $tema = trim((string) $request->getPost('tema_tesis', ''));
+        $posExaminador = (int) $request->getPost('posicion_examinador', 0);
+        $observaciones = trim((string) $request->getPost('observaciones_generales', '')) ?: null;
+        $respuestasRaw = $request->getPost('respuestas', []);
+
+        if ($codProceso <= 0) {
+            return new JsonModel(['status' => 'error', 'message' => 'Proceso inválido']);
+        }
+
+        try {
+            if ($guardarTema === 1) {
+                $this->examenManager->guardarTemaTesis($codProceso, $tema !== '' ? $tema : null);
+                return new JsonModel([
+                    'status'  => 'success',
+                    'message' => 'Tema de tesis guardado correctamente',
+                ]);
+            }
+
+            if ($posExaminador < 1 || $posExaminador > 3) {
+                return new JsonModel(['status' => 'error', 'message' => 'Examinador inválido']);
+            }
+
+            $respuestas = [];
+            if (is_array($respuestasRaw)) {
+                foreach ($respuestasRaw as $r) {
+                    $respuestas[] = [
+                        'cod_pregunta'    => (int) ($r['cod_pregunta'] ?? 0),
+                        'tipo_campo'      => $r['tipo_campo'] ?? 'numero',
+                        'punteo'          => isset($r['punteo']) && $r['punteo'] !== '' ? (float) $r['punteo'] : null,
+                        'respuesta_texto' => isset($r['respuesta_texto']) && $r['respuesta_texto'] !== '' ? $r['respuesta_texto'] : null,
+                    ];
+                }
+            }
+
+            $this->examenManager->guardarMatrizEvaluacion([
+                'cod_proceso'           => $codProceso,
+                'posicion_examinador'   => $posExaminador,
+                'evaluado_por'          => $userId,
+                'observaciones_generales' => $observaciones,
+                'respuestas'            => $respuestas,
+            ]);
+
+            return new JsonModel([
+                'status'  => 'success',
+                'message' => "Evaluación del Examinador {$posExaminador} guardada correctamente",
+            ]);
+        } catch (\Exception $e) {
+            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Vista de resumen de las 3 evaluaciones de un proceso.
+     */
+    public function verMatrizAction()
+    {
+        $codProceso = (int) $this->params()->fromRoute('id', 0);
+        if ($codProceso <= 0) {
+            return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+        }
+
+        $proceso = $this->examenManager->getProceso($codProceso);
+        if (!$proceso) {
+            $this->flashMessenger()->addErrorMessage('Proceso no encontrado.');
+            return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+        }
+
+        $estudiante = $this->examenManager->getEstudiantePorProceso($codProceso);
+        $terna = $this->examenManager->getTerna($codProceso, 'examen_privado');
+        $temaTesis = $this->examenManager->getTemaTesis($codProceso);
+
+        $codMatrizTipo = null;
+        $preguntas = [];
+        $codCarrera = (int) ($estudiante['cod_carrera'] ?? 0);
+        if ($codCarrera > 0) {
+            $codMatrizTipo = $this->examenManager->getMatrizTipoPorCarrera($codCarrera);
+            if ($codMatrizTipo) {
+                $preguntas = $this->examenManager->getMatrizPreguntas($codMatrizTipo);
+            }
+        }
+
+        $evaluaciones = $this->examenManager->getResumenEvaluaciones($codProceso);
+
+        return new ViewModel([
+            'proceso'       => $proceso,
+            'estudiante'    => $estudiante,
+            'terna'         => $terna,
+            'temaTesis'     => $temaTesis,
+            'preguntas'     => $preguntas,
+            'evaluaciones'  => $evaluaciones,
+        ]);
+    }
+
 }
 

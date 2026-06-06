@@ -615,6 +615,26 @@ return [
             'code' => 134,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'evaluacionPrivado' => [
+            'code' => 150,
+            'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'matrizEvaluacion' => [
+            'code' => 151,
+            'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'guardarMatriz' => [
+            'code' => 152,
+            'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'verMatriz' => [
+            'code' => 153,
+            'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
     ],
     StudentGraduationController::class => [
         'index' => [

@@ -36,10 +36,12 @@ class ExamenManager
 
     public function getTiposExamen(): array
     {
-        $sql = 'SELECT cod_tipo_examen, nombre, descripcion
-                FROM examen_tipo
-                WHERE activo = 1
-                ORDER BY nombre';
+        $sql = 'SELECT et.cod_tipo_examen, et.nombre, et.descripcion, et.cod_carrera,
+                        nc.nombre AS carrera_nombre
+                FROM examen_tipo et
+                LEFT JOIN nombre_carrera nc ON nc.cod_carrera = et.cod_carrera
+                WHERE et.activo = 1
+                ORDER BY et.cod_tipo_examen = 3 ASC, nc.nombre ASC';
 
         return $this->execute($sql);
     }
@@ -514,6 +516,7 @@ class ExamenManager
                     u.correo,
                     u.telefono,
                     p.descripcion  AS pensum_nombre,
+                    c.cod_carrera,
                     c.nombre_actual AS carrera
                 FROM examen_proceso ep
                 JOIN usuario u        ON u.cod_usuario  = ep.cod_usuario
@@ -1214,5 +1217,217 @@ class ExamenManager
             }
         }
         return $completos;
+    }
+
+    // ================================================================
+    // MATRIZ DE EVALUACIÓN DEL EXAMEN PRIVADO
+    // ================================================================
+
+    public function getMatrizTipos(): array
+    {
+        return $this->execute(
+            'SELECT cod_matriz_tipo, nombre, descripcion, activo FROM examen_matriz_tipo WHERE activo = 1 ORDER BY nombre'
+        );
+    }
+
+    public function getMatrizPreguntas(int $codMatrizTipo): array
+    {
+        return $this->execute(
+            'SELECT cod_pregunta, cod_matriz_tipo, numero_orden, texto_pregunta, tipo_campo, punteo_maximo
+             FROM examen_matriz_pregunta
+             WHERE cod_matriz_tipo = :tipo AND activo = 1
+             ORDER BY numero_orden ASC',
+            ['tipo' => $codMatrizTipo]
+        );
+    }
+
+    public function getMatrizTipoPorCarrera(int $codCarrera): ?int
+    {
+        $result = $this->execute(
+            'SELECT cod_matriz_tipo FROM examen_matriz_tipo WHERE cod_carrera = :carrera AND activo = 1 LIMIT 1',
+            ['carrera' => $codCarrera]
+        );
+        return !empty($result) ? (int) $result[0]['cod_matriz_tipo'] : null;
+    }
+
+    public function getTemaTesis(int $codProceso): ?string
+    {
+        $result = $this->execute(
+            'SELECT tema_tesis FROM examen_proceso WHERE cod_proceso = :proceso LIMIT 1',
+            ['proceso' => $codProceso]
+        );
+        return $result[0]['tema_tesis'] ?? null;
+    }
+
+    public function guardarTemaTesis(int $codProceso, ?string $tema): bool
+    {
+        $this->execute(
+            'UPDATE examen_proceso SET tema_tesis = :tema WHERE cod_proceso = :proceso',
+            ['tema' => $tema, 'proceso' => $codProceso]
+        );
+        return true;
+    }
+
+    public function getMatrizEvaluacion(int $codProceso, int $posExaminador): ?array
+    {
+        $eval = $this->execute(
+            'SELECT cod_evaluacion, cod_proceso, posicion_examinador, evaluado_por,
+                    fecha_evaluacion, observaciones_generales
+             FROM examen_matriz_evaluacion
+             WHERE cod_proceso = :proceso AND posicion_examinador = :pos
+             LIMIT 1',
+            ['proceso' => $codProceso, 'pos' => $posExaminador]
+        );
+        if (empty($eval)) {
+            return null;
+        }
+        $codEvaluacion = (int) $eval[0]['cod_evaluacion'];
+        $respuestas = $this->execute(
+            'SELECT r.cod_pregunta, r.punteo, r.respuesta_texto,
+                    p.numero_orden, p.texto_pregunta, p.tipo_campo, p.punteo_maximo
+             FROM examen_matriz_respuesta r
+             JOIN examen_matriz_pregunta p ON p.cod_pregunta = r.cod_pregunta
+             WHERE r.cod_evaluacion = :eval',
+            ['eval' => $codEvaluacion]
+        );
+        $eval[0]['respuestas'] = $respuestas;
+        return $eval[0];
+    }
+
+    public function guardarMatrizEvaluacion(array $data): int
+    {
+        $codProceso = (int) $data['cod_proceso'];
+        $posExaminador = (int) $data['posicion_examinador'];
+        $evaluadoPor = (int) $data['evaluado_por'];
+        $observaciones = $data['observaciones_generales'] ?? null;
+        $respuestas = $data['respuestas'] ?? [];
+
+        $existente = $this->execute(
+            'SELECT cod_evaluacion FROM examen_matriz_evaluacion
+             WHERE cod_proceso = :proceso AND posicion_examinador = :pos
+             LIMIT 1',
+            ['proceso' => $codProceso, 'pos' => $posExaminador]
+        );
+
+        if (!empty($existente)) {
+            $codEvaluacion = (int) $existente[0]['cod_evaluacion'];
+            $this->adapter->createStatement(
+                'UPDATE examen_matriz_evaluacion
+                 SET evaluado_por = :usuario,
+                     observaciones_generales = :obs,
+                     fecha_evaluacion = CURRENT_TIMESTAMP
+                 WHERE cod_evaluacion = :cod',
+                ['usuario' => $evaluadoPor, 'obs' => $observaciones, 'cod' => $codEvaluacion]
+            )->execute();
+            $this->adapter->createStatement(
+                'DELETE FROM examen_matriz_respuesta WHERE cod_evaluacion = :cod',
+                ['cod' => $codEvaluacion]
+            )->execute();
+        } else {
+            $this->adapter->createStatement(
+                'INSERT INTO examen_matriz_evaluacion
+                 (cod_proceso, posicion_examinador, evaluado_por, observaciones_generales)
+                 VALUES (:proceso, :pos, :usuario, :obs)',
+                ['proceso' => $codProceso, 'pos' => $posExaminador, 'usuario' => $evaluadoPor, 'obs' => $observaciones]
+            )->execute();
+            $codEvaluacion = (int) $this->adapter->getDriver()->getLastGeneratedValue();
+        }
+
+        foreach ($respuestas as $r) {
+            $codPregunta = (int) $r['cod_pregunta'];
+            $tipo = $r['tipo_campo'] ?? 'numero';
+            $punteo = ($tipo === 'numero' && isset($r['punteo']) && $r['punteo'] !== '')
+                ? (float) $r['punteo']
+                : null;
+            $texto = ($tipo === 'texto' && isset($r['respuesta_texto']) && $r['respuesta_texto'] !== '')
+                ? $r['respuesta_texto']
+                : null;
+
+            $this->adapter->createStatement(
+                'INSERT INTO examen_matriz_respuesta
+                 (cod_evaluacion, cod_pregunta, punteo, respuesta_texto)
+                 VALUES (:eval, :preg, :punteo, :texto)',
+                ['eval' => $codEvaluacion, 'preg' => $codPregunta, 'punteo' => $punteo, 'texto' => $texto]
+            )->execute();
+        }
+
+        return $codEvaluacion;
+    }
+
+    public function getResumenEvaluaciones(int $codProceso): array
+    {
+        $result = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $eval = $this->getMatrizEvaluacion($codProceso, $i);
+            $result[$i] = $eval;
+        }
+        return $result;
+    }
+
+    public function getProcesosEvaluables(array $filtros = []): array
+    {
+        $pagina = $filtros['pagina'] ?? 1;
+        $limite = $filtros['limite'] ?? 20;
+        $offset = ($pagina - 1) * $limite;
+
+        $sql = "SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    ep.tema_tesis,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    et.nombre AS tipo_examen,
+                    c.nombre_actual AS carrera,
+                    ep.fecha_solicitud,
+                    epc.fase AS fase_actual,
+                    epc.numero_orden AS paso_actual_orden,
+                    (
+                        SELECT COUNT(DISTINCT eme.posicion_examinador)
+                        FROM examen_matriz_evaluacion eme
+                        WHERE eme.cod_proceso = ep.cod_proceso
+                    ) AS evaluaciones_completadas
+                FROM examen_proceso ep
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
+                LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
+                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
+                JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                WHERE ep.cancelado = 0
+                  AND EXISTS (
+                      SELECT 1 FROM examen_proceso_paso epp4
+                      JOIN examen_paso_catalogo epc4 ON epc4.cod_paso = epp4.cod_paso
+                      WHERE epp4.cod_proceso = ep.cod_proceso
+                        AND epc4.fase = 'examen_privado'
+                        AND epc4.numero_orden = 4
+                        AND epp4.estado = 'completado'
+                  )
+                ORDER BY ep.fecha_solicitud DESC
+                LIMIT {$limite} OFFSET {$offset}";
+
+        $procesos = $this->execute($sql);
+
+        $sqlCount = "SELECT COUNT(*) AS total
+                     FROM examen_proceso ep
+                     WHERE ep.cancelado = 0
+                       AND EXISTS (
+                           SELECT 1 FROM examen_proceso_paso epp4
+                           JOIN examen_paso_catalogo epc4 ON epc4.cod_paso = epp4.cod_paso
+                           WHERE epp4.cod_proceso = ep.cod_proceso
+                             AND epc4.fase = 'examen_privado'
+                             AND epc4.numero_orden = 4
+                             AND epp4.estado = 'completado'
+                       )";
+        $countResult = $this->execute($sqlCount);
+        $total = (int) ($countResult[0]['total'] ?? 0);
+
+        return [
+            'procesos' => $procesos,
+            'total' => $total,
+            'pagina' => $pagina,
+            'limite' => $limite,
+            'paginas_total' => ceil($total / $limite)
+        ];
     }
 }

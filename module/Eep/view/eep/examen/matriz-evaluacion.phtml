@@ -1,0 +1,291 @@
+<?php
+$this->headTitle('Matriz de Evaluación');
+
+$codProceso = (int) ($this->proceso['cod_proceso'] ?? 0);
+$urlGuardar = $this->url('examen', ['action' => 'guardar-matriz']);
+$examinadores = $this->terna['examinadores'] ?? [];
+$guardarTemaUrl = $this->url('examen', ['action' => 'guardar-matriz']);
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li><a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>">Evaluación Examen Privado</a></li>
+            <li class="active">Matriz de Evaluación</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Matriz de Evaluación del Examen Privado</h3>
+    </div>
+</div>
+
+<!-- Datos del estudiante -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading" style="font-weight: 700; background-color: #f5f5f5;">Datos del Estudiante</div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Estudiante:</strong><br>
+                        <?= $this->escapeHtml(($this->estudiante['nombre_completo'] ?? '-')) ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Registro:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['registro_academico'] ?? '-') ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Maestría:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-2">
+                        <p><strong>Tipo:</strong><br>
+                        <?= $this->escapeHtml($this->proceso['tipo_examen'] ?? '-') ?></p>
+                    </div>
+                </div>
+
+                <!-- Tema de Tesis -->
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-10">
+                        <label for="temaTesis" style="font-weight: 700;">Tema del Trabajo de Graduación</label>
+                        <input type="text" id="temaTesis" class="form-control"
+                               value="<?= $this->escapeHtmlAttr($this->temaTesis ?? '') ?>"
+                               placeholder="Ingrese el tema del trabajo de graduación...">
+                    </div>
+                    <div class="col-md-2" style="padding-top: 25px;">
+                        <button class="btn btn-success btn-block" id="btnGuardarTema">
+                            <i class="fa fa-save"></i> Guardar Tema
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php if (empty($this->preguntas)): ?>
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i> No se encontró una matriz de evaluación configurada para esta maestría.
+    </div>
+<?php else: ?>
+
+<!-- Tabs de Examinadores -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                <i class="fa fa-star"></i> Evaluación por Examinador
+            </div>
+            <div class="panel-body">
+
+                <ul class="nav nav-tabs" role="tablist" id="tabsExaminadores">
+                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                        <li class="<?= $i === 1 ? 'active' : '' ?>">
+                            <a href="#tab-examinador-<?= $i ?>" data-toggle="tab">
+                                <i class="fa fa-user"></i> Examinador <?= $i ?>
+                                <?php $eval = $this->evaluaciones[$i] ?? null; ?>
+                                <?php if ($eval): ?>
+                                    <span class="label label-success" style="margin-left: 5px;"><i class="fa fa-check"></i></span>
+                                <?php else: ?>
+                                    <span class="label label-default" style="margin-left: 5px;">Pendiente</span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                    <?php endfor; ?>
+                </ul>
+
+                <div class="tab-content" style="padding-top: 20px;">
+                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                        <?php $eval = $this->evaluaciones[$i] ?? null; ?>
+                        <div role="tabpanel" class="tab-pane <?= $i === 1 ? 'active' : '' ?>" id="tab-examinador-<?= $i ?>">
+
+                            <div class="row" style="margin-bottom: 15px;">
+                                <div class="col-md-6">
+                                    <h4 style="margin-top: 0; font-weight: 700;">
+                                        <?= $this->escapeHtml($examinadores[$i - 1]['nombre'] ?? 'Examinador ' . $i) ?>
+                                    </h4>
+                                </div>
+                            </div>
+
+                            <form class="form-matriz" data-posicion="<?= $i ?>">
+                                <input type="hidden" name="cod_proceso" value="<?= $codProceso ?>">
+                                <input type="hidden" name="posicion_examinador" value="<?= $i ?>">
+
+                                <?php foreach ($this->preguntas as $pregunta): ?>
+                                    <?php
+                                    $codPregunta = (int) $pregunta['cod_pregunta'];
+                                    $respuestaExistente = null;
+                                    if ($eval && !empty($eval['respuestas'])) {
+                                        foreach ($eval['respuestas'] as $r) {
+                                            if ((int) $r['cod_pregunta'] === $codPregunta) {
+                                                $respuestaExistente = $r;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                    <div class="panel panel-default" style="margin-bottom: 15px;">
+                                        <div class="panel-body">
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <p style="margin-bottom: 5px; font-weight: 600;">
+                                                        <?= (int) $pregunta['numero_orden'] ?>. <?= $this->escapeHtml($pregunta['texto_pregunta']) ?>
+                                                    </p>
+                                                    <small class="text-muted">Tipo: <?= $pregunta['tipo_campo'] === 'numero' ? 'Punteo ' . $this->escapeHtml($pregunta['punteo_maximo']) : 'Texto libre' ?></small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <?php if ($pregunta['tipo_campo'] === 'numero'): ?>
+                                                        <input type="number" class="form-control input-punteo"
+                                                               name="respuestas[<?= $codPregunta ?>][punteo]"
+                                                               placeholder="0-10"
+                                                               step="0.01" min="0" max="20"
+                                                               value="<?= $respuestaExistente ? $this->escapeHtmlAttr($respuestaExistente['punteo'] ?? '') : '' ?>">
+                                                    <?php else: ?>
+                                                        <textarea class="form-control input-texto" rows="3"
+                                                                  name="respuestas[<?= $codPregunta ?>][respuesta_texto]"
+                                                                  placeholder="Ingrese observaciones..."><?= $respuestaExistente ? $this->escapeHtml($respuestaExistente['respuesta_texto'] ?? '') : '' ?></textarea>
+                                                    <?php endif; ?>
+                                                    <input type="hidden" name="respuestas[<?= $codPregunta ?>][cod_pregunta]" value="<?= $codPregunta ?>">
+                                                    <input type="hidden" name="respuestas[<?= $codPregunta ?>][tipo_campo]" value="<?= $this->escapeHtml($pregunta['tipo_campo']) ?>">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+
+                                <!-- Observaciones generales -->
+                                <div class="panel panel-default">
+                                    <div class="panel-heading" style="background-color: #f9f9f9;">Observaciones Generales del Examinador</div>
+                                    <div class="panel-body">
+                                        <textarea class="form-control" rows="3" name="observaciones_generales"
+                                                  placeholder="Observaciones generales de este examinador..."><?= $eval ? $this->escapeHtml($eval['observaciones_generales'] ?? '') : '' ?></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="text-right" style="margin-top: 15px;">
+                                    <button type="submit" class="btn btn-success btn-guardar-matriz">
+                                        <i class="fa fa-save"></i> Guardar Evaluación Examinador <?= $i ?>
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+                    <?php endfor; ?>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(function() {
+    // Guardar tema de tesis
+    $('#btnGuardarTema').on('click', function() {
+        var tema = $('#temaTesis').val().trim();
+        $.ajax({
+            url: '<?= $urlGuardar ?>',
+            type: 'POST',
+            data: {
+                cod_proceso: <?= $codProceso ?>,
+                guardar_tema: 1,
+                tema_tesis: tema
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    alert(res.message);
+                } else {
+                    alert('Error: ' + res.message);
+                }
+            },
+            error: function() {
+                alert('Error de comunicación con el servidor.');
+            }
+        });
+    });
+
+    // Guardar matriz de evaluación
+    $('.form-matriz').on('submit', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+        var posicion = $form.data('posicion');
+
+        var respuestas = [];
+        $form.find('input[name^="respuestas["]').each(function() {
+            var name = $(this).attr('name');
+            var match = name.match(/respuestas\[(\d+)\]\[(\w+)\]/);
+            if (match) {
+                var codPregunta = match[1];
+                var campo = match[2];
+                var val = $(this).val();
+
+                var existing = respuestas.find(function(r) { return r.cod_pregunta == codPregunta; });
+                if (!existing) {
+                    existing = { cod_pregunta: codPregunta, tipo_campo: 'numero' };
+                    respuestas.push(existing);
+                }
+                if (campo === 'tipo_campo') {
+                    existing.tipo_campo = val;
+                } else if (campo === 'punteo') {
+                    existing.punteo = val;
+                } else if (campo === 'respuesta_texto') {
+                    existing.respuesta_texto = val;
+                }
+            }
+        });
+
+        // Capturar textareas también
+        $form.find('textarea[name^="respuestas["]').each(function() {
+            var name = $(this).attr('name');
+            var match = name.match(/respuestas\[(\d+)\]\[(\w+)\]/);
+            if (match) {
+                var codPregunta = match[1];
+                var campo = match[2];
+                var val = $(this).val();
+                var existing = respuestas.find(function(r) { return r.cod_pregunta == codPregunta; });
+                if (!existing) {
+                    existing = { cod_pregunta: codPregunta, tipo_campo: 'texto' };
+                    respuestas.push(existing);
+                }
+                if (campo === 'respuesta_texto') {
+                    existing.respuesta_texto = val;
+                }
+            }
+        });
+
+        $.ajax({
+            url: '<?= $urlGuardar ?>',
+            type: 'POST',
+            data: {
+                cod_proceso: <?= $codProceso ?>,
+                posicion_examinador: posicion,
+                observaciones_generales: $form.find('textarea[name="observaciones_generales"]').val(),
+                respuestas: respuestas
+            },
+            success: function(res) {
+                if (res.status === 'success') {
+                    alert(res.message);
+                    // Recargar para actualizar badge
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + res.message);
+                }
+            },
+            error: function() {
+                alert('Error de comunicación con el servidor.');
+            }
+        });
+    });
+});
+</script>
+
+<?php endif; ?>
+
+</div>

@@ -36,5 +36,6 @@ class View {
     const CARTA_EXAMINADORES = 28;
     const AUTORIZACION_IMPRESION = 29;
     const EVALUACION_DOCENTE_REPORTE = 30;
+    const EVALUACION_PRIVADO = 31;
 
 }

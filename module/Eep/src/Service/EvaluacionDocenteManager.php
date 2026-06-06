@@ -168,14 +168,36 @@ class EvaluacionDocenteManager extends Manager {
         return $res;
     }
 
-    public function getReportePorDocente($anio = null, $mes = null): R {
+    public function getDocentesEvaluados(): R {
+        $res = new R();
+        try {
+            $sql = "
+                SELECT DISTINCT
+                    u.cod_usuario,
+                    CONCAT(u.nombres, ' ', u.apellidos) as nombre_docente
+                FROM evaluacion_respuesta er
+                JOIN horario h ON er.cod_horario = h.cod_horario
+                JOIN usuario u ON h.cod_usuario_catedratico = u.cod_usuario
+                ORDER BY nombre_docente ASC
+            ";
+            $stmt = $this->dbAdapter->query($sql, Adapter::QUERY_MODE_EXECUTE);
+            $res->success();
+            $res->setObj($stmt->toArray());
+        } catch (\Exception $ex) {
+            $res->failure('No se pudieron consultar los docentes', $ex);
+        }
+        return $res;
+    }
+
+    public function getReportePorDocente($anio = null, $mes = null, $codDocente = null): R {
         $res = new R();
         try {
             $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
             $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
+            $docenteFilter = ($codDocente !== null && $codDocente !== '') ? (int) $codDocente : null;
 
             $sql = "
-                SELECT 
+                SELECT
                     h.cod_horario,
                     h.seccion,
                     h.anio,
@@ -191,6 +213,7 @@ class EvaluacionDocenteManager extends Manager {
                 WHERE 1=1
                 " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
                 " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
+                " . ($docenteFilter !== null ? " AND u.cod_usuario = " . $docenteFilter : "") . "
                 GROUP BY h.cod_horario, h.seccion, h.anio, h.mes, cp.nombre, u.cod_usuario
                 ORDER BY nombre_docente, h.anio DESC, h.mes DESC, cp.nombre
             ";
@@ -289,14 +312,15 @@ class EvaluacionDocenteManager extends Manager {
         return $res;
     }
 
-    public function getEvaluacionesDetalle($anio = null, $mes = null): R {
+    public function getEvaluacionesDetalle($anio = null, $mes = null, $codDocente = null): R {
         $res = new R();
         try {
             $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
             $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
+            $docenteFilter = ($codDocente !== null && $codDocente !== '') ? (int) $codDocente : null;
 
             $sql = "
-                SELECT 
+                SELECT
                     er.id,
                     er.fecha_evaluacion,
                     h.anio,
@@ -318,6 +342,7 @@ class EvaluacionDocenteManager extends Manager {
                 WHERE 1=1
                 " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
                 " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
+                " . ($docenteFilter !== null ? " AND u.cod_usuario = " . $docenteFilter : "") . "
                 ORDER BY er.fecha_evaluacion, h.anio DESC, h.mes DESC, p.orden
             ";
             $stmt = $this->dbAdapter->query($sql, Adapter::QUERY_MODE_EXECUTE);

@@ -1,9 +1,11 @@
 <?php
 $this->headTitle('Reporte de Evaluación Docente');
 $periodos = $periodos ?? [];
+$docentes = $docentes ?? [];
 $reporte = $reporte ?? [];
 $anio = $anio ?? null;
 $mes = $mes ?? null;
+$docente = $docente ?? null;
 
 $nombresMeses = [
     1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
@@ -55,12 +57,29 @@ ksort($meses);
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Docente</label>
+                            <select name="docente" class="form-control">
+                                <option value="">Todos</option>
+                                <?php foreach ($docentes as $d): ?>
+                                    <option value="<?= $this->escapeHtml($d['cod_usuario']) ?>" <?= $docente == $d['cod_usuario'] ? 'selected' : '' ?>>
+                                        <?= $this->escapeHtml($d['nombre_docente']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <br/>
                         <button type="submit" class="btn btn-blue">
                             <i class="fa fa-filter"></i> Filtrar
                         </button>
-                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['anio' => $anio, 'mes' => $mes]]) ?>"
+                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'reporte-docente']) ?>"
+                           class="btn btn-default">
+                            <i class="fa fa-eraser"></i> Limpiar
+                        </a>
+                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['anio' => $anio, 'mes' => $mes, 'docente' => $docente]]) ?>"
                            class="btn btn-success">
                             <i class="fa fa-download"></i> Descargar CSV
                         </a>

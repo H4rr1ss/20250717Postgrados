@@ -54,7 +54,7 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                     </thead>
                     <tbody>
                         <?php foreach ($this->tiposExamen as $tipo): ?>
-                            <?php if ((int)$tipo['cod_tipo_examen'] === 3) continue; ?>
+                            <?php if (empty($tipo['cod_carrera'])) continue; ?>
                             <tr>
                                 <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
                                 <td><?= $this->escapeHtml($tipo['descripcion']) ?></td>
@@ -97,7 +97,7 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                     </thead>
                     <tbody>
                         <?php foreach ($this->tiposExamen as $tipo): ?>
-                            <?php if ((int)$tipo['cod_tipo_examen'] !== 3) continue; ?>
+                            <?php if (!empty($tipo['cod_carrera'])) continue; ?>
                             <tr>
                                 <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
                                 <td><?= $this->escapeHtml($tipo['descripcion']) ?></td>

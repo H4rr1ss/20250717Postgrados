@@ -118,13 +118,18 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         $anio = $this->params()->fromQuery('anio');
         $mes = $this->params()->fromQuery('mes');
+        $docente = $this->params()->fromQuery('docente');
         $anio = ($anio !== null && $anio !== '') ? (int) $anio : null;
         $mes = ($mes !== null && $mes !== '') ? (int) $mes : null;
+        $docente = ($docente !== null && $docente !== '') ? (int) $docente : null;
 
         $periodosResult = $this->evaluacionDocenteManager->getPeriodosEvaluacion();
         $periodos = ($periodosResult->get() && is_array($periodosResult->getObj())) ? $periodosResult->getObj() : [];
 
-        $reporteResult = $this->evaluacionDocenteManager->getReportePorDocente($anio, $mes);
+        $docentesResult = $this->evaluacionDocenteManager->getDocentesEvaluados();
+        $docentes = ($docentesResult->get() && is_array($docentesResult->getObj())) ? $docentesResult->getObj() : [];
+
+        $reporteResult = $this->evaluacionDocenteManager->getReportePorDocente($anio, $mes, $docente);
         $reporte = [];
         if ($reporteResult->get() && is_array($reporteResult->getObj())) {
             $reporte = $reporteResult->getObj();
@@ -134,9 +139,11 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         return new ViewModel([
             'periodos' => $periodos,
+            'docentes' => $docentes,
             'reporte' => $reporte,
             'anio' => $anio,
             'mes' => $mes,
+            'docente' => $docente,
             'msg' => $msg ?? null,
         ]);
     }
@@ -149,8 +156,10 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         $anio = $this->params()->fromQuery('anio');
         $mes = $this->params()->fromQuery('mes');
+        $docente = $this->params()->fromQuery('docente');
         $anio = ($anio !== null && $anio !== '') ? (int) $anio : null;
         $mes = ($mes !== null && $mes !== '') ? (int) $mes : null;
+        $docente = ($docente !== null && $docente !== '') ? (int) $docente : null;
 
         $preguntasResult = $this->evaluacionDocenteManager->getPreguntas();
         if (!$preguntasResult->get()) {
@@ -170,7 +179,7 @@ class EvaluacionDocenteController extends AbstractActionController {
             }
         }
 
-        $detalleResult = $this->evaluacionDocenteManager->getEvaluacionesDetalle($anio, $mes);
+        $detalleResult = $this->evaluacionDocenteManager->getEvaluacionesDetalle($anio, $mes, $docente);
         if (!$detalleResult->get()) {
             $this->flashMessenger()->addErrorMessage('No se pudo generar el reporte');
             return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
