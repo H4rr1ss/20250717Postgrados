@@ -117,7 +117,7 @@ $role = $this->layout()->role;
                                         <i class="fa fa-eye"></i> Solo Lectura
                                    </a>
                                    <form method="POST" action="<?= $this->url('formulario-admision', ['action' => 'eliminar', 'id' => $formulario->getIdFormulario()]) ?>" style="display:inline; margin-left:5px;" class="form-eliminar" data-respuestas="<?= $formulario->getTotalRespuestas() ?>">
-                                       <button type="submit" class="btn btn-danger btn-sm" title="Eliminar Formulario" onclick="return confirmarEliminarFormulario(this);">
+                                        <button type="button" class="btn btn-danger btn-sm" title="Eliminar Formulario" onclick="confirmarEliminarFormulario(this);">
                                            <i class="fa fa-trash"></i>
                                        </button>
                                    </form>
@@ -150,7 +150,9 @@ function confirmarEliminarFormulario(btn) {
     } else {
         mensaje = mensaje + ' Esta acción no se puede deshacer.';
     }
-    return confirm(mensaje);
+    ConfirmService.confirm(mensaje, function() {
+        form.submit();
+    });
 }
 </script>
 

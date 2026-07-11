@@ -622,6 +622,12 @@ class UserController extends AbstractActionController {
                     $userId = $params[EditUserForm::USER_CODE_SUBMIT];
                     $user = $this->userManager->getUser($userId, true);
                     $form = new EditUserForm($user);
+                    // Normalizar título profesional: agregar punto final si no lo tiene
+                    $titulo = trim($params[EditUserForm::TITULO_PROFESIONAL] ?? '');
+                    if (!empty($titulo) && substr($titulo, -1) !== '.') {
+                        $titulo .= '.';
+                    }
+                    $params[EditUserForm::TITULO_PROFESIONAL] = $titulo;
                     $form->setData($params);
                     if ($form->isValid()) {
                         $newData = $form->getData();

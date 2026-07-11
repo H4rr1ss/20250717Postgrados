@@ -171,9 +171,8 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!confirm('\u00bfConfirma que el trabajo no tiene m\u00e1s correcciones? Se generar\u00e1 la carta de examinadores.')) return;
-
-        var btn = form.querySelector('button[type="submit"]');
+        ConfirmService.confirm('\u00bfConfirma que desea aprobar el trabajo? Se generar\u00e1 la carta de examinadores y no podr\u00e1 deshacer esta acci\u00f3n.', function() {
+            var btn = form.querySelector('button[type="submit"]');
         btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generando...';
 
@@ -197,6 +196,7 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
             ToastService.error('Error de comunicaci\u00f3n. Intenta de nuevo.');
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-check"></i> Aprobar trabajo y generar carta';
+        });
         });
     });
 }());

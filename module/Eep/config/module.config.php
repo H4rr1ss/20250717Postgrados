@@ -341,6 +341,16 @@ return [
                     ],
                 ],
             ],
+            'reprogramar-examen' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/examen/reprogramar-examen-privado',
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'reprogramarExamenPrivado',
+                    ],
+                ],
+            ],
             'examen-papeleria' => [
                 'type' => Segment::class,
                 'options' => [
@@ -351,6 +361,32 @@ return [
                     'defaults' => [
                         'controller' => ExamenController::class,
                         'action' => 'papeleria',
+                    ],
+                ],
+            ],
+            'previsualizar-acta' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen/previsualizar-acta/:id',
+                    'constraints' => [
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'previsualizarActaExamenPrivado',
+                    ],
+                ],
+            ],
+            'eval-privado' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/eval-privado/:cod_proceso',
+                    'constraints' => [
+                        'cod_proceso' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'evaluacionExamenPrivado',
                     ],
                 ],
             ],

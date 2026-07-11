@@ -20,6 +20,7 @@ class Role {
     private $udicaProgramador = false;
     private $udicaJefe = false;
     private $udicaOperador = false;
+    private $secretarioExamenPrivado = false;
 
     //DO NOT USE "0" ROLLE, BECAUSE IT EQUALLS NULL IN SWITCH BELLOW STATEMENT
     const DIRECTOR = 1;
@@ -32,6 +33,7 @@ class Role {
     const UDICA_PROGRAMADOR = 8;
     const UDICA_JEFE = 9;
     const UDICA_OPERADOR = 10;
+    const SECRETARIO_EXAMEN_PRIVADO = 11;
     //WEB_SITE ROLES
     const AUTH = -1; //LOGGED IN USERS
     const NO_AUTH = -2; //NOT AUTHENTICATED USERS = NOT LOGGED IN
@@ -46,7 +48,8 @@ class Role {
         self::PROGRAMADOR => 'Programador',
         self::UDICA_PROGRAMADOR => 'Programador de la UDICA',
         self::UDICA_JEFE => 'Jefe de la UDICA',
-        self::UDICA_OPERADOR => 'Operador de la UDICA'
+        self::UDICA_OPERADOR => 'Operador de la UDICA',
+        self::SECRETARIO_EXAMEN_PRIVADO => 'Secretario de Examen Privado'
     ];
 
     private $startDate;
@@ -93,6 +96,9 @@ class Role {
                         break;
                     case self::UDICA_OPERADOR:
                         $this->udicaOperador = true;
+                        break;
+                    case self::SECRETARIO_EXAMEN_PRIVADO:
+                        $this->secretarioExamenPrivado = true;
                         break;
                     default:
                         break;
@@ -146,8 +152,12 @@ class Role {
         return $this->udicaOperador;
     }
 
+    public function isSecretarioExamenPrivado() {
+        return $this->secretarioExamenPrivado;
+    }
+
     public function hasAdminRole() {
-        return ($this->tesorero || $this->asistente || $this->director || $this->programador);
+        return ($this->tesorero || $this->asistente || $this->director || $this->programador || $this->secretarioExamenPrivado);
     }
 
     public function hasUdicaRole() {
@@ -156,7 +166,7 @@ class Role {
 
     public function hasRole($type = null) {
         if ($type == null) {
-            return ($this->estudiante || $this->tesorero || $this->asistente || $this->director || $this->catedratico || $this->coordinador || $this->programador || $this->udicaProgramador || $this->udicaJefe || $this->udicaOperador);
+            return ($this->estudiante || $this->tesorero || $this->asistente || $this->director || $this->catedratico || $this->coordinador || $this->programador || $this->udicaProgramador || $this->udicaJefe || $this->udicaOperador || $this->secretarioExamenPrivado);
         } else {
             switch ($type) {
                 case self::ESTUDIANTE:
@@ -181,6 +191,8 @@ class Role {
                     return $this->udicaJefe;
                 case self::UDICA_OPERADOR:
                     return $this->udicaOperador;
+                case self::SECRETARIO_EXAMEN_PRIVADO:
+                    return $this->secretarioExamenPrivado;
                 default:
                     return false;
             }
@@ -260,6 +272,9 @@ class Role {
         }
         if ($this->catedratico) {
             return self::CATEDRATICO;
+        }
+        if ($this->secretarioExamenPrivado) {
+            return self::SECRETARIO_EXAMEN_PRIVADO;
         }
         if ($this->estudiante) {
             return self::ESTUDIANTE;

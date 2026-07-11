@@ -75,11 +75,21 @@ $estudiantes = $this->estudiantes ?? [];
 
                     <div class="form-group">
                         <label>Correos adicionales (CC)</label>
-                        <textarea class="form-control" id="ngCorreosCc" rows="3" placeholder="Ej: director@eep.edu.gt&#10;asistente@eep.edu.gt&#10;secretaria@eep.edu.gt"></textarea>
-                        <small class="text-muted">
-                            Separe los correos con <strong>coma (,)</strong>, <strong>punto y coma (;)</strong> o <strong>salto de línea (Enter)</strong>.
-                            Los correos incorrectos se omitirán automáticamente.
-                        </small>
+                        <div class="input-group" style="max-width: 500px;">
+                            <input type="email" class="form-control" id="ngCorreoInput" placeholder="correo@ejemplo.com">
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-info" id="btnAgregarCorreo">
+                                    <i class="fa fa-plus"></i> Agregar
+                                </button>
+                            </span>
+                        </div>
+                        <div id="ngCorreosTags" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
+                            <!-- Los tags se generan aquí dinámicamente -->
+                        </div>
+                        <input type="hidden" id="ngCorreosCcHidden">
+                        <p class="text-muted" style="font-size: 12px; margin-top: 6px;">
+                            <i class="fa fa-info-circle"></i> Ingrese un correo válido y presione <strong>Agregar</strong> o <strong>Enter</strong>.
+                        </p>
                     </div>
 
                     <div class="form-group">
@@ -109,6 +119,10 @@ $estudiantes = $this->estudiantes ?? [];
                             </div>
                             <div class="modal-body">
                                 <p><strong>Asunto:</strong> <span id="previewAsuntoGrupal"></span></p>
+                                <div id="previewCcGrupal" style="display:none; margin-bottom:12px; padding:10px 14px; background:#d9edf7; border:1px solid #bce8f1; border-radius:4px; color:#31708f;">
+                                    <i class="fa fa-users" style="margin-right:6px;"></i>
+                                    <strong>Copia a:</strong> <span id="previewCcGrupalTexto"></span>
+                                </div>
                                 <div id="previewCuerpoGrupal" style="border:1px solid #ddd; padding:20px; background:#fff; border-radius:4px;">
                                 </div>
                             </div>
@@ -129,12 +143,66 @@ $estudiantes = $this->estudiantes ?? [];
     </div>
 </div>
 
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
 <script>
 $(document).ready(function() {
     // Seleccionar/deseleccionar todos
     $('#seleccionarTodos').on('change', function() {
         $('.sel-estudiante').prop('checked', $(this).is(':checked'));
     });
+
+    // ── Gestión de correos CC como tags ───────────────
+    var $input = $('#ngCorreoInput');
+    var $tagsContainer = $('#ngCorreosTags');
+    var $hidden = $('#ngCorreosCcHidden');
+    var correos = [];
+
+    function emailRegex() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/; }
+
+    function renderTags() {
+        $tagsContainer.empty();
+        correos.forEach(function(c, idx) {
+            var tag = $('<span style="font-size: 13px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:3px; background:#51A0B8; color:#fff; font-weight:600;">')
+                .text(c)
+                .append(
+                    $('<i class="fa fa-times" style="cursor:pointer; margin-left:4px; opacity:0.9;">').on('click', function() {
+                        correos.splice(idx, 1);
+                        renderTags();
+                    })
+                );
+            $tagsContainer.append(tag);
+        });
+        $hidden.val(correos.join(','));
+    }
+
+    function agregarCorreo() {
+        var val = $input.val().trim();
+        if (!val) return;
+        if (!emailRegex().test(val)) {
+            ToastService.error('El correo "' + val + '" no tiene formato válido.');
+            return;
+        }
+        if (correos.indexOf(val) !== -1) {
+            ToastService.warning('El correo "' + val + '" ya está agregado.');
+            $input.val('').focus();
+            return;
+        }
+        correos.push(val);
+        $input.val('').focus();
+        renderTags();
+    }
+
+    $('#btnAgregarCorreo').on('click', agregarCorreo);
+    $input.on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            agregarCorreo();
+        }
+    });
+
+    function obtenerCorreosCc() {
+        return correos.join(',');
+    }
 
     // ── Helpers comunes ─────────────────────────────
     function obtenerDatosFormulario() {
@@ -148,7 +216,7 @@ $(document).ready(function() {
 
     function validarFormulario(datos) {
         if (!datos.fecha || !datos.hora || !datos.lugar) {
-            alert('Fecha, hora y lugar son obligatorios.');
+            ToastService.warning('Fecha, hora y lugar son obligatorios.');
             return false;
         }
         var hoy = new Date();
@@ -156,7 +224,7 @@ $(document).ready(function() {
         var partes = datos.fecha.split('-');
         var fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
         if (fechaSel < hoy) {
-            alert('La fecha no puede ser anterior al día de hoy.');
+            ToastService.warning('La fecha no puede ser anterior al día de hoy.');
             return false;
         }
         return true;
@@ -179,13 +247,21 @@ $(document).ready(function() {
                 if (resp.success && resp.html) {
                     $('#previewAsuntoGrupal').text(resp.asunto || '');
                     $('#previewCuerpoGrupal').html(resp.html);
+
+                    if (correos.length > 0) {
+                        $('#previewCcGrupalTexto').text(correos.join(', '));
+                        $('#previewCcGrupal').show();
+                    } else {
+                        $('#previewCcGrupal').hide();
+                    }
+
                     $('#modalVistaPreviaGrupal').modal('show');
                 } else {
-                    alert(resp.message || 'No se pudo generar la vista previa.');
+                    ToastService.error(resp.message || 'No se pudo generar la vista previa.');
                 }
             },
             error: function() {
-                alert('Error de conexión al obtener la vista previa.');
+                ToastService.error('Error de conexión al obtener la vista previa.');
             },
             complete: function() {
                 btn.prop('disabled', false).html('<i class="fa fa-eye"></i> Vista previa del correo');
@@ -202,18 +278,15 @@ $(document).ready(function() {
         });
 
         if (seleccionados.length === 0) {
-            alert('Debe seleccionar al menos un estudiante.');
+            ToastService.warning('Debe seleccionar al menos un estudiante.');
             return;
         }
 
         var datos = obtenerDatosFormulario();
         if (!validarFormulario(datos)) return;
 
-        if (!confirm('¿Confirma que desea enviar la notificación a ' + seleccionados.length + ' estudiante(s)?')) {
-            return;
-        }
-
-        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
+        ConfirmService.confirm('¿Confirma que desea enviar la notificación a ' + seleccionados.length + ' estudiante(s)?', function() {
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
 
         $.ajax({
             url: '<?= $this->url("examen", ["action" => "enviar-notificacion-grupal"]) ?>',
@@ -224,7 +297,7 @@ $(document).ready(function() {
                 hora: datos.hora,
                 lugar: datos.lugar,
                 info_extra: datos.info_extra,
-                correos_cc: $('#ngCorreosCc').val()
+                correos_cc: obtenerCorreosCc()
             },
             dataType: 'json',
             success: function(resp) {
@@ -243,15 +316,16 @@ $(document).ready(function() {
                     html += '</div>';
                     $('#resumenNotificacion').html(html).show();
                 } else {
-                    alert(resp.message || 'Error al enviar la notificación.');
+                    ToastService.error(resp.message || 'Error al enviar la notificación.');
                 }
             },
             error: function() {
-                alert('Error de conexión. Inténtelo de nuevo.');
+                ToastService.error('Error de conexión. Inténtelo de nuevo.');
             },
             complete: function() {
                 btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados');
             }
+        });
         });
     });
 });

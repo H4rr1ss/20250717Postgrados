@@ -27,6 +27,27 @@ $this->headTitle('Carta de Examinadores');
                 trabajo o descargar la carta generada.
             </p>
 
+            <!-- Filtro de búsqueda -->
+            <form method="get" action="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="form-inline" style="margin-bottom: 16px;">
+                <div class="input-group" style="max-width: 400px;">
+                    <input type="text"
+                           name="busqueda"
+                           class="form-control"
+                           placeholder="Buscar por nombre o carné..."
+                           value="<?= $this->escapeHtml($filtros['busqueda'] ?? '') ?>">
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search"></i> Buscar
+                        </button>
+                        <?php if (!empty($filtros['busqueda'])): ?>
+                        <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
+                            <i class="fa fa-times"></i> Limpiar
+                        </a>
+                        <?php endif; ?>
+                    </span>
+                </div>
+            </form>
+
             <?php if (empty($procesos)): ?>
                 <div class="alert alert-info">
                     <i class="fa fa-info-circle"></i>
@@ -62,14 +83,14 @@ $this->headTitle('Carta de Examinadores');
                                     <?php
                                     $estadoPaso = $p['estado_paso'] ?? '';
                                     switch ($estadoPaso) {
-                                        case 'completado':  $labelClass = 'success'; break;
-                                        case 'en_progreso': $labelClass = 'warning'; break;
-                                        case 'rechazado':   $labelClass = 'danger';  break;
-                                        default:            $labelClass = 'default'; break;
+                                        case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
+                                        case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
+                                        case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado'; break;
+                                        default:            $labelClass = 'default'; $labelTexto = 'Pendiente'; break;
                                     }
                                     ?>
                                     <span class="label label-<?= $labelClass ?>">
-                                        <?= $this->escapeHtml(strtoupper($estadoPaso ?: 'pendiente')) ?>
+                                        <?= $this->escapeHtml($labelTexto) ?>
                                     </span>
                                 </td>
                                 <td style="text-align:center;">
@@ -90,7 +111,7 @@ $this->headTitle('Carta de Examinadores');
                     <ul class="pagination">
                         <?php for ($pg = 1; $pg <= $paginacion['paginas_total']; $pg++): ?>
                         <li class="<?= $pg === $paginacion['pagina'] ? 'active' : '' ?>">
-                            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>?page=<?= $pg ?>">
+                            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>?page=<?= $pg ?><?= !empty($filtros['busqueda']) ? '&busqueda=' . urlencode($filtros['busqueda']) : '' ?>">
                                 <?= $pg ?>
                             </a>
                         </li>

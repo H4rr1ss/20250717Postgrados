@@ -37,5 +37,6 @@ class View {
     const AUTORIZACION_IMPRESION = 29;
     const EVALUACION_DOCENTE_REPORTE = 30;
     const EVALUACION_PRIVADO = 31;
+    const ACTAS_EXAMEN_GENERAL = 32;
 
 }

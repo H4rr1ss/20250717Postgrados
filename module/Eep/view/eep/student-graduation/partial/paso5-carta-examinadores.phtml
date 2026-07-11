@@ -76,8 +76,8 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
                             </p>
                         </div>
                         <div class="form-group">
-                            <label>Descripción <small class="text-muted">(opcional)</small></label>
-                            <input type="text" name="descripcion" class="form-control"
+                            <label>Descripción <span class="text-danger">*</span></label>
+                            <input type="text" name="descripcion" class="form-control" required
                                    placeholder="Ej: Correo enviado al examinador con trabajo corregido (15/05)">
                         </div>
                         <button type="submit" class="btn btn-primary">
@@ -209,8 +209,8 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
     document.querySelectorAll('.form-eliminar-evidencia').forEach(function (f) {
         f.addEventListener('submit', function (e) {
             e.preventDefault();
-            if (!confirm('¿Eliminar esta entrada de la bitácora?')) return;
-            var btn = f.querySelector('button[type="submit"]');
+            ConfirmService.confirm('¿Eliminar esta entrada de la bitácora?', function() {
+                var btn = f.querySelector('button[type="submit"]');
             btn.disabled = true;
             var fd = new FormData(f);
             fetch(f.action, {
@@ -231,6 +231,7 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
             .catch(function () {
                 ToastService.error('Error de comunicación. Intenta de nuevo.');
                 btn.disabled = false;
+            });
             });
         });
     });

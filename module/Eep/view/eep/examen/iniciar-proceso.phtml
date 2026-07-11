@@ -389,10 +389,10 @@ $(document).ready(function() {
             return false;
         }
 
-        if (!confirm('¿Confirma que desea iniciar el proceso de graduación para este estudiante?')) {
-            e.preventDefault();
-            return false;
-        }
+        e.preventDefault();
+        ConfirmService.confirm('¿Confirma que desea iniciar el proceso de graduación para este estudiante?', function() {
+            $('#formIniciarProceso').off('submit').submit();
+        });
     });
 
     // ── Utilidad ───────────────────────────────────────────────

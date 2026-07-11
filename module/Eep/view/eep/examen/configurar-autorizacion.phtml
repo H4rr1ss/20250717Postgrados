@@ -193,6 +193,8 @@ if ($subPaso === 1) {
     </div>
 </div>
 
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script src="<?= $this->basePath('js/confirm-service.js') ?>"></script>
 <script>
 (function() {
     'use strict';
@@ -200,27 +202,49 @@ if ($subPaso === 1) {
     if (!form) return;
     var subPaso = <?= $subPaso ?>;
     var confirmMsg = subPaso === 1
-        ? '¿Confirmas la aprobación de la Parte 1? El proceso avanzará a Parte 2.'
-        : '¿Confirmas la aprobación final? El proceso avanzará a Examen General.';
+        ? '\u00bfConfirma que desea aprobar la Parte 1? El proceso avanzar\u00e1 a la Parte 2 y no podr\u00e1 deshacer esta acci\u00f3n.'
+        : '\u00bfConfirma la aprobaci\u00f3n final? El proceso avanzar\u00e1 a Examen General y no podr\u00e1 deshacer esta acci\u00f3n.';
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        if (!confirm(confirmMsg)) return;
-        var fd = new FormData(form);
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', '<?= $urlAprobar ?>');
-        xhr.onload = function() {
-            try {
-                var r = JSON.parse(xhr.responseText);
-                alert(r.message || (r.status === 'success' ? 'Aprobado' : 'Error'));
-                if (r.status === 'success') {
-                    window.location = '<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>';
-                }
-            } catch (e) {
-                alert('Respuesta inválida del servidor');
+        ConfirmService.confirm(confirmMsg, function() {
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Procesando...';
             }
-        };
-        xhr.send(fd);
+            var fd = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<?= $urlAprobar ?>');
+            xhr.onload = function() {
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    if (r.status === 'success') {
+                        ToastService.success(r.message || 'Aprobado correctamente.');
+                        setTimeout(function() {
+                            window.location = '<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>';
+                        }, 1500);
+                    } else {
+                        ToastService.error(r.message || 'No se pudo aprobar.');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = subPaso === 1
+                                ? '<i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2'
+                                : '<i class="fa fa-check"></i> Aprobar y Avanzar a Examen General';
+                        }
+                    }
+                } catch (e) {
+                    ToastService.error('Respuesta inv\u00e1lida del servidor');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = subPaso === 1
+                            ? '<i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2'
+                            : '<i class="fa fa-check"></i> Aprobar y Avanzar a Examen General';
+                    }
+                }
+            };
+            xhr.send(fd);
+        });
     });
 })();
 </script>

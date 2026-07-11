@@ -28,7 +28,7 @@ return [//ICON, MENU text
         'action' => 'studentSearch',
         'icon' => 'fa-search',
         'text' => 'Búsqueda de usuarios',
-        'roles' => [Role::DIRECTOR, Role::TESORERO, Role::ASISTENTE, Role::UDICA_JEFE, Role::UDICA_OPERADOR]],
+        'roles' => [Role::DIRECTOR, Role::TESORERO, Role::ASISTENTE, Role::UDICA_JEFE, Role::UDICA_OPERADOR, Role::SECRETARIO_EXAMEN_PRIVADO]],
     View::UPG_COURSES => [
         'controller' => 'upgCourse',
         'action' => 'view',
@@ -166,6 +166,14 @@ return [//ICON, MENU text
         'action' => 'evaluacion-privado',
         'icon' => 'fa-star',
         'text' => 'Evaluación Examen Privado',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::ACTAS_EXAMEN_GENERAL => [
+        'controller' => 'examen',
+        'action' => 'actas-examen-general',
+        'icon' => 'fa-file-text-o',
+        'text' => 'Actas de Examen General',
         'roles' => [Role::DIRECTOR, Role::ASISTENTE],
         'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
     ],

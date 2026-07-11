@@ -188,13 +188,11 @@ document.getElementById('form-evaluacion').addEventListener('submit', function(e
         return false;
     }
 
-    const confirmacion = confirm('¿Está seguro de enviar esta evaluación?\n\nUna vez enviada, no podrá modificarla.');
-    if (!confirmacion) {
-        e.preventDefault();
-        return false;
-    }
-
-    document.getElementById('btn-enviar').disabled = true;
-    document.getElementById('btn-enviar').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+    e.preventDefault();
+    ConfirmService.confirm('¿Está seguro de enviar esta evaluación?\n\nUna vez enviada, no podrá modificarla.', function() {
+        document.getElementById('btn-enviar').disabled = true;
+        document.getElementById('btn-enviar').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+        form.submit();
+    });
 });
 </script>

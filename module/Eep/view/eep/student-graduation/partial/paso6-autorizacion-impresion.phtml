@@ -261,6 +261,8 @@ $urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']
 </div>
 
 <?php if ($subPaso === 1 && !$yaAprobado): ?>
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script src="<?= $this->basePath('js/confirm-service.js') ?>"></script>
 <script>
 (function() {
     'use strict';
@@ -331,10 +333,20 @@ $urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']
                 alert('Debes seleccionar un profesional de la lista.');
                 return;
             }
-            post('<?= $urlSeleccionar ?>', { cod_profesional: id }, function(r) {
-                alert(r.message);
-                if (r.success) location.reload();
-            });
+            var nombreProf = profData[id] ? profData[id].nombre : '';
+            ConfirmService.confirm(
+                '\u00bfConfirma que desea seleccionar a "' + nombreProf + '" como profesional calificado? Esta selecci\u00f3n ser\u00e1 visible para el Director y no podr\u00e1 cambiarla.',
+                function() {
+                    post('<?= $urlSeleccionar ?>', { cod_profesional: id }, function(r) {
+                        if (r.success) {
+                            ToastService.success(r.message || 'Profesional seleccionado correctamente.');
+                            setTimeout(function() { location.reload(); }, 1200);
+                        } else {
+                            ToastService.error(r.message || 'No se pudo guardar la selecci\u00f3n.');
+                        }
+                    });
+                }
+            );
         });
     }
 

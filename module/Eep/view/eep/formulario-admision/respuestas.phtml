@@ -167,17 +167,17 @@ function registrarAspirantesSeleccionados() {
     const checkboxes = document.querySelectorAll('.aspirante-checkbox:checked');
     
     if (checkboxes.length === 0) {
-        alert('Debe seleccionar al menos un aspirante para registrar.');
+        ConfirmService.alert('Debe seleccionar al menos un aspirante para registrar.');
         return;
     }
-    
-    if (confirm(`¿Está seguro que desea registrar ${checkboxes.length} aspirante(s) como estudiantes en el sistema?`)) {
+
+    ConfirmService.confirm(`¿Está seguro que desea registrar ${checkboxes.length} aspirante(s) como estudiantes en el sistema?`, function() {
         document.getElementById('formRegistrarAspirantes').submit();
-    }
+    });
 }
 
 function eliminarRespuesta(idRespuesta) {
-    if (confirm('¿Está seguro que desea eliminar esta respuesta? Esta acción no se puede deshacer.')) {
+    ConfirmService.confirm('¿Está seguro que desea eliminar esta respuesta? Esta acción no se puede deshacer.', function() {
         // Crear formulario temporal para eliminación
         const form = document.createElement('form');
         form.method = 'POST';
@@ -191,6 +191,6 @@ function eliminarRespuesta(idRespuesta) {
         form.appendChild(input);
         document.body.appendChild(form);
         form.submit();
-    }
+    });
 }
 </script>

@@ -374,12 +374,12 @@ return [
         'studentSearch' => [
             'code' => 13,
             'view' => View::STUDENT_SEARCH,
-            'roles' => [Role::UDICA_JEFE, Role::UDICA_OPERADOR, Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO]
+            'roles' => [Role::UDICA_JEFE, Role::UDICA_OPERADOR, Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
         'editUser' => [
             'code' => 14,
             'view' => View::STUDENT_SEARCH,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
         'logView' => [
             'code' => 35,
@@ -618,21 +618,66 @@ return [
         'evaluacionPrivado' => [
             'code' => 150,
             'view' => View::EVALUACION_PRIVADO,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'matrizEvaluacion' => [
-            'code' => 151,
-            'view' => View::EVALUACION_PRIVADO,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
-        ],
-        'guardarMatriz' => [
-            'code' => 152,
-            'view' => View::EVALUACION_PRIVADO,
-            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
         'verMatriz' => [
             'code' => 153,
             'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'abrirEvaluacion' => [
+            'code' => 156,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'cerrarEvaluacion' => [
+            'code' => 157,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'evaluacionExamenPrivado' => [
+            'code' => 158,
+            'roles' => [Role::ALL]
+        ],
+        'guardarEvaluacionExaminador' => [
+            'code' => 159,
+            'roles' => [Role::ALL]
+        ],
+        'reprogramarExamenPrivado' => [
+            'code' => 160,
+            'roles' => [Role::DIRECTOR]
+        ],
+        'actaExamenPrivado' => [
+            'code' => 161,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'generarActaExamenPrivado' => [
+            'code' => 162,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'listaDocentes' => [
+            'code' => 163,
+            'roles' => [Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'sustituirExaminador' => [
+            'code' => 164,
+            'roles' => [Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'previsualizarActaExamenPrivado' => [
+            'code' => 165,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
+        'actasExamenGeneral' => [
+            'code' => 166,
+            'view' => View::ACTAS_EXAMEN_GENERAL,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'actaExamenGeneral' => [
+            'code' => 167,
+            'view' => View::ACTAS_EXAMEN_GENERAL,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
+        'generarActaGeneral' => [
+            'code' => 168,
+            'view' => View::ACTAS_EXAMEN_GENERAL,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
     ],
@@ -644,6 +689,11 @@ return [
         ],
         'proceso' => [
             'code' => 136,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'guardarTemaTesis' => [
+            'code' => 154,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],

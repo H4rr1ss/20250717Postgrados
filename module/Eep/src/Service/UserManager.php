@@ -160,6 +160,8 @@ class UserManager extends Manager {
                         'cod_pais' => $user->getCodPais(),
                         'sexo' => $user->getSexo(),
                         'grado_academico' => $user->getGradoAcademico(),
+                        'titulo_profesional' => $user->getTituloProfesional(),
+                        'numero_colegiado' => $user->getNumeroColegiado(),
                         'fecha_creacion' => new Expression('curdate()'),
                         'cod_info_laboral' => empty($infoLaboral) ? null : $infoLaboral->getCode(),
                         'nombre_completo' => $user->getNombreCompleto()
@@ -192,6 +194,16 @@ class UserManager extends Manager {
         $updateData = [];
         if (!empty($user->getGradoAcademico())) {
             $updateData['grado_academico'] = $user->getGradoAcademico();
+        }
+        if (!empty($user->getTituloProfesional())) {
+            $updateData['titulo_profesional'] = $user->getTituloProfesional();
+        } else {
+            $updateData['titulo_profesional'] = null;
+        }
+        if (!empty($user->getNumeroColegiado())) {
+            $updateData['numero_colegiado'] = $user->getNumeroColegiado();
+        } else {
+            $updateData['numero_colegiado'] = null;
         }
         if (!empty($user->getCui())) {
             $updateData['cui'] = $user->getCui();

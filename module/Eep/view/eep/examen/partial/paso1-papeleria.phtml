@@ -255,7 +255,8 @@
     }
 </style>
 
-<script>
+    <script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+    <script>
 $(document).ready(function() {
     let filaActual = null;
     let botonActual = null;
@@ -293,7 +294,7 @@ $(document).ready(function() {
     $('#confirmarRechazo').on('click', function() {
         const razonRechazo = $('#razonRechazo').val().trim();
         if (razonRechazo === '') {
-            alert('Por favor, ingrese una razón para el rechazo.');
+            ToastService.warning('Por favor, ingrese una razón para el rechazo.');
             return;
         }
         try {
@@ -421,7 +422,7 @@ $(document).ready(function() {
         });
 
         if (requisitos.length === 0) {
-            alert('No hay cambios pendientes por guardar.');
+            ToastService.warning('No hay cambios pendientes por guardar.');
             return;
         }
 
@@ -454,23 +455,23 @@ $(document).ready(function() {
                 $('#alertaRecordatorioGuardar').fadeOut(300);
                 
                 if (!data.hasOwnProperty('status')) {
-                    alert('No se obtuvo una respuesta correcta del servidor.');
+                    ToastService.error('No se obtuvo una respuesta correcta del servidor.');
                     btn.prop('disabled', false).text(originalText);
                 } else {
                     if (!data.status) {
                         // ! ESTO PUEDE BORRARSE AL MOMENTO DE TENER TODA LA INTEGRACION
-                        alert('Error: ' + (data.error || 'No se pudieron guardar los cambios.'));
+                        ToastService.error('Error: ' + (data.error || 'No se pudieron guardar los cambios.'));
                         btn.prop('disabled', false).text(originalText);
                     } else {
                         if (data.avanzado) {
                             // Todos aprobados → paso avanzado
-                            alert(data.message);
+                            ToastService.success(data.message);
                             setTimeout(function() {
                                 window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=2';
                             }, 1000);
                         } else {
                             // Hay rechazados: guardado pero sin avance
-                            alert(data.message);
+                            ToastService.success(data.message);
                             resetDirty(filasModificadas);
                             $('#alertaRecordatorioGuardar').fadeOut(300);
                             btn.prop('disabled', false).text(originalText);

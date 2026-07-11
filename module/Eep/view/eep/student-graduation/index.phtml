@@ -102,7 +102,12 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 // 1. Es el paso actual, O
                                 // 2. Es la terna y estamos en paso 4 (notificación) DENTRO de examen_privado, O
                                 // 3. Es autorización de impresión (siempre disponible, documentos requeridos para examen público)
-                                $botonActivo = $accionPaso && (
+                                // 4. NO es papelería si no tiene tema de tesis registrado
+                                $esPapeleria = ($paso['template_parcial'] ?? '') === 'paso1-papeleria';
+                                $tieneTema = !empty($proceso['tema_tesis'] ?? '');
+                                $bloqueadoPorTema = ($esPapeleria && !$tieneTema);
+                                
+                                $botonActivo = $accionPaso && !$bloqueadoPorTema && (
                                     $paso['cod_paso'] == $proceso['cod_paso_actual']
                                     || ($esTerna && $pasoActualOrdenActual === 4 && $faseActual === 'examen_privado' && $fasePaso === 'examen_privado')
                                     || ($esAutorizacionImpresion && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
@@ -112,6 +117,11 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 <a href="<?= $this->url('student-graduation', ['action' => $accionPaso]) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
                                     <i class="fa fa-sticky-note"></i> Resumen
                                 </a>
+                            <?php elseif ($bloqueadoPorTema): ?>
+                                <span class="btn btn-default btn-sm" style="min-width: 90px; cursor: not-allowed; opacity: 0.7;" 
+                                      title="Debe registrar el título de su trabajo de graduación antes de acceder a este paso.">
+                                    <i class="fa fa-lock" style="color: #d9534f;"></i> Bloqueado
+                                </span>
                             <?php else: ?>
                                 <a class="btn btn-default btn-sm" style="min-width: 90px;" disabled>
                                     <i class="fa fa-sticky-note"></i> Resumen
@@ -151,6 +161,82 @@ $this->headTitle('Progreso del Proceso de Graduación');
                     <i class="fa fa-clock-o"></i> Por favor ten paciencia. Una vez que la coordinación emita la notificación, el proceso avanzará automáticamente al siguiente paso y podrás consultarlo aquí mismo.
                 </p>
             </div>
+        </div>
+        <?php endif; ?>
+
+        <?php
+        // Verificar si está en fase 1 (revisión de papelería) para permitir edición
+        $pasoActualOrden = (int) ($proceso['paso_actual_orden'] ?? 0);
+        $faseActual = $proceso['fase_paso_actual'] ?? '';
+        $esFase1 = ($pasoActualOrden === 1 && $faseActual === 'examen_privado');
+        $temaTesis = $proceso['tema_tesis'] ?? '';
+        $tieneTema = !empty($temaTesis);
+        ?>
+
+        <!-- Panel de Título de Trabajo de Graduación -->
+        <div class="panel panel-default" style="border: 2px solid #5f9876; margin-bottom: 20px;">
+            <div class="panel-heading" style="background-color: #5f9876; color: white; font-weight: 700;">
+                <i class="fa fa-book"></i> Título del Trabajo de Graduación
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <table class="table table-bordered" style="margin-bottom: 0;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 30%; text-align: center; font-size: 14px;">Actividad</th>
+                            <th style="width: 70%; text-align: center; font-size: 14px;">Definición</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="vertical-align: middle; font-weight: 600;">
+                                Título de trabajo de graduación
+                                <?php if (!$tieneTema): ?>
+                                    <span style="color: #d9534f; font-size: 12px; display: block; margin-top: 5px;">
+                                        <i class="fa fa-exclamation-circle"></i> Requerido
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($esFase1 && !$tieneTema): ?>
+                                    <div class="input-group">
+                                        <input type="text" id="temaTesis" class="form-control"
+                                               placeholder="Ingrese el título de su trabajo de graduación..."
+                                               value="">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-success" id="btnGuardarTema" type="button">
+                                                <i class="fa fa-save"></i> Guardar
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <small style="color: #4B5563; display: block; margin-top: 5px;">
+                                        Este es el primer paso. Debe registrar su título antes de continuar con el proceso. Coloque el título tal y como se reflejará en los documentos generados para todo el proceso de graduación.
+                                    </small>
+                                <?php else: ?>
+                                    <div style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                                        <?= $this->escapeHtml($temaTesis ?: 'No registrado') ?>
+                                    </div>
+                                    <?php if (!$tieneTema): ?>
+                                        <small class="text-muted" style="display: block; margin-top: 5px;">
+                                            Espere a que la coordinación active su proceso para poder registrar el título.
+                                        </small>
+                                    <?php else: ?>
+                                        <small class="text-success" style="display: block; margin-top: 5px;">
+                                            <i class="fa fa-check-circle"></i> Título registrado correctamente.
+                                        </small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <?php if (!$tieneTema): ?>
+        <!-- Alerta: bloqueo de progreso -->
+        <div class="alert alert-danger" style="border-left: 5px solid #d9534f; margin-bottom: 20px;">
+            <i class="fa fa-lock" style="font-size: 20px; margin-right: 10px;"></i>
+            <strong>Proceso bloqueado:</strong> Debe registrar el título de su trabajo de graduación antes de continuar con cualquier otra actividad del proceso de graduación.
         </div>
         <?php endif; ?>
 
@@ -277,3 +363,45 @@ $this->headTitle('Progreso del Proceso de Graduación');
     <?php endif; ?>
 
 </div><!-- /col-lg-12 -->
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+<script>
+$(document).ready(function() {
+    // ── Guardar tema de tesis ─────────────────────────────────────
+    $('#btnGuardarTema').on('click', function() {
+        const tema = $('#temaTesis').val().trim();
+        const btn = $(this);
+        
+        if (!tema) {
+            ToastService.warning('Debe ingresar el título de su trabajo de graduación.');
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        
+        $.ajax({
+            url: '<?= $this->url("student-graduation", ["action" => "guardar-tema-tesis"]) ?>',
+            type: 'POST',
+            data: { tema_tesis: tema },
+            success: function(response) {
+                if (response.success) {
+                    ToastService.success(response.message);
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    ToastService.error(response.message);
+                }
+            },
+            error: function() {
+                ToastService.error('Error de comunicación con el servidor.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar');
+            }
+        });
+    });
+});
+</script>

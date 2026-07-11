@@ -1,53 +1,63 @@
 -- ============================================================
--- Script: Matriz de Evaluación del Examen Privado — COMPLETO
--- Fecha: 2026-06-03
--- Descripción: Schema + seeds para 20 matrices (una por carrera activa)
+-- Script: Matriz de Evaluación del Examen Privado
+-- Fecha: 2026-06-06
+-- Descripción: Definición de tablas (si no existen) + seeds.
+--
+-- NOTA: Las tablas base del módulo (examen_proceso, etc.)
+-- deben existir previamente (ver modulo_graduacion_schema.sql).
+-- Este script es idempotente.
 -- ============================================================
 
--- 1. Tablas nuevas
-CREATE TABLE IF NOT EXISTS examen_matriz_tipo (
-  cod_matriz_tipo TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  cod_carrera INT UNSIGNED NULL,
-  nombre VARCHAR(100) NOT NULL,
-  descripcion VARCHAR(255) DEFAULT NULL,
-  activo TINYINT(1) DEFAULT 1,
-  UNIQUE KEY uk_carrera (cod_carrera)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- ============================================================
+-- 1. Tablas de matriz de evaluación (CREATE IF NOT EXISTS)
+-- ============================================================
 
-CREATE TABLE IF NOT EXISTS examen_matriz_pregunta (
-  cod_pregunta SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  cod_matriz_tipo TINYINT UNSIGNED NOT NULL,
-  numero_orden TINYINT UNSIGNED NOT NULL,
-  texto_pregunta VARCHAR(500) NOT NULL,
-  tipo_campo ENUM('numero', 'texto') NOT NULL DEFAULT 'numero',
-  punteo_maximo VARCHAR(20) DEFAULT '0-10',
-  activo TINYINT(1) DEFAULT 1,
-  FOREIGN KEY (cod_matriz_tipo) REFERENCES examen_matriz_tipo(cod_matriz_tipo)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `examen_matriz_tipo` (
+  `cod_matriz_tipo` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_carrera`     int(11) unsigned DEFAULT NULL,
+  `nombre`          varchar(100) NOT NULL,
+  `descripcion`     varchar(255) DEFAULT NULL,
+  `activo`          tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`cod_matriz_tipo`),
+  UNIQUE KEY `uk_carrera` (`cod_carrera`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS examen_matriz_evaluacion (
-  cod_evaluacion INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  cod_proceso INT UNSIGNED NOT NULL,
-  posicion_examinador TINYINT UNSIGNED NOT NULL COMMENT '1, 2 o 3',
-  evaluado_por INT(11) NOT NULL,
-  fecha_evaluacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  observaciones_generales TEXT,
-  UNIQUE KEY uq_evaluacion_proceso_examinador (cod_proceso, posicion_examinador)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `examen_matriz_pregunta` (
+  `cod_pregunta`    smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_matriz_tipo` tinyint(3) unsigned NOT NULL,
+  `numero_orden`    tinyint(3) unsigned NOT NULL,
+  `texto_pregunta`  varchar(500) NOT NULL,
+  `tipo_campo`      enum('numero','texto') NOT NULL DEFAULT 'numero',
+  `punteo_maximo`   varchar(20) DEFAULT '0-10',
+  `activo`          tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`cod_pregunta`),
+  CONSTRAINT `examen_matriz_pregunta_tipo_fk`
+    FOREIGN KEY (`cod_matriz_tipo`) REFERENCES `examen_matriz_tipo` (`cod_matriz_tipo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS examen_matriz_respuesta (
-  cod_respuesta INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  cod_evaluacion INT UNSIGNED NOT NULL,
-  cod_pregunta SMALLINT UNSIGNED NOT NULL,
-  punteo DECIMAL(4,2) NULL,
-  respuesta_texto TEXT NULL,
-  FOREIGN KEY (cod_evaluacion) REFERENCES examen_matriz_evaluacion(cod_evaluacion),
-  FOREIGN KEY (cod_pregunta) REFERENCES examen_matriz_pregunta(cod_pregunta)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS `examen_matriz_evaluacion` (
+  `cod_evaluacion`    int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_proceso`       int(11) unsigned NOT NULL,
+  `posicion_examinador` tinyint(3) unsigned NOT NULL COMMENT '1, 2 o 3',
+  `evaluado_por`      int(11) NOT NULL,
+  `fecha_evaluacion`  timestamp NOT NULL DEFAULT current_timestamp(),
+  `observaciones_generales` text DEFAULT NULL,
+  PRIMARY KEY (`cod_evaluacion`),
+  UNIQUE KEY `uq_evaluacion_proceso_examinador` (`cod_proceso`, `posicion_examinador`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 2. Alter tabla existente
-ALTER TABLE examen_proceso
-ADD COLUMN tema_tesis VARCHAR(500) NULL COMMENT 'Tema del trabajo de graduación' AFTER cod_paso_actual;
+CREATE TABLE IF NOT EXISTS `examen_matriz_respuesta` (
+  `cod_respuesta`   int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_evaluacion`  int(11) unsigned NOT NULL,
+  `cod_pregunta`    smallint(5) unsigned NOT NULL,
+  `punteo`          decimal(4,2) DEFAULT NULL,
+  `respuesta_texto` text DEFAULT NULL,
+  PRIMARY KEY (`cod_respuesta`),
+  CONSTRAINT `examen_matriz_respuesta_evaluacion_fk`
+    FOREIGN KEY (`cod_evaluacion`) REFERENCES `examen_matriz_evaluacion` (`cod_evaluacion`),
+  CONSTRAINT `examen_matriz_respuesta_pregunta_fk`
+    FOREIGN KEY (`cod_pregunta`) REFERENCES `examen_matriz_pregunta` (`cod_pregunta`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 3. Seeds — 20 matrices con cod_carrera vinculado
 INSERT INTO examen_matriz_tipo (cod_matriz_tipo, cod_carrera, nombre) VALUES
@@ -260,32 +270,5 @@ INSERT INTO examen_matriz_pregunta (cod_matriz_tipo, numero_orden, texto_pregunt
 --    UPDATE examen_matriz_pregunta SET activo = 1 WHERE cod_pregunta = XX;  -- reactivar
 
 -- ============================================================
--- 4. Migración: examen_tipo ahora está vinculado a carrera
+-- FIN
 -- ============================================================
-
-SET @add_column = IF(
-    NOT EXISTS(
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = DATABASE()
-        AND table_name = 'examen_tipo'
-        AND column_name = 'cod_carrera'
-    ),
-    'ALTER TABLE examen_tipo ADD COLUMN cod_carrera INT UNSIGNED NULL, ADD UNIQUE KEY uk_carrera (cod_carrera)',
-    'SELECT 1'
-);
-PREPARE stmt FROM @add_column;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-UPDATE examen_tipo SET cod_carrera = 18 WHERE cod_tipo_examen = 1;
-UPDATE examen_tipo SET cod_carrera = 24 WHERE cod_tipo_examen = 2;
-
-INSERT INTO examen_tipo (cod_carrera, nombre, descripcion, activo)
-SELECT
-    nc.cod_carrera,
-    CONCAT('Privado - ', LEFT(nc.nombre, 89)),
-    CONCAT('Examen privado para ', nc.nombre),
-    nc.activo
-FROM nombre_carrera nc
-WHERE nc.activo = 1
-  AND nc.cod_carrera NOT IN (999, 18, 24);

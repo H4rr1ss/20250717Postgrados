@@ -20,13 +20,15 @@ class ExamenControllerFactory implements FactoryInterface
         $autorizacionManager = $container->get(AutorizacionImpresionManager::class);
         $userManager         = $container->get(UserManager::class);
         $mailManager         = $container->get(MailManager::class);
+        $config              = $container->get('Config');
 
         return new ExamenController(
             $examenManager,
             $cartaManager,
             $autorizacionManager,
             $userManager,
-            $mailManager
+            $mailManager,
+            $config
         );
     }
 }

@@ -436,3 +436,201 @@ Los asuntos incluyen la fase actual para diferenciar entre examen privado y púb
 - `Documentacion fisica completada ... - Examen Privado`
 - `Notificacion Examen de Graduacion - Examen General`
 - `Trabajo de Graduacion Aprobado ... - Carta De Examinadores`
+
+## Matriz de Evaluación del Examen Privado (2026-06-03)
+
+Implementación de la evaluación del examen privado por examinador. El staff registra las calificaciones de cada uno de los 3 examinadores de la terna después de que el paso 4 (notificación) del examen privado fue completado.
+
+**Características:**
+- Cada maestría/especialización/doctorado tiene su propia matriz de preguntas (cantidad variable)
+- Preguntas de tipo `numero` (0-10, 0-20) o `texto` (observaciones libres)
+- Campo "Tema de tesis" en `examen_proceso`
+- Resumen comparativo de las 3 evaluaciones
+- Mantenimiento de matrices vía SQL directo (sin pantalla de CRUD)
+
+**Archivos nuevos:**
+- `database/matriz_evaluacion_completo.sql` — Schema + 20 matrices con preguntas de prueba
+- `database/matriz_evaluacion_v2_migracion.sql` — Migración incremental si ya se ejecutó el v1
+- `database/DOCUMENTACION_MATRIZ_EVALUACION.md` — Documentación completa
+- `module/Eep/view/eep/examen/evaluacion-privado.phtml` — Listado de procesos evaluables
+- `module/Eep/view/eep/examen/matriz-evaluacion.phtml` — Formulario de evaluación
+- `module/Eep/view/eep/examen/ver-matriz.phtml` — Resumen comparativo
+
+**Archivos modificados:**
+- `module/Eep/src/Service/ExamenManager.php` — Métodos de matriz y tema de tesis
+- `module/Eep/src/Controller/ExamenController.php` — Acciones evaluacionPrivado, verMatriz
+- `module/Eep/src/ValueObject/View.php` — Constante EVALUACION_PRIVADO = 31
+- `module/Eep/config/menus.php` — Menú "Evaluación Examen Privado"
+- `module/Eep/config/access_filter.php` — Acciones 150, 153
+
+**Tablas nuevas:**
+- `examen_matriz_tipo` — Catálogo de matrices vinculadas por `cod_carrera`
+- `examen_matriz_pregunta` — Preguntas por matriz (tipo numero/texto, cantidad variable)
+- `examen_matriz_evaluacion` — Cabecera por examinador (1, 2, 3)
+- `examen_matriz_respuesta` — Respuestas individuales
+
+**Columna agregada:**
+- `examen_proceso.tema_tesis` — Tema del trabajo de graduación
+
+**Acciones agregadas:**
+```sql
+INSERT INTO accion (cod_accion, nombre) VALUES
+  (150, 'Ver listado de evaluaciones de examen privado'),
+  (153, 'Ver resumen de evaluación');
+```
+
+**Nota:** Las acciones 151 y 152 fueron eliminadas posteriormente (2026-06-06) porque el staff ya no edita evaluaciones; los examinadores lo hacen desde el link público.
+
+**Nota:** Las 20 matrices cubren todas las maestrías, especializaciones y doctorado de la plataforma. Las preguntas de las 14 matrices nuevas son de prueba (genéricas) y deben ser reemplazadas en producción con las preguntas reales de cada maestría via SQL directo. Ver `database/DOCUMENTACION_MATRIZ_EVALUACION.md` para el instructivo de mantenimiento.
+
+## Vinculación de examen_tipo con cod_carrera (2026-06-03)
+
+Se agregó la columna `cod_carrera` a `examen_tipo` para vincular automáticamente cada tipo de examen privado con una carrera específica. Esto elimina la necesidad de mantener una lista manual de tipos de examen privado.
+
+**Cambios en base de datos:**
+- `ALTER TABLE examen_tipo ADD COLUMN cod_carrera INT UNSIGNED NULL;`
+- Actualizados `cod_tipo_examen` 1 → cod_carrera 18 (Conservación) y 2 → cod_carrera 24 (Gerencia)
+- Insertados 14 nuevos registros privados automáticamente desde `nombre_carrera`
+- El examen público (cod_tipo_examen = 3) permanece con `cod_carrera = NULL`
+
+**Archivos modificados:**
+- `module/Eep/src/Service/ExamenManager.php` — `getTiposExamen()` ahora hace LEFT JOIN con `nombre_carrera` y devuelve `cod_carrera`
+- `module/Eep/view/eep/examen/index.phtml` — Filtro de privados/públicos ahora usa `cod_carrera` en lugar de hardcoded `cod_tipo_examen = 3`
+- `database/matriz_evaluacion_completo.sql` — Agregado el ALTER + UPDATE + INSERT de `examen_tipo`
+- `database/DOCUMENTACION_MATRIZ_EVALUACION.md` — Actualizada sección de vinculación con carreras
+
+**Resultado:** 18 registros en `examen_tipo` (17 privados + 1 público), cada privado vinculado a una carrera activa. El doctorado (cod_carrera 80) también fue incluido ya que tiene matriz de evaluación.
+
+**Scripts eliminados (consolidados en el script único):**
+- `database/matriz_evaluacion_schema.sql` — Reemplazado por `matriz_evaluacion_completo.sql`
+- `database/matriz_evaluacion_v2_migracion.sql` — Reemplazado por `matriz_evaluacion_completo.sql`
+- `database/migracion_examen_tipo_carrera.sql` — Reemplazado por `matriz_evaluacion_completo.sql`
+
+## Proceso para agregar una nueva carrera (2026-06-05)
+
+No hay panel de administración para crear carreras. El proceso es por SQL directo, siguiendo el orden de las claves foráneas.
+
+**Nuevo script de referencia:** `database/nueva_carrera_ejemplo.sql`
+
+**Orden de inserción obligatorio:**
+1. `carrera` — tabla base (nombre_actual, alias_actual, cod_grado)
+2. `nombre_carrera` — nombre histórico con tiempo y flag activo
+3. `pensum` — plan de estudios (requerido para que los estudiantes puedan asignar cursos)
+4. `examen_tipo` — tipo de examen privado vinculado a la carrera (aparece automáticamente en "Gestión de Exámenes")
+5. `examen_matriz_tipo` — matriz de evaluación del examen privado
+6. `examen_matriz_pregunta` — preguntas específicas de la evaluación
+
+**Archivos actualizados:**
+- `database/DOCUMENTACION_MATRIZ_EVALUACION.md` — Sección 6.5 reescrita con el proceso completo
+- `database/nueva_carrera_ejemplo.sql` — Script de ejemplo paso a paso
+
+**Nota:** Si la carrera no hace examen privado (ej: curso de actualización), se omiten los pasos 4, 5 y 6.
+
+## Traslado de "Tema de Tesis" a vista del estudiante — 2026-06-06
+
+**Cambio:** El campo "Tema del Trabajo de Graduación" se eliminó de la vista de matriz de evaluación (admin) y se movió a la vista del estudiante (`student-graduation/index`).
+
+**Nueva ubicación:** Tabla con columnas "Actividad" y "Definición" arriba del "Resumen del Proceso".
+- **Actividad:** "Título de trabajo de graduación"
+- **Definición:** Input editable (solo en fase 1) o campo de solo lectura
+
+**Reglas de negocio:**
+1. **Primer paso obligatorio:** El estudiante debe registrar el título antes de continuar con cualquier otra actividad.
+2. **Bloqueo:** Si no hay título, se muestra alerta roja y el proceso está bloqueado.
+3. **Edición limitada:** Solo editable cuando el estudiante está en fase 1 (`examen_privado`, paso 1).
+4. **Solo lectura:** Después de la fase 1, el título se muestra como solo lectura.
+
+**Archivos modificados:**
+- `module/Eep/src/Service/StudentGraduationManager.php` — `getProcesoEstudiante()` ahora incluye `tema_tesis`; nuevo método `guardarTemaTesis()`
+- `module/Eep/src/Controller/StudentGraduationController.php` — Nuevo `guardarTemaTesisAction()`
+- `module/Eep/view/eep/student-graduation/index.phtml` — Tabla de tema de tesis + lógica de bloqueo
+- `module/Eep/view/eep/examen/matriz-evaluacion.phtml` — Eliminado el campo de tema de tesis
+- `module/Eep/config/access_filter.php` — Acción 154 (`guardarTemaTesis`) para rol ESTUDIANTE
+
+## Refactorización de arquitectura: examen_examinador (Catálogo de Examinadores) — 2026-06-06
+
+**Problema:** La tabla `examen_terna` almacenaba `nombre_examinador`, `numero_colegiado`, `correo` y `tipo_examinador` directamente. Esto duplicaba datos cuando un docente interno era examinador de múltiples estudiantes.
+
+**Solución (Opción B):** Se creó una tabla de catálogo `examen_examinador` que almacena los datos del examinador una sola vez, y `examen_terna` solo guarda la referencia (`cod_examinador`) + `posicion` + `registrado_por`.
+
+### Nueva tabla: `examen_examinador`
+- `cod_examinador` PK
+- `cod_usuario` INT NULL (solo internos, UNIQUE, FK a `usuario`)
+- `nombre_examinador`, `numero_colegiado`, `correo` NULL (para internos se resuelven con JOIN)
+- `tipo_examinador` ENUM('interno', 'externo')
+
+### Cambios en `examen_terna`
+- Eliminados: `nombre_examinador`, `numero_colegiado`, `correo`, `tipo_examinador`
+- Agregado: `cod_examinador` INT NOT NULL (FK a `examen_examinador`)
+- Solo guarda: `cod_proceso`, `fase`, `cod_examinador`, `posicion`, `registrado_por`
+
+### UX: Selección de examinador interno/externo
+- **Interno:** Dropdown con docentes de la plataforma (`usuario_rol` con `cod_rol = 5`). Nombre, colegiado y correo se precargan automáticamente (solo lectura).
+- **Externo:** Inputs manuales de nombre, colegiado, correo.
+
+### Archivos modificados
+- `database/modulo graduacion/modulo_graduacion_schema.sql` — Schema actualizado con `examen_examinador` y `examen_terna` refactorizada
+- `database/migracion_examen_examinador.sql` — Migración de datos existentes
+- `module/Eep/src/Service/ExamenManager.php` — `getTerna()`, `guardarTerna()`, `getDocentes()`, `buscarOCrearExaminador()`
+- `module/Eep/src/Service/StudentGraduationManager.php` — `getTerna()` con JOIN
+- `module/Eep/src/Controller/ExamenController.php` — Validaciones y paso de docentes al ViewModel
+- `module/Eep/view/eep/examen/partial/paso3-terna.phtml` — UI con select de tipo + dropdown de docentes
+- `module/Eep/view/eep/examen/ver-matriz.phtml` — Adaptado a la nueva estructura
+- `module/Eep/view/eep/examen/matriz-evaluacion.phtml` — Adaptado a la nueva estructura
+
+### Resultado
+- **Cero duplicación** para examinadores internos
+- **100% reutilización** del catálogo
+- **145 docentes** disponibles para selección como examinadores internos
+
+## Panel de Evaluación y Link Genérico para Examinadores — 2026-06-06
+
+**Cambio:** El staff abre la evaluación desde el panel, genera un link genérico con código de 8 dígitos que comparte con los 3 examinadores (internos y externos). Cada examinador selecciona su nombre y completa la evaluación de forma independiente.
+
+### Nuevas columnas en `examen_proceso`
+- `codigo_evaluacion` — Código numérico de 8 dígitos para acceso de examinadores (ej: `86914714`)
+- `hora_apertura_evaluacion` / `hora_cierre_evaluacion` — Control de tiempo (la evaluación está abierta si `hora_cierre_evaluacion` IS NULL)
+- `ex1_completado` / `ex2_completado` / `ex3_completado` — Estado por examinador
+
+### Nuevas acciones
+```sql
+INSERT INTO accion (cod_accion, nombre) VALUES
+  (154, 'Guardar tema de tesis'),
+  (156, 'Abrir evaluación de examen privado'),
+  (157, 'Cerrar evaluación de examen privado'),
+  (158, 'Evaluar examen privado (página pública)'),
+  (159, 'Guardar evaluación de examinador');
+```
+
+### Nuevas rutas
+- `/eval-privado/:cod_proceso?cod=12345678` — Página pública de evaluación (sin login)
+
+### Archivos modificados
+- `module/Eep/src/Service/ExamenManager.php` — `abrirEvaluacion()`, `cerrarEvaluacion()`, `validarToken()`, `getEstadoEvaluacion()`, `getTernaParaEvaluacion()`
+- `module/Eep/src/Controller/ExamenController.php` — `evaluacionPrivadoAction()` (panel), `abrirEvaluacionAction()`, `cerrarEvaluacionAction()`, `evaluacionExamenPrivadoAction()`, `guardarEvaluacionExaminadorAction()`
+- `module/Eep/view/eep/examen/evaluacion-privado.phtml` — Panel con estados de los 3 examinadores y botones Abrir/Cerrar. **URL completa:** Ahora genera URLs absolutas (`http://localhost:8080/eval-privado/...`) tanto en el alert como en el modal para copiar el link.
+- `module/Eep/view/eep/examen/evaluacion-examen-privado.phtml` — Página pública con instrucciones, select de examinador y matriz
+- `module/Eep/config/module.config.php` — Ruta `eval-privado`
+- `module/Eep/config/access_filter.php` — Acciones 156-159
+
+## Bloqueo del botón "Resumen" sin tema de tesis — 2026-06-06
+
+**Cambio:** El estudiante no puede acceder al paso de revisión de papelería (Resumen) hasta que haya registrado el título de su trabajo de graduación.
+
+**Regla de negocio:** El tema de tesis es el primer paso obligatorio del proceso de graduación. Si el campo `tema_tesis` está vacío en `examen_proceso`, el botón "Resumen" del paso 1 (Papelería) aparece bloqueado con un candado rojo y el mensaje tooltip: "Debe registrar el título de su trabajo de graduación antes de acceder a este paso.".
+
+**Archivos modificados:**
+- `module/Eep/view/eep/student-graduation/index.phtml` — Lógica de `$bloqueadoPorTema` en el botón "Resumen" del paso 1 (papelería). Si no hay tema, se muestra botón gris con icono de candado y tooltip informativo.
+- `module/Eep/src/Service/StudentGraduationManager.php` — `getProcesoEstudiante()` ya incluye `tema_tesis` en el SELECT (sin cambios, ya estaba disponible)
+
+## Eliminación de vista de edición de matriz (staff) — 2026-06-06
+
+**Cambio:** El staff ya no puede editar la evaluación de los examinadores desde el panel. La evaluación solo se completa desde el link público por cada examinador individualmente.
+
+**Archivos eliminados:**
+- `module/Eep/view/eep/examen/matriz-evaluacion.phtml` — Vista de edición de matriz por parte del staff
+
+**Archivos modificados:**
+- `module/Eep/view/eep/examen/ver-matriz.phtml` — Eliminado el botón "Editar Evaluación" (solo queda "Volver al listado")
+- `module/Eep/src/Controller/ExamenController.php` — Eliminados `matrizEvaluacionAction()` y `guardarMatrizAction()` (solo se usaban desde el panel de staff)
+- `module/Eep/config/access_filter.php` — Eliminadas acciones 151 (`matrizEvaluacion`) y 152 (`guardarMatriz`)

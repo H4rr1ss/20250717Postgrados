@@ -504,7 +504,7 @@ ORDER BY eh.created_at DESC;
 ### Reglas de Negocio Importantes
 
 1. **Un proceso por estudiante**: Un estudiante solo puede tener un proceso activo (no cancelado) por tipo de examen.
-2. **Terna compartida**: La misma terna de examinadores evalúa tanto el examen privado como el general.
+2. **Terna solo para examen privado**: La terna de examinadores solo existe en la fase examen_privado. No hay terna para examen general.
 3. **Versionado de documentos**: Cada resubida incrementa `version` y marca la anterior como `es_version_actual=0`.
 4. **Revisión de documentos**: Solo se puede revisar la versión actual (`es_version_actual=1`).
 5. **Ciclo único**: El paso 5 (carta de examinadores) solo permite un ciclo de correcciones simplificado.

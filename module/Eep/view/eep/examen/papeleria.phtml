@@ -305,6 +305,7 @@ $this->headTitle('Gestión de Requisitos de Papelería');
     }
 </style>
 
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
 <script>
 $(document).ready(function() {
     // Extraer cod_tipo_examen desde la URL: /examen/papeleria/{cod_tipo_examen}
@@ -344,7 +345,7 @@ $(document).ready(function() {
                     if (response.status === 'success') {
                         location.reload();
                     } else {
-                        alert('Error: ' + response.message);
+                        ToastService.error('Error: ' + response.message);
                         btn.prop('disabled', false).html('Guardar');
                     }
                 },
@@ -358,7 +359,7 @@ $(document).ready(function() {
                             if (resp.message) msg = resp.message;
                         } catch(e) {}
                     }
-                    alert(msg + ' (Status: ' + xhr.status + ')');
+                    ToastService.error(msg + ' (Status: ' + xhr.status + ')');
                     btn.prop('disabled', false).html('Guardar');
                 }
             });
@@ -394,15 +395,15 @@ $(document).ready(function() {
     // Eliminar requisito
     $(document).on('click', '.btn-eliminar-accion', function() {
         var id = $(this).data('id');
-        if (confirm('¿Está seguro de que desea eliminar este requisito?')) {
+        ConfirmService.confirm('¿Está seguro de que desea eliminar este requisito?', function() {
             $.post('<?= $this->url('examen', ['action' => 'eliminarRequisito']) ?>', {id: id}, function(response) {
                 if (response.status === 'success') {
                     location.reload();
                 } else {
-                    alert('Error: ' + response.message);
+                    ToastService.error('Error: ' + response.message);
                 }
             }, 'json');
-        }
+        });
     });
 
     // Guardar instrucciones generales de entrega física
@@ -417,7 +418,7 @@ $(document).ready(function() {
             instrucciones: instrucciones
         }, function(response) {
             if (response.status === 'success') {
-                alert('Instrucciones guardadas correctamente');
+                ToastService.success('Instrucciones guardadas correctamente');
             } else {
                 alert('Error: ' + response.message);
             }

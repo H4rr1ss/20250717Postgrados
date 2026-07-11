@@ -6,6 +6,7 @@ $programacion = $terna['programacion'] ?? [];
 $fechaExamen  = $programacion['fecha'] ?? '';
 $horaExamen   = !empty($programacion['hora']) ? date('H:i', strtotime($programacion['hora'])) : '';
 $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
+$docentes     = $this->docentes ?? [];
 ?>
 <!-- Paso 3: Terna de Examinadores -->
 <?php
@@ -53,6 +54,13 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                     </div>
                 </div>
                 
+                <!-- Aviso: datos de docentes internos -->
+                <div class="alert alert-info" style="margin-bottom: 20px; font-size: 13px;">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Información:</strong> El título profesional y número de colegiado de los docentes internos se gestionan desde la vista de edición de usuario.
+                    Si un docente no tiene esta información registrada, <a href="<?= $this->url('user', ['action' => 'studentSearch']) ?>" target="_blank" style="font-weight: bold; text-decoration: underline;">CLICK AQUÍ PARA EDITAR EXAMINADOR</a>.
+                </div>
+
                 <div class="row">
                     <?php foreach ($etiquetas as $id => $etiqueta): ?>
                     <?php
@@ -67,35 +75,85 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
                         
                         $nombre    = htmlspecialchars($datos['nombre']    ?? '');
                         $colegiado = htmlspecialchars($datos['colegiado'] ?? '');
+                        $titulo    = htmlspecialchars($datos['titulo']    ?? '');
                         $correo    = htmlspecialchars($datos['correo']    ?? '');
                         $tipoEx    = $datos['tipo'] ?? '';
+                        $codUsuarioEx = $datos['cod_usuario'] ?? '';
+                        $esInterno = $tipoEx === 'interno';
                     ?>
                         <div class="col-md-4">
                         <div class="examinador-card" data-id="<?= $id ?>">
                             <h5 class="examinador-titulo"><?= $etiqueta ?></h5>
 
                             <div class="form-group">
-                                <label>Tipo de examinador</label>
-                                <select class="form-control examinador-tipo" required>
-                                    <option value="" disabled <?= empty($tipoEx) ? 'selected' : '' ?>>Seleccionar</option>
-                                    <option value="interno" <?= $tipoEx === 'interno' ? 'selected' : '' ?>>Interno</option>
-                                    <option value="externo" <?= $tipoEx === 'externo' ? 'selected' : '' ?>>Externo</option>
+                                <label style="color: #004085; font-weight: bold;">Tipo de examinador <i class="fa fa-hand-o-down"></i></label>
+                                <select class="form-control examinador-tipo" required style="border-color: #004085; color: #004085; font-weight: bold;">
+                                    <option value="" disabled <?= empty($tipoEx) ? 'selected' : '' ?>>Seleccionar tipo...</option>
+                                    <option value="interno" <?= $tipoEx === 'interno' ? 'selected' : '' ?>>Interno (docente de la plataforma)</option>
+                                    <option value="externo" <?= $tipoEx === 'externo' ? 'selected' : '' ?>>Externo (fuera de la plataforma)</option>
                                 </select>
                             </div>
 
-                            <div class="form-group">
-                                <label>Nombre Completo <small class="text-primary">(incluya grado académico)</small></label>
-                                <input type="text" class="form-control examinador-nombre" placeholder="Ej: Lic. Nombre Completo" value="<?= $nombre ?>" required>
+                            <!-- Dropdown de docentes internos -->
+                            <div class="form-group campos-interno" style="<?= $esInterno ? '' : 'display:none;' ?>">
+                                <label>Docente de la plataforma</label>
+                                <select class="form-control examinador-docente" disabled>
+                                    <option value="" disabled <?= empty($codUsuarioEx) ? 'selected' : '' ?>>Seleccionar docente...</option>
+                                    <?php foreach ($docentes as $doc): ?>
+                                        <option value="<?= $doc['cod_usuario'] ?>"
+                                                data-nombre="<?= htmlspecialchars($doc['nombre_completo']) ?>"
+                                                data-colegiado="<?= htmlspecialchars($doc['colegiado']) ?>"
+                                                data-titulo="<?= htmlspecialchars($doc['titulo'] ?? '') ?>"
+                                                data-correo="<?= htmlspecialchars($doc['correo']) ?>"
+                                                <?= ($codUsuarioEx == $doc['cod_usuario']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($doc['nombre_completo']) ?> (Colegiado: <?= $doc['colegiado'] ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
 
-                            <div class="form-group">
+                            <!-- Campos de solo lectura para internos -->
+                            <div class="form-group campos-interno" style="<?= $esInterno ? '' : 'display:none;' ?>">
+                                <div class="row">
+                                    <div class="col-md-3" style="padding-right: 5px;">
+                                        <label>Grado</label>
+                                        <input type="text" class="form-control examinador-titulo" value="<?= $titulo ?>" readonly style="background-color: #e9ecef;">
+                                    </div>
+                                    <div class="col-md-9" style="padding-left: 5px;">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" class="form-control examinador-nombre" value="<?= $nombre ?>" readonly style="background-color: #e9ecef;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group campos-interno" style="<?= $esInterno ? '' : 'display:none;' ?>">
                                 <label>Número de colegiado</label>
-                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= $colegiado ?>" required inputmode="numeric" pattern="[0-9]*">
+                                <input type="text" class="form-control examinador-colegiado" value="<?= $colegiado ?>" readonly style="background-color: #e9ecef;">
+                            </div>
+                            <div class="form-group campos-interno" style="<?= $esInterno ? '' : 'display:none;' ?>">
+                                <label>Correo</label>
+                                <input type="email" class="form-control examinador-correo" value="<?= $correo ?>" readonly style="background-color: #e9ecef;">
                             </div>
 
-                            <div class="form-group">
+                            <!-- Campos editables para externos -->
+                            <div class="form-group campos-externo" style="<?= !$esInterno ? '' : 'display:none;' ?>">
+                                <div class="row">
+                                    <div class="col-md-3" style="padding-right: 5px;">
+                                        <label>Grado</label>
+                                        <input type="text" class="form-control examinador-titulo" placeholder="Ej: Dr." value="<?= !$esInterno ? $titulo : '' ?>" maxlength="20" disabled style="opacity: 0.6;">
+                                    </div>
+                                    <div class="col-md-9" style="padding-left: 5px;">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" class="form-control examinador-nombre" placeholder="Nombre Completo" value="<?= !$esInterno ? $nombre : '' ?>" required disabled>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group campos-externo" style="<?= !$esInterno ? '' : 'display:none;' ?>">
+                                <label>Número de colegiado</label>
+                                <input type="text" class="form-control examinador-colegiado" placeholder="" value="<?= !$esInterno ? $colegiado : '' ?>" required disabled>
+                            </div>
+                            <div class="form-group campos-externo" style="<?= !$esInterno ? '' : 'display:none;' ?>">
                                 <label>Correo electrónico</label>
-                                <input type="email" class="form-control examinador-correo" placeholder="ejemplo@dominio.com" value="<?= $correo ?>">
+                                <input type="email" class="form-control examinador-correo" placeholder="ejemplo@dominio.com" value="<?= !$esInterno ? $correo : '' ?>" disabled>
                             </div>
                         </div>
                     </div>
@@ -205,9 +263,72 @@ $codProceso   = (int)($proceso['cod_proceso'] ?? 0);
 $(document).ready(function() {
     const COD_PROCESO = <?= $codProceso ?>;
 
-    // ── Solo números en colegiado (UX en tiempo real) ─────────────
-    $(document).on('input', '.examinador-colegiado', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
+    // ── Recargar al volver de editar examinador ───────────────────
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible' && localStorage.getItem('eeditando_examinador')) {
+            localStorage.removeItem('eeditando_examinador');
+            location.reload();
+        }
+    });
+    // Marcar bandera cuando se abre el link de edición de examinador
+    $(document).on('click', 'a[href*="studentSearch"]', function() {
+        localStorage.setItem('eeditando_examinador', '1');
+    });
+
+    // ── Inicializar estado de cada card según tipo seleccionado ───
+    $('.examinador-card').each(function() {
+        const card = $(this);
+        const tipo = card.find('.examinador-tipo').val();
+        if (tipo === 'interno') {
+            card.find('.campos-interno').show();
+            card.find('.campos-externo').hide();
+            card.find('.campos-externo input').prop('disabled', true);
+            card.find('.campos-interno select').prop('disabled', false);
+            card.find('.campos-interno input').prop('disabled', false);
+        } else if (tipo === 'externo') {
+            card.find('.campos-interno').hide();
+            card.find('.campos-externo').show();
+            card.find('.campos-interno select').prop('disabled', true);
+            card.find('.campos-interno input').prop('disabled', true);
+            card.find('.campos-externo input').prop('disabled', false);
+        }
+    });
+
+    // ── Cambio de tipo de examinador ──────────────────────────────
+    $(document).on('change', '.examinador-tipo', function() {
+        const card = $(this).closest('.examinador-card');
+        const tipo = $(this).val();
+        
+        if (tipo === 'interno') {
+            card.find('.campos-interno').show();
+            card.find('.campos-externo').hide();
+            card.find('.campos-externo input').val('').prop('disabled', true);
+            card.find('.campos-interno select').prop('disabled', false);
+            card.find('.campos-interno input').prop('disabled', false);
+        } else if (tipo === 'externo') {
+            card.find('.campos-interno').hide();
+            card.find('.campos-externo').show();
+            card.find('.campos-interno input').val('').prop('disabled', true);
+            card.find('.campos-interno select').prop('disabled', true);
+            card.find('.campos-externo input').prop('disabled', false);
+        }
+    });
+
+    // ── Cambio de docente interno ─────────────────────────────────
+    $(document).on('change', '.examinador-docente', function() {
+        const card = $(this).closest('.examinador-card');
+        const option = $(this).find(':selected');
+
+        const nombre = option.data('nombre') || '';
+        const colegiado = option.data('colegiado') || '';
+        const titulo = option.data('titulo') || '';
+        const correo = option.data('correo') || '';
+
+        // Actualizar SOLO los campos de interno (visibles)
+        card.find('.campos-interno .examinador-titulo').val(titulo);
+        card.find('.campos-interno .examinador-nombre').val(nombre);
+        card.find('.campos-interno .examinador-colegiado').val(colegiado);
+        card.find('.campos-interno .examinador-correo').val(correo);
     });
 
     // ── Helpers ──────────────────────────────────────────────────
@@ -216,7 +337,11 @@ $(document).ready(function() {
         let hayDuplicados = false;
         
         $('.examinador-card').each(function() {
-            const colegiado = $(this).find('.examinador-colegiado').val().trim();
+            const tipo = $(this).find('.examinador-tipo').val();
+            if (!tipo) return true;
+            const colegiado = (tipo === 'interno')
+                ? $(this).find('.campos-interno .examinador-colegiado').val().trim()
+                : $(this).find('.campos-externo .examinador-colegiado').val().trim();
             if (colegiado !== "") {
                 colegiados.push(colegiado);
             }
@@ -235,9 +360,9 @@ $(document).ready(function() {
         const terna = recopilarTerna();
         let completa = true;
         
-        // Verificar que los 3 examinadores tengan tipo, nombre, colegiado y correo
+        // Verificar que los 3 examinadores tengan tipo, titulo, nombre, colegiado y correo
         $.each(terna, function(id, datos) {
-            if (!datos.tipo_examinador || !datos.nombre || !datos.colegiado || !datos.correo) {
+            if (!datos.tipo_examinador || !datos.titulo || !datos.nombre || !datos.colegiado || !datos.correo) {
                 completa = false;
                 return false; // break del each
             }
@@ -253,29 +378,58 @@ $(document).ready(function() {
         $('.examinador-card').each(function() {
             const posicion = $(this).data('id');
             const tipo      = $(this).find('.examinador-tipo').val();
-            const nombre   = $(this).find('.examinador-nombre').val().trim();
-            const colegiado = $(this).find('.examinador-colegiado').val().trim();
-            const correo   = $(this).find('.examinador-correo').val().trim();
+            if (!tipo) return true; // skip vacíos
+
+            const docenteSelect = $(this).find('.examinador-docente');
+            const codUsuario = docenteSelect.val();
+            // Leer SOLO los campos del tipo seleccionado
+            const nombre   = (tipo === 'interno')
+                ? $(this).find('.campos-interno .examinador-nombre').val().trim()
+                : $(this).find('.campos-externo .examinador-nombre').val().trim();
+            const colegiado = (tipo === 'interno')
+                ? $(this).find('.campos-interno .examinador-colegiado').val().trim()
+                : $(this).find('.campos-externo .examinador-colegiado').val().trim();
+            const titulo = (tipo === 'interno')
+                ? $(this).find('.campos-interno .examinador-titulo').val().trim()
+                : $(this).find('.campos-externo .examinador-titulo').val().trim();
+            const correo   = (tipo === 'interno')
+                ? $(this).find('.campos-interno .examinador-correo').val().trim()
+                : $(this).find('.campos-externo .examinador-correo').val().trim();
             
             // Buscar datos originales de este examinador en el array de la BD
             const original = examinadoresDB.find(ex => parseInt(ex.posicion) === parseInt(posicion)) || {};
             
-            // Comparar valores actuales vs originales
-            const haCambiado = 
-                (tipo || '')      !== (original.tipo || '') ||
-                (nombre || '')    !== (original.nombre || '') ||
-                (colegiado || '') !== (original.colegiado || '') ||
-                (correo || '')    !== (original.correo || '');
+            let haCambiado = false;
+            let datos = {
+                posicion:        posicion,
+                tipo_examinador: tipo
+            };
+            
+            if (tipo === 'interno') {
+                datos.cod_usuario = codUsuario;
+                datos.titulo = titulo;
+                datos.colegiado = colegiado;
+                haCambiado = 
+                    (tipo || '') !== (original.tipo || '') ||
+                    (codUsuario || '') !== (original.cod_usuario || '') ||
+                    (titulo || '') !== (original.titulo || '') ||
+                    (colegiado || '') !== (original.colegiado || '');
+            } else {
+                datos.nombre = nombre;
+                datos.colegiado = colegiado;
+                datos.titulo = titulo;
+                datos.correo = correo;
+                haCambiado = 
+                    (tipo || '')      !== (original.tipo || '') ||
+                    (nombre || '')    !== (original.nombre || '') ||
+                    (colegiado || '') !== (original.colegiado || '') ||
+                    (titulo || '')    !== (original.titulo || '') ||
+                    (correo || '')    !== (original.correo || '');
+            }
 
             // Solo agregar si ha habido cambios respecto a la base de datos
             if (haCambiado) {
-                terna.push({ 
-                    posicion:        posicion, 
-                    tipo_examinador: tipo, 
-                    nombre:          nombre, 
-                    colegiado:       colegiado, 
-                    correo:          correo 
-                });
+                terna.push(datos);
             }
         });
         return terna;
@@ -350,38 +504,62 @@ $(document).ready(function() {
 
         // 2. Si se agregó algún examinador con datos parciales, validar que ese card esté completo
         let incompleto = false;
+        let tituloFaltante = false;
+        let tipoInternoSinTitulo = false;
+        let internoSinTituloCard = null;
         $('.examinador-card').each(function() {
-            const tipo      = $(this).find('.examinador-tipo').val();
-            const nombre    = $(this).find('.examinador-nombre').val().trim();
-            const colegiado = $(this).find('.examinador-colegiado').val().trim();
-            // Solo validar si el card tiene al menos un campo llenado
-            const tieneDatos = tipo || nombre || colegiado;
-            if (tieneDatos && (!tipo || !nombre || !colegiado)) {
+            const tipo = $(this).find('.examinador-tipo').val();
+            if (!tipo) {
+                // Si seleccionó tipo, no hay datos parciales
+                return true; // continue
+            }
+            // Validar según tipo: solo los campos VISIBLES del tipo seleccionado
+            let nombre, colegiado, titulo;
+            if (tipo === 'interno') {
+                nombre    = $(this).find('.campos-interno .examinador-nombre').val().trim();
+                colegiado = $(this).find('.campos-interno .examinador-colegiado').val().trim();
+                titulo    = $(this).find('.campos-interno .examinador-titulo').val().trim();
+            } else {
+                nombre    = $(this).find('.campos-externo .examinador-nombre').val().trim();
+                colegiado = $(this).find('.campos-externo .examinador-colegiado').val().trim();
+                titulo    = $(this).find('.campos-externo .examinador-titulo').val().trim();
+            }
+            if (!nombre || !colegiado) {
                 incompleto = true;
+                return false; // break
+            }
+            if (!titulo) {
+                tituloFaltante = true;
+                if (tipo === 'interno') {
+                    tipoInternoSinTitulo = true;
+                    internoSinTituloCard = $(this);
+                }
                 return false; // break
             }
         });
 
         if (incompleto) {
-            ToastService.warning('Si llena un examinador, debe completar su tipo, nombre y número de colegiado.');
+            ToastService.warning('Si llena un examinador, debe completar su tipo, nombre, título y número de colegiado.');
             return;
         }
 
-        // 3. Validar que los colegiados sean solo números
-        let colegiadoInvalido = false;
-        $('.examinador-card').each(function() {
-            const colegiado = $(this).find('.examinador-colegiado').val().trim();
-            if (colegiado !== '' && !/^\d+$/.test(colegiado)) {
-                colegiadoInvalido = true;
-                return false;
+        if (tituloFaltante) {
+            if (tipoInternoSinTitulo) {
+                ToastService.warning('El docente interno no tiene título profesional registrado. Diríjase a la búsqueda de usuarios para editarlo. <a href="<?= $this->url('user', ['action' => 'studentSearch']) ?>" target="_blank" style="color: #8B0000; text-decoration: underline; font-weight: bold;">CLICK AQUÍ PARA EDITAR EXAMINADOR</a>');
+                // Resaltar el card con el error
+                if (internoSinTituloCard) {
+                    internoSinTituloCard.css('border-color', '#e74c3c');
+                    setTimeout(function() {
+                        internoSinTituloCard.css('border-color', '#ddd');
+                    }, 3000);
+                }
+            } else {
+                ToastService.warning('El examinador externo debe tener un título profesional.');
             }
-        });
-        if (colegiadoInvalido) {
-            ToastService.error('El número de colegiado solo puede contener dígitos numéricos.');
             return;
         }
 
-        // 4. Validar duplicados si hay más de uno
+        // 3. Validar duplicados si hay más de uno
         const validacion = validarExaminadoresDuplicados();
         if (validacion) {
             ToastService.error('No puede haber examinadores con el mismo número de colegiado.');

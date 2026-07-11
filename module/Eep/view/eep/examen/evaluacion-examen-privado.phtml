@@ -1,0 +1,292 @@
+<?php
+$this->headTitle('Evaluación de Examen Privado');
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $this->escapeHtml($this->headTitle()->renderTitle()) ?></title>
+    <link type="text/css" rel="stylesheet" href="<?= $this->basePath('styles/bootstrap.min.css') ?>">
+    <link type="text/css" rel="stylesheet" href="<?= $this->basePath('styles/font-awesome.min.css') ?>">
+    <style>
+        body { background-color: #f5f5f5; padding: 20px; font-family: 'Open Sans', sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { color: #6B8E23; margin-bottom: 10px; }
+        .instructions { background: #e8f5e9; border-left: 4px solid #4CAF50; padding: 15px; margin-bottom: 25px; border-radius: 4px; }
+        .instructions h4 { margin-top: 0; color: #2E7D32; }
+        .select-examinador { margin-bottom: 25px; }
+        .btn-continuar { background-color: #6B8E23; color: white; border: none; padding: 10px 30px; font-size: 16px; }
+        .btn-continuar:hover { background-color: #556B2F; }
+        .examinador-card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .examinador-card:hover { border-color: #6B8E23; background: #f9f9f9; }
+        .examinador-card.disabled { opacity: 0.5; cursor: not-allowed; background: #eee; }
+        .examinador-card .nombre { font-weight: bold; font-size: 16px; color: #333; }
+        .examinador-card .estado { float: right; }
+        .completado-badge { background: #4CAF50; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+        .matrix-table { width: 100%; margin-bottom: 20px; }
+        .matrix-table th { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
+        .matrix-table td { padding: 10px; border: 1px solid #ddd; vertical-align: middle; }
+        .observaciones-box { margin-top: 20px; }
+        .observaciones-box textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-guardar { background-color: #2196F3; color: white; border: none; padding: 12px 40px; font-size: 16px; }
+        .btn-guardar:hover { background-color: #1976D2; }
+        .success-msg { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .student-info { background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+        .student-info h4 { margin-top: 0; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2><i class="fa fa-graduation-cap"></i> Evaluación de Examen Privado</h2>
+        <p style="color: #666;">Escuela de Estudios de Posgrado — Facultad de Arquitectura</p>
+    </div>
+
+    <div class="student-info">
+        <h4>Estudiante: <?= $this->escapeHtml($this->estudiante['nombre_completo'] ?? 'Sin nombre') ?></h4>
+        <p style="margin: 0; color: #666;">
+            <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?> |
+            Registro: <?= $this->escapeHtml($this->estudiante['registro_academico'] ?? '-') ?>
+        </p>
+    </div>
+
+    <?php if (empty($this->posicion)): ?>
+        <!-- PASO 1: Selección de examinador -->
+        <div class="instructions">
+            <h4><i class="fa fa-info-circle"></i> Instrucciones</h4>
+            <p style="margin-bottom: 0;">Bienvenido. Seleccione su nombre de la lista de examinadores asignados para este examen. Luego complete la evaluación según la matriz correspondiente.</p>
+        </div>
+
+        <h4 style="margin-bottom: 15px;">Seleccione su nombre:</h4>
+
+        <?php $examinadores = $this->terna['examinadores'] ?? []; ?>
+        <?php $evaluacionAbierta = !empty($this->estado['hora_apertura_evaluacion']); ?>
+        <?php if (empty($examinadores)): ?>
+            <div class="alert alert-warning">No hay examinadores asignados para este proceso.</div>
+        <?php else: ?>
+            <?php if (!$evaluacionAbierta): ?>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-primary" onclick="location.reload();" style="font-size: 16px; padding: 10px 30px;">
+                        <i class="fa fa-refresh"></i> Recargar página
+                    </button>
+                </div>
+                <div class="alert alert-info" style="margin-bottom: 20px;">
+                    <i class="fa fa-clock-o"></i> <strong>Evaluación no disponible:</strong> La secretaría aún no ha abierto el período de evaluación para este examen. Presione <strong>Recargar página</strong> cuando la secretaría le indique que ya puede evaluar.
+                </div>
+            <?php endif; ?>
+            <?php foreach ($examinadores as $ex): ?>
+                <?php
+                $pos = (int) ($ex['posicion'] ?? 0);
+                $col = "ex{$pos}_completado";
+                $completado = !empty($this->estado[$col]);
+                ?>
+                <?php
+                $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'Sin nombre');
+                ?>
+                <?php if ($completado): ?>
+                    <div class="examinador-card disabled">
+                        <span class="nombre"><?= $this->escapeHtml($nombreEx) ?></span>
+                        <span class="estado"><span class="completado-badge"><i class="fa fa-check"></i> Completado</span></span>
+                        <div style="clear: both;"></div>
+                    </div>
+                <?php elseif (!$evaluacionAbierta): ?>
+                    <div class="examinador-card disabled" style="cursor: not-allowed;">
+                        <span class="nombre"><?= $this->escapeHtml($nombreEx) ?></span>
+                        <span class="estado"><i class="fa fa-lock" style="color: #999;"></i></span>
+                        <div style="clear: both;"></div>
+                    </div>
+                <?php else: ?>
+                    <a href="<?= $this->url('eval-privado', ['cod_proceso' => $this->proceso['cod_proceso']], ['query' => ['cod' => $this->codigo, 'pos' => $pos]]) ?>"
+                       class="examinador-card" style="display: block; text-decoration: none; color: inherit;">
+                        <span class="nombre"><?= $this->escapeHtml($nombreEx) ?></span>
+                        <span class="estado"><i class="fa fa-chevron-right" style="color: #6B8E23;"></i></span>
+                        <div style="clear: both;"></div>
+                    </a>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+    <?php else: ?>
+        <!-- PASO 2: Matriz de evaluación -->
+        <?php if (!empty($this->flashMessenger()->hasErrorMessages())): ?>
+            <div class="alert alert-danger">
+                <?= $this->flashMessenger()->render('error') ?>
+            </div>
+        <?php endif; ?>
+
+        <?php $exEval = $this->terna['examinadores'][$this->posicion - 1] ?? []; $nombreEval = ($exEval['titulo'] ?? '') ? trim($exEval['titulo'] . ' ' . ($exEval['nombre'] ?? '')) : ($exEval['nombre'] ?? 'Examinador'); ?>
+        <div class="instructions">
+            <h4><i class="fa fa-user"></i> <?= $this->escapeHtml($nombreEval) ?></h4>
+            <p style="margin-bottom: 0;">Complete la evaluación según la matriz de preguntas. Los campos numéricos deben estar dentro del rango indicado.</p>
+        </div>
+
+        <?php if (empty($this->preguntas)): ?>
+            <div class="alert alert-warning">No se encontró la matriz de evaluación para esta maestría/especialización.</div>
+        <?php else: ?>
+            <form id="formEvaluacion">
+                <input type="hidden" name="cod_proceso" value="<?= (int) $this->proceso['cod_proceso'] ?>">
+                <input type="hidden" name="codigo" value="<?= $this->escapeHtml($this->codigo) ?>">
+                <input type="hidden" name="posicion_examinador" value="<?= (int) $this->posicion ?>">
+
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Pregunta</th>
+                            <th style="width: 150px;">Respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($this->preguntas as $idx => $preg): ?>
+                            <?php
+                            $codPregunta = (int) $preg['cod_pregunta'];
+                            $tipo = $preg['tipo_campo'] ?? 'numero';
+                            $punteoMax = $preg['punteo_maximo'] ?? '0-10';
+                            $punteoMaxValor = 10;
+                            if (strpos($punteoMax, '-') !== false) {
+                                $partesPunteo = explode('-', $punteoMax);
+                                $punteoMaxValor = isset($partesPunteo[1]) ? (int) trim($partesPunteo[1]) : 10;
+                            }
+                            $respuestaExistente = null;
+                            if (!empty($this->evaluacion['respuestas'])) {
+                                foreach ($this->evaluacion['respuestas'] as $r) {
+                                    if ((int) $r['cod_pregunta'] === $codPregunta) {
+                                        $respuestaExistente = $r;
+                                        break;
+                                    }
+                                }
+                            }
+                            ?>
+                            <tr>
+                                <td><?= (int) $preg['numero_orden'] ?></td>
+                                <td>
+                                    <?= $this->escapeHtml($preg['texto_pregunta']) ?>
+                                </td>
+                                <td>
+                                    <?php if ($tipo === 'numero'): ?>
+                                        <small class="text-muted" style="display: block; margin-bottom: 5px; font-weight: 600;">
+                                            Rango: <?= $this->escapeHtml($punteoMax) ?>
+                                        </small>
+                                        <input type="number"
+                                               name="respuestas[<?= $idx ?>][punteo]"
+                                               class="form-control"
+                                               step="0.01"
+                                               min="0"
+                                               max="<?= $punteoMaxValor ?>"
+                                               data-max="<?= $punteoMaxValor ?>"
+                                               value="<?= $respuestaExistente['punteo'] ?? '' ?>">
+                                    <?php else: ?>
+                                        <textarea name="respuestas[<?= $idx ?>][respuesta_texto]"
+                                                  class="form-control"
+                                                  rows="2"><?= $this->escapeHtml($respuestaExistente['respuesta_texto'] ?? '') ?></textarea>
+                                    <?php endif; ?>
+                                    <input type="hidden" name="respuestas[<?= $idx ?>][cod_pregunta]" value="<?= $codPregunta ?>">
+                                    <input type="hidden" name="respuestas[<?= $idx ?>][tipo_campo]" value="<?= $tipo ?>">
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <div class="observaciones-box">
+                    <h4>Observaciones Generales</h4>
+                    <textarea name="observaciones_generales"
+                              placeholder="Ingrese sus observaciones generales sobre la evaluación (opcional)"><?= $this->escapeHtml($this->evaluacion['observaciones_generales'] ?? '') ?></textarea>
+                </div>
+
+                <div class="text-center" style="margin-top: 25px;">
+                    <button type="button" class="btn btn-guardar" id="btnGuardarEvaluacion">
+                        <i class="fa fa-save"></i> Guardar Evaluación
+                    </button>
+                </div>
+            </form>
+
+            <div id="mensajeExito" class="success-msg" style="display: none; margin-top: 20px; text-align: center;">
+                <i class="fa fa-check-circle"></i> <strong>Evaluación guardada correctamente.</strong><br>
+                Puede cerrar esta ventana.
+            </div>
+
+            <script>
+            document.getElementById('btnGuardarEvaluacion').addEventListener('click', function() {
+                var btn = this;
+                var form = document.getElementById('formEvaluacion');
+                var inputs = form.querySelectorAll('input[type="number"]');
+                var errores = [];
+
+                inputs.forEach(function(input) {
+                    var valor = parseFloat(input.value);
+                    var nombre = input.closest('tr').querySelector('td:nth-child(2)').innerText.trim().split('\n')[0];
+                    var maximo = parseFloat(input.getAttribute('data-max')) || 10;
+                    if (isNaN(valor) || valor < 0) {
+                        errores.push('El campo "' + nombre + '" no puede ser negativo.');
+                        input.style.borderColor = 'red';
+                    } else if (valor > maximo) {
+                        errores.push('El campo "' + nombre + '" no puede ser mayor a ' + maximo + '.');
+                        input.style.borderColor = 'red';
+                    } else {
+                        input.style.borderColor = '';
+                    }
+                });
+
+                if (errores.length > 0) {
+                    ToastService.error('Revise los campos resaltados en rojo. Los valores deben estar dentro del rango indicado.');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando...';
+
+                var formData = new FormData(form);
+                var data = {};
+                formData.forEach(function(value, key) {
+                    if (key.indexOf('respuestas') === 0) {
+                        var match = key.match(/respuestas\[(\d+)\]\[(\w+)\]/);
+                        if (match) {
+                            var idx = match[1];
+                            var field = match[2];
+                            if (!data.respuestas) data.respuestas = [];
+                            if (!data.respuestas[idx]) data.respuestas[idx] = {};
+                            data.respuestas[idx][field] = value;
+                        }
+                    } else {
+                        data[key] = value;
+                    }
+                });
+
+                $.ajax({
+                    url: '/examen/guardar-evaluacion-examinador',
+                    type: 'POST',
+                    data: data,
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.status === 'success') {
+                            document.getElementById('mensajeExito').style.display = 'block';
+                            btn.style.display = 'none';
+                        } else {
+                            ToastService.error('Error: ' + res.message);
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa fa-save"></i> Guardar Evaluación';
+                        }
+                    },
+                    error: function() {
+                        ToastService.error('Error de conexión');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa fa-save"></i> Guardar Evaluación';
+                    }
+                });
+            });
+            </script>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
+
+<script src="<?= $this->basePath('script/jquery-1.10.2.min.js') ?>"></script>
+<script src="<?= $this->basePath('script/bootstrap.min.js') ?>"></script>
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+</body>
+</html>

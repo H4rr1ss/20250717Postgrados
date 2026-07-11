@@ -51,7 +51,8 @@ $horaExamen   = $horaRaw ? date('g:i A', strtotime($horaRaw)) : null;
                                     <i class="fa fa-user"></i>
                                 </div>
                             </div>
-                            <div class="terna-member-name"><?= $this->escapeHtml($miembro['nombre']) ?></div>
+                            <?php $nombreMiembro = ($miembro['titulo'] ?? '') ? trim($miembro['titulo'] . ' ' . $miembro['nombre']) : $miembro['nombre']; ?>
+                            <div class="terna-member-name"><?= $this->escapeHtml($nombreMiembro) ?></div>
                             <?php if (!empty($miembro['correo'])): ?>
                             <p class="terna-member-titulo"><?= $this->escapeHtml($miembro['correo']) ?></p>
                             <?php endif; ?>

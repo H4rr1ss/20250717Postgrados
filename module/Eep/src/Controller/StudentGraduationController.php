@@ -93,7 +93,7 @@ class StudentGraduationController extends AbstractActionController {
                     }
                 }
             }
-            $terna = $this->processManager->getTerna($proceso['cod_proceso'], $faseActual);
+            $terna = $this->processManager->getTerna($proceso['cod_proceso']);
         }
 
         $carta = null;
@@ -455,9 +455,12 @@ class StudentGraduationController extends AbstractActionController {
         }
 
         $codCiclo    = (int) $request->getPost('cod_ciclo', 0);
-        $descripcion = (string) $request->getPost('descripcion', '');
+        $descripcion = trim((string) $request->getPost('descripcion', ''));
         if (!$codCiclo) {
             return new JsonModel(['success' => false, 'message' => 'Ciclo no especificado']);
+        }
+        if ($descripcion === '') {
+            return new JsonModel(['success' => false, 'message' => 'La descripción es obligatoria.']);
         }
 
         // El ciclo debe pertenecer al proceso activo del estudiante.
@@ -507,7 +510,7 @@ class StudentGraduationController extends AbstractActionController {
                 'extension'       => $extension,
                 'nombre_original' => $archivo['name'],
                 'tamano_bytes'    => $archivo['size'],
-                'descripcion'     => $descripcion !== '' ? $descripcion : null,
+                'descripcion'     => $descripcion,
                 'subido_por'      => $codUsuario,
             ]);
         } catch (\Exception $e) {
@@ -742,6 +745,50 @@ class StudentGraduationController extends AbstractActionController {
             return new JsonModel(['success' => true, 'message' => 'Profesional seleccionado correctamente']);
         } catch (\Exception $e) {
             return new JsonModel(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Guarda el tema de tesis del estudiante.
+     * Retorna JSON para manejo vía AJAX.
+     */
+    public function guardarTemaTesisAction() {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return new JsonModel(['success' => false, 'message' => 'Usuario no autenticado']);
+        }
+
+        $temaTesis = trim((string) $request->getPost('tema_tesis', ''));
+        if (empty($temaTesis)) {
+            return new JsonModel(['success' => false, 'message' => 'Debe ingresar el título de su trabajo de graduación.']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return new JsonModel(['success' => false, 'message' => 'No tiene un proceso activo']);
+        }
+
+        // Verificar que está en fase 1 (examen_privado, paso 1)
+        $pasoActualOrden = (int) ($proceso['paso_actual_orden'] ?? 0);
+        $faseActual = $proceso['fase_paso_actual'] ?? '';
+        if ($pasoActualOrden !== 1 || $faseActual !== 'examen_privado') {
+            return new JsonModel(['success' => false, 'message' => 'Solo puede registrar el tema durante la fase de revisión de papelería.']);
+        }
+
+        try {
+            $result = $this->processManager->guardarTemaTesis(
+                (int) $proceso['cod_proceso'],
+                $codUsuario,
+                $temaTesis
+            );
+            return new JsonModel($result);
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
 

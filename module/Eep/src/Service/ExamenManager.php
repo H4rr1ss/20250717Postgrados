@@ -256,8 +256,16 @@ class ExamenManager
                     epc.nombre             AS nombre_paso_actual,
                     epc.numero_orden,
                     epc.fase               AS fase_paso_actual,
+                    ep.tema_tesis,
                     COALESCE(epp.estado, "pendiente") AS estado_paso,
-                    ep.cancelado
+                    ep.cancelado,
+                    ep.hora_apertura_evaluacion,
+                    ep.hora_cierre_evaluacion,
+                    ep.fecha_examen_privado,
+                    ep.hora_examen_privado,
+                    ep.numero_acta,
+                    ep.estado_acta,
+                    ep.fecha_generacion_acta
                 FROM examen_proceso ep
                 JOIN usuario u              ON u.cod_usuario      = ep.cod_usuario
                 JOIN examen_tipo et         ON et.cod_tipo_examen = ep.cod_tipo_examen
@@ -396,12 +404,42 @@ class ExamenManager
         $estado        = $filtros['estado'] ?? null;
         $codTipoExamen = $filtros['cod_tipo_examen'] ?? null;
         $numeroPaso    = isset($filtros['numero_paso']) ? (int) $filtros['numero_paso'] : null;
+        $busqueda      = !empty($filtros['busqueda']) ? trim($filtros['busqueda']) : null;
 
         $offset = ($pagina - 1) * $limite;
 
         $whereEstado = '';
         if ($estado) {
             $whereEstado = 'AND ep.estado = :estado';
+        }
+
+        $whereCancelado = 'AND ep.cancelado = 0';
+        $whereEstadoPaso = '';
+        if (!empty($filtros['estado_paso'])) {
+            switch ($filtros['estado_paso']) {
+                case 'activo':
+                    $whereEstadoPaso = 'AND ep.cod_paso_actual IS NOT NULL';
+                    break;
+                case 'finalizado':
+                    $whereEstadoPaso = 'AND ep.cod_paso_actual IS NULL';
+                    break;
+                case 'cancelado':
+                    $whereCancelado = '';
+                    $whereEstadoPaso = 'AND ep.cancelado = 1';
+                    break;
+                case 'completado':
+                    $whereEstadoPaso = 'AND ep.cod_paso_actual IS NULL';
+                    break;
+                case 'en_progreso':
+                    $whereEstadoPaso = 'AND epp.estado = "en_progreso"';
+                    break;
+                case 'pendiente':
+                    $whereEstadoPaso = 'AND ep.cod_paso_actual IS NOT NULL AND (epp.estado IS NULL OR epp.estado = "pendiente")';
+                    break;
+                case 'rechazado':
+                    $whereEstadoPaso = 'AND epp.estado = "rechazado"';
+                    break;
+            }
         }
 
         $whereTipo = '';
@@ -423,6 +461,16 @@ class ExamenManager
         $wherePaso = '';
         if ($numeroPaso !== null) {
             $wherePaso = 'AND epc.numero_orden = :numero_paso';
+        }
+
+        $whereBusqueda = '';
+        if ($busqueda) {
+            $whereBusqueda = 'AND (
+                u.nombres LIKE :busqueda
+                OR u.apellidos LIKE :busqueda
+                OR u.registro_academico LIKE :busqueda
+            )';
+            $params['busqueda'] = '%' . $busqueda . '%';
         }
 
         $sql = "SELECT
@@ -461,10 +509,13 @@ class ExamenManager
                 LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                 LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
                     AND epp.cod_paso = ep.cod_paso_actual
-                WHERE ep.cancelado = 0
+                WHERE 1=1
+                $whereCancelado
                 $whereEstado
+                $whereEstadoPaso
                 $whereTipo
                 $wherePaso
+                $whereBusqueda
                 ORDER BY ep.fecha_solicitud DESC
                 LIMIT $limite OFFSET $offset";
 
@@ -484,11 +535,17 @@ class ExamenManager
         // Contar total para paginación
         $sqlCount = "SELECT COUNT(*) AS total
                      FROM examen_proceso ep
+                     JOIN usuario u ON u.cod_usuario = ep.cod_usuario
                      LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
-                     WHERE ep.cancelado = 0
+                     LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
+                         AND epp.cod_paso = ep.cod_paso_actual
+                     WHERE 1=1
+                     $whereCancelado
                      $whereEstado
+                     $whereEstadoPaso
                      $whereTipo
-                     $wherePaso";
+                     $wherePaso
+                     $whereBusqueda";
 
         $countResult = $this->execute($sqlCount, $params);
         $total = $countResult[0]['total'] ?? 0;
@@ -510,19 +567,23 @@ class ExamenManager
     {
         $sql = 'SELECT
                     u.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
                     u.registro_academico,
                     u.cui,
+                    u.sexo,
                     CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
                     u.correo,
                     u.telefono,
                     p.descripcion  AS pensum_nombre,
-                    c.cod_carrera,
+                    et.cod_carrera,
                     c.nombre_actual AS carrera
                 FROM examen_proceso ep
                 JOIN usuario u        ON u.cod_usuario  = ep.cod_usuario
+                JOIN examen_tipo et   ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN carrera c   ON c.cod_carrera = et.cod_carrera
                 LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
                 LEFT JOIN pensum p     ON p.cod_pensum  = i.cod_pensum
-                LEFT JOIN carrera c    ON c.cod_carrera = p.cod_carrera
                 WHERE ep.cod_proceso = :proceso
                 LIMIT 1';
 
@@ -859,35 +920,224 @@ class ExamenManager
      * @param int    $codUsuario  ID del usuario que registra la terna
      * @param string $fase        Fase del examen: 'examen_privado' o 'examen_general'
      */
-    public function guardarTerna(int $codProceso, array $terna, int $codUsuario, string $fase = 'examen_privado'): bool
+    public function guardarTerna(int $codProceso, array $terna, int $codUsuario): bool
     {
         foreach ($terna as $datos) {
-            $sql = 'INSERT INTO examen_terna 
-                        (cod_proceso, fase, nombre_examinador, numero_colegiado, correo, tipo_examinador, posicion, registrado_por)
-                    VALUES 
-                        (:proceso, :fase, :nombre, :colegiado, :correo, :tipo, :posicion, :usuario)
-                    ON DUPLICATE KEY UPDATE 
-                        nombre_examinador = VALUES(nombre_examinador),
-                        numero_colegiado = VALUES(numero_colegiado), 
-                        correo = VALUES(correo),
-                        tipo_examinador = VALUES(tipo_examinador),
+            $tipo = $datos['tipo_examinador'] ?? 'externo';
+            $codUsuarioExaminador = !empty($datos['cod_usuario']) ? (int)$datos['cod_usuario'] : null;
+            $nombre = $datos['nombre'] ?? null;
+            $colegiado = $datos['colegiado'] ?? null;
+            $titulo = $datos['titulo'] ?? null;
+            $correo = $datos['correo'] ?? null;
+
+            // 1. Buscar o crear en el catálogo de examinadores
+            $codExaminador = $this->buscarOCrearExaminador(
+                $tipo,
+                $codUsuarioExaminador,
+                $nombre,
+                $colegiado,
+                $titulo,
+                $correo
+            );
+
+            if (!$codExaminador) {
+                continue;
+            }
+
+            // 2. Guardar en la terna (relación) — solo examen_privado
+            $sql = 'INSERT INTO examen_terna
+                        (cod_proceso, cod_examinador, posicion, registrado_por)
+                    VALUES
+                        (:proceso, :examinador, :posicion, :usuario)
+                    ON DUPLICATE KEY UPDATE
+                        cod_examinador = VALUES(cod_examinador),
                         registrado_por = VALUES(registrado_por)';
 
             $params = [
-                'proceso'   => $codProceso,
-                'fase'      => $fase,
-                'nombre'    => $datos['nombre'],
-                'colegiado' => $datos['colegiado'] ?? null,
-                'correo'    => $datos['correo'] ?? null,
-                'tipo'      => $datos['tipo_examinador'],
-                'posicion'  => (int)$datos['posicion'],
-                'usuario'   => $codUsuario
+                'proceso'    => $codProceso,
+                'examinador' => $codExaminador,
+                'posicion'   => (int)$datos['posicion'],
+                'usuario'    => $codUsuario
             ];
 
             $this->adapter->createStatement($sql, $params)->execute();
         }
 
         return true;
+    }
+
+    /**
+     * Busca o crea un examinador en el catálogo examen_examinador.
+     * Para internos: busca por cod_usuario. Para externos: busca por nombre+colegiado.
+     *
+     * @return int|null cod_examinador o null si falla
+     */
+    private function buscarOCrearExaminador(
+        string $tipo,
+        ?int $codUsuario,
+        ?string $nombre,
+        ?string $colegiado,
+        ?string $tituloProfesional,
+        ?string $correo
+    ): ?int {
+        // Buscar existente
+        if ($tipo === 'interno' && $codUsuario) {
+            $sql = 'SELECT cod_examinador FROM examen_examinador
+                    WHERE cod_usuario = :cod_usuario AND tipo_examinador = "interno"
+                    LIMIT 1';
+            $res = $this->execute($sql, ['cod_usuario' => $codUsuario]);
+            if (!empty($res[0]['cod_examinador'])) {
+                return (int)$res[0]['cod_examinador'];
+            }
+        } else {
+            $sql = 'SELECT cod_examinador FROM examen_examinador
+                    WHERE nombre_examinador = :nombre
+                      AND (numero_colegiado = :colegiado OR (numero_colegiado IS NULL AND :colegiado IS NULL))
+                      AND tipo_examinador = "externo"
+                    LIMIT 1';
+            $res = $this->execute($sql, [
+                'nombre'    => $nombre,
+                'colegiado' => $colegiado
+            ]);
+            if (!empty($res[0]['cod_examinador'])) {
+                $codExaminador = (int)$res[0]['cod_examinador'];
+                // Actualizar título si cambió
+                if ($tituloProfesional !== null) {
+                    $this->adapter->createStatement(
+                        'UPDATE examen_examinador SET titulo_profesional = :titulo WHERE cod_examinador = :cod_examinador',
+                        ['titulo' => $tituloProfesional, 'cod_examinador' => $codExaminador]
+                    )->execute();
+                }
+                return $codExaminador;
+            }
+        }
+
+        // Crear nuevo
+        $sql = 'INSERT INTO examen_examinador
+                    (cod_usuario, nombre_examinador, numero_colegiado, titulo_profesional, correo, tipo_examinador)
+                VALUES
+                    (:cod_usuario, :nombre, :colegiado, :titulo, :correo, :tipo)';
+
+        $this->adapter->createStatement($sql, [
+            'cod_usuario' => $codUsuario,
+            'nombre'      => $nombre,
+            'colegiado'   => $colegiado,
+            'titulo'      => $tituloProfesional,
+            'correo'      => $correo,
+            'tipo'        => $tipo
+        ])->execute();
+
+        return (int)$this->adapter->getDriver()->getLastGeneratedValue();
+    }
+
+    /**
+     * Obtiene la lista de docentes internos (rol = 5 o 11) para usar en dropdown.
+     * Solo usuarios con número de colegiado son elegibles como examinadores.
+     */
+    public function getDocentes(): array
+    {
+        $sql = 'SELECT
+                    u.cod_usuario,
+                    CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
+                    u.numero_colegiado AS colegiado,
+                    u.titulo_profesional AS titulo,
+                    u.correo
+                FROM usuario u
+                JOIN usuario_rol ur ON ur.cod_usuario = u.cod_usuario
+                WHERE ur.cod_rol IN (5, 11)
+                GROUP BY u.cod_usuario
+                ORDER BY u.nombres, u.apellidos';
+
+        return $this->execute($sql);
+    }
+
+    /**
+     * Sustituye un examinador en la terna de un proceso.
+     * Solo permite cuando la evaluación está pendiente (no abierta).
+     *
+     * @param int $codProceso
+     * @param int $posicion Posición del examinador a sustituir (1-3)
+     * @param array $datosNuevoExaminador ['tipo', 'cod_usuario', 'nombre', 'colegiado', 'titulo', 'correo']
+     * @return array ['success' => bool, 'message' => string, 'cod_examinador' => int|null]
+     */
+    public function sustituirExaminador(int $codProceso, int $posicion, array $datosNuevoExaminador): array
+    {
+        // Validar que la evaluación esté pendiente (no abierta)
+        $estado = $this->getEstadoEvaluacion($codProceso);
+        if (!$estado) {
+            return ['success' => false, 'message' => 'Proceso no encontrado.', 'cod_examinador' => null];
+        }
+
+        if (!empty($estado['hora_apertura_evaluacion'])) {
+            return ['success' => false, 'message' => 'No se puede sustituir examinadores porque la evaluación ya fue abierta.', 'cod_examinador' => null];
+        }
+
+        if ($posicion < 1 || $posicion > 3) {
+            return ['success' => false, 'message' => 'Posición de examinador inválida.', 'cod_examinador' => null];
+        }
+
+        // Solo permitir examinadores internos
+        $tipo = $datosNuevoExaminador['tipo'] ?? 'externo';
+        if ($tipo !== 'interno') {
+            return ['success' => false, 'message' => 'Solo se permiten examinadores internos.', 'cod_examinador' => null];
+        }
+
+        $codUsuario = !empty($datosNuevoExaminador['cod_usuario']) ? (int)$datosNuevoExaminador['cod_usuario'] : null;
+        $colegiado = $datosNuevoExaminador['colegiado'] ?? null;
+        $titulo = $datosNuevoExaminador['titulo'] ?? null;
+        $correo = $datosNuevoExaminador['correo'] ?? null;
+
+        if (!$codUsuario) {
+            return ['success' => false, 'message' => 'Debe seleccionar un docente interno.', 'cod_examinador' => null];
+        }
+
+        $faltantes = [];
+        if (!$colegiado) $faltantes[] = 'número de colegiado';
+        if (!$titulo) $faltantes[] = 'título profesional';
+        if (!$correo) $faltantes[] = 'correo electrónico';
+
+        if (!empty($faltantes)) {
+            $msg = 'El docente seleccionado no puede ser examinador sustituto porque le falta: ' . implode(', ', $faltantes) . '. Edite el usuario antes de continuar.';
+            return ['success' => false, 'message' => $msg, 'cod_examinador' => null];
+        }
+
+        // Verificar que el usuario tenga nombre completo en la BD
+        $sqlNombre = 'SELECT nombres, apellidos FROM usuario WHERE cod_usuario = :cod_usuario LIMIT 1';
+        $resNombre = $this->execute($sqlNombre, ['cod_usuario' => $codUsuario]);
+        if (empty($resNombre) || (empty($resNombre[0]['nombres']) && empty($resNombre[0]['apellidos']))) {
+            return ['success' => false, 'message' => 'El docente seleccionado no tiene nombre completo registrado. Edite el usuario antes de continuar.', 'cod_examinador' => null];
+        }
+
+        $codNuevoExaminador = $this->buscarOCrearExaminador(
+            $tipo,
+            $codUsuario,
+            null,
+            $colegiado,
+            $titulo,
+            $correo
+        );
+
+        if (!$codNuevoExaminador) {
+            return ['success' => false, 'message' => 'No se pudo crear el examinador.', 'cod_examinador' => null];
+        }
+
+        // Actualizar la terna
+        $sql = "UPDATE examen_terna
+                SET cod_examinador = :nuevo_examinador
+                WHERE cod_proceso = :proceso
+                  AND posicion = :posicion";
+
+        $this->adapter->createStatement($sql, [
+            'nuevo_examinador' => $codNuevoExaminador,
+            'proceso' => $codProceso,
+            'posicion' => $posicion
+        ])->execute();
+
+        return [
+            'success' => true,
+            'message' => 'Examinador sustituido correctamente.',
+            'cod_examinador' => $codNuevoExaminador
+        ];
     }
 
     /**
@@ -925,44 +1175,41 @@ class ExamenManager
     }
 
     /**
-     * Obtiene los examinadores asignados y la programación del examen.
-     * La terna es compartida entre ambas fases (una sola por proceso),
-     * pero la fecha/hora se obtiene de la columna correspondiente a la fase.
+     * Obtiene los examinadores asignados y la programación del examen privado.
+     * La terna solo existe en la fase examen_privado.
      * T-07
      *
-     * @param int    $codProceso  ID del proceso
-     * @param string $fase        Fase actual ('examen_privado' o 'examen_general')
+     * @param int $codProceso ID del proceso
      */
-    public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
+    public function getTerna(int $codProceso): array
     {
-        // 1. Obtener los examinadores de la tabla terna filtrados por fase
-        // Ahora las ternas son independientes: examen_privado y examen_general pueden tener ternas diferentes
-        $sqlTerna = 'SELECT 
-                        nombre_examinador,
-                        numero_colegiado,
-                        correo,
-                        tipo_examinador,
-                        posicion
-                    FROM examen_terna 
-                    WHERE cod_proceso = :proceso 
-                      AND fase = :fase';
+        // 1. Obtener los examinadores de la tabla terna con JOIN al catálogo
+        // Para internos: nombre, correo, colegiado vienen de usuario
+        // Para externos: vienen de examen_examinador
+        $sqlTerna = 'SELECT
+                        et.posicion,
+                        eex.cod_examinador,
+                        eex.tipo_examinador,
+                        eex.cod_usuario,
+                        COALESCE(u.nombres, eex.nombre_examinador) AS nombre_examinador,
+                        COALESCE(u.apellidos, "") AS apellidos,
+                        COALESCE(u.numero_colegiado, eex.numero_colegiado) AS numero_colegiado,
+                        COALESCE(u.titulo_profesional, eex.titulo_profesional) AS titulo_profesional,
+                        COALESCE(u.correo, eex.correo) AS correo
+                    FROM examen_terna et
+                    JOIN examen_examinador eex ON eex.cod_examinador = et.cod_examinador
+                    LEFT JOIN usuario u ON u.cod_usuario = eex.cod_usuario
+                    WHERE et.cod_proceso = :proceso
+                    ORDER BY et.posicion';
 
-        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso, 'fase' => $fase]);
-        
-        // 2. Obtener fecha y hora según la fase
-        if ($fase === 'examen_general') {
-            $sqlProceso = 'SELECT fecha_examen_general AS fecha,
-                                  hora_examen_general AS hora
-                           FROM examen_proceso 
-                           WHERE cod_proceso = :proceso 
-                           LIMIT 1';
-        } else {
-            $sqlProceso = 'SELECT fecha_examen_privado AS fecha,
-                                  hora_examen_privado AS hora
-                           FROM examen_proceso 
-                           WHERE cod_proceso = :proceso 
-                           LIMIT 1';
-        }
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
+
+        // 2. Obtener fecha y hora del examen privado
+        $sqlProceso = 'SELECT fecha_examen_privado AS fecha,
+                              hora_examen_privado AS hora
+                       FROM examen_proceso
+                       WHERE cod_proceso = :proceso
+                       LIMIT 1';
 
         $resProceso = $this->execute($sqlProceso, ['proceso' => $codProceso]);
         $prog = $resProceso[0] ?? ['fecha' => null, 'hora' => null];
@@ -976,12 +1223,17 @@ class ExamenManager
         ];
 
         foreach ($rows as $row) {
+            $nombreCompleto = trim($row['nombre_examinador'] . ' ' . $row['apellidos']);
+            
             $terna['examinadores'][] = [
-                'nombre'    => $row['nombre_examinador'],
-                'colegiado' => $row['numero_colegiado'],
-                'correo'    => $row['correo'],
-                'tipo'      => $row['tipo_examinador'],
-                'posicion'  => $row['posicion']
+                'cod_examinador' => $row['cod_examinador'],
+                'cod_usuario'    => $row['cod_usuario'],
+                'nombre'         => $nombreCompleto,
+                'colegiado'      => $row['numero_colegiado'],
+                'titulo'         => $row['titulo_profesional'],
+                'correo'         => $row['correo'],
+                'tipo'           => $row['tipo_examinador'],
+                'posicion'       => $row['posicion']
             ];
         }
 
@@ -1165,6 +1417,7 @@ class ExamenManager
                   AND epc.fase = "examen_general"
                   AND epp.estado = "completado"
                   AND ep.cod_paso_actual IS NULL
+                  AND ep.fecha_examen_general IS NULL
                 GROUP BY ep.cod_proceso, u.nombres, u.apellidos, u.registro_academico, u.correo, c.nombre_actual, ep.fecha_solicitud
                 ORDER BY u.apellidos, u.nombres';
 
@@ -1364,6 +1617,62 @@ class ExamenManager
         return $result;
     }
 
+    /**
+     * Obtiene la suma de punteos por examinador.
+     * Solo suma respuestas tipo 'numero' con punteo no nulo.
+     * Retorna array con clave posicion => suma, o null si no evaluó.
+     */
+    public function getNotasExaminadores(int $codProceso): array
+    {
+        $notas = [];
+        for ($pos = 1; $pos <= 3; $pos++) {
+            $eval = $this->execute(
+                'SELECT cod_evaluacion FROM examen_matriz_evaluacion
+                 WHERE cod_proceso = :proceso AND posicion_examinador = :pos
+                 LIMIT 1',
+                ['proceso' => $codProceso, 'pos' => $pos]
+            );
+            if (empty($eval)) {
+                $notas[$pos] = null;
+                continue;
+            }
+            $codEvaluacion = (int) $eval[0]['cod_evaluacion'];
+            $suma = $this->execute(
+                'SELECT COALESCE(SUM(r.punteo), 0) AS total
+                 FROM examen_matriz_respuesta r
+                 JOIN examen_matriz_pregunta p ON p.cod_pregunta = r.cod_pregunta
+                 WHERE r.cod_evaluacion = :eval AND p.tipo_campo = :tipo',
+                ['eval' => $codEvaluacion, 'tipo' => 'numero']
+            );
+            $notas[$pos] = isset($suma[0]['total']) ? (float) $suma[0]['total'] : null;
+        }
+        return $notas;
+    }
+
+    /**
+     * Obtiene las observaciones/correcciones generales de cada examinador.
+     * Retorna array con clave posicion => observaciones, o null si no evaluó.
+     */
+    public function getObservacionesExaminadores(int $codProceso): array
+    {
+        $observaciones = [];
+        for ($pos = 1; $pos <= 3; $pos++) {
+            $eval = $this->execute(
+                'SELECT observaciones_generales
+                 FROM examen_matriz_evaluacion
+                 WHERE cod_proceso = :proceso AND posicion_examinador = :pos
+                 LIMIT 1',
+                ['proceso' => $codProceso, 'pos' => $pos]
+            );
+            if (empty($eval)) {
+                $observaciones[$pos] = null;
+                continue;
+            }
+            $observaciones[$pos] = $eval[0]['observaciones_generales'] ?? null;
+        }
+        return $observaciones;
+    }
+
     public function getProcesosEvaluables(array $filtros = []): array
     {
         $pagina = $filtros['pagina'] ?? 1;
@@ -1382,6 +1691,13 @@ class ExamenManager
                     ep.fecha_solicitud,
                     epc.fase AS fase_actual,
                     epc.numero_orden AS paso_actual_orden,
+                    ep.codigo_evaluacion,
+                    ep.hora_apertura_evaluacion,
+                    ep.hora_cierre_evaluacion,
+                    ep.numero_reprogramacion,
+                    ep.ex1_completado,
+                    ep.ex2_completado,
+                    ep.ex3_completado,
                     (
                         SELECT COUNT(DISTINCT eme.posicion_examinador)
                         FROM examen_matriz_evaluacion eme
@@ -1390,9 +1706,7 @@ class ExamenManager
                 FROM examen_proceso ep
                 JOIN usuario u ON u.cod_usuario = ep.cod_usuario
                 JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
-                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
-                LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
-                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
+                LEFT JOIN carrera c ON c.cod_carrera = et.cod_carrera
                 JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                 WHERE ep.cancelado = 0
                   AND EXISTS (
@@ -1429,5 +1743,565 @@ class ExamenManager
             'limite' => $limite,
             'paginas_total' => ceil($total / $limite)
         ];
+    }
+
+    /**
+     * Genera un código de 8 dígitos para la evaluación de un proceso.
+     * Guarda el código, hora_apertura=NOW(), resetea ex1/ex2/ex3=0.
+     */
+    public function abrirEvaluacion(int $codProceso): string
+    {
+        $estado = $this->getEstadoEvaluacion($codProceso);
+        if (!$estado) {
+            throw new \RuntimeException('Proceso no encontrado.');
+        }
+
+        if (!empty($estado['hora_cierre_evaluacion'])) {
+            throw new \RuntimeException('La evaluación ya fue cerrada y no puede reabrirse.');
+        }
+
+        if (!empty($estado['codigo_evaluacion'])) {
+            throw new \RuntimeException('La evaluación ya está abierta.');
+        }
+
+        $codigo = str_pad((string) random_int(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+
+        $sql = "UPDATE examen_proceso
+                SET codigo_evaluacion = :codigo,
+                    hora_apertura_evaluacion = NOW(),
+                    hora_cierre_evaluacion = NULL,
+                    ex1_completado = 0,
+                    ex2_completado = 0,
+                    ex3_completado = 0
+                WHERE cod_proceso = :proceso";
+
+        $this->adapter->createStatement($sql, [
+            'codigo'  => $codigo,
+            'proceso' => $codProceso
+        ])->execute();
+
+        return $codigo;
+    }
+
+    /**
+     * Cierra la evaluación: hora_cierre=NOW(), codigo_evaluacion=NULL.
+     * Requiere que al menos 2 examinadores hayan completado la evaluación.
+     *
+     * @throws RuntimeException si menos de 2 examinadores han completado
+     */
+    public function cerrarEvaluacion(int $codProceso): bool
+    {
+        $estado = $this->getEstadoEvaluacion($codProceso);
+        if (!$estado) {
+            throw new \RuntimeException('Proceso no encontrado.');
+        }
+
+        $completados = 0;
+        for ($i = 1; $i <= 3; $i++) {
+            if (!empty($estado["ex{$i}_completado"])) {
+                $completados++;
+            }
+        }
+
+        if ($completados < 2) {
+            throw new \RuntimeException(
+                "No se puede cerrar la evaluación. Debe haber calificación de al menos 2 examinadores. " .
+                "Actualmente: {$completados} completado(s)."
+            );
+        }
+
+        $sql = "UPDATE examen_proceso
+                SET hora_cierre_evaluacion = NOW(),
+                    codigo_evaluacion = NULL
+                WHERE cod_proceso = :proceso";
+
+        $result = $this->adapter->createStatement($sql, [
+            'proceso' => $codProceso
+        ])->execute();
+
+        return (bool) $result->getAffectedRows();
+    }
+
+    /**
+     * Verifica que el código coincida y que la evaluación esté abierta.
+     * La evaluación está abierta si tiene hora_apertura pero no hora_cierre.
+     */
+    public function validarCodigo(int $codProceso, string $codigo): bool
+    {
+        $sql = "SELECT 1 FROM examen_proceso
+                WHERE cod_proceso = :proceso
+                  AND codigo_evaluacion = :codigo
+                  AND hora_apertura_evaluacion IS NOT NULL
+                  AND hora_cierre_evaluacion IS NULL
+                LIMIT 1";
+
+        $rows = $this->execute($sql, [
+            'proceso' => $codProceso,
+            'codigo'  => $codigo
+        ]);
+
+        return !empty($rows);
+    }
+
+    /**
+     * Retorna el estado actual de la evaluación (código, horas, completados, reprogramaciones).
+     */
+    public function getEstadoEvaluacion(int $codProceso): ?array
+    {
+        $sql = "SELECT codigo_evaluacion,
+                       hora_apertura_evaluacion,
+                       hora_cierre_evaluacion,
+                       ex1_completado,
+                       ex2_completado,
+                       ex3_completado,
+                       numero_reprogramacion,
+                       reprogramacion_autorizada_por,
+                       numero_acta,
+                       estado_acta,
+                       fecha_generacion_acta
+                FROM examen_proceso
+                WHERE cod_proceso = :proceso
+                LIMIT 1";
+
+        $rows = $this->execute($sql, ['proceso' => $codProceso]);
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Reprograma un examen privado cerrado.
+     * Elimina evaluaciones anteriores, resetea estado, actualiza fecha/hora.
+     * @throws RuntimeException si ya se reprogramó 2 veces o no está cerrado
+     */
+    public function reprogramarExamenPrivado(int $codProceso, string $nuevaFecha, string $nuevaHora, int $directorId): bool
+    {
+        $estado = $this->getEstadoEvaluacion($codProceso);
+        if (!$estado) {
+            throw new \RuntimeException('Proceso no encontrado.');
+        }
+
+        $numeroReprog = (int) ($estado['numero_reprogramacion'] ?? 0);
+        if ($numeroReprog >= 2) {
+            throw new \RuntimeException('Límite de reprogramaciones alcanzado (máximo 2).');
+        }
+
+        // 1. Eliminar evaluaciones anteriores (hard delete)
+        $evaluaciones = $this->execute(
+            'SELECT cod_evaluacion FROM examen_matriz_evaluacion WHERE cod_proceso = :proceso',
+            ['proceso' => $codProceso]
+        );
+
+        foreach ($evaluaciones as $eval) {
+            $codEval = (int) $eval['cod_evaluacion'];
+            $this->adapter->createStatement(
+                'DELETE FROM examen_matriz_respuesta WHERE cod_evaluacion = :eval',
+                ['eval' => $codEval]
+            )->execute();
+            $this->adapter->createStatement(
+                'DELETE FROM examen_matriz_evaluacion WHERE cod_evaluacion = :eval',
+                ['eval' => $codEval]
+            )->execute();
+        }
+
+        // 2. Resetear estado y actualizar fecha/hora
+        $sql = "UPDATE examen_proceso
+                SET codigo_evaluacion = NULL,
+                    hora_apertura_evaluacion = NULL,
+                    hora_cierre_evaluacion = NULL,
+                    ex1_completado = 0,
+                    ex2_completado = 0,
+                    ex3_completado = 0,
+                    fecha_examen_privado = :fecha,
+                    hora_examen_privado = :hora,
+                    numero_reprogramacion = numero_reprogramacion + 1,
+                    reprogramacion_autorizada_por = :director
+                WHERE cod_proceso = :proceso";
+
+        $this->adapter->createStatement($sql, [
+            'fecha'    => $nuevaFecha,
+            'hora'     => $nuevaHora,
+            'director' => $directorId,
+            'proceso'  => $codProceso,
+        ])->execute();
+
+        return true;
+    }
+
+    /**
+     * Retorna la terna con sus nombres para un proceso específico.
+     */
+    public function getTernaParaEvaluacion(int $codProceso): array
+    {
+        return $this->getTerna($codProceso);
+    }
+
+    /**
+     * Marca un examinador como completado en examen_proceso.
+     */
+    public function marcarExaminadorCompletado(int $codProceso, int $posicion): bool
+    {
+        if ($posicion < 1 || $posicion > 3) {
+            return false;
+        }
+
+        $columna = "ex{$posicion}_completado";
+        $sql = "UPDATE examen_proceso
+                SET {$columna} = 1
+                WHERE cod_proceso = :proceso";
+
+        $result = $this->adapter->createStatement($sql, [
+            'proceso' => $codProceso
+        ])->execute();
+
+        return (bool) $result->getAffectedRows();
+    }
+
+    /**
+     * Genera el siguiente correlativo de acta de forma global por año.
+     * Todas las maestrías comparten el mismo contador.
+     *
+     * @param int $anio Año del acta
+     * @return array ['numero_acta' => '001-2026', 'correlativo' => 1, 'anio' => 2026]
+     */
+    public function generarNumeroActa(int $anio): array
+    {
+        $table = new TableGateway('examen_acta_correlativo', $this->adapter);
+
+        // Buscar el último correlativo para este año
+        $result = $table->select(['anio' => $anio]);
+        $row = $result->current();
+
+        if ($row) {
+            $nuevoCorrelativo = (int)$row['ultimo_correlativo'] + 1;
+            // Actualizar
+            $table->update(
+                ['ultimo_correlativo' => $nuevoCorrelativo],
+                ['anio' => $anio]
+            );
+        } else {
+            $nuevoCorrelativo = 1;
+            // Insertar nuevo registro
+            $table->insert([
+                'anio' => $anio,
+                'ultimo_correlativo' => $nuevoCorrelativo
+            ]);
+        }
+
+        // Formato con ceros a la izquierda: 001-2026
+        $numeroActa = sprintf('%03d-%d', $nuevoCorrelativo, $anio);
+
+        return [
+            'numero_acta' => $numeroActa,
+            'correlativo' => $nuevoCorrelativo,
+            'anio' => $anio
+        ];
+    }
+
+    /**
+     * Registra el acta generada en el proceso de examen.
+     *
+     * @param int $codProceso
+     * @param string $numeroActa
+     * @param int $correlativo
+     * @param int $anio
+     * @param string $estado 'aprobado' o 'reprobado'
+     * @return bool
+     */
+    public function registrarActaProceso(
+        int $codProceso,
+        string $numeroActa,
+        int $correlativo,
+        int $anio,
+        string $estado
+    ): bool {
+        $table = new TableGateway('examen_proceso', $this->adapter);
+
+        try {
+            $table->update([
+                'numero_acta' => $numeroActa,
+                'anio_acta' => $anio,
+                'correlativo_acta' => $correlativo,
+                'fecha_generacion_acta' => date('Y-m-d H:i:s'),
+                'estado_acta' => $estado
+            ], [
+                'cod_proceso' => $codProceso
+            ]);
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene el nombre del Secretario de Examen Privado (rol 11).
+     * Busca el primer usuario activo con ese rol.
+     *
+     * @return string Nombre completo del secretario o 'Secretario Académico' si no existe
+     */
+    public function getNombreSecretarioExamenPrivado(): string
+    {
+        $sql = 'SELECT CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo
+                FROM usuario u
+                JOIN usuario_rol ur ON ur.cod_usuario = u.cod_usuario
+                WHERE ur.cod_rol = :rol
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['rol' => 11]);
+        return $result[0]['nombre_completo'] ?? 'Secretario Académico';
+    }
+
+    /**
+     * Obtiene los datos completos del Secretario de Examen Privado (rol 11)
+     * para usar en la sustitución de examinadores.
+     *
+     * @return array|null Datos del secretario o null si no existe
+     */
+    public function getSecretarioParaSustitucion(): ?array
+    {
+        $sql = 'SELECT
+                    u.cod_usuario,
+                    CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
+                    u.numero_colegiado AS colegiado,
+                    u.titulo_profesional AS titulo,
+                    u.correo
+                FROM usuario u
+                JOIN usuario_rol ur ON ur.cod_usuario = u.cod_usuario
+                WHERE ur.cod_rol = :rol
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['rol' => 11]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Lista los procesos en fase examen_general que ya tienen notificación
+     * grupal enviada (fecha_examen_general no nula).
+     */
+    public function getProcesosConNotificacionGeneral(): array
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    u.sexo,
+                    et.nombre AS tipo_examen,
+                    ep.fecha_solicitud,
+                    ep.tema_tesis,
+                    ep.fecha_examen_general,
+                    ep.hora_examen_general,
+                    c.nombre_actual AS carrera,
+                    eag.numero_acta AS acta_generada
+                FROM examen_proceso ep
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN carrera c ON c.cod_carrera = et.cod_carrera
+                LEFT JOIN examen_acta_general eag ON eag.cod_proceso = ep.cod_proceso
+                WHERE ep.cancelado = 0
+                  AND ep.cod_paso_actual IS NULL
+                  AND ep.fecha_examen_general IS NOT NULL
+                ORDER BY ep.fecha_examen_general, u.apellidos, u.nombres';
+
+        return $this->execute($sql, []);
+    }
+
+    /**
+     * Verifica si un proceso ya tiene acta general generada.
+     */
+    public function yaTieneActaGeneral(int $codProceso): bool
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM examen_acta_general WHERE cod_proceso = :proceso';
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return (int) ($result[0]['total'] ?? 0) > 0;
+    }
+
+    /**
+     * Obtiene los datos necesarios para el formulario del acta general.
+     * Incluye datos compartidos del acto grupal si ya existe.
+     */
+    public function getDatosActaGeneral(int $codProceso): ?array
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    u.sexo,
+                    et.nombre AS tipo_examen,
+                    c.nombre_actual AS carrera,
+                    ep.tema_tesis,
+                    ep.fecha_examen_general,
+                    ep.hora_examen_general,
+                    eag.cod_acta,
+                    eag.numero_acta,
+                    eag.numero_recibo,
+                    eag.promedio,
+                    eag.madrina_padrino,
+                    eagod.cod_acto_graduacion,
+                    eagod.lugar AS lugar_acto,
+                    eagod.examinador_1,
+                    eagod.examinador_2,
+                    eagod.examinador_3,
+                    eagod.hora_firma
+                FROM examen_proceso ep
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN carrera c ON c.cod_carrera = et.cod_carrera
+                LEFT JOIN examen_acta_general eag ON eag.cod_proceso = ep.cod_proceso
+                LEFT JOIN examen_acto_graduacion eagod ON eagod.cod_acto_graduacion = eag.cod_acto_graduacion
+                WHERE ep.cod_proceso = :proceso
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Obtiene o crea el acto de graduación compartido para una fecha/hora.
+     * Todos los estudiantes con la misma fecha y hora comparten el mismo acto.
+     */
+    public function obtenerOCrearActoGraduacion(string $fecha, string $hora, array $datos): int
+    {
+        // Buscar acto grupal existente por fecha y hora
+        $sql = 'SELECT cod_acto_graduacion FROM examen_acto_graduacion WHERE fecha_acto = :fecha AND hora_acto = :hora LIMIT 1';
+        $result = $this->execute($sql, ['fecha' => $fecha, 'hora' => $hora]);
+
+        if (!empty($result)) {
+            return (int) $result[0]['cod_acto_graduacion'];
+        }
+
+        // Crear nuevo acto grupal
+        $this->exec(
+            'INSERT INTO examen_acto_graduacion (
+                fecha_acto, hora_acto, lugar, examinador_1, examinador_2, examinador_3, hora_firma, generado_por
+            ) VALUES (
+                :fecha, :hora, :lugar, :ex1, :ex2, :ex3, :hora_firma, :generado_por
+            )',
+            [
+                'fecha'      => $fecha,
+                'hora'       => $hora,
+                'lugar'      => $datos['lugar'] ?? '',
+                'ex1'        => $datos['examinador_1'] ?? null,
+                'ex2'        => $datos['examinador_2'] ?? null,
+                'ex3'        => $datos['examinador_3'] ?? null,
+                'hora_firma' => $datos['hora_firma'] ?? null,
+                'generado_por' => $datos['generado_por'] ?? null,
+            ]
+        );
+
+        return (int) $this->adapter->getDriver()->getLastGeneratedValue();
+    }
+
+    /**
+     * Guarda el acta general en la base de datos.
+     * Primero obtiene/crea el acto grupal compartido, luego inserta el acta individual.
+     * Reutiliza el correlativo global examen_acta_correlativo.
+     */
+    public function guardarActaGeneral(array $datos): int
+    {
+        $anio = (int) date('Y');
+        $actaNum = $this->generarNumeroActa($anio);
+
+        // Obtener o crear el acto grupal compartido
+        $codActoGraduacion = $this->obtenerOCrearActoGraduacion(
+            $datos['fecha_examen'],
+            $datos['hora_examen'],
+            $datos
+        );
+
+        $params = [
+            'cod_acto_graduacion' => $codActoGraduacion,
+            'cod_proceso'         => $datos['cod_proceso'],
+            'numero_acta'         => $actaNum['numero_acta'],
+            'anio_acta'           => $actaNum['anio'],
+            'correlativo_acta'    => $actaNum['correlativo'],
+            'numero_recibo'       => $datos['numero_recibo'] ?? null,
+            'promedio'            => $datos['promedio'] ?? null,
+            'madrina_padrino'     => $datos['madrina_padrino'] ?? null,
+            'generado_por'        => $datos['generado_por'] ?? null,
+        ];
+
+        $this->exec(
+            'INSERT INTO examen_acta_general (
+                cod_acto_graduacion, cod_proceso, numero_acta, anio_acta, correlativo_acta,
+                numero_recibo, promedio, madrina_padrino, generado_por
+            ) VALUES (
+                :cod_acto_graduacion, :cod_proceso, :numero_acta, :anio_acta, :correlativo_acta,
+                :numero_recibo, :promedio, :madrina_padrino, :generado_por
+            )',
+            $params
+        );
+
+        $lastId = $this->adapter->getDriver()->getLastGeneratedValue();
+        return (int) $lastId;
+    }
+
+    // ── Actas de Examen Privado ───────────────────────
+
+    /**
+     * Obtiene el acta de examen privado por proceso.
+     */
+    public function getActaPrivado(int $codProceso): ?array
+    {
+        $sql = 'SELECT * FROM examen_acta_privado WHERE cod_proceso = :proceso LIMIT 1';
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Verifica si un proceso ya tiene acta privada generada.
+     */
+    public function actaPrivadoExiste(int $codProceso): bool
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM examen_acta_privado WHERE cod_proceso = :proceso';
+        $result = $this->execute($sql, ['proceso' => $codProceso]);
+        return (int) ($result[0]['total'] ?? 0) > 0;
+    }
+
+    /**
+     * Guarda el acta de examen privado en la tabla dedicada.
+     * Genera correlativo global si no existe.
+     */
+    public function guardarActaPrivado(array $datos): int
+    {
+        $anio = (int) date('Y');
+        $actaNum = $this->generarNumeroActa($anio);
+
+        $params = [
+            'cod_proceso'           => $datos['cod_proceso'],
+            'numero_acta'           => $actaNum['numero_acta'],
+            'anio_acta'             => $actaNum['anio'],
+            'correlativo_acta'      => $actaNum['correlativo'],
+            'recibo'                => $datos['recibo'] ?? null,
+            'nota_final'            => $datos['nota_final'] ?? null,
+            'estado'                => $datos['estado'] ?? null,
+            'examinador_1'          => $datos['examinador_1'] ?? null,
+            'examinador_2'          => $datos['examinador_2'] ?? null,
+            'examinador_3'          => $datos['examinador_3'] ?? null,
+            'fecha_examen'          => $datos['fecha_examen'] ?? null,
+            'hora_examen'           => $datos['hora_examen'] ?? null,
+            'hora_firma'            => $datos['hora_firma'] ?? null,
+            'lugar'                 => $datos['lugar'] ?? null,
+            'justificacion_modalidad' => $datos['justificacion_modalidad'] ?? null,
+            'generado_por'          => $datos['generado_por'] ?? null,
+        ];
+
+        $this->exec(
+            'INSERT INTO examen_acta_privado (
+                cod_proceso, numero_acta, anio_acta, correlativo_acta, recibo,
+                nota_final, estado, examinador_1, examinador_2, examinador_3,
+                fecha_examen, hora_examen, hora_firma, lugar,
+                justificacion_modalidad, generado_por
+            ) VALUES (
+                :cod_proceso, :numero_acta, :anio_acta, :correlativo_acta, :recibo,
+                :nota_final, :estado, :examinador_1, :examinador_2, :examinador_3,
+                :fecha_examen, :hora_examen, :hora_firma, :lugar,
+                :justificacion_modalidad, :generado_por
+            )',
+            $params
+        );
+
+        return (int) $this->adapter->getDriver()->getLastGeneratedValue();
     }
 }

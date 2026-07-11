@@ -144,9 +144,9 @@ if ($esPasoFisico && !empty($requisitosReferencia)) {
 
             <!-- Mensaje importante -->
             <?php if ($esPasoFisico): ?>
-                <div style="padding: 10px 14px; margin-bottom: 20px; font-size: 12px; color: #555; background: #f5f5f5; border-radius: 6px; border-left: 3px solid #999;">
-                    <i class="fa fa-info-circle" style="margin-right: 8px; font-size: 14px; color: #777;"></i>
-                    <span style="font-size: 13px;">
+                <div style="padding: 14px 18px; margin-bottom: 20px; font-size: 16px; color: #1a3c6b; background: #e8f0fe; border-radius: 6px; border-left: 4px solid #1a3c6b; font-weight: 600;">
+                    <i class="fa fa-info-circle" style="margin-right: 8px; font-size: 18px; color: #1a3c6b;"></i>
+                    <span>
                         Entregar documentación física en la oficina de Postgrados. Horario: 8:00 – 16:00 hrs. (Lun – Vie).
                     </span>
                 </div>
@@ -457,7 +457,7 @@ $(document).ready(function() {
         const link = $(this).data('link');
         
         if (!link) {
-            alert('ERROR: No se encontró el enlace del documento');
+            ConfirmService.alert('ERROR: No se encontró el enlace del documento');
             return;
         }
         
@@ -518,15 +518,15 @@ $(document).ready(function() {
             }
             
             if (!formatoValido) {
-                alert(`Formato no permitido.\nFormatos aceptados: ${formatos}\nArchivo seleccionado: ${file.name}`);
+                ConfirmService.alert(`Formato no permitido.\nFormatos aceptados: ${formatos}\nArchivo seleccionado: ${file.name}`);
                 $(this).remove();
                 return;
             }
-            
+
             // Si todo está bien, confirmar subida
-            if (confirm(`¿Desea subir el archivo "${file.name}"?`)) {
+            ConfirmService.confirm(`¿Desea subir el archivo "${file.name}"?`, function() {
                 subirDocumento(file, codRequisito);
-            }
+            });
             
             // Remover input
             $(this).remove();
@@ -561,12 +561,12 @@ $(document).ready(function() {
                 if (response.success) {
                     location.reload();
                 } else {
-                    alert('✗ ERROR\n\n' + (response.message || 'No se pudo subir el documento'));
+                    ConfirmService.alert('✗ ERROR\n\n' + (response.message || 'No se pudo subir el documento'));
                 }
             },
             error: function(xhr, status, error) {
                 $overlay.remove();
-                alert('✗ ERROR DE SERVIDOR\n\nOcurrió un error al subir el documento:\n' + error);
+                ConfirmService.alert('✗ ERROR DE SERVIDOR\n\nOcurrió un error al subir el documento:\n' + error);
             }
         });
     }

@@ -64,66 +64,162 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                         Selecciona <strong>Revisar</strong> para registrar la aprobación tras la revisión presencial.
                     </p>
 
+                    <?php
+                    // Separar procesos por parte
+                    $procesosParte1 = [];
+                    $procesosParte2 = [];
+                    foreach ($procesos as $p) {
+                        if ((int) ($p['sub_paso'] ?? 1) === 1) {
+                            $procesosParte1[] = $p;
+                        } else {
+                            $procesosParte2[] = $p;
+                        }
+                    }
+                    ?>
+
                     <?php if (empty($procesos)): ?>
                         <div class="alert alert-info">
                             <i class="fa fa-info-circle"></i>
                             No hay procesos activos en esta fase.
                         </div>
                     <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover" style="font-size: 13px;">
-                                <thead style="background:#f5f5f5;">
-                                    <tr>
-                                        <th style="width:5%;">#</th>
-                                        <th>Estudiante</th>
-                                        <th style="width:13%;">Carné</th>
-                                        <th style="width:12%;">Tipo de Examen</th>
-                                        <th style="width:18%;">Profesional seleccionado</th>
-                                        <th style="width:8%;">Parte</th>
-                                        <th style="width:12%;">Estado</th>
-                                        <th style="width:10%; text-align:center;">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($procesos as $i => $p): ?>
-                                    <?php $subPaso = (int) ($p['sub_paso'] ?? 1); ?>
-                                    <tr>
-                                        <td><?= $i + 1 ?></td>
-                                        <td><?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?></td>
-                                        <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
-                                        <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
-                                        <td>
-                                            <?php if (!empty($p['profesional_nombre'])): ?>
-                                                <?= $this->escapeHtml($p['profesional_nombre']) ?>
-                                            <?php else: ?>
-                                                <span class="text-muted"><em>Sin seleccionar</em></span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($subPaso === 1): ?>
-                                                <span class="label label-info">Parte 1</span>
-                                            <?php else: ?>
-                                                <span class="label label-primary">Parte 2</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
-                                                <span class="label label-success">APROBADO</span>
-                                            <?php else: ?>
-                                                <span class="label label-warning">PENDIENTE</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td style="text-align:center;">
-                                            <a class="btn btn-xs btn-primary"
-                                               href="<?= $this->url('examen', ['action' => 'configurarAutorizacion', 'id' => $p['cod_proceso']]) ?>">
-                                                <i class="fa fa-eye"></i> Revisar
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+
+                        <!-- ========== PARTE 1 ========== -->
+                        <div class="panel panel-info" style="margin-bottom: 24px;">
+                            <div class="panel-heading">
+                                <i class="fa fa-file-text-o"></i>
+                                <strong>Parte 1 — Autorización de Imprímase</strong>
+                                <span class="badge" style="margin-left:8px;"><?= count($procesosParte1) ?></span>
+                            </div>
+                            <div class="panel-body">
+                                <p style="color:#555; margin-top:0;">
+                                    Estudiantes que aún deben seleccionar un profesional calificado (Licenciado en Letras)
+                                    y presentar la documentación física para que el Director firme la autorización de impresión.
+                                </p>
+
+                                <?php if (empty($procesosParte1)): ?>
+                                    <div class="alert alert-success" style="margin-bottom:0;">
+                                        <i class="fa fa-check-circle"></i>
+                                        No hay estudiantes en la Parte 1. Todos han avanzado a la Parte 2.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" style="font-size: 13px; margin-bottom:0;">
+                                            <thead style="background:#f5f5f5;">
+                                                <tr>
+                                                    <th style="width:5%;">#</th>
+                                                    <th>Estudiante</th>
+                                                    <th style="width:13%;">Carné</th>
+                                                    <th style="width:12%;">Tipo de Examen</th>
+                                                    <th style="width:22%;">Profesional seleccionado</th>
+                                                    <th style="width:12%;">Estado</th>
+                                                    <th style="width:10%; text-align:center;">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($procesosParte1 as $i => $p): ?>
+                                                <tr>
+                                                    <td><?= $i + 1 ?></td>
+                                                    <td><?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?></td>
+                                                    <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                                    <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
+                                                    <td>
+                                                        <?php if (!empty($p['profesional_nombre'])): ?>
+                                                            <?= $this->escapeHtml($p['profesional_nombre']) ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted"><em>Sin seleccionar</em></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
+                                                            <span class="label label-success">APROBADO</span>
+                                                        <?php else: ?>
+                                                            <span class="label label-warning">PENDIENTE</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td style="text-align:center;">
+                                                        <a class="btn btn-xs btn-primary"
+                                                           href="<?= $this->url('examen', ['action' => 'configurarAutorizacion', 'id' => $p['cod_proceso']]) ?>">
+                                                            <i class="fa fa-eye"></i> Revisar
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
+
+                        <!-- ========== PARTE 2 ========== -->
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <i class="fa fa-folder-open"></i>
+                                <strong>Parte 2 — Entrega de Documentos Finales</strong>
+                                <span class="badge" style="margin-left:8px;"><?= count($procesosParte2) ?></span>
+                            </div>
+                            <div class="panel-body">
+                                <p style="color:#555; margin-top:0;">
+                                    Estudiantes que ya pasaron la Parte 1 y deben entregar físicamente los ejemplares
+                                    del proyecto empastado, CDs y la constancia de recepción firmada para poder avanzar al Examen General.
+                                </p>
+
+                                <?php if (empty($procesosParte2)): ?>
+                                    <div class="alert alert-info" style="margin-bottom:0;">
+                                        <i class="fa fa-info-circle"></i>
+                                        No hay estudiantes en la Parte 2. Todos aún se encuentran en la Parte 1.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" style="font-size: 13px; margin-bottom:0;">
+                                            <thead style="background:#f5f5f5;">
+                                                <tr>
+                                                    <th style="width:5%;">#</th>
+                                                    <th>Estudiante</th>
+                                                    <th style="width:13%;">Carné</th>
+                                                    <th style="width:12%;">Tipo de Examen</th>
+                                                    <th style="width:22%;">Profesional seleccionado</th>
+                                                    <th style="width:12%;">Estado</th>
+                                                    <th style="width:10%; text-align:center;">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($procesosParte2 as $i => $p): ?>
+                                                <tr>
+                                                    <td><?= $i + 1 ?></td>
+                                                    <td><?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?></td>
+                                                    <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                                    <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
+                                                    <td>
+                                                        <?php if (!empty($p['profesional_nombre'])): ?>
+                                                            <?= $this->escapeHtml($p['profesional_nombre']) ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted"><em>Sin seleccionar</em></span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
+                                                            <span class="label label-success">APROBADO</span>
+                                                        <?php else: ?>
+                                                            <span class="label label-warning">PENDIENTE</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td style="text-align:center;">
+                                                        <a class="btn btn-xs btn-primary"
+                                                           href="<?= $this->url('examen', ['action' => 'configurarAutorizacion', 'id' => $p['cod_proceso']]) ?>">
+                                                            <i class="fa fa-eye"></i> Revisar
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
                     <?php endif; ?>
                 </div>
 
@@ -466,6 +562,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.js"></script>
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
 <script>
 (function() {
     'use strict';
@@ -480,10 +577,10 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                 if (resp.status === 'success' || resp.success === true) {
                     onSuccess(resp);
                 } else {
-                    alert(resp.message || 'Operación fallida');
+                    ToastService.error(resp.message || 'Operación fallida');
                 }
             } catch (e) {
-                alert('Respuesta inválida del servidor');
+                ToastService.error('Respuesta inválida del servidor');
             }
         };
         xhr.send(fd);
@@ -500,10 +597,10 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                 if (resp.status === 'success' || resp.success === true) {
                     onSuccess(resp);
                 } else {
-                    alert(resp.message || 'Operación fallida');
+                    ToastService.error(resp.message || 'Operación fallida');
                 }
             } catch (e) {
-                alert('Respuesta inválida del servidor');
+                ToastService.error('Respuesta inválida del servidor');
             }
         };
         xhr.send(fd);
@@ -556,7 +653,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                 document.getElementById(hiddenId).value = $(editorId).summernote('code');
             }
             postForm('<?= $urlGuardarInstrucciones ?>', formInstr, function(r) {
-                alert(r.message);
+                ToastService.success(r.message);
             });
         });
     });
@@ -571,8 +668,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
     }
     document.querySelectorAll('.btn-del-doc').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (!confirm('¿Eliminar este documento?')) return;
-            postData('<?= $urlEliminarDoc ?>', { cod_documento: btn.dataset.id }, function() { location.reload(); });
+            ConfirmService.confirm('¿Eliminar este documento?', function() {
+                postData('<?= $urlEliminarDoc ?>', { cod_documento: btn.dataset.id }, function() { location.reload(); });
+            });
         });
     });
 
@@ -618,8 +716,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
     });
     document.querySelectorAll('.btn-del-prof').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (!confirm('¿Desactivar este profesional?')) return;
-            postData('<?= $urlEliminarProf ?>', { cod_profesional: btn.dataset.id }, function() { location.reload(); });
+            ConfirmService.confirm('¿Desactivar este profesional?', function() {
+                postData('<?= $urlEliminarProf ?>', { cod_profesional: btn.dataset.id }, function() { location.reload(); });
+            });
         });
     });
 
@@ -633,8 +732,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
     }
     document.querySelectorAll('.btn-del-carta').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (!confirm('¿Eliminar esta carta?')) return;
-            postData('<?= $urlEliminarCarta ?>', { cod_carta: btn.dataset.id }, function() { location.reload(); });
+            ConfirmService.confirm('¿Eliminar esta carta?', function() {
+                postData('<?= $urlEliminarCarta ?>', { cod_carta: btn.dataset.id }, function() { location.reload(); });
+            });
         });
     });
 
@@ -679,8 +779,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
     });
     document.querySelectorAll('.btn-del-miembro').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (!confirm('¿Eliminar este miembro?')) return;
-            postData('<?= $urlEliminarMiembro ?>', { cod_miembro: btn.dataset.id }, function() { location.reload(); });
+            ConfirmService.confirm('¿Eliminar este miembro?', function() {
+                postData('<?= $urlEliminarMiembro ?>', { cod_miembro: btn.dataset.id }, function() { location.reload(); });
+            });
         });
     });
 

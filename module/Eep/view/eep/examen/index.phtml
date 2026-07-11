@@ -35,48 +35,6 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
     </div>
 </div>
 
-<!-- SECCIÓN: EXÁMENES PRIVADOS (Tipos 1 y 2) -->
-<div class="row">
-    <div class="col-lg-12">
-        <div class="panel panel-primary" style="border: 3px solid #337ab7; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
-            <div class="panel-heading" style="background-color: #337ab7; color: white; padding: 12px 20px; font-size: 15px; font-weight: normal;">
-                <i class="fa fa-user-secret" style="margin-right: 8px;"></i> Exámenes Privados
-            </div>
-            <div class="table-responsive">
-                <table class="table table-custom-examenes" style="margin-bottom: 0;">
-                    <thead>
-                        <tr>
-                            <th style="width: 15%;">Tipo</th>
-                            <th style="width: 25%;">Nombre</th>
-                            <th style="width: 30%; text-align: center;">Papelería</th>
-                            <th style="width: 30%; text-align: center;">Solicitudes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($this->tiposExamen as $tipo): ?>
-                            <?php if (empty($tipo['cod_carrera'])) continue; ?>
-                            <tr>
-                                <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
-                                <td><?= $this->escapeHtml($tipo['descripcion']) ?></td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen-papeleria', ['cod_tipo_examen' => $tipo['cod_tipo_examen']]) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
-                                        <i class="fa fa-cog"></i>
-                                    </a>
-                                </td>
-                                <td style="text-align: center;">
-                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= $tipo['cod_tipo_examen'] ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- SECCIÓN: EXÁMENES PÚBLICOS (Tipo 3) -->
 <div class="row">
     <div class="col-lg-12">
@@ -114,6 +72,48 @@ $this->headTitle('Gestión de Exámenes Privados y Públicos');
                                 <td style="text-align: center;">
                                     <a href="<?= $this->url('examen', ['action' => 'notificacion-grupal']) ?>" class="btn-accion-examen" style="background-color: #f0ad4e;" title="Notificación Grupal">
                                         <i class="fa fa-envelope"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECCIÓN: EXÁMENES PRIVADOS (Tipos 1 y 2) -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-primary" style="border: 3px solid #337ab7; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+            <div class="panel-heading" style="background-color: #337ab7; color: white; padding: 12px 20px; font-size: 15px; font-weight: normal;">
+                <i class="fa fa-user-secret" style="margin-right: 8px;"></i> Exámenes Privados
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom-examenes" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Tipo</th>
+                            <th style="width: 25%;">Nombre</th>
+                            <th style="width: 30%; text-align: center;">Papelería</th>
+                            <th style="width: 30%; text-align: center;">Solicitudes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($this->tiposExamen as $tipo): ?>
+                            <?php if (empty($tipo['cod_carrera'])) continue; ?>
+                            <tr>
+                                <td><?= $this->escapeHtml($tipo['nombre']) ?></td>
+                                <td><?= $this->escapeHtml($tipo['descripcion']) ?></td>
+                                <td style="text-align: center;">
+                                    <a href="<?= $this->url('examen-papeleria', ['cod_tipo_examen' => $tipo['cod_tipo_examen']]) ?>" class="btn-accion-examen btn-papeleria" title="Gestionar Papelería">
+                                        <i class="fa fa-cog"></i>
+                                    </a>
+                                </td>
+                                <td style="text-align: center;">
+                                    <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= $tipo['cod_tipo_examen'] ?>" class="btn-accion-examen btn-solicitudes" title="Ver Solicitudes">
+                                        <i class="fa fa-eye"></i>
                                     </a>
                                 </td>
                             </tr>

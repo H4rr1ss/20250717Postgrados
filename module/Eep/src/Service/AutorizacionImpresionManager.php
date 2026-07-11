@@ -491,8 +491,19 @@ class AutorizacionImpresionManager
      * con sus datos básicos para el listado del director.
      * Incluye sub_paso para distinguir Parte 1 y Parte 2.
      */
-    public function getProcesosEnFase(): array
+    public function getProcesosEnFase(?string $busqueda = null): array
     {
+        $params = ['fase' => self::FASE];
+        $whereBusqueda = '';
+        if ($busqueda) {
+            $whereBusqueda = 'AND (
+                u.nombres LIKE :busqueda
+                OR u.apellidos LIKE :busqueda
+                OR u.registro_academico LIKE :busqueda
+            )';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
         $sql = "SELECT ep.cod_proceso,
                        ep.cod_usuario,
                        u.nombres,
@@ -513,8 +524,9 @@ class AutorizacionImpresionManager
                   LEFT JOIN examen_profesional_calificado prof ON prof.cod_profesional = eap.cod_profesional
                  WHERE ep.cancelado = 0
                    AND epc.fase = :fase
+                   $whereBusqueda
                  ORDER BY eap.sub_paso ASC, ep.fecha_solicitud DESC";
-        return $this->execute($sql, ['fase' => self::FASE]);
+        return $this->execute($sql, $params);
     }
 
     /**

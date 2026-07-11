@@ -168,6 +168,7 @@ $this->headTitle('Gestión de Solicitudes de Examen');
                             $baseUrl   = $this->url('examen', ['action' => 'solicitudes'])
                                        . '?carne=' . urlencode($this->filtros['carne'] ?? '')
                                        . '&estado=' . urlencode($this->filtros['estado'] ?? '')
+                                       . ($this->filtros['cod_tipo_examen'] ? '&cod_tipo_examen=' . (int)$this->filtros['cod_tipo_examen'] : '')
                                        . '&page=';
                         ?>
                         <?php if ($pagTotal > 1): ?>
@@ -408,26 +409,6 @@ $(document).ready(function() {
 
 <script>
 $(document).ready(function() {
-    // Búsqueda de solicitudes
-    $('#buscarSolicitud').on('keyup', function() {
-        var valor = $(this).val().toLowerCase();
-        $('#tablaSolicitudes tbody tr').filter(function() {
-            $(this).toggle($(this).find('td:first').text().toLowerCase().indexOf(valor) > -1);
-        });
-    });
-    
-    // Filtro por estado
-    $('#filtroEstado').on('change', function() {
-        var estado = $(this).val().toLowerCase();
-        if (estado === '') {
-            $('#tablaSolicitudes tbody tr').show();
-        } else {
-            $('#tablaSolicitudes tbody tr').filter(function() {
-                $(this).toggle($(this).find('td:eq(2)').text().toLowerCase().indexOf(estado) > -1);
-            });
-        }
-    });
-    
     // Abrir modal de detalle
     $('.btn-info-sol').on('click', function() {
         var completado = $(this).data('completado') == '1';
@@ -469,18 +450,18 @@ $(document).ready(function() {
     
     // Aprobar solicitud
     $('#btnAprobar').on('click', function() {
-        if (confirm('¿Está seguro de aprobar esta solicitud?')) {
+        ConfirmService.confirm('¿Está seguro de aprobar esta solicitud?', function() {
             // Aquí iría la llamada AJAX para aprobar
             $('#modalRevisarSolicitud').modal('hide');
-        }
+        });
     });
-    
+
     // Rechazar solicitud
     $('#btnRechazar').on('click', function() {
-        if (confirm('¿Está seguro de rechazar esta solicitud?')) {
+        ConfirmService.confirm('¿Está seguro de rechazar esta solicitud?', function() {
             // Aquí iría la llamada AJAX para rechazar
             $('#modalRevisarSolicitud').modal('hide');
-        }
+        });
     });
 });
 </script>

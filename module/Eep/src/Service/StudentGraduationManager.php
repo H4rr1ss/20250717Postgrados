@@ -260,7 +260,8 @@ class StudentGraduationManager
                 et.nombre AS tipo_examen,
                 ep.fecha_solicitud,
                 ep.cod_paso_actual,
-                ep.cancelado
+                ep.cancelado,
+                ep.tema_tesis
             FROM examen_proceso ep
             JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
             JOIN usuario u ON u.cod_usuario = ep.cod_usuario
@@ -443,21 +444,25 @@ class StudentGraduationManager
      * @param int    $codProceso  ID del proceso
      * @param string $fase        Fase actual ('examen_privado' o 'examen_general')
      */
-    public function getTerna(int $codProceso, string $fase = 'examen_privado'): array
+    public function getTerna(int $codProceso): array
     {
-        // Obtener los examinadores filtrados por fase
-        // Ahora las ternas son independientes: examen_privado y examen_general pueden tener ternas diferentes
         $sqlTerna = 'SELECT
-                        nombre_examinador,
-                        numero_colegiado,
-                        correo,
-                        tipo_examinador,
-                        posicion
-                    FROM examen_terna
-                    WHERE cod_proceso = :proceso
-                      AND fase = :fase';
+                        et.posicion,
+                        eex.cod_examinador,
+                        eex.tipo_examinador,
+                        eex.cod_usuario,
+                        COALESCE(u.nombres, eex.nombre_examinador) AS nombre_examinador,
+                        COALESCE(u.apellidos, "") AS apellidos,
+                        COALESCE(u.numero_colegiado, eex.numero_colegiado) AS numero_colegiado,
+                        COALESCE(u.titulo_profesional, eex.titulo_profesional) AS titulo_profesional,
+                        COALESCE(u.correo, eex.correo) AS correo
+                    FROM examen_terna et
+                    JOIN examen_examinador eex ON eex.cod_examinador = et.cod_examinador
+                    LEFT JOIN usuario u ON u.cod_usuario = eex.cod_usuario
+                    WHERE et.cod_proceso = :proceso
+                    ORDER BY et.posicion';
 
-        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso, 'fase' => $fase]);
+        $rows = $this->execute($sqlTerna, ['proceso' => $codProceso]);
 
         // Obtener fecha y hora según la fase
         if ($fase === 'examen_general') {
@@ -486,12 +491,17 @@ class StudentGraduationManager
         ];
 
         foreach ($rows as $row) {
+            $nombreCompleto = trim($row['nombre_examinador'] . ' ' . $row['apellidos']);
+
             $terna['examinadores'][] = [
-                'nombre'    => $row['nombre_examinador'],
-                'colegiado' => $row['numero_colegiado'],
-                'correo'    => $row['correo'],
-                'tipo'      => $row['tipo_examinador'],
-                'posicion'  => $row['posicion'],
+                'cod_examinador' => $row['cod_examinador'],
+                'cod_usuario'    => $row['cod_usuario'],
+                'nombre'         => $nombreCompleto,
+                'colegiado'      => $row['numero_colegiado'],
+                'titulo'         => $row['titulo_profesional'],
+                'correo'         => $row['correo'],
+                'tipo'           => $row['tipo_examinador'],
+                'posicion'       => $row['posicion'],
             ];
         }
 
@@ -507,5 +517,32 @@ class StudentGraduationManager
         $sql = 'SELECT instrucciones_entrega_fisica FROM examen_tipo WHERE cod_tipo_examen = :tipo';
         $result = $this->execute($sql, ['tipo' => $codTipoExamen]);
         return $result[0]['instrucciones_entrega_fisica'] ?? null;
+    }
+
+    /**
+     * Guarda el tema de tesis del estudiante.
+     * Solo permite editar si el proceso está en fase 1 (revisión de papelería).
+     */
+    public function guardarTemaTesis(int $codProceso, int $codUsuario, string $temaTesis): array
+    {
+        // Verificar que el proceso existe y pertenece al usuario
+        $sql = 'SELECT cod_paso_actual, tema_tesis FROM examen_proceso WHERE cod_proceso = :proceso AND cod_usuario = :usuario';
+        $result = $this->execute($sql, ['proceso' => $codProceso, 'usuario' => $codUsuario]);
+        
+        if (empty($result)) {
+            return ['success' => false, 'message' => 'Proceso no encontrado o no pertenece al estudiante.'];
+        }
+        
+        $proceso = $result[0];
+        
+        // Verificar si ya hay un tema guardado
+        if (!empty($proceso['tema_tesis'])) {
+            return ['success' => false, 'message' => 'El tema de graduación ya fue registrado y no puede modificarse.'];
+        }
+        
+        $sql = 'UPDATE examen_proceso SET tema_tesis = :tema WHERE cod_proceso = :proceso';
+        $this->adapter->createStatement($sql, ['tema' => $temaTesis, 'proceso' => $codProceso])->execute();
+        
+        return ['success' => true, 'message' => 'Tema de graduación guardado correctamente.'];
     }
 }

@@ -134,11 +134,11 @@ var ToastService = (function() {
             content += '<i class="fa ' + icon + '" style="margin-right: 20px; font-size: 28px;"></i>';
         }
 
-        content += '<span class="toast-message">' + mensaje + '</span>';
+        content += '<span class="toast-message" style="flex: 1;">' + mensaje + '</span>';
 
         // Botón de cerrar
         if (dismissible) {
-            content += '<button type="button" class="close" style="margin-left: 30px; opacity: 0.8; font-size: 32px;" onclick="ToastService.remove(\'' + id + '\')">' +
+            content += '<button type="button" class="close" style="margin-left: auto; opacity: 0.8; font-size: 32px; padding: 0; line-height: 1;" onclick="ToastService.remove(\'' + id + '\')">' +
                       '<span aria-hidden="true">&times;</span>' +
                       '</button>';
         }

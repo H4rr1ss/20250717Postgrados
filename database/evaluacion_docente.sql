@@ -72,17 +72,4 @@ INSERT INTO `evaluacion_pregunta` (`id_seccion`, `texto`, `tipo`, `orden`, `acti
 (2, '¿El docente compartió con estudiantes archivos de documentos relevantes y actualizados al curso?', 'boolean', 2, 1),
 (3, 'Comentario: ¿Qué aspectos considera que son recomendables al docente para mejorar los aprendizajes en curso?', 'texto', 1, 1);
 
--- ========================================================
--- Acciones del módulo para el control de acceso
--- ========================================================
-
-INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
-(80, 'Ver evaluación docente (pendientes)'),
-(81, 'Ver formulario de evaluación docente'),
-(82, 'Guardar evaluación docente'),
-(83, 'Ver historial de evaluaciones docentes'),
-(84, 'Ver confirmación de evaluación docente'),
-(85, 'Ver reporte de evaluación docente'),
-(86, 'Descargar reporte de evaluación docente');
-
 SET FOREIGN_KEY_CHECKS = 1;

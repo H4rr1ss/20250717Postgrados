@@ -239,10 +239,10 @@ $(document).ready(function() {
         
         if (estadoSeleccionado === 'aceptar') {
             // Confirmar antes de marcar como aceptado
-            if (confirm('¿Está seguro de marcar este documento como recibido?')) {
+            ConfirmService.confirm('¿Está seguro de marcar este documento como recibido?', function() {
                 // Aceptar y colocar fecha actual
                 aplicarEstadoAceptado(fila, boton, grupo);
-            }
+            });
         }
     });
 
