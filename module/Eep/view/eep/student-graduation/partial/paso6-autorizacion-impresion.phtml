@@ -116,7 +116,7 @@ $urlDescargarCarta = $this->url('examen', ['action' => 'descargarCartaDescarga']
                                 </script>
                                 <form id="form-seleccionar-prof">
                                     <div class="form-group">
-                                        <label>Profesional:</label>
+                                        <label>Profesional: <span class="label label-danger">Requerido</span></label>
                                         <select name="cod_profesional" id="sel-profesional" class="form-control">
                                             <option value="0">— Selecciona uno —</option>
                                             <?php foreach ($profesionales as $p): ?>

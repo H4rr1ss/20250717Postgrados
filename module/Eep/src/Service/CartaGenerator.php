@@ -44,7 +44,11 @@ class CartaGenerator
     {
         $ruta = $this->obtenerRutaPlantilla();
         if ($ruta === null) {
-            throw new \RuntimeException('Plantilla .docx no encontrada en disco: ' . self::RUTA_PLANTILLA);
+            throw new \RuntimeException(
+                'No se puede generar la carta de examinadores porque la plantilla .docx no está configurada en el sistema. ' .
+                'Falta el archivo: ' . self::RUTA_PLANTILLA . '. ' .
+                'Por favor contacte al departamento de IT para que configure la plantilla antes de continuar.'
+            );
         }
         return $ruta;
     }

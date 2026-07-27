@@ -1798,8 +1798,10 @@ class ExamenController extends AbstractActionController {
     public function notificacionGrupalAction()
     {
         $estudiantes = $this->examenManager->getProcesosGeneralCompletados();
+        $docentes = $this->examenManager->getDocentes();
         return new ViewModel([
             'estudiantes' => $estudiantes,
+            'docentes'    => $docentes,
         ]);
     }
 
@@ -1899,6 +1901,9 @@ class ExamenController extends AbstractActionController {
         $fecha = trim((string) $request->getPost('fecha', ''));
         $hora = trim((string) $request->getPost('hora', ''));
         $lugar = trim((string) $request->getPost('lugar', ''));
+        $codExaminador1 = (int) $request->getPost('examinador_1', 0);
+        $codExaminador2 = (int) $request->getPost('examinador_2', 0);
+        $codExaminador3 = (int) $request->getPost('examinador_3', 0);
         $infoExtra = trim((string) $request->getPost('info_extra', ''));
         $correosCcRaw = trim((string) $request->getPost('correos_cc', ''));
 
@@ -1907,6 +1912,46 @@ class ExamenController extends AbstractActionController {
         }
         if (empty($fecha) || empty($hora) || empty($lugar)) {
             return new JsonModel(['success' => false, 'message' => 'Fecha, hora y lugar son obligatorios.']);
+        }
+
+        // Resolver nombres de examinadores desde docentes internos
+        $examinador1 = '';
+        $examinador2 = '';
+        $examinador3 = '';
+
+        if ($codExaminador1 > 0) {
+            $doc1 = $this->examenManager->getDocentePorCodUsuario($codExaminador1);
+            $examinador1 = $doc1 ? $doc1['nombre_completo'] : '';
+        }
+        if ($codExaminador2 > 0) {
+            $doc2 = $this->examenManager->getDocentePorCodUsuario($codExaminador2);
+            $examinador2 = $doc2 ? $doc2['nombre_completo'] : '';
+        }
+        if ($codExaminador3 > 0) {
+            $doc3 = $this->examenManager->getDocentePorCodUsuario($codExaminador3);
+            $examinador3 = $doc3 ? $doc3['nombre_completo'] : '';
+        }
+
+        if (empty($examinador1) || empty($examinador2) || empty($examinador3)) {
+            return new JsonModel(['success' => false, 'message' => 'Los tres examinadores son obligatorios.']);
+        }
+
+        // Validar que los 3 examinadores sean diferentes
+        if ($examinador1 === $examinador2 || $examinador1 === $examinador3 || $examinador2 === $examinador3) {
+            return new JsonModel(['success' => false, 'message' => 'Los tres examinadores deben ser personas diferentes.']);
+        }
+
+        // Validar que todos los estudiantes seleccionados tengan madrina/padrino
+        $sinMadrina = $this->examenManager->verificarMadrinaPadrinoPorProcesos($codProcesos);
+        if (!empty($sinMadrina)) {
+            $nombres = array_map(function ($e) {
+                return trim(($e['apellidos'] ?? '') . ', ' . ($e['nombres'] ?? ''));
+            }, $sinMadrina);
+            return new JsonModel([
+                'success' => false,
+                'message' => 'No se puede enviar la notificación. Los siguientes estudiantes aún no han configurado su madrina/padrino: ' .
+                    implode(', ', $nombres) . '. Solicíteles que completen este dato desde su panel de Proceso de Graduación.'
+            ]);
         }
 
         // Validar fecha (no anterior a hoy)
@@ -1927,6 +1972,14 @@ class ExamenController extends AbstractActionController {
                 }
             }
         }
+
+        // Crear o actualizar el acto grupal compartido con examinadores
+        $this->examenManager->obtenerOCrearActoGraduacion($fecha, $hora, [
+            'lugar'         => $lugar,
+            'examinador_1'  => $examinador1,
+            'examinador_2'  => $examinador2,
+            'examinador_3'  => $examinador3,
+        ]);
 
         $fechaFormateada = $fechaSel->format('d/m/Y');
         $horaFormateada = date('g:i A', strtotime($hora));
@@ -2378,10 +2431,16 @@ class ExamenController extends AbstractActionController {
         }
 
         try {
+            $ternaEval = $this->examenManager->getTerna($codProceso);
+            $examinadorEval = $ternaEval['examinadores'][$posExaminador - 1] ?? null;
+            $evaluadoPor = !empty($examinadorEval['cod_usuario'])
+                ? (int) $examinadorEval['cod_usuario']
+                : (int) ($examinadorEval['cod_examinador'] ?? 0);
+
             $this->examenManager->guardarMatrizEvaluacion([
                 'cod_proceso'           => $codProceso,
                 'posicion_examinador'   => $posExaminador,
-                'evaluado_por'          => 0, // Examinador externo (sin usuario)
+                'evaluado_por'          => $evaluadoPor,
                 'observaciones_generales' => $observaciones,
                 'respuestas'            => $respuestas,
             ]);
@@ -2468,8 +2527,9 @@ class ExamenController extends AbstractActionController {
             $proceso = $this->examenManager->getProceso($idProceso);
             $estudiante = $this->examenManager->getEstudiantePorProceso($idProceso);
             $terna = $this->examenManager->getTerna($idProceso);
+            $examinadores = $terna['examinadores'] ?? [];
 
-            $nombreEstudiante = trim(($estudiante['nombres'] ?? '') . ' ' . ($estudiante['apellidos'] ?? ''));
+            $nombreEstudiante = trim($estudiante['nombre_completo'] ?? '');
             $carrera = $estudiante['carrera'] ?? 'N/A';
             $registroAcademico = $estudiante['registro_academico'] ?? '';
             $temaTesis = $proceso['tema_tesis'] ?? '';
@@ -2513,6 +2573,7 @@ class ExamenController extends AbstractActionController {
 
             // Obtener configuración de Decano y Secretario
             $decano = $this->config['decano']['nombre'] ?? 'Decano';
+            error_log("DEBUG DECANOOOOOOOOOOOOOOOOOOOOO: " . print_r($decano, true));
             $secretarioAcademico = $this->examenManager->getNombreSecretarioExamenPrivado();
             $justificacionModalidad = trim((string) $this->params()->fromPost('justificacion_modalidad', ''));
 
@@ -2527,6 +2588,9 @@ class ExamenController extends AbstractActionController {
             // Verificar si ya existe un acta privada en la tabla dedicada
             $actaExistente = $this->examenManager->getActaPrivado($idProceso);
 
+            // Calcular notas de examinadores (se necesitan tanto para el texto del acta como para la nota final)
+            $notasExaminadores = $this->examenManager->getNotasExaminadores($idProceso);
+
             if ($actaExistente !== null) {
                 // Reutilizar el número de acta ya asignado
                 $numeroActa = $actaExistente['numero_acta'];
@@ -2537,7 +2601,6 @@ class ExamenController extends AbstractActionController {
                 $numeroActa = $datosActa['numero_acta'];
 
                 // Calcular nota final para determinar estado
-                $notasExaminadores = $this->examenManager->getNotasExaminadores($idProceso);
                 $notasValidas = array_filter($notasExaminadores, function ($n) {
                     return $n !== null;
                 });
@@ -2573,18 +2636,17 @@ class ExamenController extends AbstractActionController {
                     'hora_firma'            => $this->params()->fromPost('hora_firma', null),
                     'lugar'                 => $this->params()->fromPost('lugar', null),
                     'justificacion_modalidad' => $justificacionModalidad,
-                    'generado_por'          => $this->identity()->getCodUsuario(),
+                    'generado_por'          => (int) $this->identity(),
                 ]);
             }
 
-            $examinadores = $terna['examinadores'] ?? [];
-            
             // Filtrar examinadores que sí evaluaron para el texto del acta
+            error_log("DEBUG notasExaminadores: " . print_r($notasExaminadores, true));
+            error_log("DEBUG examinadores count: " . count($examinadores));
             $nombresExaminadores = [];
             foreach ($examinadores as $idx => $ex) {
-                // Solo incluir examinadores que tienen nota asignada
-                // Las notas están indexadas por posición (1, 2, 3) no por índice (0, 1, 2)
                 $posicion = $idx + 1;
+                error_log("DEBUG examinador[$idx] pos=$posicion: nombre=" . ($ex['nombre'] ?? 'NULL') . ", titulo=" . ($ex['titulo'] ?? 'NULL') . ", nota=" . (isset($notasExaminadores[$posicion]) ? ($notasExaminadores[$posicion] ?? 'NULL') : 'NO_KEY'));
                 if (isset($notasExaminadores[$posicion]) && $notasExaminadores[$posicion] !== null) {
                     $nombre = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? '');
                     if (!empty($nombre)) {
@@ -2592,6 +2654,7 @@ class ExamenController extends AbstractActionController {
                     }
                 }
             }
+            error_log("DEBUG nombresExaminadores result: " . print_r($nombresExaminadores, true));
             $examinadoresTexto = implode(', ', $nombresExaminadores);
 
             $phpWord = new \PhpOffice\PhpWord\PhpWord();
@@ -2642,9 +2705,9 @@ class ExamenController extends AbstractActionController {
             $textRun->addText("\"{$temaTesis}\"", ['bold' => true]);
             $textRun->addText(", presentado por {$prefijoAlumno} ");
             $textRun->addText($nombreEstudiante, ['bold' => true]);
-            $textRun->addText(", Registro Académico {$registroAcademico},");
-            $textRun->addText(", para optar al título de ");
-            $textRun->addText(strtoupper($carrera), ['bold' => true]);
+            $textRun->addText(", Registro Académico {$registroAcademico}, ");
+            $textRun->addText("para optar al título de ");
+            $textRun->addText(mb_strtoupper($carrera, 'UTF-8'), ['bold' => true]);
             $textRun->addText(", de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala.");
             $section->addTextBreak(1);
 
@@ -2670,7 +2733,6 @@ class ExamenController extends AbstractActionController {
             $section->addTextBreak(5);
 
             // Calcular nota final
-            $notasExaminadores = $this->examenManager->getNotasExaminadores($idProceso);
             $notasValidas = array_filter($notasExaminadores, function ($n) {
                 return $n !== null;
             });
@@ -2864,7 +2926,7 @@ class ExamenController extends AbstractActionController {
         $estudiante = $this->examenManager->getEstudiantePorProceso($idProceso);
         $terna = $this->examenManager->getTerna($idProceso);
 
-        $nombreEstudiante = trim(($estudiante['nombres'] ?? '') . ' ' . ($estudiante['apellidos'] ?? ''));
+        $nombreEstudiante = trim($estudiante['nombre_completo'] ?? '');
         $carrera = $estudiante['carrera'] ?? 'N/A';
         $registroAcademico = $estudiante['registro_academico'] ?? '';
         $temaTesis = $proceso['tema_tesis'] ?? '';
@@ -3059,15 +3121,20 @@ class ExamenController extends AbstractActionController {
         $decano = $this->config['decano']['nombre'] ?? 'Decano';
         $secretario = $this->examenManager->getNombreSecretarioExamenPrivado();
 
+        // Lista de docentes internos para dropdown de examinadores
+        $docentes = $this->examenManager->getDocentes();
+
         return new ViewModel([
             'datos'      => $datos,
             'decano'     => $decano,
             'secretario' => $secretario,
+            'docentes'   => $docentes,
         ]);
     }
 
     /**
-     * Genera el acta de examen general en formato DOCX.
+     * Genera el acta de examen general en formato DOCX y la descarga.
+     * Al mismo tiempo guarda los datos en la base de datos.
      */
     public function generarActaGeneralAction()
     {
@@ -3082,46 +3149,299 @@ class ExamenController extends AbstractActionController {
             return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-general', 'id' => $idProceso]);
         }
 
-        $datosProceso = $this->examenManager->getDatosActaGeneral($idProceso);
-        if (!$datosProceso) {
-            $this->flashMessenger()->addErrorMessage('Proceso no encontrado');
-            return $this->redirect()->toRoute('examen', ['action' => 'actas-examen-general']);
-        }
+        try {
+            $datosProceso = $this->examenManager->getDatosActaGeneral($idProceso);
+            if (!$datosProceso) {
+                $this->flashMessenger()->addErrorMessage('Proceso no encontrado');
+                return $this->redirect()->toRoute('examen', ['action' => 'actas-examen-general']);
+            }
 
-        $numeroRecibo = trim((string) $request->getPost('numero_recibo', ''));
-        $promedio     = trim((string) $request->getPost('promedio', ''));
-        $horaFirma    = trim((string) $request->getPost('hora_firma', ''));
-        $lugar        = trim((string) $request->getPost('lugar', ''));
-        $examinador1  = trim((string) $request->getPost('examinador_1', ''));
-        $examinador2  = trim((string) $request->getPost('examinador_2', ''));
-        $examinador3  = trim((string) $request->getPost('examinador_3', ''));
-        $madrina      = trim((string) $request->getPost('madrina_padrino', ''));
+            $numeroRecibo   = trim((string) $request->getPost('numero_recibo', ''));
+            $promedio       = trim((string) $request->getPost('promedio', ''));
+            $horaFirma      = trim((string) $request->getPost('hora_firma', ''));
+            $lugar          = trim((string) $request->getPost('lugar', ''));
+            $examinador1    = trim((string) $request->getPost('examinador_1', ''));
+            $examinador2    = trim((string) $request->getPost('examinador_2', ''));
+            $examinador3    = trim((string) $request->getPost('examinador_3', ''));
+            $acuerdoDecanato = trim((string) $request->getPost('acuerdo_decanato', ''));
 
-        if ($numeroRecibo === '' || $horaFirma === '' || $lugar === '' || $examinador1 === '' || $examinador2 === '' || $examinador3 === '') {
-            $this->flashMessenger()->addErrorMessage('Los campos obligatorios son: número de recibo, hora de firma, lugar y los 3 examinadores.');
+            // DEBUG: Log datos recibidos para diagnóstico
+            error_log('[ActaGeneral DEBUG] Proceso ' . $idProceso . ' - POST datos: ' . json_encode([
+                'numero_recibo' => $numeroRecibo,
+                'hora_firma' => $horaFirma,
+                'lugar' => $lugar,
+                'examinador_1' => $examinador1,
+                'examinador_2' => $examinador2,
+                'examinador_3' => $examinador3,
+            ]));
+
+            $camposFaltantes = [];
+            if ($numeroRecibo === '') $camposFaltantes[] = 'número de recibo';
+            if ($horaFirma === '')    $camposFaltantes[] = 'hora de firma';
+            if ($lugar === '')        $camposFaltantes[] = 'lugar';
+            if ($examinador1 === '')  $camposFaltantes[] = 'examinador 1';
+            if ($examinador2 === '')  $camposFaltantes[] = 'examinador 2';
+            if ($examinador3 === '')  $camposFaltantes[] = 'examinador 3';
+
+            if (!empty($camposFaltantes)) {
+                $this->flashMessenger()->addErrorMessage('Faltan los siguientes campos obligatorios: ' . implode(', ', $camposFaltantes) . '.');
+                return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-general', 'id' => $idProceso]);
+            }
+
+            $userId = (int) $this->identity();
+
+            // Si no existe acta previa, guardar en BD; de lo contrario reutilizar
+            $numeroActaExistente = $datosProceso['numero_acta'] ?? '';
+            if (empty($numeroActaExistente)) {
+                $this->examenManager->guardarActaGeneral([
+                    'cod_proceso'      => $idProceso,
+                    'fecha_examen'     => $datosProceso['fecha_examen_general'],
+                    'hora_examen'      => $datosProceso['hora_examen_general'],
+                    'numero_recibo'    => $numeroRecibo,
+                    'promedio'         => $promedio !== '' ? $promedio : null,
+                    'acuerdo_decanato' => $acuerdoDecanato !== '' ? $acuerdoDecanato : null,
+                    'hora_firma'       => $horaFirma,
+                    'lugar'            => $lugar,
+                    'examinador_1'     => $examinador1,
+                    'examinador_2'     => $examinador2,
+                    'examinador_3'     => $examinador3,
+                    'generado_por'     => $userId,
+                ]);
+
+                // Recargar datos para obtener el número de acta recién generado
+                $datosProceso = $this->examenManager->getDatosActaGeneral($idProceso);
+            }
+
+            // ── Generar DOCX ────────────────────────────────────────────────
+            $nombreEstudiante = trim($datosProceso['nombre_completo'] ?? '');
+            $carrera         = $datosProceso['carrera'] ?? 'N/A';
+            $registro        = $datosProceso['registro_academico'] ?? '';
+            $temaTesis       = $datosProceso['tema_tesis'] ?? '';
+            $madrinaTipo   = $datosProceso['madrina_tipo'] ?? '';
+            $madrinaNombre = $datosProceso['madrina_nombre'] ?? '';
+            $madrinaTitulo = $datosProceso['madrina_titulo'] ?? '';
+            $fechaExamen     = $datosProceso['fecha_examen_general'] ?? '';
+            $horaExamen      = $datosProceso['hora_examen_general'] ?? '';
+
+            $sexo = strtoupper($datosProceso['sexo'] ?? '');
+            $esFemenino = in_array($sexo, ['F', 'M', 'MUJER', '2'], true);
+            $prefijoAlumno = $esFemenino ? 'la alumna' : 'el alumno';
+
+            // Formatear fecha: "sábado uno de agosto de 2026" (día en palabras)
+            $fechaExamenFormateada = $fechaExamen;
+            $fechaExamenFormateadaGeneral = $fechaExamen;
+            if (!empty($fechaExamen)) {
+                $dtF = \DateTime::createFromFormat('Y-m-d', $fechaExamen);
+                if ($dtF) {
+                    $diasEs  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+                    $mesesEs = ['enero','febrero','marzo','abril','mayo','junio',
+                                'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+                    $diasTexto = [
+                        1 => 'uno', 2 => 'dos', 3 => 'tres', 4 => 'cuatro', 5 => 'cinco',
+                        6 => 'seis', 7 => 'siete', 8 => 'ocho', 9 => 'nueve', 10 => 'diez',
+                        11 => 'once', 12 => 'doce', 13 => 'trece', 14 => 'catorce', 15 => 'quince',
+                        16 => 'dieciséis', 17 => 'diecisiete', 18 => 'dieciocho', 19 => 'diecinueve',
+                        20 => 'veinte', 21 => 'veintiuno', 22 => 'veintidós', 23 => 'veintitrés',
+                        24 => 'veinticuatro', 25 => 'veinticinco', 26 => 'veintiséis', 27 => 'veintisiete',
+                        28 => 'veintiocho', 29 => 'veintinueve', 30 => 'treinta', 31 => 'treinta y uno',
+                    ];
+                    $diaNumero = (int)$dtF->format('j');
+                    $fechaExamenFormateada = $diasEs[(int)$dtF->format('w')]
+                        . ' ' . ($diasTexto[$diaNumero] ?? (string)$diaNumero)
+                        . ' de ' . $mesesEs[(int)$dtF->format('n') - 1]
+                        . ' de ' . $dtF->format('Y');
+                    $fechaExamenFormateadaGeneral = ($diasTexto[$diaNumero] ?? (string)$diaNumero)
+                        . ' de ' . $mesesEs[(int)$dtF->format('n') - 1]
+                        . ' de ' . $dtF->format('Y');
+                }
+            }
+
+            // Hora sin segundos: "22:10"
+            if (!empty($horaExamen)) {
+                $horaExamen = date('H:i', strtotime($horaExamen));
+            }
+
+            $horaTexto = '';
+            if (!empty($horaExamen)) {
+                $horaTexto = $this->horaATexto($horaExamen);
+            }
+
+            $decano = $this->config['decano']['nombre'] ?? 'Decano';
+            $secretarioAcademico = $this->examenManager->getNombreSecretarioExamenPrivado();
+
+            // Reutilizar el número de acta que acaba de generarse
+            // (ya está en $datosProceso tras guardarActaGeneral → getDatosActaGeneral lo recarga)
+            $numeroActa = $datosProceso['numero_acta'] ?? 'S/N';
+
+            $phpWord = new \PhpOffice\PhpWord\PhpWord();
+            $phpWord->setDefaultFontName('Lustria');
+            $phpWord->setDefaultFontSize(12);
+
+            // Configuración de página tipo Oficio (Legal 8.5x13 pulgadas)
+            $section = $phpWord->addSection([
+                'paperSize'   => 'Legal',
+                'marginTop'   => 1417,  // 2.5 cm
+                'marginBottom'=> 1417,  // 2.5 cm
+                'marginLeft'  => 1417,  // 2.5 cm
+                'marginRight' => 1417,  // 2.5 cm
+            ]);
+
+            // Encabezado centrado
+            $section->addText('Universidad de San Carlos de Guatemala', [], ['alignment' => 'center']);
+            $section->addText('Facultad de Arquitectura', [], ['alignment' => 'center']);
+            $section->addText('Exámenes Públicos', [], ['alignment' => 'center']);
+            $section->addText('Libro de Actas', ['bold' => true], ['alignment' => 'center']);
+
+            $section->addTextBreak(1);
+
+            // Datos del estudiante alineados a la derecha
+            if ($acuerdoDecanato !== '') {
+                $section->addText('Acuerdo. ' . $acuerdoDecanato, [], ['alignment' => 'right']);
+            }
+            $section->addText('Carnet No. ' . $registro, [], ['alignment' => 'right']);
+            $section->addText('No Recibo. ' . $numeroRecibo, [], ['alignment' => 'right']);
+            if ($promedio !== '') {
+                $section->addText('Promedio. ' . $promedio, [], ['alignment' => 'right']);
+            }
+            
+            $section->addTextBreak(1);
+
+            // Número de acta centrado después de los datos del estudiante
+            $section->addText('ARQ-' . $numeroActa, ['bold' => true], ['alignment' => 'center']);
+            $section->addTextBreak(1);
+
+            // Determinar verbo de aprobación según promedio (>61 = APROBAR, <=61 = DESAPROBAR)
+            $verboAprobacion = 'APROBAR';
+            if ($promedio !== '') {
+                $notaNum = (float) $promedio;
+                $verboAprobacion = $notaNum > 61 ? 'aprobar' : 'desaprobar';
+            }
+
+            // Artículo según género: masculino = 'al', femenino = 'a la', por defecto = 'al'
+            $articuloEstudiante = $esFemenino ? 'a la' : 'al';
+            $preposicionEstudiante = $esFemenino ? 'de la' : 'del';
+
+            // Cuerpo del acta (un solo párrafo, sin salto de línea entre el título y la deliberación)
+            $cuerpoRun = $section->addTextRun(['alignment' => 'both']);
+            $cuerpoRun->addText(
+                "El {$fechaExamenFormateadaGeneral}, a las {$horaExamen} horas, en el {$lugar}, nos reunimos los infrascritos miembros del Tribunal Examinador, presidido por el Señor Decano de la Facultad de Arquitectura, para realizar el Examen Público de Graduación {$preposicionEstudiante} estudiante {$nombreEstudiante} quien presenta el proyecto de graduación \"" . mb_strtoupper($temaTesis, 'UTF-8') . "\". "
+            );
+            $egresadoTexto = $esFemenino ? 'egresada' : 'egresado';
+            $horaFirma24 = date('H:i', strtotime($horaFirma));
+
+            $cuerpoRun->addText(
+                "Luego de la presentación y defensa del proyecto, los miembros del Tribunal Examinador deliberamos sobre la calificación del mismo y considerando que sí llena los requisitos de ley, acordamos {$verboAprobacion} {$articuloEstudiante} estudiante {$nombreEstudiante}, y conferirle; previo el juramento de ley; el título de " . mb_strtoupper($carrera, 'UTF-8') . ", {$egresadoTexto} de la Escuela de Arquitectura de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala, en fe de lo cual firmamos la presente Acta a las {$horaFirma24} horas, en el mismo lugar y fecha indicados al inicio del acta."
+            );
+            $section->addTextBreak(1);
+
+            // Tribunal Examinador centrado y en negrita
+            $section->addText('Tribunal Examinador', ['bold' => true], ['alignment' => 'center']);
+            $section->addTextBreak(1);
+
+            // Tabla de firmas
+            $tableStyle = [
+                'borderSize'  => 0,
+                'borderColor' => 'FFFFFF',
+                'cellMargin'  => 80,
+                'alignment'   => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+                'width'       => 100 * 50,
+            ];
+            $cellStyle = ['valign' => 'top'];
+            $cellTextStyle = ['alignment' => 'center'];
+
+            // Tabla 1: Decano y Secretario (2 columnas, centrada)
+            $tableDecSec = $section->addTable($tableStyle);
+            $tableDecSec->addRow();
+            $cellDecano = $tableDecSec->addCell(4500, $cellStyle);
+            $cellDecano->addText('', [], $cellTextStyle);
+            $cellDecano->addText('', [], $cellTextStyle);
+            $cellDecano->addText('', [], $cellTextStyle);
+            $cellDecano->addText($decano, [], $cellTextStyle);
+            $cellDecano->addText('Decano', [], $cellTextStyle);
+
+            $cellSecretario = $tableDecSec->addCell(4500, $cellStyle);
+            $cellSecretario->addText('', [], $cellTextStyle);
+            $cellSecretario->addText('', [], $cellTextStyle);
+            $cellSecretario->addText('', [], $cellTextStyle);
+            $cellSecretario->addText($secretarioAcademico, [], $cellTextStyle);
+            $cellSecretario->addText('Secretario', [], $cellTextStyle);
+
+            $section->addTextBreak(1);
+
+            // Tabla 2: Examinador 1, 2 y 3 (tres columnas)
+            $tableEx = $section->addTable($tableStyle);
+            $tableEx->addRow();
+            $cellEx1 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx1->addText('', [], $cellTextStyle);
+            $cellEx1->addText('', [], $cellTextStyle);
+            $cellEx1->addText('', [], $cellTextStyle);
+            $cellEx1->addText($examinador1, [], $cellTextStyle);
+            $cellEx1->addText('Examinador', [], $cellTextStyle);
+
+            $cellEx2 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx2->addText('', [], $cellTextStyle);
+            $cellEx2->addText('', [], $cellTextStyle);
+            $cellEx2->addText('', [], $cellTextStyle);
+            $cellEx2->addText($examinador2, [], $cellTextStyle);
+            $cellEx2->addText('Examinador', [], $cellTextStyle);
+
+            $cellEx3 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx3->addText('', [], $cellTextStyle);
+            $cellEx3->addText('', [], $cellTextStyle);
+            $cellEx3->addText('', [], $cellTextStyle);
+            $cellEx3->addText($examinador3, [], $cellTextStyle);
+            $cellEx3->addText('Examinador', [], $cellTextStyle);
+
+            // Sustentante fuera de la tabla, centrado
+            $section->addTextBreak(1);
+            $section->addText('Sustentante', ['bold' => true], ['alignment' => 'center']);
+            $section->addTextBreak(4);
+
+            $firmaSust = $section->addTextRun(['alignment' => 'center']);
+            $firmaSust->addText('', [], $cellTextStyle);
+            $firmaSust->addText('', [], $cellTextStyle);
+            $firmaSust->addText('', [], $cellTextStyle);
+            $firmaSust->addText($nombreEstudiante, [], $cellTextStyle);
+
+            // Madrina / Padrino (si aplica)
+            if ($madrinaNombre !== '') {
+                $lineaMadrina = ($madrinaTitulo !== '')
+                    ? $madrinaTitulo . ' ' . $madrinaNombre
+                    : $madrinaNombre;
+                $etiquetaMadrina = ($madrinaTipo === 'padrino') ? 'Padrino' : 'Madrina';
+
+                $section->addTextBreak(4);
+                $section->addText($lineaMadrina, [], ['alignment' => 'center']);
+                $section->addText($etiquetaMadrina, [], ['alignment' => 'center']);
+            }
+
+            // Generar archivo y descargar
+            $filename = 'Acta_Examen_General_' . $idProceso . '.docx';
+            $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord') . '.docx';
+            $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+            $objWriter->save($tempFile);
+
+            $fileContent = file_get_contents($tempFile);
+            unlink($tempFile);
+
+            $response = $this->getResponse();
+            $response->setContent($fileContent);
+            $headers = $response->getHeaders();
+            $headers->clearHeaders();
+            $headers->addHeaderLine('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            $headers->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            $headers->addHeaderLine('Content-Length', strlen($fileContent));
+            $headers->addHeaderLine('Pragma', 'public');
+            $headers->addHeaderLine('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
+            $response->setHeaders($headers);
+            return $response;
+        } catch (\Exception $e) {
+            $mensajeError = 'Error al generar el acta: ' . $e->getMessage();
+            error_log('[ActaGeneral] Proceso ' . $idProceso . ': ' . $mensajeError);
+            error_log('[ActaGeneral] Trace: ' . $e->getTraceAsString());
+            $this->flashMessenger()->addErrorMessage($mensajeError);
             return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-general', 'id' => $idProceso]);
         }
-
-        $userId = $this->authService->getIdentity();
-
-        // Guardar acta en BD (crea acto grupal compartido + acta individual)
-        $codActa = $this->examenManager->guardarActaGeneral([
-            'cod_proceso'      => $idProceso,
-            'fecha_examen'     => $datosProceso['fecha_examen_general'],
-            'hora_examen'      => $datosProceso['hora_examen_general'],
-            'numero_recibo'    => $numeroRecibo,
-            'promedio'         => $promedio !== '' ? $promedio : null,
-            'hora_firma'       => $horaFirma,
-            'lugar'            => $lugar,
-            'examinador_1'     => $examinador1,
-            'examinador_2'     => $examinador2,
-            'examinador_3'     => $examinador3,
-            'madrina_padrino'  => $madrina !== '' ? $madrina : null,
-            'generado_por'     => $userId,
-        ]);
-
-        $this->flashMessenger()->addSuccessMessage('Acta de Examen General generada correctamente.');
-        return $this->redirect()->toRoute('examen', ['action' => 'actas-examen-general']);
     }
 
 }

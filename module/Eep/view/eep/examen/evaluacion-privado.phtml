@@ -100,7 +100,7 @@ $this->headTitle('Evaluación Examen Privado');
                                 <tr>
                                     <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
                                     <td>
-                                        <?= $this->escapeHtml(($p['apellidos'] ?? '') . ', ' . ($p['nombres'] ?? '')) ?>
+                                        <?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?>
                                     </td>
                                     <td><?= $this->escapeHtml($p['carrera'] ?? 'N/A') ?></td>
                                     <td class="text-center">

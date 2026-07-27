@@ -81,23 +81,36 @@ $this->headTitle('Carta de Examinadores');
                                 </td>
                                 <td>
                                     <?php
+                                    $evalCompleta = ($p['ex1_completado'] ?? 0) && ($p['ex2_completado'] ?? 0) && ($p['ex3_completado'] ?? 0);
                                     $estadoPaso = $p['estado_paso'] ?? '';
-                                    switch ($estadoPaso) {
-                                        case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
-                                        case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
-                                        case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado'; break;
-                                        default:            $labelClass = 'default'; $labelTexto = 'Pendiente'; break;
+                                    if (!$evalCompleta) {
+                                        $labelClass = 'info';
+                                        $labelTexto = 'Pendiente evaluación privado';
+                                    } else {
+                                        switch ($estadoPaso) {
+                                            case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
+                                            case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
+                                            case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado'; break;
+                                            default:            $labelClass = 'default'; $labelTexto = 'Pendiente'; break;
+                                        }
                                     }
                                     ?>
-                                    <span class="label label-<?= $labelClass ?>">
+                                    <span class="label label-<?= $labelClass ?>" style="font-weight: 700; font-size: 14px;">
                                         <?= $this->escapeHtml($labelTexto) ?>
                                     </span>
                                 </td>
                                 <td style="text-align:center;">
-                                    <a class="btn btn-xs btn-primary"
-                                       href="<?= $this->url('examen', ['action' => 'ver-carta', 'id' => $p['cod_proceso']]) ?>">
-                                        <i class="fa fa-eye"></i> Ver proceso
-                                    </a>
+                                    <?php if ($evalCompleta): ?>
+                                        <a class="btn btn-xs btn-primary"
+                                           href="<?= $this->url('examen', ['action' => 'ver-carta', 'id' => $p['cod_proceso']]) ?>">
+                                            <i class="fa fa-eye"></i> Ver proceso
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="btn btn-xs btn-default disabled" style="cursor: not-allowed; opacity: 0.6;"
+                                              title="Evaluación de examen privado pendiente. Los 3 examinadores deben completar sus evaluaciones.">
+                                            <i class="fa fa-lock"></i> Bloqueado
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

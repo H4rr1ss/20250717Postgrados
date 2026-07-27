@@ -5,7 +5,7 @@ $datos      = $this->datos ?? [];
 $decano     = $this->decano ?? 'Decano';
 $secretario = $this->secretario ?? 'Secretario Académico';
 
-$nombreEstudiante = trim(($datos['apellidos'] ?? '') . ', ' . ($datos['nombres'] ?? ''));
+$nombreEstudiante = trim($datos['nombre_completo'] ?? '');
 $carrera         = $datos['carrera'] ?? 'N/A';
 $temaTesis       = $datos['tema_tesis'] ?? '';
 $registro        = $datos['registro_academico'] ?? '';
@@ -15,14 +15,16 @@ $sexo            = strtoupper($datos['sexo'] ?? '');
 $esFemenino      = in_array($sexo, ['F', 'M', 'MUJER', '2'], true);
 $prefijoAlumno   = $esFemenino ? 'la alumna' : 'el alumno';
 
-// Si ya existe un acto grupal (otro estudiante del mismo grupo generó acta),
+// Si ya existe un acto grupal (creado desde notificación grupal),
 // precargamos los datos compartidos para no repetirlos.
-$tieneActoGrupal = !empty($datos['cod_acto_graduacion']);
-$lugarCompartido = $tieneActoGrupal ? ($datos['lugar_acto'] ?? '') : '';
-$horaFirmaCompartida = $tieneActoGrupal ? ($datos['hora_firma'] ?? '') : '';
-$ex1Compartido = $tieneActoGrupal ? ($datos['examinador_1'] ?? '') : '';
-$ex2Compartido = $tieneActoGrupal ? ($datos['examinador_2'] ?? '') : '';
-$ex3Compartido = $tieneActoGrupal ? ($datos['examinador_3'] ?? '') : '';
+// Nota: usamos examinador_1 o lugar_acto como indicador de existencia,
+// ya que cod_acto_graduacion es NULL hasta que se genere la primera acta.
+$tieneActoGrupal = !empty($datos['examinador_1']) || !empty($datos['lugar_acto']);
+$lugarCompartido = $datos['lugar_acto'] ?? '';
+$horaFirmaCompartida = $datos['hora_firma'] ?? '';
+$ex1Compartido = $datos['examinador_1'] ?? '';
+$ex2Compartido = $datos['examinador_2'] ?? '';
+$ex3Compartido = $datos['examinador_3'] ?? '';
 
 $lugar = $datos['lugar'] ?? $lugarCompartido;
 
@@ -57,15 +59,31 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
             </div>
             <div class="panel-body pan" style="padding: 20px;">
 
+                <!-- Mostrar mensajes flashMessenger (errores / éxitos) -->
+                <?php
+                    $flash = $this->flashMessenger();
+                    $flashMessages = $flash->getMessages();
+                    if (!empty($flashMessages)):
+                        foreach ($flashMessages as $type => $messages):
+                            foreach ($messages as $msg):
+                                $alertClass = ($type === 'error' || $type === 'danger') ? 'alert-danger' : 'alert-success';
+                ?>
+                    <div class="alert <?= $alertClass ?>" style="margin-bottom: 15px;">
+                        <i class="fa <?= ($alertClass === 'alert-danger') ? 'fa-exclamation-triangle' : 'fa-check-circle' ?>"></i>
+                        <?= $this->escapeHtml($msg) ?>
+                    </div>
+                <?php
+                            endforeach;
+                        endforeach;
+                    endif;
+                ?>
+
                 <?php if (!empty($numeroActaExistente)): ?>
                     <div class="alert alert-success">
                         <i class="fa fa-check-circle"></i>
-                        Este estudiante ya tiene un acta generada: <strong><?= $this->escapeHtml($numeroActaExistente) ?></strong>.
-                    </div>
-                <?php elseif ($tieneActoGrupal): ?>
-                    <div class="alert alert-info">
-                        <i class="fa fa-info-circle"></i>
-                        Ya existe un acto de graduación registrado para esta fecha y hora. Los datos compartidos (examinadores, lugar, hora de firma) se han precargado automáticamente.
+                        Este estudiante ya tiene un acta generada:
+                        <strong><?= $this->escapeHtml($numeroActaExistente) ?></strong>.
+                        <br>Al generar nuevamente se reutilizará el mismo número.
                     </div>
                 <?php endif; ?>
 
@@ -135,41 +153,54 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
+                                <label>Acuerdo de Decanato</label>
+                                <input type="text" class="form-control" name="acuerdo_decanato" value="<?= $this->escapeHtml($datos['acuerdo_decanato'] ?? '') ?>" placeholder="Ej. 154/2024">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
                                 <label>Número de Recibo <span style="color:red">*</span></label>
-                                <input type="text" class="form-control" name="numero_recibo" placeholder="Ej. 735816401" required>
+                                <input type="text" class="form-control" name="numero_recibo" value="<?= $this->escapeHtml($datos['numero_recibo'] ?? '') ?>" placeholder="Ej. 735816401" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>Promedio</label>
-                                <input type="text" class="form-control" name="promedio" placeholder="Ej. 85.50">
+                                <input type="number" class="form-control" name="promedio" value="<?= $this->escapeHtml($datos['promedio'] ?? '') ?>" placeholder="Ej. 85.50" min="0" max="100" step="0.01">
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>Hora de firma del acta <span style="color:red">*</span></label>
-                                <input type="time" class="form-control" name="hora_firma" value="<?= $this->escapeHtml($horaFirmaCompartida) ?>" required <?= $tieneActoGrupal ? 'readonly' : '' ?>>
+                                <input type="time" class="form-control" name="hora_firma" value="<?= $this->escapeHtml($horaFirmaCompartida) ?>" required>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Campos ocultos para enviar los examinadores ya definidos -->
+                    <input type="hidden" name="examinador_1" value="<?= $this->escapeHtml($ex1Compartido) ?>">
+                    <input type="hidden" name="examinador_2" value="<?= $this->escapeHtml($ex2Compartido) ?>">
+                    <input type="hidden" name="examinador_3" value="<?= $this->escapeHtml($ex3Compartido) ?>">
+
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Examinador 1 <span style="color:red">*</span></label>
-                                <input type="text" class="form-control" name="examinador_1" value="<?= $this->escapeHtml($ex1Compartido) ?>" placeholder="Nombre completo" required <?= $tieneActoGrupal ? 'readonly' : '' ?>>
+                                <label>Examinador 1</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex1Compartido) ?>" readonly>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Examinador 2 <span style="color:red">*</span></label>
-                                <input type="text" class="form-control" name="examinador_2" value="<?= $this->escapeHtml($ex2Compartido) ?>" placeholder="Nombre completo" required <?= $tieneActoGrupal ? 'readonly' : '' ?>>
+                                <label>Examinador 2</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex2Compartido) ?>" readonly>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Examinador 3 <span style="color:red">*</span></label>
-                                <input type="text" class="form-control" name="examinador_3" value="<?= $this->escapeHtml($ex3Compartido) ?>" placeholder="Nombre completo" required <?= $tieneActoGrupal ? 'readonly' : '' ?>>
+                                <label>Examinador 3</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex3Compartido) ?>" readonly>
                             </div>
                         </div>
                     </div>
@@ -193,7 +224,19 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Madrina / Padrino</label>
-                                <input type="text" class="form-control" name="madrina_padrino" placeholder="Nombre completo">
+                                <?php
+                                    $mTipo   = $this->datos['madrina_tipo'] ?? '';
+                                    $mNombre = $this->datos['madrina_nombre'] ?? '';
+                                    $mTitulo = $this->datos['madrina_titulo'] ?? '';
+                                    $mTexto  = '(No definido)';
+                                    if ($mNombre !== '') {
+                                        $mTexto = ($mTitulo !== '')
+                                            ? $mTitulo . ' ' . $mNombre
+                                            : $mNombre;
+                                        $mTexto .= ' (' . ucfirst($mTipo ?: 'madrina') . ')';
+                                    }
+                                ?>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($mTexto) ?>" readonly>
                             </div>
                         </div>
                     </div>
@@ -203,11 +246,9 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                             <a href="<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>" class="btn btn-default">
                                 <i class="fa fa-arrow-left"></i> Volver
                             </a>
-                            <?php if (empty($numeroActaExistente)): ?>
                             <button type="submit" class="btn btn-success">
-                                <i class="fa fa-file-text-o"></i> Generar acta
+                                <i class="fa fa-file-text-o"></i> <?= empty($numeroActaExistente) ? 'Generar acta' : 'Volver a generar acta' ?>
                             </button>
-                            <?php endif; ?>
                         </div>
                     </div>
 

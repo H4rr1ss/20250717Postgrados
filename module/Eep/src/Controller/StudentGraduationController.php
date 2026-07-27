@@ -10,6 +10,7 @@ use Zend\Authentication\AuthenticationService;
 use Eep\Service\StudentGraduationManager;
 use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\ExamenManager;
 use Eep\Service\MailManager;
 use Eep\Service\LogManager as LM;
 
@@ -135,10 +136,10 @@ class StudentGraduationController extends AbstractActionController {
                 // Determinar la fase actual para usar el tipo de examen correcto
                 $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
                 
-                // Para examen_general, siempre usar tipo 3 (Público General)
+                // Para examen_general, siempre usar tipo 99 (Público General)
                 // Para examen_privado, usar el tipo del proceso (1 o 2)
                 if ($faseActual === 'examen_general') {
-                    $codTipoExamenFase = 3;  // TIPO_PUBLICO_GENERAL
+                    $codTipoExamenFase = ExamenManager::TIPO_PUBLICO_GENERAL;  // 99
                     // Actualizar el nombre del tipo de examen para la vista
                     $proceso['tipo_examen'] = 'General';
                 } else {
@@ -176,6 +177,12 @@ class StudentGraduationController extends AbstractActionController {
             'requisitos' => $requisitos,
             'requisitosReferencia' => $requisitosReferencia,
             'esPasoFisico' => $esPasoFisico,
+            'madrina' => [
+                'tipo'             => $proceso['madrina_tipo'] ?? '',
+                'nombre'           => $proceso['madrina_nombre'] ?? '',
+                'titulo_profesional' => $proceso['madrina_titulo'] ?? '',
+                'tiene_madrina'    => (bool) ($proceso['tiene_madrina'] ?? 0),
+            ],
             'instruccionesEntrega' => $instruccionesEntrega
         ]);
         $view->setTemplate('eep/student-graduation/partial/paso1-solicitud-examen');
@@ -790,6 +797,91 @@ class StudentGraduationController extends AbstractActionController {
         } catch (\Exception $e) {
             return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * AJAX: guarda el nombre de madrina/padrino para el proceso.
+     * Solo aplicable para examen general público.
+     */
+    public function guardarMadrinaPadrinoAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['success' => false, 'message' => 'Método no permitido']);
+        }
+
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return new JsonModel(['success' => false, 'message' => 'Usuario no autenticado']);
+        }
+
+        $tipo     = trim((string) $request->getPost('tipo', ''));
+        $nombre   = trim((string) $request->getPost('nombre', ''));
+        $titulo   = trim((string) $request->getPost('titulo_profesional', ''));
+
+        if (!in_array($tipo, ['madrina', 'padrino'], true)) {
+            return new JsonModel(['success' => false, 'message' => 'Debe seleccionar si es madrina o padrino.']);
+        }
+        if ($nombre === '') {
+            return new JsonModel(['success' => false, 'message' => 'Debe ingresar el nombre.']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return new JsonModel(['success' => false, 'message' => 'No tiene un proceso activo.']);
+        }
+
+        $faseActual = $proceso['fase_paso_actual'] ?? '';
+        if ($faseActual !== 'examen_general') {
+            return new JsonModel(['success' => false, 'message' => 'Este dato solo es requerido para el examen general público.']);
+        }
+
+        try {
+            $this->processManager->guardarMadrinaPadrino(
+                (int) $proceso['cod_proceso'],
+                $tipo,
+                $nombre,
+                $titulo !== '' ? $titulo : null
+            );
+            return new JsonModel([
+                'success' => true,
+                'message' => 'Datos guardados correctamente.',
+            ]);
+        } catch (\Exception $e) {
+            return new JsonModel(['success' => false, 'message' => 'Error al guardar: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Vista dedicada para configurar el nombre de madrina/padrino.
+     * Solo aplicable para examen general público.
+     */
+    public function configurarMadrinaPadrinoAction()
+    {
+        $codUsuario = $this->authService->getIdentity();
+        if (!$codUsuario) {
+            return $this->redirect()->toRoute('auth', ['action' => 'login']);
+        }
+
+        $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
+        if (!$proceso) {
+            return $this->redirect()->toRoute('student-graduation', ['action' => 'index']);
+        }
+
+        $faseActual = $proceso['fase_paso_actual'] ?? '';
+        if ($faseActual !== 'examen_general') {
+            return $this->redirect()->toRoute('student-graduation', ['action' => 'index']);
+        }
+
+        return new ViewModel([
+            'proceso' => $proceso,
+            'madrina' => [
+                'tipo'             => $proceso['madrina_tipo'] ?? '',
+                'nombre'           => $proceso['madrina_nombre'] ?? '',
+                'titulo_profesional' => $proceso['madrina_titulo'] ?? '',
+                'tiene_madrina'    => (bool) ($proceso['tiene_madrina'] ?? 0),
+            ],
+        ]);
     }
 
 }

@@ -257,6 +257,14 @@ class CartaExaminadoresManager
             throw new \RuntimeException('No hay un ciclo abierto para aprobar.');
         }
 
+        // Validar primero que la plantilla exista antes de tocar la base de datos.
+        // Si falta la plantilla, se reporta a IT para configuración y no se avanza.
+        $rutaCarta = $this->cartaGenerator->generar(
+            $codProceso,
+            (int) $ciclo['cod_ciclo'],
+            $codUsuarioCoordinador
+        );
+
         $this->exec(
             'UPDATE examen_correccion_ciclo
                 SET estado         = :estado,
@@ -274,12 +282,6 @@ class CartaExaminadoresManager
         // al paso 6 (autorizacion_impresion) para que el flujo continúe.
         $this->upsertProcesoPaso($codProceso, 'completado', true);
         $this->avanzarAPaso6($codProceso);
-
-        $rutaCarta = $this->cartaGenerator->generar(
-            $codProceso,
-            (int) $ciclo['cod_ciclo'],
-            $codUsuarioCoordinador
-        );
 
         return [
             'cod_ciclo' => (int) $ciclo['cod_ciclo'],

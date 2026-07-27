@@ -18,10 +18,33 @@ $this->headTitle('Progreso del Proceso de Graduación');
         </div>
     </div>
 
+    <?php if ($proceso && empty($proceso['cod_paso_actual'])): ?>
+    <!-- Aviso: pendiente notificación grupal para examen general (PRIMERO, no se debe perder) -->
+    <div class="panel" style="border: 2px solid #f0ad4e; border-radius: 8px; margin-bottom: 24px;">
+        <div class="panel-heading" style="background: #fcf8e3; color: #8a6d3b; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #faebcc;">
+            <i class="fa fa-clock-o"></i>&nbsp; Pendiente de notificación para el Examen General
+        </div>
+        <div class="panel-body" style="background: #fdfcf7; padding: 22px 28px;">
+            <p style="font-size: 15px; color: #8a6d3b; margin-bottom: 14px;">
+                <strong>Has completado tu proceso de graduación.</strong> Ahora debes esperar la notificación por parte de la coordinación de postgrados con la fecha, hora y lugar del Examen General.
+            </p>
+            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                <i class="fa fa-envelope" style="color: #f0ad4e; margin-right: 8px;"></i>Revisa tu bandeja de entrada y también la carpeta de <strong>spam/correo no deseado</strong>.
+            </p>
+            <p style="font-size: 13px; color: #777; margin-bottom: 0;">
+                <i class="fa fa-info-circle" style="color: #f0ad4e; margin-right: 6px;"></i>La coordinación se pondrá en contacto contigo cuando se programe el acto de graduación. Si tienes dudas, contacta a la coordinación de postgrados.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if ($proceso): ?>
         <?php
             $pasoActualOrden = $proceso['paso_actual_orden'] ?? 0;
             $procesoFinalizado = empty($proceso['cod_paso_actual']);
+            $faseActual = $proceso['fase_paso_actual'] ?? '';
+            $madrinaPadrino = $proceso['madrina_nombre'] ?? '';
+            $tieneMadrina = (bool) ($proceso['tiene_madrina'] ?? 0);
 
             // Nombres formales para las fases
             $nombresFase = [
@@ -31,6 +54,69 @@ $this->headTitle('Progreso del Proceso de Graduación');
                 'examen_general'         => 'Examen General',
             ];
         ?>
+
+        <?php if ($faseActual === 'examen_general' && !$tieneMadrina): ?>
+        <!-- Alerta prominente: dato obligatorio pendiente -->
+        <div class="alert" style="background-color: #fff3cd; border: 2px solid #ffc107; border-left: 6px solid #ffc107; color: #856404; margin-bottom: 24px; padding: 18px 20px; border-radius: 6px; display: flex; align-items: center; gap: 14px;">
+            <div style="flex-shrink: 0;">
+                <i class="fa fa-exclamation-triangle" style="font-size: 32px; color: #ffc107;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">
+                    Dato obligatorio pendiente
+                </div>
+                <div style="font-size: 14px; line-height: 1.5; margin-bottom: 12px;">
+                    Debe registrar el nombre de su <strong>madrina o padrino</strong> para el acta de examen público general. Este dato es necesario para continuar con su proceso de graduación.
+                </div>
+                <a href="<?= $this->url('student-graduation', ['action' => 'configurar-madrina-padrino']) ?>"
+                   class="btn btn-warning btn-lg"
+                   style="font-size: 16px; font-weight: 700; padding: 12px 24px;">
+                    <i class="fa fa-user"></i> Configurar Madrina / Padrino
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($faseActual === 'examen_general' && $tieneMadrina): ?>
+        <!-- Panel informativo: madrina/padrino registrado -->
+        <div class="panel panel-default" style="border: 2px solid #5f9876; margin-bottom: 20px;">
+            <div class="panel-heading" style="background-color: #5f9876; color: white; font-weight: 700;">
+                <i class="fa fa-user"></i> Datos de Madrina / Padrino
+                <span style="margin-left: 8px; font-size: 13px; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px;">
+                    <i class="fa fa-check-circle"></i> Registrado
+                </span>
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px 15px; border-radius:6px; border:1px solid #e9ecef;">
+                    <div style="flex:1;">
+                        <div style="font-size:11px; color:#6c757d; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">Nombre registrado</div>
+                        <div style="font-size:16px; font-weight:600; color:#333;">
+                            <?php
+                                $tipoMadrina   = $proceso['madrina_tipo'] ?? '';
+                                $nombreMadrina = $proceso['madrina_nombre'] ?? '';
+                                $tituloMadrina = $proceso['madrina_titulo'] ?? '';
+                                if ($tituloMadrina) {
+                                    echo $this->escapeHtml($tituloMadrina) . ' ' . $this->escapeHtml($nombreMadrina);
+                                } else {
+                                    echo $this->escapeHtml($nombreMadrina);
+                                }
+                            ?>
+                        </div>
+                        <div style="font-size:13px; color:#6c757d; margin-top:2px; text-transform:capitalize;">
+                            <?= $this->escapeHtml($tipoMadrina) ?>
+                        </div>
+                    </div>
+                    <a href="<?= $this->url('student-graduation', ['action' => 'configurar-madrina-padrino']) ?>"
+                       class="btn btn-sm btn-primary" title="Editar" style="margin-left:10px;">
+                        <i class="fa fa-pencil"></i> Editar
+                    </a>
+                </div>
+                <p class="help-block" style="margin-top:10px; font-size:12px; color:#5cb85c;">
+                    <i class="fa fa-check-circle"></i> Este dato se utilizará para generar el acta de examen público general.
+                </p>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php if (!$procesoFinalizado): ?>
         <!-- Panel azul: fases de progreso -->
@@ -167,11 +253,18 @@ $this->headTitle('Progreso del Proceso de Graduación');
         <?php
         // Verificar si está en fase 1 (revisión de papelería) para permitir edición
         $pasoActualOrden = (int) ($proceso['paso_actual_orden'] ?? 0);
-        $faseActual = $proceso['fase_paso_actual'] ?? '';
         $esFase1 = ($pasoActualOrden === 1 && $faseActual === 'examen_privado');
         $temaTesis = $proceso['tema_tesis'] ?? '';
         $tieneTema = !empty($temaTesis);
         ?>
+
+        <?php if (!$tieneTema): ?>
+        <!-- Alerta: bloqueo de progreso -->
+        <div class="alert alert-danger" style="border-left: 5px solid #d9534f; margin-bottom: 20px;">
+            <i class="fa fa-lock" style="font-size: 20px; margin-right: 10px;"></i>
+            <strong>Proceso bloqueado:</strong> Debe registrar el título de su trabajo de graduación antes de continuar con cualquier otra actividad del proceso de graduación.
+        </div>
+        <?php endif; ?>
 
         <!-- Panel de Título de Trabajo de Graduación -->
         <div class="panel panel-default" style="border: 2px solid #5f9876; margin-bottom: 20px;">
@@ -232,13 +325,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
             </div>
         </div>
 
-        <?php if (!$tieneTema): ?>
-        <!-- Alerta: bloqueo de progreso -->
-        <div class="alert alert-danger" style="border-left: 5px solid #d9534f; margin-bottom: 20px;">
-            <i class="fa fa-lock" style="font-size: 20px; margin-right: 10px;"></i>
-            <strong>Proceso bloqueado:</strong> Debe registrar el título de su trabajo de graduación antes de continuar con cualquier otra actividad del proceso de graduación.
-        </div>
-        <?php endif; ?>
+
 
         <!-- Panel verde: tabla resumen -->
         <div class="panel panel-green">
@@ -328,26 +415,6 @@ $this->headTitle('Progreso del Proceso de Graduación');
             </div>
         </div><!-- /panel-green -->
 
-        <?php if ($procesoFinalizado): ?>
-        <!-- Aviso: pendiente notificación grupal para examen general -->
-        <div class="panel" style="border: 2px solid #f0ad4e; border-radius: 8px; margin-top: 24px;">
-            <div class="panel-heading" style="background: #fcf8e3; color: #8a6d3b; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #faebcc;">
-                <i class="fa fa-clock-o"></i>&nbsp; Pendiente de notificación para el Examen General
-            </div>
-            <div class="panel-body" style="background: #fdfcf7; padding: 22px 28px;">
-                <p style="font-size: 15px; color: #8a6d3b; margin-bottom: 14px;">
-                    <strong>Has completado tu proceso de graduación.</strong> Ahora debes esperar la notificación por parte de la coordinación de postgrados con la fecha, hora y lugar del Examen General.
-                </p>
-                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
-                    <i class="fa fa-envelope" style="color: #f0ad4e; margin-right: 8px;"></i>Revisa tu bandeja de entrada y también la carpeta de <strong>spam/correo no deseado</strong>.
-                </p>
-                <p style="font-size: 13px; color: #777; margin-bottom: 0;">
-                    <i class="fa fa-info-circle" style="color: #f0ad4e; margin-right: 6px;"></i>La coordinación se pondrá en contacto contigo cuando se programe el acto de graduación. Si tienes dudas, contacta a la coordinación de postgrados.
-                </p>
-            </div>
-        </div>
-        <?php endif; ?>
-
     <?php else: ?>
         <!-- Mensaje cuando no hay proceso activo -->
         <div class="panel panel-warning">
@@ -403,5 +470,6 @@ $(document).ready(function() {
             }
         });
     });
+
 });
 </script>

@@ -9,7 +9,7 @@ $estado     = $this->estado ?? [];
 $examinadores = $terna['examinadores'] ?? [];
 $programacion = $terna['programacion'] ?? [];
 
-$nombreEstudiante = trim(($estudiante['nombres'] ?? '') . ' ' . ($estudiante['apellidos'] ?? ''));
+$nombreEstudiante = trim($estudiante['nombre_completo'] ?? '');
 $carrera = $estudiante['carrera'] ?? 'N/A';
 $temaTesis = $proceso['tema_tesis'] ?? '';
 $fechaExamen = !empty($programacion['fecha']) ? date('d/m/Y', strtotime($programacion['fecha'])) : '';

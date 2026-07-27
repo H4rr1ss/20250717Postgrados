@@ -202,6 +202,13 @@ $mensajesExito = $this->flashMessenger()->getSuccessMessages();
 
 </div><!-- /.padding-container -->
 
+<!-- Loader overlay para asignar proceso -->
+<div id="loaderAsignarProceso" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+    <i class="fa fa-spinner fa-spin fa-3x" style="color: #6B8E23; margin-bottom: 15px;"></i>
+    <p style="font-size: 16px; color: #555; font-weight: 600;">Asignando proceso de graduación...</p>
+    <p style="font-size: 13px; color: #888;">Por favor espere un momento</p>
+</div>
+
 <style>
     .panel-verde-tabla {
         border: 3px solid #5f9876;
@@ -391,6 +398,7 @@ $(document).ready(function() {
 
         e.preventDefault();
         ConfirmService.confirm('¿Confirma que desea iniciar el proceso de graduación para este estudiante?', function() {
+            $('#loaderAsignarProceso').css('display', 'flex');
             $('#formIniciarProceso').off('submit').submit();
         });
     });

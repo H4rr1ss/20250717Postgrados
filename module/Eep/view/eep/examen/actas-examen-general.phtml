@@ -80,16 +80,11 @@ $this->headTitle('Actas de Examen General');
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align: center;">
-                                            <?php if ($yaTieneActa): ?>
-                                                <span class="btn-accion-sol" style="background-color:#ccc; cursor:not-allowed; opacity:0.6;" title="Acta ya generada">
-                                                    <i class="fa fa-file-text-o"></i>
-                                                </span>
-                                            <?php else: ?>
-                                                <a href="<?= $this->url('examen', ['action' => 'acta-examen-general', 'id' => $p['cod_proceso']]) ?>"
-                                                   class="btn-accion-sol btn-revisar" title="Generar acta">
-                                                    <i class="fa fa-file-text-o"></i> Generar
-                                                </a>
-                                            <?php endif; ?>
+                                            <a href="<?= $this->url('examen', ['action' => 'acta-examen-general', 'id' => $p['cod_proceso']]) ?>"
+                                               class="btn-accion-sol btn-revisar" title="<?= $yaTieneActa ? 'Volver a generar acta' : 'Generar acta' ?>">
+                                                <i class="fa fa-file-text-o"></i>
+                                                <?= $yaTieneActa ? 'Regenerar' : 'Generar' ?>
+                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

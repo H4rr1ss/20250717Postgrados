@@ -155,6 +155,20 @@ $docentes     = $this->docentes ?? [];
                                 <label>Correo electrónico</label>
                                 <input type="email" class="form-control examinador-correo" placeholder="ejemplo@dominio.com" value="<?= !$esInterno ? $correo : '' ?>" disabled>
                             </div>
+
+                            <!-- Alerta de datos incompletos por card -->
+                            <div class="alerta-datos-incompletos" style="display: none; margin-top: 10px; padding: 10px; border-radius: 4px; border: 1px solid #e74c3c; background-color: #fdeaea;">
+                                <i class="fa fa-exclamation-circle" style="color: #e74c3c;"></i>
+                                <span class="mensaje-datos-incompletos" style="color: #c0392b; font-size: 13px; font-weight: 600;"></span>
+                                <div style="margin-top: 8px;">
+                                    <a href="<?= $this->url('user', ['action' => 'studentSearch']) ?>" target="_blank" class="btn btn-xs btn-danger" style="margin-right: 5px;">
+                                        <i class="fa fa-external-link"></i> Editar examinador
+                                    </a>
+                                    <button type="button" class="btn btn-xs btn-default btn-recargar-docentes-card">
+                                        <i class="fa fa-refresh"></i> Reiniciar examinador
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -263,16 +277,26 @@ $docentes     = $this->docentes ?? [];
 $(document).ready(function() {
     const COD_PROCESO = <?= $codProceso ?>;
 
-    // ── Recargar al volver de editar examinador ───────────────────
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible' && localStorage.getItem('eeditando_examinador')) {
-            localStorage.removeItem('eeditando_examinador');
-            location.reload();
-        }
-    });
-    // Marcar bandera cuando se abre el link de edición de examinador
-    $(document).on('click', 'a[href*="studentSearch"]', function() {
-        localStorage.setItem('eeditando_examinador', '1');
+    // ── Reiniciar un card de examinador ─────────────────────────
+    // Limpia los campos del examinador afectado y recarga la página.
+    function reiniciarExaminadorCard(card) {
+        // Limpiar select y campos del card
+        card.find('.examinador-docente').val('');
+        card.find('.campos-interno .examinador-nombre').val('');
+        card.find('.campos-interno .examinador-colegiado').val('');
+        card.find('.campos-interno .examinador-titulo').val('');
+        card.find('.campos-interno .examinador-correo').val('');
+        card.find('.alerta-datos-incompletos').hide();
+        card.css('border-color', '#ddd');
+
+        location.reload(true);
+    }
+
+    // Botón de reiniciar por card
+    $(document).on('click', '.btn-recargar-docentes-card', function(e) {
+        e.preventDefault();
+        const card = $(this).closest('.examinador-card');
+        reiniciarExaminadorCard(card);
     });
 
     // ── Inicializar estado de cada card según tipo seleccionado ───
@@ -435,7 +459,7 @@ $(document).ready(function() {
         return terna;
     }
 
-    function enviarTerna(terna, programacion, btn) {
+    function enviarTerna(terna, programacion, btn, onComplete) {
         const urlParams = new URLSearchParams(window.location.search);
         const pasoDeNavegacion = urlParams.get('paso') || 0;
         
@@ -471,6 +495,9 @@ $(document).ready(function() {
             },
             complete: function() {
                 btn.prop('disabled', false).html(btn.data('label-orig'));
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
             }
         });
     }
@@ -502,60 +529,52 @@ $(document).ready(function() {
             return;
         }
 
-        // 2. Si se agregó algún examinador con datos parciales, validar que ese card esté completo
-        let incompleto = false;
-        let tituloFaltante = false;
-        let tipoInternoSinTitulo = false;
-        let internoSinTituloCard = null;
+        // 2. Validar cada card de examinador y mostrar errores específicos en el card
+        let hayErrores = false;
+        // Ocultar alertas previas
+        $('.examinador-card .alerta-datos-incompletos').hide();
+        $('.examinador-card').css('border-color', '#ddd');
+
         $('.examinador-card').each(function() {
-            const tipo = $(this).find('.examinador-tipo').val();
+            const card = $(this);
+            const tipo = card.find('.examinador-tipo').val();
             if (!tipo) {
-                // Si seleccionó tipo, no hay datos parciales
                 return true; // continue
             }
+
             // Validar según tipo: solo los campos VISIBLES del tipo seleccionado
-            let nombre, colegiado, titulo;
+            let nombre, colegiado, titulo, correo;
             if (tipo === 'interno') {
-                nombre    = $(this).find('.campos-interno .examinador-nombre').val().trim();
-                colegiado = $(this).find('.campos-interno .examinador-colegiado').val().trim();
-                titulo    = $(this).find('.campos-interno .examinador-titulo').val().trim();
+                nombre    = card.find('.campos-interno .examinador-nombre').val().trim();
+                colegiado = card.find('.campos-interno .examinador-colegiado').val().trim();
+                titulo    = card.find('.campos-interno .examinador-titulo').val().trim();
+                correo    = card.find('.campos-interno .examinador-correo').val().trim();
             } else {
-                nombre    = $(this).find('.campos-externo .examinador-nombre').val().trim();
-                colegiado = $(this).find('.campos-externo .examinador-colegiado').val().trim();
-                titulo    = $(this).find('.campos-externo .examinador-titulo').val().trim();
+                nombre    = card.find('.campos-externo .examinador-nombre').val().trim();
+                colegiado = card.find('.campos-externo .examinador-colegiado').val().trim();
+                titulo    = card.find('.campos-externo .examinador-titulo').val().trim();
+                correo    = card.find('.campos-externo .examinador-correo').val().trim();
             }
-            if (!nombre || !colegiado) {
-                incompleto = true;
-                return false; // break
-            }
-            if (!titulo) {
-                tituloFaltante = true;
+
+            const faltantes = [];
+            if (!nombre) faltantes.push('nombre');
+            if (!colegiado) faltantes.push('número de colegiado');
+            if (!titulo) faltantes.push('título profesional');
+            if (!correo) faltantes.push('correo electrónico');
+
+            if (faltantes.length > 0) {
+                hayErrores = true;
+                card.css('border-color', '#e74c3c');
                 if (tipo === 'interno') {
-                    tipoInternoSinTitulo = true;
-                    internoSinTituloCard = $(this);
+                    const msg = 'Falta: ' + faltantes.join(', ') + '.';
+                    card.find('.mensaje-datos-incompletos').text(msg);
+                    card.find('.alerta-datos-incompletos').show();
                 }
-                return false; // break
             }
         });
 
-        if (incompleto) {
-            ToastService.warning('Si llena un examinador, debe completar su tipo, nombre, título y número de colegiado.');
-            return;
-        }
-
-        if (tituloFaltante) {
-            if (tipoInternoSinTitulo) {
-                ToastService.warning('El docente interno no tiene título profesional registrado. Diríjase a la búsqueda de usuarios para editarlo. <a href="<?= $this->url('user', ['action' => 'studentSearch']) ?>" target="_blank" style="color: #8B0000; text-decoration: underline; font-weight: bold;">CLICK AQUÍ PARA EDITAR EXAMINADOR</a>');
-                // Resaltar el card con el error
-                if (internoSinTituloCard) {
-                    internoSinTituloCard.css('border-color', '#e74c3c');
-                    setTimeout(function() {
-                        internoSinTituloCard.css('border-color', '#ddd');
-                    }, 3000);
-                }
-            } else {
-                ToastService.warning('El examinador externo debe tener un título profesional.');
-            }
+        if (hayErrores) {
+            ToastService.error('Complete los datos faltantes de los examinadores antes de guardar.');
             return;
         }
 

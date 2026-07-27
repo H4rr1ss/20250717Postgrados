@@ -30,18 +30,47 @@ $estudiantes = $this->estudiantes ?? [];
                                 <th>Carné</th>
                                 <th>Nombre</th>
                                 <th>Carrera</th>
+                                <th>Madrina/Padrino</th>
                                 <th>Fecha completado</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($estudiantes as $est): ?>
+                            <?php $tieneMadrina = (bool) ($est['tiene_madrina'] ?? 0); ?>
                             <tr>
                                 <td style="text-align: center;">
-                                    <input type="checkbox" class="sel-estudiante" value="<?= (int)$est['cod_proceso'] ?>">
+                                    <input type="checkbox" class="sel-estudiante" value="<?= (int)$est['cod_proceso'] ?>"
+                                           data-tiene-madrina="<?= $tieneMadrina ? '1' : '0' ?>">
                                 </td>
                                 <td><?= htmlspecialchars($est['registro_academico'] ?? '-') ?></td>
-                                <td><?= htmlspecialchars(($est['apellidos'] ?? '') . ', ' . ($est['nombres'] ?? '')) ?></td>
+                                <td>
+                                    <?= htmlspecialchars(($est['apellidos'] ?? '') . ', ' . ($est['nombres'] ?? '')) ?>
+                                    <?php if (!$tieneMadrina): ?>
+                                        <span class="label label-warning" style="margin-left: 6px; font-size: 11px;">
+                                            <i class="fa fa-exclamation-circle"></i> Falta configurar
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="label label-success" style="margin-left: 6px; font-size: 11px;">
+                                            <i class="fa fa-check-circle"></i> Configurado
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= htmlspecialchars($est['carrera'] ?? '-') ?></td>
+                                <td>
+                                    <?php if ($tieneMadrina): ?>
+                                        <?php
+                                            $mTexto = ($est['madrina_titulo'] ?? '')
+                                                ? $est['madrina_titulo'] . ' ' . $est['madrina_nombre']
+                                                : $est['madrina_nombre'];
+                                        ?>
+                                        <?= $this->escapeHtml($mTexto) ?>
+                                        <div style="font-size: 11px; color: #666; text-transform: capitalize;">
+                                            <?= $this->escapeHtml($est['madrina_tipo'] ?? '') ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted" style="font-size: 12px;">— Pendiente —</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= !empty($est['fecha_completado']) ? date('d/m/Y H:i', strtotime($est['fecha_completado'])) : '-' ?></td>
                             </tr>
                             <?php endforeach; ?>
@@ -69,6 +98,48 @@ $estudiantes = $this->estudiantes ?? [];
                             <div class="form-group">
                                 <label>Lugar <span style="color:red">*</span></label>
                                 <input type="text" class="form-control" id="ngLugar" placeholder="Ej: Auditorio Universidad, Ciudad de Guatemala">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 1 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador1">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 2 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador2">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 3 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador3">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -210,6 +281,9 @@ $(document).ready(function() {
             fecha: $('#ngFecha').val(),
             hora: $('#ngHora').val(),
             lugar: $('#ngLugar').val().trim(),
+            examinador_1: $('#ngExaminador1').val(),
+            examinador_2: $('#ngExaminador2').val(),
+            examinador_3: $('#ngExaminador3').val(),
             info_extra: $('#ngInfoExtra').val()
         };
     }
@@ -217,6 +291,16 @@ $(document).ready(function() {
     function validarFormulario(datos) {
         if (!datos.fecha || !datos.hora || !datos.lugar) {
             ToastService.warning('Fecha, hora y lugar son obligatorios.');
+            return false;
+        }
+        if (!datos.examinador_1 || !datos.examinador_2 || !datos.examinador_3) {
+            ToastService.warning('Debe seleccionar los tres examinadores.');
+            return false;
+        }
+        if (datos.examinador_1 === datos.examinador_2 ||
+            datos.examinador_1 === datos.examinador_3 ||
+            datos.examinador_2 === datos.examinador_3) {
+            ToastService.warning('Los tres examinadores deben ser personas diferentes.');
             return false;
         }
         var hoy = new Date();
@@ -273,12 +357,28 @@ $(document).ready(function() {
     $('#btnEnviarNotificacionGrupal').on('click', function() {
         var btn = $(this);
         var seleccionados = [];
+        var sinMadrina = [];
+
         $('.sel-estudiante:checked').each(function() {
-            seleccionados.push($(this).val());
+            var $chk = $(this);
+            seleccionados.push($chk.val());
+
+            if ($chk.data('tiene-madrina') === 0 || $chk.data('tiene-madrina') === '0') {
+                var nombre = $chk.closest('tr').find('td:nth-child(3)').text().trim();
+                sinMadrina.push(nombre);
+            }
         });
 
         if (seleccionados.length === 0) {
             ToastService.warning('Debe seleccionar al menos un estudiante.');
+            return;
+        }
+
+        if (sinMadrina.length > 0) {
+            ToastService.error(
+                'No se puede enviar la notificación. Los siguientes estudiantes aún no han configurado su madrina/padrino: ' +
+                sinMadrina.join(', ') + '. Solicíteles que completen este dato desde su panel de Proceso de Graduación.'
+            );
             return;
         }
 
@@ -296,6 +396,9 @@ $(document).ready(function() {
                 fecha: datos.fecha,
                 hora: datos.hora,
                 lugar: datos.lugar,
+                examinador_1: datos.examinador_1,
+                examinador_2: datos.examinador_2,
+                examinador_3: datos.examinador_3,
                 info_extra: datos.info_extra,
                 correos_cc: obtenerCorreosCc()
             },
@@ -315,6 +418,9 @@ $(document).ready(function() {
                     }
                     html += '</div>';
                     $('#resumenNotificacion').html(html).show();
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
                 } else {
                     ToastService.error(resp.message || 'Error al enviar la notificación.');
                 }

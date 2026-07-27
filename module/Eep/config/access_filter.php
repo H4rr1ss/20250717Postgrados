@@ -655,7 +655,7 @@ return [
         ],
         'listaDocentes' => [
             'code' => 163,
-            'roles' => [Role::SECRETARIO_EXAMEN_PRIVADO]
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
         'sustituirExaminador' => [
             'code' => 164,
@@ -694,6 +694,16 @@ return [
         ],
         'guardarTemaTesis' => [
             'code' => 154,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'guardarMadrinaPadrino' => [
+            'code' => 169,
+            'view' => View::STUDENT_GRADUATION,
+            'roles' => [Role::ESTUDIANTE]
+        ],
+        'configurarMadrinaPadrino' => [
+            'code' => 170,
             'view' => View::STUDENT_GRADUATION,
             'roles' => [Role::ESTUDIANTE]
         ],

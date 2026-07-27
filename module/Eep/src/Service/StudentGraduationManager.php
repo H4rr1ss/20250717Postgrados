@@ -261,8 +261,16 @@ class StudentGraduationManager
                 ep.fecha_solicitud,
                 ep.cod_paso_actual,
                 ep.cancelado,
-                ep.tema_tesis
+                ep.tema_tesis,
+                emp.tipo AS madrina_tipo,
+                emp.nombre AS madrina_nombre,
+                emp.titulo_profesional AS madrina_titulo,
+                CASE
+                    WHEN emp.cod_madrina_padrino IS NOT NULL THEN 1
+                    ELSE 0
+                END AS tiene_madrina
             FROM examen_proceso ep
+            LEFT JOIN examen_madrina_padrino emp ON emp.cod_proceso = ep.cod_proceso
             JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
             JOIN usuario u ON u.cod_usuario = ep.cod_usuario
             WHERE ep.cod_usuario = :usuario
@@ -544,5 +552,27 @@ class StudentGraduationManager
         $this->adapter->createStatement($sql, ['tema' => $temaTesis, 'proceso' => $codProceso])->execute();
         
         return ['success' => true, 'message' => 'Tema de graduación guardado correctamente.'];
+    }
+
+    /**
+     * Guarda o actualiza los datos de madrina/padrino en la tabla independiente.
+     */
+    public function guardarMadrinaPadrino(int $codProceso, string $tipo, string $nombre, ?string $tituloProfesional): void
+    {
+        $sql = 'INSERT INTO examen_madrina_padrino
+                (cod_proceso, tipo, nombre, titulo_profesional)
+                VALUES (:proceso, :tipo, :nombre, :titulo)
+                ON DUPLICATE KEY UPDATE
+                    tipo = :tipo,
+                    nombre = :nombre,
+                    titulo_profesional = :titulo,
+                    updated_at = NOW()';
+
+        $this->adapter->createStatement($sql, [
+            'proceso' => $codProceso,
+            'tipo'    => $tipo,
+            'nombre'  => $nombre,
+            'titulo'  => $tituloProfesional ?? null,
+        ])->execute();
     }
 }

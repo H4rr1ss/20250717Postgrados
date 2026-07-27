@@ -129,7 +129,32 @@ CREATE TABLE `examen_proceso` (
 
 
 -- ------------------------------------------------------------
--- 4. examen_proceso_paso
+-- 4. examen_madrina_padrino
+--    Registro de madrina o padrino por proceso de graduación.
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `examen_madrina_padrino`;
+
+CREATE TABLE `examen_madrina_padrino` (
+  `cod_madrina_padrino` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `cod_proceso`          int(11) unsigned NOT NULL COMMENT 'FK → examen_proceso (1:1)',
+  `tipo`                 enum('madrina','padrino') NOT NULL DEFAULT 'madrina',
+  `nombre`               varchar(255) NOT NULL COMMENT 'Nombre completo de la madrina o padrino',
+  `titulo_profesional`   varchar(255) DEFAULT NULL COMMENT 'Título profesional (ej: Abogada y Notaria)',
+  `created_at`           datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at`           datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`cod_madrina_padrino`),
+  UNIQUE KEY `unique_emp_proceso` (`cod_proceso`),
+  KEY `idx_emp_tipo` (`tipo`),
+  CONSTRAINT `examen_madrina_padrino_proceso_fk`
+    FOREIGN KEY (`cod_proceso`) REFERENCES `examen_proceso` (`cod_proceso`)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+COMMENT='Registro de madrina o padrino por proceso de graduación';
+
+
+-- ------------------------------------------------------------
+-- 5. examen_proceso_paso
 --    Estado de cada paso dentro de cada proceso.
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `examen_proceso_paso`;
@@ -637,7 +662,7 @@ CREATE TABLE `examen_acta_general` (
   `correlativo_acta`      INT UNSIGNED NOT NULL,
   `numero_recibo`         VARCHAR(30),
   `promedio`              DECIMAL(4,2),
-  `madrina_padrino`       VARCHAR(255),
+  `acuerdo_decanato`      VARCHAR(255) DEFAULT NULL COMMENT 'Número de acuerdo de decanato para el acta',
   `fecha_generacion`      DATETIME DEFAULT CURRENT_TIMESTAMP,
   `generado_por`          INT UNSIGNED,
   INDEX `idx_proceso` (`cod_proceso`),

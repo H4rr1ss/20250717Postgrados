@@ -623,6 +623,32 @@ INSERT INTO accion (cod_accion, nombre) VALUES
 - `module/Eep/view/eep/student-graduation/index.phtml` — Lógica de `$bloqueadoPorTema` en el botón "Resumen" del paso 1 (papelería). Si no hay tema, se muestra botón gris con icono de candado y tooltip informativo.
 - `module/Eep/src/Service/StudentGraduationManager.php` — `getProcesoEstudiante()` ya incluye `tema_tesis` en el SELECT (sin cambios, ya estaba disponible)
 
+## Guardar Madrina/Padrino (estudiante en examen general) — 2026-07-14
+
+Nueva acción para que el estudiante registre el nombre de la madrina/padrino durante el paso de solicitud del examen general público.
+
+### Cambios en base de datos
+```sql
+-- madrina_padrino ahora reside en examen_proceso (schema base), eliminado de examen_acta_general
+INSERT INTO accion (cod_accion, nombre) VALUES (169, 'Guardar madrina/padrino');
+```
+
+### Consolidación de campo (2026-07-14)
+- **Origen:** Inicialmente se había colocado `madrina_padrino` en `examen_acta_general` con la idea de que el secretario/director lo definiera al generar el acta.
+- **Corrección:** El campo se movió permanentemente a `examen_proceso` porque el estudiante ya lo registra durante la solicitud (paso 1). Al generar el acta, el valor se lee directamente del proceso y es **solo lectura**.
+- **Schema actualizado:**
+  - `examen_proceso` — incluye `madrina_padrino VARCHAR(255) DEFAULT NULL` (línea ~101).
+  - `examen_acta_general` — ya **no** incluye `madrina_padrino`.
+
+### Archivos PHP modificados
+- `module/Eep/src/Controller/StudentGraduationController.php` — `guardarMadrinaPadrinoAction()` (nuevo endpoint AJAX), `paso1SolicitudExamenAction()` pasa `madrinaPadrino` al ViewModel.
+- `module/Eep/src/Service/StudentGraduationManager.php` — `guardarMadrinaPadrino()` para actualizar `examen_proceso`.
+- `module/Eep/view/eep/student-graduation/partial/paso1-solicitud-examen.phtml` — Panel "Datos de Madrina/Padrino" visible solo en fase `examen_general`.
+- `module/Eep/view/eep/examen/acta-examen-general.phtml` — Campo `madrina_padrino` ahora es **solo lectura** (`form-control-static`) tomado desde `examen_proceso`.
+- `module/Eep/src/Service/ExamenManager.php` — `getDatosActaGeneral()` obtiene `ep.madrina_padrino` directamente; `crearActaGeneral()` ya no inserta el campo en `examen_acta_general`.
+- `module/Eep/src/Controller/ExamenController.php` — `generarActaGeneralAction()` ya no lee ni envía `madrina_padrino` desde el POST.
+- `module/Eep/config/access_filter.php` — Acción 169 agregada para rol ESTUDIANTE.
+
 ## Eliminación de vista de edición de matriz (staff) — 2026-06-06
 
 **Cambio:** El staff ya no puede editar la evaluación de los examinadores desde el panel. La evaluación solo se completa desde el link público por cada examinador individualmente.
@@ -634,3 +660,18 @@ INSERT INTO accion (cod_accion, nombre) VALUES
 - `module/Eep/view/eep/examen/ver-matriz.phtml` — Eliminado el botón "Editar Evaluación" (solo queda "Volver al listado")
 - `module/Eep/src/Controller/ExamenController.php` — Eliminados `matrizEvaluacionAction()` y `guardarMatrizAction()` (solo se usaban desde el panel de staff)
 - `module/Eep/config/access_filter.php` — Eliminadas acciones 151 (`matrizEvaluacion`) y 152 (`guardarMatriz`)
+
+## Campo Acuerdo de Decanato en acta general — 2026-07-14
+
+Nuevo campo opcional `acuerdo_decanato` en `examen_acta_general` para registrar el número de acuerdo de decanato que autoriza el acto de graduación.
+
+### Cambios en base de datos
+```sql
+ALTER TABLE examen_acta_general ADD COLUMN acuerdo_decanato VARCHAR(255) DEFAULT NULL COMMENT 'Número de acuerdo de decanato para el acta';
+```
+
+### Archivos PHP modificados
+- `database/modulo graduacion/modulo_graduacion_schema.sql` — Agregado `acuerdo_decanato VARCHAR(255) DEFAULT NULL` al `CREATE TABLE examen_acta_general`.
+- `module/Eep/src/Service/ExamenManager.php` — `guardarActaGeneral()` ahora inserta `acuerdo_decanato` en `examen_acta_general`.
+- `module/Eep/src/Controller/ExamenController.php` — `generarActaGeneralAction()` recibe `acuerdo_decanato` desde POST y lo incluye en el array de guardado.
+- `module/Eep/view/eep/examen/acta-examen-general.phtml` — Agregado input "Acuerdo de Decanato" en el formulario de generación del acta.

@@ -89,99 +89,22 @@ echo ""
 # ============================================================
 # 4. INSTALAR BASE DE DATOS
 # ============================================================
-echo "🗄️  ¿Deseas instalar las tablas de base de datos? (s/N)"
-read -r INSTALL_DB
 
-if [[ $INSTALL_DB =~ ^[Ss]$ ]]; then
-    echo ""
-    echo "Instalando tablas del módulo..."
-    
-    if [ -f "database/modulo graduacion/modulo_graduacion_schema.sql" ]; then
-        docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/modulo graduacion/modulo_graduacion_schema.sql"
-        echo -e "${GREEN}✅${NC} Tablas del módulo instaladas"
-    else
-        echo -e "${YELLOW}⚠️${NC}  Archivo modulo_graduacion_schema.sql no encontrado"
-    fi
-    
-    echo ""
-    echo "Instalando tablas de matriz de evaluación..."
-    
-    if [ -f "database/matriz_evaluacion_completo.sql" ]; then
-        docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/matriz_evaluacion_completo.sql"
-        echo -e "${GREEN}✅${NC} Tablas de matriz instaladas"
-    else
-        echo -e "${YELLOW}⚠️${NC}  Archivo matriz_evaluacion_completo.sql no encontrado"
-    fi
-    
-    echo ""
-    echo "Instalando datos semilla..."
-    
-    if [ -f "database/ejecuciones_extra.sql" ]; then
-        docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/ejecuciones_extra.sql"
-        echo -e "${GREEN}✅${NC} Datos semilla instalados"
-    else
-        echo -e "${YELLOW}⚠️${NC}  Archivo ejecuciones_extra.sql no encontrado"
-    fi
-else
-    echo -e "${YELLOW}⚠️${NC}  Instalación de BD omitida"
-fi
-
-echo ""
 
 # ============================================================
 # 5. INSTALAR DEPENDENCIAS PHP
 # ============================================================
-echo "🐘 ¿Deseas instalar/actualizar dependencias de Composer? (s/N)"
-read -r INSTALL_COMPOSER
 
-if [[ $INSTALL_COMPOSER =~ ^[Ss]$ ]]; then
-    echo ""
-    echo "Instalando dependencias..."
-    docker-compose exec web composer install
-    echo -e "${GREEN}✅${NC} Dependencias instaladas"
-else
-    echo -e "${YELLOW}⚠️${NC}  Instalación de Composer omitida"
-fi
-
-echo ""
 
 # ============================================================
 # 6. CONFIGURAR SMTP
 # ============================================================
-echo "📧 ¿Deseas configurar SMTP para envío de correos? (s/N)"
-read -r CONFIG_SMTP
 
-if [[ $CONFIG_SMTP =~ ^[Ss]$ ]]; then
-    echo ""
-    echo "Por favor, edita manualmente el archivo:"
-    echo "  config/autoload/local.php"
-    echo ""
-    echo "Agrega la configuración SMTP según la documentación:"
-    echo "  MODULO_GRADUACION_REQUISITOS_INICIALES.md (sección: Configuración SMTP)"
-    echo ""
-    echo -e "${YELLOW}⚠️${NC}  Configuración manual requerida"
-else
-    echo -e "${YELLOW}⚠️${NC}  Configuración SMTP omitida (correos no se enviarán)"
-fi
-
-echo ""
 
 # ============================================================
 # 7. REINICIAR SERVICIOS
 # ============================================================
-echo "🔄 ¿Deseas reiniciar los servicios Docker? (S/n)"
-read -r RESTART_SERVICES
 
-if [[ ! $RESTART_SERVICES =~ ^[Nn]$ ]]; then
-    echo ""
-    echo "Reiniciando servicios..."
-    docker-compose restart web
-    echo -e "${GREEN}✅${NC} Servicios reiniciados"
-else
-    echo -e "${YELLOW}⚠️${NC}  Reinicio omitido (recuerda reiniciar manualmente)"
-fi
-
-echo ""
 
 # ============================================================
 # RESUMEN FINAL

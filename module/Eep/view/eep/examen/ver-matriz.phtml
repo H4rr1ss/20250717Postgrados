@@ -18,7 +18,12 @@ $examinadores = $this->terna['examinadores'] ?? [];
 
 <div class="row">
     <div class="col-lg-12">
-        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Resumen de Evaluación del Examen Privado</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0; font-weight: 400;">Resumen de Evaluación del Examen Privado</h3>
+            <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
+                <i class="fa fa-arrow-left"></i> Regresar a evaluaciones
+            </a>
+        </div>
     </div>
 </div>
 
@@ -90,14 +95,14 @@ $examinadores = $this->terna['examinadores'] ?? [];
                         <?php endif; ?>
                     </div>
                     <div class="col-md-6 text-right">
-                        <?php if ($yaCerrada && $completadasMatriz < 2 && !empty($this->proceso['fecha_examen_privado']) && !empty($this->proceso['hora_examen_privado'])): ?>
+                        <?php if (!$yaCerrada): ?>
                             <button class="btn btn-info btn-previsualizar-acta"
                                     data-url="<?= $this->url('previsualizar-acta', ['id' => $codProceso]) ?>"
                                     title="Previsualizar acta de examen">
                                 <i class="fa fa-eye"></i> Previsualizar Acta
                             </button>
                         <?php endif; ?>
-                        <?php if (!$yaCerrada): ?>
+                        <?php if ($abierta): ?>
                             <button class="btn btn-default btn-ver-link"
                                     data-proceso="<?= $codProceso ?>"
                                     data-codigo="<?= $this->escapeHtml($codigoEval) ?>"
@@ -143,8 +148,13 @@ $examinadores = $this->terna['examinadores'] ?? [];
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-green">
-            <div class="panel-heading">
-                <i class="fa fa-list-alt"></i> Comparativo de Evaluaciones
+            <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa fa-list-alt"></i> Comparativo de Evaluaciones</span>
+                <?php if (!$yaCerrada): ?>
+                <button type="button" class="btn btn-primary btn-sm" onclick="location.reload(true);" title="Recargar datos de evaluaciones" style="font-weight: bold; padding: 10px 18px; font-size: 16px;">
+                    <i class="fa fa-refresh"></i> Recargar datos de evaluaciones
+                </button>
+                <?php endif; ?>
             </div>
             <div class="panel-body" style="overflow-x: auto;">
                 <table class="table table-bordered table-striped" style="min-width: 800px;">

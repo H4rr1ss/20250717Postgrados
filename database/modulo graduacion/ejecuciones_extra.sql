@@ -12,20 +12,13 @@
 
 /*!40101 SET NAMES utf8mb4 */;
 
--- ============================================================
--- 0. AJUSTES AL SISTEMA CORE
--- ============================================================
-
--- Agregar numero_colegiado a usuario (separado de registro_personal)
-SET @add_col_colegiado = IF(
-    NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'usuario' AND column_name = 'numero_colegiado'),
-    'ALTER TABLE usuario ADD COLUMN numero_colegiado VARCHAR(50) NULL COMMENT "Numero de colegiado del docente"',
-    'SELECT 1'
-); PREPARE stmt FROM @add_col_colegiado; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ============================================================
--- 1. SEEDS DEL MODULO DE GRADUACION
+-- 1. SE AGREGAN COLUMNAS A TABLAS YA EXISTENTES
 -- ============================================================
+ALTER TABLE `usuario`
+ADD COLUMN `titulo_profesional` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
+ADD COLUMN `numero_colegiado` varchar(20) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL;
 
 -- ------------------------------------------------------------
 -- 1.1 Rol: Secretario de Examen Privado
@@ -46,25 +39,34 @@ INSERT INTO `usuario` (
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio)
 VALUES (3568, 11, CURDATE());
 -- ------------------------------------------------------------
--- 1.2 Tipos de examen
+-- 1.2 Tipos de examen — 20 tipos privados con cod_carrera vinculado (alineado con matriz_evaluacion_completo.sql)
 -- ------------------------------------------------------------
-INSERT INTO `examen_tipo` (`cod_tipo_examen`, `nombre`, `descripcion`, `activo`) VALUES
-(1, 'Privado General', 'Examen privado para estudiantes regulares de postgrado', 1),
-(2, 'Privado Gerencia', 'Examen privado para la Maestría en Gestión de Programas y Proyectos de Desarrollo', 1),
-(3, 'Público General', 'Examen público abierto a la comunidad académica', 1);
+INSERT INTO examen_tipo (cod_tipo_examen, cod_carrera, nombre, descripcion, activo) VALUES
+(1, 18, 'Examen Privado — Patrimonio Cultural (Conservación)', 'Examen privado para Maestría en Patrimonio Cultural — Conservación', 1),
+(2, 24, 'Examen Privado — Gerencia de Proyectos Arquitectónicos', 'Examen privado para Maestría en Gerencia de Proyectos Arquitectónicos', 1),
+(3, 13, 'Examen Privado — Gestión para la Reducción del Riesgo', 'Examen privado para Maestría en Gestión para la Reducción del Riesgo', 1),
+(4, 22, 'Examen Privado — Enseñanza Virtual de Arquitectura y Diseño', 'Examen privado para Maestría en Enseñanza Virtual de la Arquitectura y el Diseño', 1),
+(5, 17, 'Examen Privado — Mercadeo para el Diseño', 'Examen privado para Maestría en Mercadeo para el Diseño', 1),
+(6, 15, 'Examen Privado — Arquitectura para la Salud', 'Examen privado para Maestría en Arquitectura para la Salud', 1),
+(7, 9,  'Examen Privado — Asentamientos Humanos y Vivienda', 'Examen privado para Maestría en Planificación de Asentamientos Humanos y Vivienda', 1),
+(8, 10, 'Examen Privado — Restauración de Monumentos', 'Examen privado para Maestría en Restauración de Monumentos, Especialidad en Bienes Inmuebles y Centros Históricos', 1),
+(9, 11, 'Examen Privado — Diseño, Planificación y Manejo Ambiental', 'Examen privado para Maestría en Diseño, Planificación y Manejo Ambiental', 1),
+(10, 12, 'Examen Privado — Diseño Arquitectónico', 'Examen privado para Maestría en Diseño Arquitectónico', 1),
+(11, 14, 'Examen Privado — Desarrollo Urbano y Territorio', 'Examen privado para Maestría en Desarrollo Urbano y Territorio', 1),
+(12, 16, 'Examen Privado — Planificación y Diseño del Paisaje', 'Examen privado para Maestría en Planificación y Diseño del Paisaje', 1),
+(13, 19, 'Examen Privado — Patrimonio Cultural (Gestión)', 'Examen privado para Maestría en Patrimonio Cultural para el Desarrollo — Gestión', 1),
+(14, 20, 'Examen Privado — Análisis y Reducción de Riesgo', 'Examen privado para Especialización en Análisis y Reducción de Riesgo de Desastres', 1),
+(15, 21, 'Examen Privado — Arquitectura y Construcción Sostenible', 'Examen privado para Especialización en Arquitectura y Construcción Sostenible', 1),
+(16, 23, 'Examen Privado — Diseño Interactivo Digital', 'Examen privado para Maestría en Diseño Interactivo Digital', 1),
+(17, 25, 'Examen Privado — Gestión Integrada', 'Examen privado para Maestría en Gestión Integrada: Medio Ambiente, Calidad y Prevención', 1),
+(18, 26, 'Examen Privado — Diseño y Gestión de Proyectos Tecnológicos', 'Examen privado para Maestría en Diseño y Gestión de Proyectos Tecnológicos', 1),
+(19, 28, 'Examen Privado — Dirección y Producción de Cine', 'Examen privado para Especialización en Dirección y Producción de Cine, Video y Televisión', 1),
+(20, 80, 'Examen Privado — Doctorado en Arquitectura', 'Examen privado para Doctorado en Arquitectura', 1);
 
-UPDATE `examen_tipo` SET `cod_carrera` = 18 WHERE `cod_tipo_examen` = 1;
-UPDATE `examen_tipo` SET `cod_carrera` = 24 WHERE `cod_tipo_examen` = 2;
+-- Tipo público general (sin carrera específica)
+INSERT INTO `examen_tipo` (`cod_tipo_examen`, `cod_carrera`, `nombre`, `descripcion`, `activo`) VALUES
+(99, NULL, 'Examen Público General', 'Examen público abierto a la comunidad académica', 1);
 
-INSERT INTO `examen_tipo` (`cod_carrera`, `nombre`, `descripcion`, `activo`)
-SELECT
-    nc.`cod_carrera`,
-    CONCAT('Privado - ', LEFT(nc.`nombre`, 89)),
-    CONCAT('Examen privado para ', nc.`nombre`),
-    nc.`activo`
-FROM `nombre_carrera` nc
-WHERE nc.`activo` = 1
-  AND nc.`cod_carrera` NOT IN (999, 18, 24);
 
 -- ------------------------------------------------------------
 -- 1.3 Paso catalogo
@@ -84,27 +86,31 @@ INSERT INTO `examen_paso_catalogo`
   (NULL, 6, 'autorizacion_impresion', 'Autorización de Impresión del Proyecto', '0', 'paso6-autorizacion-impresion', 0);
 
 -- ------------------------------------------------------------
--- 1.4 Requisitos de documento
+-- 1.4 Requisitos de documento — Ejemplos para algunos tipos específicos
 -- ------------------------------------------------------------
--- Tipo 1 (Privado General)
+-- NOTA: Los requisitos deben configurarse por tipo de examen desde la UI.
+-- Estos son ejemplos de seeds iniciales para testing/desarrollo.
+
+-- Tipo 1 (Patrimonio Cultural — Conservación, carrera 18)
 INSERT INTO `examen_requisito_documento`
   (`cod_tipo_examen`, `cod_paso`, `nombre`, `descripcion`, `tipo_entrega`, `formatos_permitidos`, `tamano_max_mb`, `orden_display`) VALUES
   (1, 1, 'Recibo de Pago', 'Comprobante de pago de los derechos de examen de graduación.', 'digital', 'pdf,jpg,png', 5, 1),
   (1, 1, 'Constancia de Cierre de Pensum', 'Constancia emitida por la coordinación que acredita el cierre total del pensum de estudios.', 'digital', 'pdf', 5, 2),
   (1, 1, 'Ejemplar del Trabajo de Graduación', 'Versión digital del trabajo de graduación en formato PDF.', 'digital', 'pdf', 30, 3);
 
--- Tipo 2 (Privado Gerencia)
+-- Tipo 2 (Gerencia de Proyectos Arquitectónicos, carrera 24)
 INSERT INTO `examen_requisito_documento`
   (`cod_tipo_examen`, `cod_paso`, `nombre`, `descripcion`, `tipo_entrega`, `formatos_permitidos`, `tamano_max_mb`, `orden_display`) VALUES
-  (2, 1, 'Factura de Impresión', 'Factura emitida por la imprenta que realizó los empastados.', 'digital', 'pdf,jpg,png', 5, 1),
-  (2, 1, 'Certificación de Notas', 'Certificación oficial de todas las notas obtenidas durante el programa.', 'digital', 'pdf', 5, 2);
+  (2, 1, 'Recibo de Pago', 'Comprobante de pago de los derechos de examen de graduación.', 'digital', 'pdf,jpg,png', 5, 1),
+  (2, 1, 'Constancia de Cierre de Pensum', 'Constancia emitida por la coordinación que acredita el cierre total del pensum de estudios.', 'digital', 'pdf', 5, 2),
+  (2, 1, 'Ejemplar del Proyecto de Graduación', 'Versión digital del proyecto de graduación en formato PDF.', 'digital', 'pdf', 30, 3);
 
--- Tipo 3 (Público General)
+-- Tipo 99 (Público General — sin carrera específica)
 INSERT INTO `examen_requisito_documento`
   (`cod_tipo_examen`, `cod_paso`, `nombre`, `descripcion`, `tipo_entrega`, `formatos_permitidos`, `tamano_max_mb`, `orden_display`) VALUES
-  (3, 5, 'Empastados (2 ejemplares)', 'Dos ejemplares empastados del trabajo de graduación.', 'digital', 'pdf', 10, 1),
-  (3, 5, 'CD con versión digital', 'CD con la versión digital del trabajo de graduación.', 'digital', 'pdf', 10, 2),
-  (3, 5, 'Carta de Autorización de Publicación', 'Carta de autorización para publicar el trabajo en el repositorio.', 'digital', 'pdf', 5, 3);
+  (99, 5, 'Empastados (2 ejemplares)', 'Dos ejemplares empastados del trabajo de graduación.', 'digital', 'pdf', 10, 1),
+  (99, 5, 'CD con versión digital', 'CD con la versión digital del trabajo de graduación.', 'digital', 'pdf', 10, 2),
+  (99, 5, 'Carta de Autorización de Publicación', 'Carta de autorización para publicar el trabajo en el repositorio.', 'digital', 'pdf', 5, 3);
 
 -- ------------------------------------------------------------
 -- 1.5 Configuracion de autorizacion (Paso 6)
@@ -213,14 +219,13 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (165, 'Previsualizar acta de examen privado'),
   (166, 'Ver listado de actas de examen general'),
   (167, 'Generar acta de examen general'),
-  (168, 'Generar acta de examen general (POST)')
+  (168, 'Generar acta de examen general (POST)'),
+  (169, 'Guardar madrina/padrino')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
--- Limpieza de acciones obsoletas
-DELETE IGNORE FROM `accion` WHERE `cod_accion` IN (151, 152);
 
 -- ============================================================
--- 3. SEMILLAS MINIMAS OBLIGATORIAS (configurar datos reales desde UI)
+-- 4. SEMILLAS MINIMAS OBLIGATORIAS (configurar datos reales desde UI)
 -- ============================================================
 
 -- examen_profesional_calificado — requerido para Paso 6 (autorización de impresión)
