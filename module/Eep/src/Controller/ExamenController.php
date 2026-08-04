@@ -3094,9 +3094,18 @@ class ExamenController extends AbstractActionController {
      */
     public function actasExamenGeneralAction()
     {
-        $procesos = $this->examenManager->getProcesosConNotificacionGeneral();
+        $busqueda   = $this->params()->fromQuery('busqueda', '') ?: null;
+        $estadoActa = $this->params()->fromQuery('estado_acta', '') ?: null;
+
+        $procesos = $this->examenManager->getProcesosConNotificacionGeneral([
+            'busqueda'    => $busqueda,
+            'estado_acta' => $estadoActa,
+        ]);
+
         return new ViewModel([
-            'procesos' => $procesos,
+            'procesos'     => $procesos,
+            'busqueda'     => $busqueda,
+            'estado_acta'  => $estadoActa,
         ]);
     }
 

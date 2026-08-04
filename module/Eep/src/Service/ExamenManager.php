@@ -106,7 +106,143 @@ class ExamenManager
                     u.cui,
                     u.nombres,
                     u.apellidos,
-                    u.nombre_completo
+                    u.nombre_completo,
+                    u.correo,
+                    c.nombre_actual AS carrera,
+                    p.descripcion AS pensum
+                FROM usuario u
+                INNER JOIN usuario_rol ur ON ur.cod_usuario = u.cod_usuario AND ur.cod_rol = 6
+                LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
+                LEFT JOIN pensum p ON p.cod_pensum = i.cod_pensum
+                LEFT JOIN carrera c ON c.cod_carrera = p.cod_carrera
+                WHERE (
+                    u.registro_academico LIKE :termino_exacto
+                    OR u.nombres LIKE :termino_like
+                    OR u.apellidos LIKE :termino_like
+                    OR u.nombre_completo LIKE :termino_like
+                )
+                ORDER BY u.apellidos, u.nombres
+                LIMIT 20";
+
+        return $this->execute($sql, [
+            'termino_exacto' => $termino,
+            'termino_like'   => '%' . $termino . '%'
+        ]);
+    }
+
+    /**
+     * Verifica si un estudiante ya tiene un proceso de graduación activo
+     * (no cancelado y no finalizado).
+     *
+     * @param int $codUsuario  Código del estudiante
+     * @return array|null      Proceso activo si existe, null si no
+     */
+    public function getProcesoActivoEstudiante(int $codUsuario): ?array
+    {
+        $sql = 'SELECT ep.cod_proceso, et.nombre AS tipo_examen, epc.nombre AS paso_actual,
+                       epc.fase AS fase_actual
+                FROM examen_proceso ep
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                WHERE ep.cod_usuario = :usuario
+                  AND ep.cancelado = 0
+                  AND ep.cod_paso_actual IS NOT NULL
+                ORDER BY ep.fecha_solicitud DESC
+                LIMIT 1';
+
+        $result = $this->execute($sql, ['usuario' => $codUsuario]);
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Inicia un nuevo proceso de examen para un estudiante.
+     * T-13
+     */
+    public function iniciarProceso(int $codUsuario, int $codTipoExamen, int $userAdminId): int
+    {
+        error_log("DEBUG user id: ".print_r($userAdminId, true));
+        // 1. Obtener el primer paso del catálogo para este tipo de examen
+        $sqlPaso = 'SELECT cod_paso 
+                    FROM examen_paso_catalogo 
+                    WHERE (cod_tipo_examen = :tipo OR cod_tipo_examen IS NULL) 
+                      AND fase = \'examen_privado\'
+                      AND numero_orden = 1 
+                      AND activo = 1 
+                    LIMIT 1';
+        $resPaso = $this->execute($sqlPaso, ['tipo' => $codTipoExamen]);
+        $primerPaso = !empty($resPaso) ? $resPaso[0]['cod_paso'] : 1; // Default fallback
+
+        // 2. Crear el registro maestro del proceso
+        $sqlMaster = 'INSERT INTO examen_proceso (cod_usuario, cod_tipo_examen, cod_paso_actual, registrado_por)
+                      VALUES (:usuario, :tipo, :paso, :registrado_por)';
+        $this->adapter->createStatement($sqlMaster, [
+            'usuario' => $codUsuario,
+            'tipo'    => $codTipoExamen,
+            'paso'    => $primerPaso,
+            'registrado_por' => $userAdminId
+        ])->execute();
+
+        $codProceso = $this->adapter->getDriver()->getLastGeneratedValue();
+
+        // 3. Iniciar el primer paso técnicamente
+        $sqlPrimerPaso = 'INSERT INTO examen_proceso_paso (cod_proceso, cod_paso, fecha_inicio)
+                          VALUES (:proceso, :paso, CURRENT_TIMESTAMP)';
+        $this->adapter->createStatement($sqlPrimerPaso, [
+            'proceso' => $codProceso,
+            'paso'    => $primerPaso
+        ])->execute();
+
+        // 4. Registrar en el historial de auditoría
+        $this->registrarHistorial([
+            'cod_proceso' => $codProceso,
+            'cod_usuario' => $codUsuario,
+            'tipo_evento' => 'otro',
+            'descripcion' => 'Iniciando proceso de graduación tipo ID: ' . $codTipoExamen,
+            'datos_nuevos' => ['cod_tipo_examen' => $codTipoExamen, 'cod_paso_inicial' => $primerPaso]
+        ]);
+
+        return (int) $codProceso;
+    }
+
+    /**
+     * Retorna las fechas de completado de cada paso indexadas por numero_orden.
+     * Ej: [1 => '2026-02-10 09:15:00', 2 => '2026-02-15 14:30:00']
+     */
+    public function getFechasPasosCompletado(int $codProceso): array
+    {
+        $sql = 'SELECT epc.numero_orden,
+                       epc.fase,
+                       epp.fecha_completado
+                FROM examen_proceso_paso epp
+                INNER JOIN examen_paso_catalogo epc ON epc.cod_paso = epp.cod_paso
+                WHERE epp.cod_proceso = :proceso
+                  AND epp.fecha_completado IS NOT NULL
+                ORDER BY epc.numero_orden ASC';
+
+        $rows = $this->execute($sql, ['proceso' => $codProceso]);
+
+        // Indexar por "fase_numeroOrden" para evitar colisión cuando privado y
+        // general comparten el mismo numero_orden (1-4).
+        // Ej: ['examen_privado_1' => '2026-03-01', 'examen_general_1' => '2026-04-10']
+        $result = [];
+        foreach ($rows as $row) {
+            $key = $row['fase'] . '_' . $row['numero_orden'];
+            $result[$key] = $row['fecha_completado'];
+        }
+        return $result;
+    }
+
+    /**
+     * Obtiene un único proceso de examen por su cod_proceso.
+     * Retorna null si no existe.
+     */
+    public function getProceso(int $codProceso): ?array
+    {
+        $sql = 'SELECT
+                    ep.cod_proceso,
+                    ep.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
                     u.registro_academico,
                     et.cod_tipo_examen     AS tipo_cod_examen,
                     et.nombre              AS tipo_examen,
@@ -116,7 +252,7 @@ class ExamenManager
                     epc.numero_orden,
                     epc.fase               AS fase_paso_actual,
                     ep.tema_tesis,
-                    COALESCE(epp.estado, 'pendiente') AS estado_paso,
+                    COALESCE(epp.estado, "pendiente") AS estado_paso,
                     ep.cancelado,
                     ep.hora_apertura_evaluacion,
                     ep.hora_cierre_evaluacion,
@@ -132,7 +268,7 @@ class ExamenManager
                 LEFT JOIN examen_proceso_paso epp  ON epp.cod_proceso = ep.cod_proceso
                     AND epp.cod_paso = ep.cod_paso_actual
                 WHERE ep.cod_proceso = :proceso
-                LIMIT 1";
+                LIMIT 1';
 
         $result = $this->execute($sql, ['proceso' => $codProceso]);
         return $result[0] ?? null;
@@ -335,11 +471,102 @@ class ExamenManager
         $sql = "SELECT
                     ep.cod_proceso,
                     ep.cod_usuario,
-                    CONCAT(u.nombres, ' ', u.apellidos) AS nombre_completo,
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
+                    -- Tipo de examen de la fase actual (99 para general, original para privado)
+                    CASE
+                        WHEN epc.fase = 'examen_general' THEN " . self::TIPO_PUBLICO_GENERAL . "
+                        ELSE ep.cod_tipo_examen
+                    END AS tipo_cod_examen,
+                    -- Nombre del tipo según la fase actual
+                    CASE
+                        WHEN epc.fase = 'examen_general' THEN 'Público General'
+                        ELSE et.nombre
+                    END AS tipo_examen,
+                    ep.fecha_solicitud,
+                    ep.cod_paso_actual,
+                    epc.numero_orden,
+                    epc.fase AS fase_actual,
+                    CASE
+                        WHEN ep.cod_paso_actual IS NULL THEN 'completado'
+                        ELSE COALESCE(epp.estado, 'pendiente')
+                    END AS estado_paso,
+                    ep.cancelado,
+                    (
+                        SELECT MAX(epp2.fecha_completado)
+                        FROM examen_proceso_paso epp2
+                        WHERE epp2.cod_proceso = ep.cod_proceso
+                    ) AS fecha_completado
+                FROM examen_proceso ep
+                JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
+                    AND epp.cod_paso = ep.cod_paso_actual
+                WHERE 1=1
+                $whereCancelado
+                $whereEstado
+                $whereEstadoPaso
+                $whereTipo
+                $wherePaso
+                $whereBusqueda
+                ORDER BY ep.fecha_solicitud DESC
+                LIMIT $limite OFFSET $offset";
+
+        if ($estado) {
+            $params['estado'] = $estado;
+        }
+        // Solo agregar cod_tipo_examen cuando el filtro lo usa (no para tipo 99 que usa solo fase)
+        if ($codTipoExamen && $codTipoExamen != self::TIPO_PUBLICO_GENERAL) {
+            $params['cod_tipo_examen'] = $codTipoExamen;
+        }
+        if ($numeroPaso !== null) {
+            $params['numero_paso'] = $numeroPaso;
+        }
+
+        $procesos = $this->execute($sql, $params);
+
+        // Contar total para paginación
+        $sqlCount = "SELECT COUNT(*) AS total
+                     FROM examen_proceso ep
+                     JOIN usuario u ON u.cod_usuario = ep.cod_usuario
+                     LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                     LEFT JOIN examen_proceso_paso epp ON epp.cod_proceso = ep.cod_proceso
+                         AND epp.cod_paso = ep.cod_paso_actual
+                     WHERE 1=1
+                     $whereCancelado
+                     $whereEstado
+                     $whereEstadoPaso
+                     $whereTipo
+                     $wherePaso
+                     $whereBusqueda";
+
+        $countResult = $this->execute($sqlCount, $params);
+        $total = $countResult[0]['total'] ?? 0;
+
+        return [
+            'procesos' => $procesos,
+            'total' => $total,
+            'pagina' => $pagina,
+            'limite' => $limite,
+            'paginas_total' => ceil($total / $limite)
+        ];
+    }
+
+    /**
+     * Obtiene los datos básicos del estudiante de un proceso.
+     */
+    public function getEstudiantePorProceso(int $codProceso): ?array
+    {
+        $sql = 'SELECT
+                    u.cod_usuario,
+                    u.nombres,
+                    u.apellidos,
+                    u.registro_academico,
+                    u.cui,
                     u.sexo,
+                    u.nombre_completo,
                     u.correo,
                     u.telefono,
                     p.descripcion  AS pensum_nombre,
@@ -352,7 +579,7 @@ class ExamenManager
                 LEFT JOIN inscripcion i ON i.cod_usuario = u.cod_usuario
                 LEFT JOIN pensum p     ON p.cod_pensum  = i.cod_pensum
                 WHERE ep.cod_proceso = :proceso
-                LIMIT 1";
+                LIMIT 1';
 
         $result = $this->execute($sql, ['proceso' => $codProceso]);
         return $result[0] ?? null;
@@ -1853,7 +2080,7 @@ class ExamenManager
     {
         $sql = 'SELECT
                     u.cod_usuario,
-                    CONCAT(u.nombres, " ", u.apellidos) AS nombre_completo,
+                    u.nombre_completo,
                     u.numero_colegiado AS colegiado,
                     u.titulo_profesional AS titulo,
                     u.correo
@@ -1870,11 +2097,37 @@ class ExamenManager
      * Lista los procesos en fase examen_general que ya tienen notificación
      * grupal enviada (fecha_examen_general no nula).
      */
-    public function getProcesosConNotificacionGeneral(): array
+    public function getProcesosConNotificacionGeneral(array $filtros = []): array
     {
-        $sql = 'SELECT
+        $busqueda = !empty($filtros['busqueda']) ? trim($filtros['busqueda']) : null;
+        $estadoActa = !empty($filtros['estado_acta']) ? trim($filtros['estado_acta']) : null;
+
+        $whereBusqueda = '';
+        $whereEstadoActa = '';
+        $params = [];
+
+        if ($busqueda) {
+            $whereBusqueda = 'AND (
+                u.nombre_completo LIKE :busqueda
+                OR u.nombres LIKE :busqueda
+                OR u.apellidos LIKE :busqueda
+                OR u.registro_academico LIKE :busqueda
+            )';
+            $params['busqueda'] = '%' . $busqueda . '%';
+        }
+
+        if ($estadoActa) {
+            if ($estadoActa === 'generada') {
+                $whereEstadoActa = 'AND eag.numero_acta IS NOT NULL';
+            } elseif ($estadoActa === 'pendiente') {
+                $whereEstadoActa = 'AND eag.numero_acta IS NULL';
+            }
+        }
+
+        $sql = "SELECT
                     ep.cod_proceso,
                     ep.cod_usuario,
+                    u.nombre_completo,
                     u.nombres,
                     u.apellidos,
                     u.registro_academico,
@@ -1894,9 +2147,11 @@ class ExamenManager
                 WHERE ep.cancelado = 0
                   AND ep.cod_paso_actual IS NULL
                   AND ep.fecha_examen_general IS NOT NULL
-                ORDER BY ep.fecha_examen_general, u.apellidos, u.nombres';
+                  $whereBusqueda
+                  $whereEstadoActa
+                ORDER BY ep.fecha_examen_general, u.apellidos, u.nombres";
 
-        return $this->execute($sql, []);
+        return $this->execute($sql, $params);
     }
 
     /**

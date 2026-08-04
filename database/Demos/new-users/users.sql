@@ -153,3 +153,27 @@ VALUES ('917494003018', '20263018', 'Guillermo', 'Perez', '2002-01-25', '5551401
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('018505003119', '20263119', 'Mariana', 'Salazar', '2001-10-30', '55514119', 'mariana.salazar19@email.com', '$2y$10$0ESpjsfA5o9mwgOyh8nLUObFBVraMaULek2w.hIN/BpUdlUpyYjma', 73, 'M', 'Bachiller', CURDATE(), 'Mariana Salazar');
+
+
+
+-- NUEVOS USUARIOS DE PRUEBA
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('119616003220', '20263220', 'Fernando', 'Aguilar', '2002-04-14', '55514220', 'fernando.aguilar20@email.com', '$2y$10$1aKpL0mN2vM3xO4pQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWx', 73, 'H', 'Bachiller', CURDATE(), 'Fernando Aguilar');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('220727003321', '20263321', 'Daniela', 'Espinoza', '2000-09-08', '55514321', 'daniela.espinoza21@email.com', '$2y$10$2bLqM1nO3wP4yQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz', 73, 'M', 'Bachiller', CURDATE(), 'Daniela Espinoza');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('321838003422', '20263422', 'Hector', 'Velasquez', '2001-12-16', '55514422', 'hector.velasquez22@email.com', '$2y$10$3cMrN2oP4xQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAb', 73, 'H', 'Bachiller', CURDATE(), 'Hector Velasquez');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('422949003523', '20263523', 'Carolina', 'Miranda', '2002-05-22', '55514523', 'carolina.miranda23@email.com', '$2y$10$4dNsO3pQ5yR6sT7uVwXyZaBcCdEfGhIjKlMnOpQrStUvWxYzAbC', 73, 'M', 'Bachiller', CURDATE(), 'Carolina Miranda');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('524050003624', '20263624', 'Raul', 'Muniz', '2000-10-11', '55514624', 'raul.muniz24@email.com', '$2y$10$5eOtP4qR6zS7tU8vWxXyZaBcCdEfGhIjKlMnOpQrStUvWxYzAbCd', 73, 'H', 'Bachiller', CURDATE(), 'Raul Muniz');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('625161003725', '20263725', 'Patricia', 'Rios', '2001-07-29', '55514725', 'patricia.rios25@email.com', '$2y$10$6fPuQ5rS7aT8uV9wXyYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdE', 73, 'M', 'Bachiller', CURDATE(), 'Patricia Rios');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('726272003826', '20263826', 'Sebastian', 'Vargas', '2002-11-05', '55514826', 'sebastian.vargas26@email.com', '$2y$10$7gQvR6sT8bU9vW0xYzZaBcCdEfGhIjKlMnOpQrStUvWxYzAbCdEf', 73, 'H', 'Bachiller', CURDATE(), 'Sebastian Vargas');
