@@ -8,6 +8,7 @@ $this->headTitle('Evaluación de Examen Privado');
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $this->escapeHtml($this->headTitle()->renderTitle()) ?></title>
+    <link rel="shortcut icon" type="image/vnd.microsoft.icon" href="<?= $this->basePath('img/arquitectura-logo.png') ?>">
     <link type="text/css" rel="stylesheet" href="<?= $this->basePath('styles/bootstrap.min.css') ?>">
     <link type="text/css" rel="stylesheet" href="<?= $this->basePath('styles/font-awesome.min.css') ?>">
     <style>
@@ -39,6 +40,14 @@ $this->headTitle('Evaluación de Examen Privado');
     </style>
 </head>
 <body>
+
+<?php if (!empty($this->posicion)): ?>
+<div style="padding: 20px 20px 10px;">
+    <a href="<?= $this->url('eval-privado', ['cod_proceso' => $this->proceso['cod_proceso']], ['query' => ['cod' => $this->codigo]]) ?>" class="btn btn-default" style="padding: 12px 20px; font-size: 15px;">
+        <i class="fa fa-arrow-left"></i> Regresar a selección de examinador
+    </a>
+</div>
+<?php endif; ?>
 
 <div class="container">
     <div class="header">

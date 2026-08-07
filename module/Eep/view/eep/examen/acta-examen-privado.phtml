@@ -149,10 +149,10 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Número de Recibo</label>
+                            <label>Número de Recibo <span style="color:red">*</span></label>
                             <input type="text" class="form-control" name="recibo" placeholder="Ej. 735816401"
                                 value="<?= $this->escapeHtml($formData['recibo'] ?? ($actaPrivado['recibo'] ?? '')) ?>"
-                                <?= $actaPrivado !== null ? 'readonly' : '' ?>>
+                                <?= $actaPrivado !== null ? 'readonly' : 'required' ?>>
                         </div>
                     </div>
                 </div>

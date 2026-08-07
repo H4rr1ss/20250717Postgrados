@@ -493,6 +493,9 @@ class ExamenManager
                         ELSE COALESCE(epp.estado, 'pendiente')
                     END AS estado_paso,
                     ep.cancelado,
+                    ep.ex1_completado,
+                    ep.ex2_completado,
+                    ep.ex3_completado,
                     (
                         SELECT MAX(epp2.fecha_completado)
                         FROM examen_proceso_paso epp2
@@ -2323,6 +2326,36 @@ class ExamenManager
 
         $lastId = $this->adapter->getDriver()->getLastGeneratedValue();
         return (int) $lastId;
+    }
+
+    /**
+     * Actualiza el acta general existente y los datos compartidos del acto grupal.
+     * Permite corregir lugar, hora de firma, examinadores y datos del acta individual.
+     */
+    public function actualizarActaGeneral(array $datos): bool
+    {
+        // Actualizar el acto grupal compartido (lugar, examinadores, hora_firma)
+        $this->obtenerOCrearActoGraduacion(
+            $datos['fecha_examen'],
+            $datos['hora_examen'],
+            $datos
+        );
+
+        // Actualizar campos editables del acta individual
+        $sql = 'UPDATE examen_acta_general
+                SET numero_recibo    = :numero_recibo,
+                    promedio         = :promedio,
+                    acuerdo_decanato = :acuerdo_decanato
+                WHERE cod_proceso = :proceso';
+
+        $this->execute($sql, [
+            'numero_recibo'    => $datos['numero_recibo'] ?? null,
+            'promedio'         => $datos['promedio'] ?? null,
+            'acuerdo_decanato' => $datos['acuerdo_decanato'] ?? null,
+            'proceso'          => $datos['cod_proceso'],
+        ]);
+
+        return true;
     }
 
     // ── Actas de Examen Privado ───────────────────────

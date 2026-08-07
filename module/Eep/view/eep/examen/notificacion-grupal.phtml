@@ -15,8 +15,18 @@ $estudiantes = $this->estudiantes ?? [];
                     </div>
                 <?php else: ?>
 
+                <div class="alert alert-warning" style="margin-bottom: 15px;">
+                    <i class="fa fa-exclamation-circle" style="font-size: 18px; margin-right: 8px;"></i>
+                    <strong style="font-size: 15px;">Importante:</strong>
+                    <span style="font-size: 14px;">
+                        Los estudiantes con la etiqueta <span class="label label-warning" style="font-size: 11px;"><i class="fa fa-exclamation-circle"></i> <strong>Falta configurar</strong></span>
+                        aún no han registrado su <strong>Madrina o Padrino</strong> de graduación.
+                        Deben completar este dato desde su panel de <em>Proceso de Graduación</em> antes de que se pueda enviar la notificación del acto.
+                    </span>
+                </div>
+
                 <div class="alert alert-info" style="margin-bottom: 15px;">
-                    <i class="fa fa-info-circle"></i> Seleccione los estudiantes a notificar y complete la información del acto de graduación.
+                    <i class="fa fa-info-circle"></i> <strong>Seleccione los estudiantes a notificar y complete la información del acto de graduación.</strong>
                 </div>
 
                 <!-- Tabla de estudiantes -->
@@ -46,7 +56,9 @@ $estudiantes = $this->estudiantes ?? [];
                                 <td>
                                     <?= htmlspecialchars(($est['apellidos'] ?? '') . ', ' . ($est['nombres'] ?? '')) ?>
                                     <?php if (!$tieneMadrina): ?>
-                                        <span class="label label-warning" style="margin-left: 6px; font-size: 11px;">
+                                        <span class="label label-warning"
+                                              style="margin-left: 6px; font-size: 11px; font-weight: bold; cursor: help;"
+                                              title="Este estudiante aún no ha registrado su Madrina o Padrino de graduación. Debe completar este dato en su panel de Proceso de Graduación antes de poder enviar la notificación del acto.">
                                             <i class="fa fa-exclamation-circle"></i> Falta configurar
                                         </span>
                                     <?php else: ?>
@@ -142,6 +154,10 @@ $estudiantes = $this->estudiantes ?? [];
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="alert alert-info" style="margin-bottom: 15px; padding: 10px 14px; font-size: 13px;">
+                        <i class="fa fa-info-circle"></i> <strong>Nota:</strong> Los correos de los 3 examinadores seleccionados se agregarán automáticamente al campo CC.
                     </div>
 
                     <div class="form-group">

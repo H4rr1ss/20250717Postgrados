@@ -127,6 +127,7 @@ class StudentGraduationController extends AbstractActionController {
         $requisitos = [];
         $requisitosReferencia = []; // Documentos del paso anterior para referencia
         $esPasoFisico = false;
+        $pasoCompletado = false;
         
         if ($codUsuario) {
             $proceso = $this->processManager->getProcesoEstudiante($codUsuario);
@@ -146,24 +147,31 @@ class StudentGraduationController extends AbstractActionController {
                     $codTipoExamenFase = $proceso['cod_tipo_examen'];
                 }
                 
-                // Determinar si es un paso de entrega física (paso 2 o 6)
-                $codPasoActual = (int) $proceso['cod_paso_actual'];
-                if (in_array($codPasoActual, [2, 6])) {
-                    $esPasoFisico = true;
-                    // Cargar requisitos del paso anterior para referencia
-                    $pasoAnterior = ($codPasoActual === 2) ? 1 : 5;
-                    $requisitosReferencia = $this->processManager->getRequisitosDigitales(
+                // Verificar si el paso actual es null (ya completado)
+                $codPasoActual = $proceso['cod_paso_actual'];
+                if ($codPasoActual === null || $codPasoActual === '') {
+                    $pasoCompletado = true;
+                } else {
+                    $codPasoActual = (int) $codPasoActual;
+                    
+                    // Determinar si es un paso de entrega física (paso 2 o 6)
+                    if (in_array($codPasoActual, [2, 6])) {
+                        $esPasoFisico = true;
+                        // Cargar requisitos del paso anterior para referencia
+                        $pasoAnterior = ($codPasoActual === 2) ? 1 : 5;
+                        $requisitosReferencia = $this->processManager->getRequisitosDigitales(
+                            $proceso['cod_proceso'],
+                            $pasoAnterior,
+                            $codTipoExamenFase
+                        );
+                    }
+                    
+                    $requisitos = $this->processManager->getRequisitosDigitales(
                         $proceso['cod_proceso'],
-                        $pasoAnterior,
+                        $proceso['cod_paso_actual'], // Usar el paso actual del proceso
                         $codTipoExamenFase
                     );
                 }
-                
-                $requisitos = $this->processManager->getRequisitosDigitales(
-                    $proceso['cod_proceso'],
-                    $proceso['cod_paso_actual'], // Usar el paso actual del proceso
-                    $codTipoExamenFase
-                );
             }
         }
         
@@ -177,6 +185,7 @@ class StudentGraduationController extends AbstractActionController {
             'requisitos' => $requisitos,
             'requisitosReferencia' => $requisitosReferencia,
             'esPasoFisico' => $esPasoFisico,
+            'pasoCompletado' => $pasoCompletado,
             'madrina' => [
                 'tipo'             => $proceso['madrina_tipo'] ?? '',
                 'nombre'           => $proceso['madrina_nombre'] ?? '',

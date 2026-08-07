@@ -18,7 +18,7 @@ $this->headTitle('Progreso del Proceso de Graduación');
         </div>
     </div>
 
-    <?php if ($proceso && empty($proceso['cod_paso_actual'])): ?>
+    <?php if ($proceso && empty($proceso['cod_paso_actual']) && empty($proceso['fecha_examen_general'])): ?>
     <!-- Aviso: pendiente notificación grupal para examen general (PRIMERO, no se debe perder) -->
     <div class="panel" style="border: 2px solid #f0ad4e; border-radius: 8px; margin-bottom: 24px;">
         <div class="panel-heading" style="background: #fcf8e3; color: #8a6d3b; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #faebcc;">

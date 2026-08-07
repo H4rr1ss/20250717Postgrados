@@ -260,6 +260,7 @@ class StudentGraduationManager
                 et.nombre AS tipo_examen,
                 ep.fecha_solicitud,
                 ep.cod_paso_actual,
+                ep.fecha_examen_general,
                 ep.cancelado,
                 ep.tema_tesis,
                 emp.tipo AS madrina_tipo,

@@ -147,6 +147,21 @@ $examinadores = $this->terna['examinadores'] ?? [];
 <!-- Resumen comparativo -->
 <div class="row">
     <div class="col-lg-12">
+        <div class="alert alert-info" style="margin-bottom: 20px;">
+            <i class="fa fa-info-circle" style="font-size: 18px; margin-right: 8px;"></i>
+            <strong>Evaluación con 2 examinadores:</strong>
+            Si por alguna razón solo se presentan 2 examinadores al examen privado, la evaluación sigue siendo válida.
+            La nota final se calculará como el promedio simple de las 2 evaluaciones presentadas, siempre que ambas sean aprobatorias.
+            <hr style="margin: 10px 0; border-top-color: #bce8f1;">
+            <strong>¿Cómo manejar este escenario?</strong>
+            <ol style="margin: 8px 0 0 20px; padding-left: 15px;">
+                <li>Verifique en esta matriz que las 2 evaluaciones existan y estén completas.</li>
+                <li>Cierre la evaluación presionando <strong>"Cerrar Exámen"</strong> (solo si las 2 notas son aprobatorias).</li>
+                <li>Al generar el acta, el sistema calculará automáticamente el promedio de las 2 evaluaciones.</li>
+                <li>El acta reflejará únicamente a los 2 examinadores que evaluaron; el tercero no aparecerá.</li>
+                <li>Guarde el acta y continúe con el proceso de graduación normalmente.</li>
+            </ol>
+        </div>
         <div class="panel panel-green">
             <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
                 <span><i class="fa fa-list-alt"></i> Comparativo de Evaluaciones</span>

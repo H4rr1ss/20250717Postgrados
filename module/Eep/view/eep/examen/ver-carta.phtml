@@ -36,6 +36,13 @@ $nombreEstudiante = trim(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellido
         </div>
     </div>
 
+    <!-- Botón regresar -->
+    <div style="margin-bottom: 14px;">
+        <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Regresar al listado
+        </a>
+    </div>
+
     <!-- Partial reutilizable con la lógica de staff del paso 5 -->
     <?= $this->partial('eep/examen/partial/paso5-carta-examinadores', [
         'proceso'     => $proceso,

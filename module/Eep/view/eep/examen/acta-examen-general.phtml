@@ -88,7 +88,7 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                 <?php endif; ?>
 
                 <form action="<?= $this->url('examen', ['action' => 'generar-acta-general', 'id' => (int) ($datos['cod_proceso'] ?? 0)]) ?>"
-                      method="post" class="form-body pal">
+                      method="post" class="form-body pal" target="actaDownloadFrame">
 
                     <!-- Datos del estudiante (solo lectura) -->
                     <div class="row">
@@ -137,7 +137,7 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label>Lugar <span style="color:red">*</span></label>
-                                <input type="text" class="form-control" name="lugar" value="<?= $this->escapeHtml($lugar) ?>" required placeholder="Ej: Auditorio Universidad" <?= $tieneActoGrupal ? 'readonly' : '' ?>>
+                                <input type="text" class="form-control" name="lugar" value="<?= $this->escapeHtml($lugar) ?>" required placeholder="Ej: Auditorio Universidad">
                             </div>
                         </div>
                     </div>
@@ -153,8 +153,8 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Acuerdo de Decanato</label>
-                                <input type="text" class="form-control" name="acuerdo_decanato" value="<?= $this->escapeHtml($datos['acuerdo_decanato'] ?? '') ?>" placeholder="Ej. 154/2024">
+                                <label>Acuerdo de Decanato <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" name="acuerdo_decanato" value="<?= $this->escapeHtml($datos['acuerdo_decanato'] ?? '') ?>" placeholder="Ej. 154/2024" required>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -165,8 +165,8 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Promedio</label>
-                                <input type="number" class="form-control" name="promedio" value="<?= $this->escapeHtml($datos['promedio'] ?? '') ?>" placeholder="Ej. 85.50" min="0" max="100" step="0.01">
+                                <label>Promedio <span style="color:red">*</span></label>
+                                <input type="number" class="form-control" name="promedio" value="<?= $this->escapeHtml($datos['promedio'] ?? '') ?>" placeholder="Ej. 85.50" min="0" max="100" step="0.01" required>
                             </div>
                         </div>
                     </div>
@@ -258,5 +258,23 @@ $numeroActaExistente = $datos['numero_acta'] ?? '';
     </div>
     <div class="col-lg-1"></div>
 </div>
+
+<iframe name="actaDownloadFrame" style="display:none;"></iframe>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+$(document).ready(function() {
+    var $form = $('form');
+    var $btn  = $form.find('button[type="submit"]');
+
+    $form.on('submit', function() {
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Generando...');
+        ToastService.success('Generando acta... La descarga comenzará en breve.');
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    });
+});
+</script>
 
 </div>

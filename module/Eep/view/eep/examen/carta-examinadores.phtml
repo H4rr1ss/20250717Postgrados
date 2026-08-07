@@ -81,7 +81,8 @@ $this->headTitle('Carta de Examinadores');
                                 </td>
                                 <td>
                                     <?php
-                                    $evalCompleta = ($p['ex1_completado'] ?? 0) && ($p['ex2_completado'] ?? 0) && ($p['ex3_completado'] ?? 0);
+                                    $completados = (int)($p['ex1_completado'] ?? 0) + (int)($p['ex2_completado'] ?? 0) + (int)($p['ex3_completado'] ?? 0);
+                                    $evalCompleta = $completados >= 2;
                                     $estadoPaso = $p['estado_paso'] ?? '';
                                     if (!$evalCompleta) {
                                         $labelClass = 'info';
@@ -107,7 +108,7 @@ $this->headTitle('Carta de Examinadores');
                                         </a>
                                     <?php else: ?>
                                         <span class="btn btn-xs btn-default disabled" style="cursor: not-allowed; opacity: 0.6;"
-                                              title="Evaluación de examen privado pendiente. Los 3 examinadores deben completar sus evaluaciones.">
+                                              title="Evaluación de examen privado pendiente. Al menos 2 examinadores deben completar sus evaluaciones.">
                                             <i class="fa fa-lock"></i> Bloqueado
                                         </span>
                                     <?php endif; ?>

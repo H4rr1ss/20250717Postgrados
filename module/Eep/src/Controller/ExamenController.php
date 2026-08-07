@@ -1708,7 +1708,7 @@ class ExamenController extends AbstractActionController {
 
         $procesos = $this->examenManager->getProcesos([
             'pagina'          => $pagina,
-            'limite'          => 10,
+            'limite'          => 12,
             'estado_paso'     => $estado,
             'cod_tipo_examen' => $codTipoExamen,
         ]);
@@ -1914,22 +1914,28 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['success' => false, 'message' => 'Fecha, hora y lugar son obligatorios.']);
         }
 
-        // Resolver nombres de examinadores desde docentes internos
+        // Resolver nombres y correos de examinadores desde docentes internos
         $examinador1 = '';
         $examinador2 = '';
         $examinador3 = '';
+        $correoEx1 = '';
+        $correoEx2 = '';
+        $correoEx3 = '';
 
         if ($codExaminador1 > 0) {
             $doc1 = $this->examenManager->getDocentePorCodUsuario($codExaminador1);
             $examinador1 = $doc1 ? $doc1['nombre_completo'] : '';
+            $correoEx1 = $doc1 ? ($doc1['correo'] ?? '') : '';
         }
         if ($codExaminador2 > 0) {
             $doc2 = $this->examenManager->getDocentePorCodUsuario($codExaminador2);
             $examinador2 = $doc2 ? $doc2['nombre_completo'] : '';
+            $correoEx2 = $doc2 ? ($doc2['correo'] ?? '') : '';
         }
         if ($codExaminador3 > 0) {
             $doc3 = $this->examenManager->getDocentePorCodUsuario($codExaminador3);
             $examinador3 = $doc3 ? $doc3['nombre_completo'] : '';
+            $correoEx3 = $doc3 ? ($doc3['correo'] ?? '') : '';
         }
 
         if (empty($examinador1) || empty($examinador2) || empty($examinador3)) {
@@ -1969,6 +1975,15 @@ class ExamenController extends AbstractActionController {
                 $cc = trim($cc);
                 if ($cc !== '' && filter_var($cc, FILTER_VALIDATE_EMAIL)) {
                     $correosCc[] = $cc;
+                }
+            }
+        }
+
+        // Agregar automáticamente los correos de los examinadores al CC
+        foreach ([$correoEx1, $correoEx2, $correoEx3] as $correoEx) {
+            if ($correoEx !== '' && filter_var($correoEx, FILTER_VALIDATE_EMAIL)) {
+                if (!in_array($correoEx, $correosCc, true)) {
+                    $correosCc[] = $correoEx;
                 }
             }
         }
@@ -3185,12 +3200,14 @@ class ExamenController extends AbstractActionController {
             ]));
 
             $camposFaltantes = [];
-            if ($numeroRecibo === '') $camposFaltantes[] = 'número de recibo';
-            if ($horaFirma === '')    $camposFaltantes[] = 'hora de firma';
-            if ($lugar === '')        $camposFaltantes[] = 'lugar';
-            if ($examinador1 === '')  $camposFaltantes[] = 'examinador 1';
-            if ($examinador2 === '')  $camposFaltantes[] = 'examinador 2';
-            if ($examinador3 === '')  $camposFaltantes[] = 'examinador 3';
+            if ($numeroRecibo === '')      $camposFaltantes[] = 'número de recibo';
+            if ($horaFirma === '')         $camposFaltantes[] = 'hora de firma';
+            if ($lugar === '')             $camposFaltantes[] = 'lugar';
+            if ($examinador1 === '')       $camposFaltantes[] = 'examinador 1';
+            if ($examinador2 === '')       $camposFaltantes[] = 'examinador 2';
+            if ($examinador3 === '')       $camposFaltantes[] = 'examinador 3';
+            if ($acuerdoDecanato === '')   $camposFaltantes[] = 'acuerdo de decanato';
+            if ($promedio === '')          $camposFaltantes[] = 'promedio';
 
             if (!empty($camposFaltantes)) {
                 $this->flashMessenger()->addErrorMessage('Faltan los siguientes campos obligatorios: ' . implode(', ', $camposFaltantes) . '.');
@@ -3199,30 +3216,35 @@ class ExamenController extends AbstractActionController {
 
             $userId = (int) $this->identity();
 
-            // Si no existe acta previa, guardar en BD; de lo contrario reutilizar
+            // Preparar datos comunes para guardar o actualizar
+            $datosGuardar = [
+                'cod_proceso'      => $idProceso,
+                'fecha_examen'     => $datosProceso['fecha_examen_general'],
+                'hora_examen'      => $datosProceso['hora_examen_general'],
+                'numero_recibo'    => $numeroRecibo,
+                'promedio'         => $promedio !== '' ? $promedio : null,
+                'acuerdo_decanato' => $acuerdoDecanato !== '' ? $acuerdoDecanato : null,
+                'hora_firma'       => $horaFirma,
+                'lugar'            => $lugar,
+                'examinador_1'     => $examinador1,
+                'examinador_2'     => $examinador2,
+                'examinador_3'     => $examinador3,
+                'generado_por'     => $userId,
+            ];
+
             $numeroActaExistente = $datosProceso['numero_acta'] ?? '';
             if (empty($numeroActaExistente)) {
-                $this->examenManager->guardarActaGeneral([
-                    'cod_proceso'      => $idProceso,
-                    'fecha_examen'     => $datosProceso['fecha_examen_general'],
-                    'hora_examen'      => $datosProceso['hora_examen_general'],
-                    'numero_recibo'    => $numeroRecibo,
-                    'promedio'         => $promedio !== '' ? $promedio : null,
-                    'acuerdo_decanato' => $acuerdoDecanato !== '' ? $acuerdoDecanato : null,
-                    'hora_firma'       => $horaFirma,
-                    'lugar'            => $lugar,
-                    'examinador_1'     => $examinador1,
-                    'examinador_2'     => $examinador2,
-                    'examinador_3'     => $examinador3,
-                    'generado_por'     => $userId,
-                ]);
-
-                // Recargar datos para obtener el número de acta recién generado
-                $datosProceso = $this->examenManager->getDatosActaGeneral($idProceso);
+                $this->examenManager->guardarActaGeneral($datosGuardar);
+            } else {
+                $this->examenManager->actualizarActaGeneral($datosGuardar);
             }
+
+            // Recargar datos para obtener el número de acta recién generado o actualizado
+            $datosProceso = $this->examenManager->getDatosActaGeneral($idProceso);
 
             // ── Generar DOCX ────────────────────────────────────────────────
             $nombreEstudiante = trim($datosProceso['nombre_completo'] ?? '');
+            $apellidosEstudiante = mb_strtolower($datosProceso['apellidos'] ?? '', 'UTF-8');
             $carrera         = $datosProceso['carrera'] ?? 'N/A';
             $registro        = $datosProceso['registro_academico'] ?? '';
             $temaTesis       = $datosProceso['tema_tesis'] ?? '';
@@ -3284,15 +3306,15 @@ class ExamenController extends AbstractActionController {
 
             $phpWord = new \PhpOffice\PhpWord\PhpWord();
             $phpWord->setDefaultFontName('Lustria');
-            $phpWord->setDefaultFontSize(12);
+            $phpWord->setDefaultFontSize(11);
 
-            // Configuración de página tipo Oficio (Legal 8.5x13 pulgadas)
+            // Configuración de página tipo Carta (Letter 8.5x11 pulgadas)
             $section = $phpWord->addSection([
                 'paperSize'   => 'Legal',
                 'marginTop'   => 1417,  // 2.5 cm
                 'marginBottom'=> 1417,  // 2.5 cm
-                'marginLeft'  => 1417,  // 2.5 cm
-                'marginRight' => 1417,  // 2.5 cm
+                'marginLeft'  => 1134,  // 2 cm
+                'marginRight' => 1134,  // 2 cm
             ]);
 
             // Encabezado centrado
@@ -3339,7 +3361,7 @@ class ExamenController extends AbstractActionController {
             $horaFirma24 = date('H:i', strtotime($horaFirma));
 
             $cuerpoRun->addText(
-                "Luego de la presentación y defensa del proyecto, los miembros del Tribunal Examinador deliberamos sobre la calificación del mismo y considerando que sí llena los requisitos de ley, acordamos {$verboAprobacion} {$articuloEstudiante} estudiante {$nombreEstudiante}, y conferirle; previo el juramento de ley; el título de " . mb_strtoupper($carrera, 'UTF-8') . ", {$egresadoTexto} de la Escuela de Arquitectura de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala, en fe de lo cual firmamos la presente Acta a las {$horaFirma24} horas, en el mismo lugar y fecha indicados al inicio del acta."
+                "Luego de la presentación y defensa del proyecto, los miembros del Tribunal Examinador deliberamos sobre la calificación del mismo y considerando que sí llena los requisitos de ley, acordamos {$verboAprobacion} {$articuloEstudiante} estudiante {$apellidosEstudiante}, y conferirle; previo el juramento de ley; el título de " . mb_strtoupper($carrera, 'UTF-8') . ", {$egresadoTexto} de la Escuela de Arquitectura de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala, en fe de lo cual firmamos la presente Acta a las {$horaFirma24} horas, en el mismo lugar y fecha indicados al inicio del acta."
             );
             $section->addTextBreak(1);
 
@@ -3353,7 +3375,7 @@ class ExamenController extends AbstractActionController {
                 'borderColor' => 'FFFFFF',
                 'cellMargin'  => 80,
                 'alignment'   => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
-                'width'       => 100 * 50,
+                'width'       => 100,
             ];
             $cellStyle = ['valign' => 'top'];
             $cellTextStyle = ['alignment' => 'center'];
@@ -3361,14 +3383,14 @@ class ExamenController extends AbstractActionController {
             // Tabla 1: Decano y Secretario (2 columnas, centrada)
             $tableDecSec = $section->addTable($tableStyle);
             $tableDecSec->addRow();
-            $cellDecano = $tableDecSec->addCell(4500, $cellStyle);
+            $cellDecano = $tableDecSec->addCell(4900, $cellStyle);
             $cellDecano->addText('', [], $cellTextStyle);
             $cellDecano->addText('', [], $cellTextStyle);
             $cellDecano->addText('', [], $cellTextStyle);
             $cellDecano->addText($decano, [], $cellTextStyle);
             $cellDecano->addText('Decano', [], $cellTextStyle);
 
-            $cellSecretario = $tableDecSec->addCell(4500, $cellStyle);
+            $cellSecretario = $tableDecSec->addCell(4900, $cellStyle);
             $cellSecretario->addText('', [], $cellTextStyle);
             $cellSecretario->addText('', [], $cellTextStyle);
             $cellSecretario->addText('', [], $cellTextStyle);
@@ -3380,21 +3402,21 @@ class ExamenController extends AbstractActionController {
             // Tabla 2: Examinador 1, 2 y 3 (tres columnas)
             $tableEx = $section->addTable($tableStyle);
             $tableEx->addRow();
-            $cellEx1 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx1 = $tableEx->addCell(3400, $cellStyle);
             $cellEx1->addText('', [], $cellTextStyle);
             $cellEx1->addText('', [], $cellTextStyle);
             $cellEx1->addText('', [], $cellTextStyle);
             $cellEx1->addText($examinador1, [], $cellTextStyle);
             $cellEx1->addText('Examinador', [], $cellTextStyle);
 
-            $cellEx2 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx2 = $tableEx->addCell(3400, $cellStyle);
             $cellEx2->addText('', [], $cellTextStyle);
             $cellEx2->addText('', [], $cellTextStyle);
             $cellEx2->addText('', [], $cellTextStyle);
             $cellEx2->addText($examinador2, [], $cellTextStyle);
             $cellEx2->addText('Examinador', [], $cellTextStyle);
 
-            $cellEx3 = $tableEx->addCell(3000, $cellStyle);
+            $cellEx3 = $tableEx->addCell(3400, $cellStyle);
             $cellEx3->addText('', [], $cellTextStyle);
             $cellEx3->addText('', [], $cellTextStyle);
             $cellEx3->addText('', [], $cellTextStyle);
@@ -3419,7 +3441,7 @@ class ExamenController extends AbstractActionController {
                     : $madrinaNombre;
                 $etiquetaMadrina = ($madrinaTipo === 'padrino') ? 'Padrino' : 'Madrina';
 
-                $section->addTextBreak(4);
+                $section->addTextBreak(5);
                 $section->addText($lineaMadrina, [], ['alignment' => 'center']);
                 $section->addText($etiquetaMadrina, [], ['alignment' => 'center']);
             }
