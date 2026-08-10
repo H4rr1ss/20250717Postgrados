@@ -1,15 +1,19 @@
 <?php
 $this->headTitle('Gestionar Respuesta de Aspirante');
 $role = $this->layout()->role;
-// Ahora respuesta contiene directamente los campos
-$respuestasCampos = $respuesta;
+
+// Asegurar que respuesta es un array plano
+$respuestasCampos = [];
+if (isset($respuesta) && is_array($respuesta)) {
+    $respuestasCampos = $respuesta;
+}
 
 // Determinar si el formulario está activo (modo edición vs solo lectura)
-$formularioActivo = $formulario->getActivo();
+$formularioActivo = isset($formulario) && is_object($formulario) ? $formulario->getActivo() : false;
 $modoSoloLectura = !$formularioActivo;
 
 // ID de respuesta para descargas
-$idRespuesta = $respuestasCampos[0]['id_respuesta'] ?? 0;
+$idRespuesta = !empty($respuestasCampos) && isset($respuestasCampos[0]['id_respuesta']) ? $respuestasCampos[0]['id_respuesta'] : 0;
 
 // Función para parsear opciones de select
 function parsearOpciones($opciones) {
@@ -26,6 +30,156 @@ function parsearOpciones($opciones) {
 
     // Limpiar espacios y filtrar vacíos
     return array_filter(array_map('trim', $resultado));
+}
+
+// Mapear tipos del formulario a tipos HTML válidos
+function mapTipoHtml($tipoCampo) {
+    $map = [
+        'texto' => 'text',
+        'email' => 'email',
+        'telefono' => 'tel',
+        'fecha' => 'date',
+        'time' => 'time',
+        'textarea' => 'textarea',
+        'boolean' => 'radio',
+        'select' => 'select',
+        'archivo' => 'file',
+        'multicheckbox' => 'checkbox',
+    ];
+    return $map[$tipoCampo] ?? 'text';
+}
+
+// Helper para renderizar un campo en modo edición o solo lectura
+function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [], $degrees = [], $careers = [], $cohorts = []) {
+    $valor = isset($campo['valor_respuesta']) ? $campo['valor_respuesta'] : '';
+    $tipo = isset($campo['tipo_campo']) ? $campo['tipo_campo'] : 'texto';
+    $idCampo = isset($campo['id_campo']) ? $campo['id_campo'] : 0;
+    $nombreCampo = isset($campo['nombre_campo']) ? $campo['nombre_campo'] : '';
+    $etiqueta = isset($campo['etiqueta']) ? $campo['etiqueta'] : '';
+    $requerido = !empty($campo['requerido']);
+    $opciones = isset($campo['opciones']) ? $campo['opciones'] : '';
+    $archivoAdjunto = isset($campo['archivo_adjunto']) ? $campo['archivo_adjunto'] : '';
+    $idResp = isset($campo['id_respuesta']) ? $campo['id_respuesta'] : 0;
+
+    if ($modoSoloLectura) {
+        // Modo Solo Lectura
+        if ($tipo === 'boolean') {
+            echo '<p class="form-control-static">';
+            echo '<span class="label label-' . ($valor === 'yes' ? 'success' : 'default') . '">';
+            echo ($valor === 'yes' ? 'Sí' : 'No');
+            echo '</span></p>';
+        } elseif ($tipo === 'archivo') {
+            if ($archivoAdjunto) {
+                if ($nombreCampo === 'photo_dpi') {
+                    echo '<p class="form-control-static text-success"><i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong></p>';
+                }
+                echo '<p class="form-control-static">';
+                echo '<a href="' . $view->url('formulario-admision', ['action' => 'descargar', 'id' => $idResp], ['query' => ['campo' => $nombreCampo]]) . '" target="_blank" class="btn btn-sm btn-default">';
+                echo '<i class="fa fa-file"></i> ' . $view->escapeHtml($archivoAdjunto);
+                echo '</a></p>';
+            } else {
+                echo '<p class="form-control-static text-muted"><i>No se adjuntó archivo</i></p>';
+            }
+        } elseif ($tipo === 'textarea') {
+            echo '<div class="well well-sm" style="margin-bottom: 0; background-color: #f9f9f9;">';
+            echo nl2br($view->escapeHtml($valor ?: 'Sin información'));
+            echo '</div>';
+        } elseif ($nombreCampo === 'nacionalidad' && !empty($nationalities)) {
+            $nombrePais = 'Sin información';
+            foreach ($nationalities as $pais) {
+                if (isset($pais['cod_pais']) && $pais['cod_pais'] == $valor) {
+                    $nombrePais = $pais['nombre'] ?? 'País #' . $valor;
+                    break;
+                }
+            }
+            echo '<p class="form-control-static">' . $view->escapeHtml($nombrePais) . '</p>';
+        } else {
+            echo '<p class="form-control-static">' . $view->escapeHtml($valor ?: 'Sin información') . '</p>';
+        }
+    } else {
+        // Modo Edición
+        $htmlTipo = mapTipoHtml($tipo);
+        $reqAttr = $requerido ? 'required' : '';
+        $nameAttr = 'campo_' . $idCampo;
+
+        if ($tipo === 'select') {
+            echo '<select name="' . $nameAttr . '" class="form-control" ' . $reqAttr . '>';
+            echo '<option value="">Seleccione una opción</option>';
+
+            if ($nombreCampo === 'nacionalidad' && !empty($nationalities)) {
+                foreach ($nationalities as $pais) {
+                    $cod = $pais['cod_pais'] ?? '';
+                    $nom = $pais['nombre'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'grado_a_ingresar' && !empty($degrees)) {
+                foreach ($degrees as $grado) {
+                    $cod = $grado['cod_grado'] ?? '';
+                    $nom = $grado['nombre'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'carrera_a_ingresar' && !empty($careers)) {
+                foreach ($careers as $carrera) {
+                    $cod = $carrera['cod_carrera'] ?? '';
+                    $nom = $carrera['alias_actual'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'cohorte' && !empty($cohorts)) {
+                foreach ($cohorts as $cohorte) {
+                    $fecha = $cohorte['fecha_cohorte'] ?? '';
+                    $label = !empty($fecha) ? date('d/m/Y', strtotime($fecha)) : '';
+                    $selected = ($valor == $fecha) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($fecha) . '" ' . $selected . '>' . $view->escapeHtml($label) . '</option>';
+                }
+                // Opción especial de curso de actualización
+                $selectedUpg = ($valor == '(Cursos de Actualización)') ? 'selected' : '';
+                echo '<option value="(Cursos de Actualización)" ' . $selectedUpg . '>(Cursos de Actualización)</option>';
+            } else {
+                $opcionesArray = parsearOpciones($opciones);
+                foreach ($opcionesArray as $opcion) {
+                    $selected = ($valor === $opcion) ? 'selected' : '';
+                    echo '<option value="' . $opcion . '" ' . $selected . '>' . $view->escapeHtml($opcion) . '</option>';
+                }
+            }
+            echo '</select>';
+        } elseif ($tipo === 'textarea') {
+            echo '<textarea name="' . $nameAttr . '" class="form-control" rows="3" ' . $reqAttr . '>' . $view->escapeHtml($valor) . '</textarea>';
+        } elseif ($tipo === 'fecha') {
+            echo '<input type="date" name="' . $nameAttr . '" class="form-control" value="' . $view->escapeHtml($valor) . '" ' . $reqAttr . '>';
+        } elseif ($tipo === 'boolean') {
+            echo '<div class="radio-list">';
+            $checkedYes = ($valor === 'yes') ? 'checked' : '';
+            $checkedNo  = ($valor === 'no') ? 'checked' : '';
+            echo '<label class="radio-inline"><input type="radio" name="' . $nameAttr . '" value="yes" ' . $checkedYes . ' ' . $reqAttr . '> Sí</label>';
+            echo '<label class="radio-inline"><input type="radio" name="' . $nameAttr . '" value="no" ' . $checkedNo . ' ' . $reqAttr . '> No</label>';
+            echo '</div>';
+        } elseif ($tipo === 'archivo') {
+            if ($archivoAdjunto) {
+                if ($nombreCampo === 'photo_dpi') {
+                    echo '<p class="form-control-static text-success"><i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong></p>';
+                }
+                echo '<p class="form-control-static">Archivo actual: <a href="' . $view->url('formulario-admision', ['action' => 'descargar', 'id' => $idResp], ['query' => ['campo' => $nombreCampo]]) . '" target="_blank">' . $view->escapeHtml($archivoAdjunto) . '</a></p>';
+            }
+            echo '<p class="text-muted small">Los documentos adjuntos no son editables.</p>';
+        } elseif ($tipo === 'multicheckbox') {
+            $diasSeleccionados = !empty($valor) ? explode(',', $valor) : [];
+            $diasOpciones = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            echo '<div class="checkbox-list">';
+            foreach ($diasOpciones as $dia) {
+                $checked = in_array($dia, $diasSeleccionados) ? 'checked' : '';
+                echo '<label class="checkbox-inline" style="margin-right: 15px;">';
+                echo '<input type="checkbox" name="' . $nameAttr . '[]" value="' . $dia . '" ' . $checked . '> ' . ucfirst($dia);
+                echo '</label>';
+            }
+            echo '</div>';
+        } else {
+            // text, email, tel, time, y cualquier otro tipo
+            echo '<input type="' . $htmlTipo . '" name="' . $nameAttr . '" class="form-control" value="' . $view->escapeHtml($valor) . '" ' . $reqAttr . '>';
+        }
+    }
 }
 ?>
 
@@ -45,10 +199,9 @@ function parsearOpciones($opciones) {
         </div>
         <div class="panel-body">
             <?php if ($modoSoloLectura): ?>
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i>
-                    <strong>Modo de solo lectura:</strong> Este formulario está inactivo.
-                    No es posible editar ni eliminar las respuestas. Solo puede visualizarlas.
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-lock"></i> Modo de solo lectura</h4>
+                    <p>Este formulario está inactivo. No es posible editar ni eliminar las respuestas. Solo puede visualizarlas.</p>
                 </div>
             <?php endif; ?>
 
@@ -75,225 +228,45 @@ function parsearOpciones($opciones) {
                         <!-- Contenido de las pestañas -->
                         <div class="tab-content" style="padding-top: 20px;">
 
-                            <!-- Pestaña: Datos Principales (primeros 10 campos) -->
+                            <!-- Pestaña: Datos Principales (todas las secciones excepto adicional) -->
                             <div role="tabpanel" class="tab-pane active" id="datos-principales">
                                 <div class="row">
-                                    <?php
-                                    $contador = 0;
-                                    foreach ($respuestasCampos as $campo):
-                                        if ($contador < 10):
-                                            $contador++;
-                                    ?>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label class="control-label">
-                                                    <?= $this->escapeHtml($campo['etiqueta']) ?>
-                                                    <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
-                                                        <span class="text-danger">*</span>
-                                                    <?php endif; ?>
-                                                </label>
-
-                                                <?php if ($modoSoloLectura): ?>
-                                                    <!-- Modo Solo Lectura: Mostrar valores estáticos -->
-                                                    <?php if ($campo['tipo_campo'] === 'boolean'): ?>
-                                                        <p class="form-control-static">
-                                                            <span class="label label-<?= $campo['valor_respuesta'] === 'true' ? 'success' : 'default' ?>">
-                                                                <?= $campo['valor_respuesta'] === 'true' ? 'Sí' : 'No' ?>
-                                                            </span>
-                                                        </p>
-                                                    <?php elseif ($campo['tipo_campo'] === 'archivo'): ?>
-                                                        <?php if ($campo['archivo_adjunto']): ?>
-                                                            <p class="form-control-static">
-                                                                <a href="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $campo['id_respuesta']], ['query' => ['campo' => $campo['nombre_campo']]]) ?>"
-                                                                   target="_blank"
-                                                                   class="btn btn-sm btn-default">
-                                                                    <i class="fa fa-file"></i>
-                                                                    <?= $this->escapeHtml($campo['archivo_adjunto']) ?>
-                                                                </a>
-                                                            </p>
-                                                        <?php else: ?>
-                                                            <p class="form-control-static text-muted">
-                                                                <i>No se adjuntó archivo</i>
-                                                            </p>
+                                    <?php foreach ($respuestasCampos as $campo): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') !== 'adicional'): ?>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="control-label">
+                                                        <?= $this->escapeHtml($campo['etiqueta']) ?>
+                                                        <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
+                                                            <span class="text-danger">*</span>
                                                         <?php endif; ?>
-                                                    <?php elseif ($campo['tipo_campo'] === 'textarea'): ?>
-                                                        <div class="well well-sm" style="margin-bottom: 0; background-color: #f9f9f9;">
-                                                            <?= nl2br($this->escapeHtml($campo['valor_respuesta'] ?: 'Sin información')) ?>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <p class="form-control-static">
-                                                            <?= $this->escapeHtml($campo['valor_respuesta'] ?: 'Sin información') ?>
-                                                        </p>
-                                                    <?php endif; ?>
-
-                                                <?php else: ?>
-                                                    <!-- Modo Edición: Campos interactivos -->
-                                                    <?php if ($campo['tipo_campo'] === 'select'): ?>
-                                                        <select name="campo_<?= $campo['id_campo'] ?>" class="form-control" <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                            <option value="">Seleccione una opción</option>
-                                                            <?php
-                                                            $opciones = parsearOpciones($campo['opciones']);
-                                                            foreach ($opciones as $opcion):
-                                                            ?>
-                                                                <option value="<?= $opcion ?>"
-                                                                        <?= ($campo['valor_respuesta'] === $opcion) ? 'selected' : '' ?>>
-                                                                    <?= $this->escapeHtml($opcion) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    <?php elseif ($campo['tipo_campo'] === 'textarea'): ?>
-                                                        <textarea name="campo_<?= $campo['id_campo'] ?>" class="form-control" rows="3"
-                                                                  <?= $campo['requerido'] ? 'required' : '' ?>><?= $this->escapeHtml($campo['valor_respuesta']) ?></textarea>
-                                                    <?php elseif ($campo['tipo_campo'] === 'fecha'): ?>
-                                                        <input type="date" name="campo_<?= $campo['id_campo'] ?>" class="form-control"
-                                                               value="<?= $this->escapeHtml($campo['valor_respuesta']) ?>"
-                                                               <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                    <?php elseif ($campo['tipo_campo'] === 'boolean'): ?>
-                                                        <div class="radio-list">
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="campo_<?= $campo['id_campo'] ?>" value="true"
-                                                                       <?= ($campo['valor_respuesta'] === 'true') ? 'checked' : '' ?>
-                                                                       <?= $campo['requerido'] ? 'required' : '' ?>> Sí
-                                                            </label>
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="campo_<?= $campo['id_campo'] ?>" value="false"
-                                                                       <?= ($campo['valor_respuesta'] === 'false') ? 'checked' : '' ?>
-                                                                       <?= $campo['requerido'] ? 'required' : '' ?>> No
-                                                            </label>
-                                                        </div>
-                                                    <?php elseif ($campo['tipo_campo'] === 'archivo'): ?>
-                                                        <?php if ($campo['archivo_adjunto']): ?>
-                                                            <p class="form-control-static">
-                                                                Archivo actual:
-                                                                <a href="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $campo['id_respuesta']], ['query' => ['campo' => $campo['nombre_campo']]]) ?>" target="_blank">
-                                                                    <?= $this->escapeHtml($campo['archivo_adjunto']) ?>
-                                                                </a>
-                                                            </p>
-                                                        <?php endif; ?>
-                                                        <p class="text-muted small">Los documentos adjuntos no son editables.</p>
-                                                    <?php else: ?>
-                                                        <input type="<?= $campo['tipo_campo'] ?>" name="campo_<?= $campo['id_campo'] ?>"
-                                                               class="form-control" value="<?= $this->escapeHtml($campo['valor_respuesta']) ?>"
-                                                               <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                    <?php endif; ?>
-                                                <?php endif; ?>
+                                                    </label>
+                                                    <?php renderCampoEditor($campo, $modoSoloLectura, $this, $nationalities ?? [], $degrees ?? [], $careers ?? [], $cohorts ?? []); ?>
+                                                </div>
                                             </div>
-                                        </div>
-                                    <?php
-                                        endif;
-                                    endforeach;
-                                    ?>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
 
-                            <!-- Pestaña: Información Adicional (resto de campos) -->
+                            <!-- Pestaña: Información Adicional (sección adicional) -->
                             <div role="tabpanel" class="tab-pane" id="datos-adicionales">
                                 <div class="row">
-                                    <?php
-                                    $contador = 0;
-                                    foreach ($respuestasCampos as $campo):
-                                        $contador++;
-                                        if ($contador > 10):
-                                    ?>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label class="control-label">
-                                                    <?= $this->escapeHtml($campo['etiqueta']) ?>
-                                                    <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
-                                                        <span class="text-danger">*</span>
-                                                    <?php endif; ?>
-                                                </label>
-
-                                                <?php if ($modoSoloLectura): ?>
-                                                    <!-- Modo Solo Lectura -->
-                                                    <?php if ($campo['tipo_campo'] === 'boolean'): ?>
-                                                        <p class="form-control-static">
-                                                            <span class="label label-<?= $campo['valor_respuesta'] === 'true' ? 'success' : 'default' ?>">
-                                                                <?= $campo['valor_respuesta'] === 'true' ? 'Sí' : 'No' ?>
-                                                            </span>
-                                                        </p>
-                                                    <?php elseif ($campo['tipo_campo'] === 'archivo'): ?>
-                                                        <?php if ($campo['archivo_adjunto']): ?>
-                                                            <p class="form-control-static">
-                                                                <a href="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $campo['id_respuesta']], ['query' => ['campo' => $campo['nombre_campo']]]) ?>"
-                                                                   target="_blank"
-                                                                   class="btn btn-sm btn-default">
-                                                                    <i class="fa fa-file"></i>
-                                                                    <?= $this->escapeHtml($campo['archivo_adjunto']) ?>
-                                                                </a>
-                                                            </p>
-                                                        <?php else: ?>
-                                                            <p class="form-control-static text-muted">
-                                                                <i>No se adjuntó archivo</i>
-                                                            </p>
+                                    <?php foreach ($respuestasCampos as $campo): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') === 'adicional'): ?>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="control-label">
+                                                        <?= $this->escapeHtml($campo['etiqueta']) ?>
+                                                        <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
+                                                            <span class="text-danger">*</span>
                                                         <?php endif; ?>
-                                                    <?php elseif ($campo['tipo_campo'] === 'textarea'): ?>
-                                                        <div class="well well-sm" style="margin-bottom: 0; background-color: #f9f9f9;">
-                                                            <?= nl2br($this->escapeHtml($campo['valor_respuesta'] ?: 'Sin información')) ?>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <p class="form-control-static">
-                                                            <?= $this->escapeHtml($campo['valor_respuesta'] ?: 'Sin información') ?>
-                                                        </p>
-                                                    <?php endif; ?>
-
-                                                <?php else: ?>
-                                                    <!-- Modo Edición -->
-                                                    <?php if ($campo['tipo_campo'] === 'select'): ?>
-                                                        <select name="campo_<?= $campo['id_campo'] ?>" class="form-control" <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                            <option value="">Seleccione una opción</option>
-                                                            <?php
-                                                            $opciones = parsearOpciones($campo['opciones']);
-                                                            foreach ($opciones as $opcion):
-                                                            ?>
-                                                                <option value="<?= $opcion ?>"
-                                                                        <?= ($campo['valor_respuesta'] === $opcion) ? 'selected' : '' ?>>
-                                                                    <?= $this->escapeHtml($opcion) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    <?php elseif ($campo['tipo_campo'] === 'textarea'): ?>
-                                                        <textarea name="campo_<?= $campo['id_campo'] ?>" class="form-control" rows="3"
-                                                                  <?= $campo['requerido'] ? 'required' : '' ?>><?= $this->escapeHtml($campo['valor_respuesta']) ?></textarea>
-                                                    <?php elseif ($campo['tipo_campo'] === 'fecha'): ?>
-                                                        <input type="date" name="campo_<?= $campo['id_campo'] ?>" class="form-control"
-                                                               value="<?= $this->escapeHtml($campo['valor_respuesta']) ?>"
-                                                               <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                    <?php elseif ($campo['tipo_campo'] === 'boolean'): ?>
-                                                        <div class="radio-list">
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="campo_<?= $campo['id_campo'] ?>" value="true"
-                                                                       <?= ($campo['valor_respuesta'] === 'true') ? 'checked' : '' ?>
-                                                                       <?= $campo['requerido'] ? 'required' : '' ?>> Sí
-                                                            </label>
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="campo_<?= $campo['id_campo'] ?>" value="false"
-                                                                       <?= ($campo['valor_respuesta'] === 'false') ? 'checked' : '' ?>
-                                                                       <?= $campo['requerido'] ? 'required' : '' ?>> No
-                                                            </label>
-                                                        </div>
-                                                    <?php elseif ($campo['tipo_campo'] === 'archivo'): ?>
-                                                        <?php if ($campo['archivo_adjunto']): ?>
-                                                            <p class="form-control-static">
-                                                                Archivo actual:
-                                                                <a href="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $campo['id_respuesta']], ['query' => ['campo' => $campo['nombre_campo']]]) ?>" target="_blank">
-                                                                    <?= $this->escapeHtml($campo['archivo_adjunto']) ?>
-                                                                </a>
-                                                            </p>
-                                                        <?php endif; ?>
-                                                        <p class="text-muted small">Los documentos adjuntos no son editables.</p>
-                                                    <?php else: ?>
-                                                        <input type="<?= $campo['tipo_campo'] ?>" name="campo_<?= $campo['id_campo'] ?>"
-                                                               class="form-control" value="<?= $this->escapeHtml($campo['valor_respuesta']) ?>"
-                                                               <?= $campo['requerido'] ? 'required' : '' ?>>
-                                                    <?php endif; ?>
-                                                <?php endif; ?>
+                                                    </label>
+                                                    <?php renderCampoEditor($campo, $modoSoloLectura, $this, $nationalities ?? [], $degrees ?? [], $careers ?? [], $cohorts ?? []); ?>
+                                                </div>
                                             </div>
-                                        </div>
-                                    <?php
-                                        endif;
-                                    endforeach;
-                                    ?>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
 
@@ -316,16 +289,17 @@ function parsearOpciones($opciones) {
                     </form>
                 </div>
 
-                <!-- Panel derecho: Foto del DPI -->
+                <!-- Panel derecho: Documento del DPI -->
                 <div class="col-md-3">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-image"></i> Foto del DPI
+                            <i class="fa fa-id-card-o"></i> Documento del DPI
                         </div>
                         <div class="panel-body text-center">
                             <?php
                             // Buscar el campo de foto DPI
                             $photoDpi = null;
+                            $photoDpiResp = 0;
                             foreach ($respuestasCampos as $campo) {
                                 if ($campo['nombre_campo'] === 'photo_dpi' && !empty($campo['archivo_adjunto'])) {
                                     $photoDpi = $campo['archivo_adjunto'];
@@ -333,20 +307,34 @@ function parsearOpciones($opciones) {
                                     break;
                                 }
                             }
+                            $photoDpiUrl = $photoDpi ? $this->url('formulario-admision', ['action' => 'descargar', 'id' => $photoDpiResp], ['query' => ['campo' => 'photo_dpi']]) : null;
+                            $esImagen = $photoDpi ? in_array(strtolower(pathinfo($photoDpi, PATHINFO_EXTENSION)), ['jpg','jpeg','png','gif']) : false;
                             ?>
                             <?php if ($photoDpi): ?>
-                                <img src="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $photoDpiResp], ['query' => ['campo' => 'photo_dpi']]) ?>"
-                                     class="img-responsive img-thumbnail"
-                                     alt="Foto DPI"
-                                     style="max-height: 300px;">
-                                <br><br>
-                                <a href="<?= $this->url('formulario-admision', ['action' => 'descargar', 'id' => $photoDpiResp], ['query' => ['campo' => 'photo_dpi']]) ?>" target="_blank" class="btn btn-sm btn-default">
-                                    <i class="fa fa-external-link"></i> Ver en tamaño completo
-                                </a>
+                                <?php if ($esImagen): ?>
+                                    <img src="<?= $photoDpiUrl ?>"
+                                         class="img-responsive img-thumbnail"
+                                         alt="Foto DPI"
+                                         style="max-height: 300px;">
+                                    <br><br>
+                                    <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                        <i class="fa fa-external-link"></i> Ver en tamaño completo
+                                    </a>
+                                <?php else: ?>
+                                    <div style="padding: 30px 10px;">
+                                        <i class="fa fa-file-pdf-o" style="font-size: 64px; color: #d9534f; margin-bottom: 15px;"></i>
+                                        <p class="text-success" style="font-size: 14px; margin-bottom: 15px;">
+                                            <i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong>
+                                        </p>
+                                        <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                            <i class="fa fa-download"></i> Descargar documento
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
                             <?php else: ?>
-                                <div class="alert alert-warning">
-                                    <i class="fa fa-exclamation-triangle"></i><br>
-                                    No se ha subido foto del DPI
+                                <div class="note note-warning">
+                                    <h4 class="box-heading"><i class="fa fa-exclamation-triangle"></i> Documento no adjunto</h4>
+                                    <p>No se ha subido documento del DPI.</p>
                                 </div>
                             <?php endif; ?>
                         </div>

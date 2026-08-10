@@ -11,6 +11,7 @@ class CampoFormulario {
     private $opciones;
     private $requerido;
     private $ordenCampo;
+    private $seccion;
 
     public function __construct($data = null) {
         if ($data != null) {
@@ -26,6 +27,7 @@ class CampoFormulario {
         $this->opciones = (!empty($data['opciones'])) ? $data['opciones'] : null;
         $this->requerido = isset($data['requerido']) ? (bool)$data['requerido'] : false;
         $this->ordenCampo = (!empty($data['orden_campo'])) ? (int)$data['orden_campo'] : 0;
+        $this->seccion = (!empty($data['seccion'])) ? $data['seccion'] : 'adicional';
     }
 
     public function getArrayCopy() {
@@ -37,6 +39,7 @@ class CampoFormulario {
             'opciones' => $this->opciones,
             'requerido' => $this->requerido,
             'orden_campo' => $this->ordenCampo,
+            'seccion' => $this->seccion,
         ];
     }
 
@@ -48,6 +51,7 @@ class CampoFormulario {
     public function getOpciones() { return $this->opciones; }
     public function getRequerido() { return $this->requerido; }
     public function getOrdenCampo() { return $this->ordenCampo; }
+    public function getSeccion() { return $this->seccion; }
 
     // Setters
     public function setIdCampo($value) { $this->idCampo = $value; }
@@ -57,6 +61,7 @@ class CampoFormulario {
     public function setOpciones($value) { $this->opciones = $value; }
     public function setRequerido($value) { $this->requerido = (bool)$value; }
     public function setOrdenCampo($value) { $this->ordenCampo = (int)$value; }
+    public function setSeccion($value) { $this->seccion = $value; }
 
     // Métodos de utilidad
     public function isRequerido() {
@@ -88,5 +93,9 @@ class CampoFormulario {
 
     public function isSelectType() {
         return $this->tipoCampo === 'select';
+    }
+
+    public function isMultiCheckboxType() {
+        return $this->tipoCampo === 'multicheckbox';
     }
 }

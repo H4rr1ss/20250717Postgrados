@@ -172,8 +172,8 @@ class UserManager extends Manager {
                     $userTable->insert($values);
                     $response->success();
                     $response->set($userTable->getLastInsertValue());
-                } catch (InvalidQueryException $ex) {
-                    $response->addMsg("No se pudo agregar el nuevo usuario");
+                } catch (\Exception $ex) {
+                    $response->addMsg("No se pudo agregar el nuevo usuario: " . $ex->getMessage());
                 }
             }
         }

@@ -442,6 +442,11 @@ return [
             'view' => View::FORMULARIO_ADMISION,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE]
         ],
+        'registrarAspirante' => [
+            'code' => 76,
+            'view' => View::FORMULARIO_ADMISION,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE]
+        ],
     ],
     // ============================================================
     // MÓDULO DE GRADUACIÓN (códigos 100–147)

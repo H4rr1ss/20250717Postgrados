@@ -1,11 +1,11 @@
 -- ============================================
--- MIGRACION: Formulario de Admision v2 -> v3 (Campos Globales)
--- Ejecutar este script si ya tenias las tablas creadas con la estructura anterior
+-- MÓDULO: Formulario de Admisión (Estructura v3 + CandidateForm alignment)
+-- Script centralizado: crea tablas, índices e inserta campos globales.
+-- Ejecutar en entornos nuevos o para reconstruir el módulo desde cero.
 -- ============================================
 
-SET FOREIGN_KEY_CHECKS = 0;
 
--- Eliminar tablas antiguas
+-- Eliminar tablas antiguas si existen
 DROP TABLE IF EXISTS respuesta_campo;
 DROP TABLE IF EXISTS respuesta_aspirante;
 DROP TABLE IF EXISTS campo_formulario;
@@ -13,10 +13,9 @@ DROP TABLE IF EXISTS formulario_admision;
 DROP TABLE IF EXISTS aspirante;
 DROP PROCEDURE IF EXISTS CrearCamposPredefinidos;
 
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================
--- CREAR NUEVAS TABLAS (Estructura v3)
+-- CREAR TABLAS
 -- ============================================
 
 CREATE TABLE formulario_admision (
@@ -32,15 +31,15 @@ CREATE TABLE formulario_admision (
 
 CREATE INDEX idx_formulario_activo ON formulario_admision(activo, fecha_creacion);
 
--- Tabla global de campos predefinidos (compartidos por todos los formularios)
 CREATE TABLE campo_formulario (
     id_campo INT AUTO_INCREMENT PRIMARY KEY,
     nombre_campo VARCHAR(100) NOT NULL UNIQUE,
     etiqueta VARCHAR(200) NOT NULL,
-    tipo_campo ENUM('texto', 'email', 'telefono', 'select', 'textarea', 'fecha', 'archivo', 'boolean') NOT NULL,
+    tipo_campo ENUM('texto','email','telefono','select','textarea','fecha','archivo','boolean','time','multicheckbox') NOT NULL,
     opciones TEXT,
     requerido BOOLEAN DEFAULT FALSE,
-    orden_campo INT DEFAULT 0
+    orden_campo INT DEFAULT 0,
+    seccion VARCHAR(20) DEFAULT 'adicional'
 );
 
 CREATE INDEX idx_campo_orden ON campo_formulario(orden_campo);
@@ -68,36 +67,43 @@ CREATE TABLE respuesta_campo (
 CREATE INDEX idx_respuesta_campo_respuesta ON respuesta_campo(id_respuesta, id_campo);
 
 -- ============================================
--- INSERTAR CAMPOS GLOBALES (Una sola vez)
+-- INSERTAR CAMPOS GLOBALES
 -- ============================================
 
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('nombres', 'Nombres', 'texto', NULL, 1, 1),
-('apellidos', 'Apellidos', 'texto', NULL, 1, 2),
-('cui', 'DPI/CUI', 'texto', NULL, 1, 3),
-('correo_electronico', 'Correo Electrónico', 'email', NULL, 1, 4),
-('telefono', 'Teléfono', 'telefono', NULL, 1, 5),
-('fecha_nacimiento', 'Fecha de Nacimiento', 'fecha', NULL, 1, 6),
-('genero', 'Género', 'select', 'Masculino,Femenino', 1, 7),
-('estado_civil', 'Estado Civil', 'select', 'Soltero/a,Casado/a,Divorciado/a,Viudo/a', 0, 8);
+-- Campos obligatorios: se necesitan para registrar automáticamente al aspirante como estudiante
+INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, seccion) VALUES
+('nombres', 'Nombres', 'texto', NULL, 1, 1, 'personal'),
+('apellidos', 'Apellidos', 'texto', NULL, 1, 2, 'personal'),
+('cui', 'DPI / CUI', 'texto', NULL, 0, 3, 'personal'),
+('correo_electronico', 'Correo Electrónico', 'email', NULL, 1, 4, 'contacto'),
+('telefono', 'Teléfono / Celular', 'telefono', NULL, 1, 5, 'contacto'),
+('fecha_nacimiento', 'Fecha de Nacimiento', 'fecha', NULL, 1, 6, 'personal'),
+('sexo', 'Sexo', 'select', 'H|M', 1, 7, 'personal'),
+('pasaporte', 'Pasaporte', 'texto', NULL, 0, 8, 'personal'),
+('grado_academico_posee', 'Grado académico que posee', 'texto', NULL, 1, 9, 'personal'),
+('maestria_solicitada', 'Maestría a la cual solicita ingresar', 'select', 'Maestría en Diseño Arquitectónico|Diseño, planificación y manejo Ambiental|Restauración de Monumentos|Gestión para la reducción del riesgo|Desarrollo Urbano y territorio|Mercadeo para el diseño|Patrimonio Cultural para el desarrollo énfasis en Gestión y Conservación|Gerencia de Proyectos arquitectónicos|Enseñanza virtual de la Arquitectura y el Diseño|Diseño interactivo y digital|Especialización de Gestión de Riesgos|DOCTORADO (Con énfasis Diseño Arquitectónico, Conservación del Patrimonio Cultural, Conservación del Medio Ambiente)|Maestría Planificación y Diseño del Paisaje', 1, 10, 'personal'),
+('grado_a_ingresar', 'Grado académico a ingresar', 'select', NULL, 0, 50, 'admin'),
+('carrera_a_ingresar', 'Carrera a ingresar', 'select', NULL, 0, 51, 'admin'),
+('trabaja_actualmente', 'Labora actualmente', 'boolean', NULL, 1, 12, 'laboral'),
+('ubicacion_laboral', 'Ubicación laboral', 'texto', NULL, 0, 13, 'laboral'),
+('hora_inicio', 'Hora de inicio laboral', 'time', NULL, 0, 14, 'laboral'),
+('hora_fin', 'Hora de salida laboral', 'time', NULL, 0, 15, 'laboral'),
+('dias_labora', 'Días en que labora', 'multicheckbox', 'lunes|martes|miercoles|jueves|viernes|sabado|domingo', 0, 16, 'laboral'),
+('photo_dpi', 'Foto del DPI (archivo)', 'archivo', NULL, 1, 17, 'personal'),
+('nacionalidad', 'País de nacionalidad', 'select', NULL, 1, 18, 'contacto');
 
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('direccion', 'Dirección', 'textarea', NULL, 1, 9),
-('municipio', 'Municipio', 'texto', NULL, 1, 10),
-('departamento', 'Departamento', 'texto', NULL, 1, 11);
+-- Campos de información académica del aspirante (opcionales)
+INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, seccion) VALUES
+('estudios_universitarios', 'Estudios universitarios, institución', 'texto', NULL, 0, 20, 'academico'),
+('campo_estudio', 'Campo(s) de estudio o profesión', 'texto', NULL, 0, 21, 'academico'),
+('titulos_obtenidos', 'Título(s) obtenido(s)', 'texto', NULL, 0, 22, 'academico'),
+('años_carrera', 'Indicar los años de inicio y término de la carrera universitaria', 'texto', NULL, 0, 23, 'academico'),
+('adjunto_titulos', 'Adjuntar fotocopia de títulos obtenidos o certificación general de cursos', 'archivo', NULL, 0, 24, 'academico');
 
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('universidad_pregrado', 'Universidad de Pregrado', 'texto', NULL, 1, 12),
-('carrera_pregrado', 'Carrera de Pregrado', 'texto', NULL, 1, 13),
-('año_graduacion', 'Año de Graduación', 'texto', NULL, 1, 14),
-('colegiado_profesional', 'Número de Colegiado Profesional', 'texto', NULL, 0, 15);
-
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('photo_dpi', 'Foto del DPI (archivo)', 'archivo', NULL, 1, 16),
-('pasaporte', 'Número de Pasaporte', 'texto', NULL, 0, 17);
-
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('motivo_estudio', 'Motivación para estudiar el postgrado', 'textarea', NULL, 1, 18);
-
-INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo) VALUES
-('maestria_solicitada', 'Maestría a la cual solicitar ingresar', 'select', 'Maestría en Diseño Arquitectónico,Diseño, planificación y manejo Ambiental,Restauración de Monumentos,Gestión para la reducción del riesgo,Desarrollo Urbano y territorio,Mercadeo para el diseño,Patrimonio Cultural para el desarrollo énfasis en Gestión y Conservación,Gerencia de Proyectos arquitectónicos,Enseñanza virtual de la Arquitectura y el Diseño,Diseño interactivo y digital,Especialización de Gestión de Riesgos,DOCTORADO (Con énfasis *Diseño Arquitectónico *Conservación del Patrimonio Cultural *Conservación del Medio Ambiente),Maestría Planificación y Diseño del Paisaje', 1, 19);
+-- Campos opcionales restantes
+INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requerido, orden_campo, seccion) VALUES
+('estado_civil', 'Estado Civil', 'select', 'Soltero/a|Casado/a|Divorciado/a|Viudo/a', 0, 30, 'personal'),
+('direccion', 'Dirección', 'textarea', NULL, 0, 31, 'contacto'),
+('municipio', 'Municipio', 'texto', NULL, 0, 32, 'contacto'),
+('departamento', 'Departamento', 'texto', NULL, 0, 33, 'contacto'),
+('motivo_estudio', 'Motivación para estudiar el postgrado', 'textarea', NULL, 0, 34, 'adicional');

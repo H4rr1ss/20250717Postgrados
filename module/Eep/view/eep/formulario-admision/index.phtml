@@ -31,16 +31,16 @@ $role = $this->layout()->role;
                                     <strong><?= $this->escapeHtml($formulario->getNombre()) ?></strong>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge badge-info"><?= $formulario->getTotalRespuestas() ?></span>
+                                    <span class="badge badge-info" style="font-weight: bold;"><?= $formulario->getTotalRespuestas() ?></span>
                                 </td>
                                 <td class="text-center">
                                     <small><?= $formulario->getPeriodoFormateado() ?></small>
                                 </td>
                                 <td class="text-center">
                                     <?php if ($formulario->isEnPeriodoAdmision()): ?>
-                                        <span class="label label-success">Visible</span>
+                                        <span class="label label-success" style="font-weight: bold;">Visible</span>
                                     <?php else: ?>
-                                        <span class="label label-warning">No Visible</span>
+                                        <span class="label label-warning" style="font-weight: bold;">No Visible</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -53,8 +53,9 @@ $role = $this->layout()->role;
                                         <form method="POST"
                                         action="<?= $this->url('formulario-admision', ['action' => 'archivar', 'id' => $formulario->getIdFormulario()]) ?>"
                                         style="display: inline;">
-                                            <button type="submit" class="btn btn-warning btn-sm" 
-                                                    title="Archivar Formulario">
+                                            <button type="button" class="btn btn-warning btn-sm" 
+                                                    title="Archivar Formulario"
+                                                    onclick="confirmarArchivarFormulario(this);">
                                                     Deshabilitar
                                                 <i class="fa fa-archive"></i>
                                             </button>
@@ -65,9 +66,26 @@ $role = $this->layout()->role;
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+
+                <?php if (!empty($formulariosActivos)): ?>
+                    <?php $linkPublico = $this->serverUrl() . $this->url('admisiones'); ?>
+                    <div class="note note-info" style="margin-top: 15px; margin-bottom: 0;">
+                        <h4 class="box-heading"><i class="fa fa-link"></i> Enlace público del formulario</h4>
+                        <div class="input-group input-group-sm" style="max-width: 500px;">
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($linkPublico) ?>" id="link-formulario" readonly>
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button" onclick="copiarLinkFormulario()" title="Copiar enlace">
+                                    <i class="fa fa-copy"></i> Copiar
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
             <?php else: ?>
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i> No hay formularios activos en este momento.
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Sin formularios activos</h4>
+                    <p>No hay formularios activos en este momento.</p>
                 </div>
             <?php endif; ?>
         </div>
@@ -87,8 +105,9 @@ $role = $this->layout()->role;
         </div>
           <div class="panel-body">
                     <?= $this->partial('partial/msg', ['msg' => $archivadosMsg ?? null]) ?>
-                <div class="alert alert-warning">
-                    <strong>Importante:</strong> cuando elimines un formulario, no se podrá recuperar la información.
+                <div class="note note-warning">
+                    <h4 class="box-heading"><i class="fa fa-exclamation-triangle"></i> Importante</h4>
+                    <p>Al eliminar un formulario, no se podrá recuperar la información ni las respuestas asociadas.</p>
                 </div>
             
             <?php if (!empty($formulariosArchivados)): ?>
@@ -127,8 +146,9 @@ $role = $this->layout()->role;
                     </tbody>
                 </table>
             <?php else: ?>
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i> No hay formularios archivados.
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Sin formularios archivados</h4>
+                    <p>No hay formularios archivados.</p>
                 </div>
             <?php endif; ?>
         </div>
@@ -141,6 +161,13 @@ $role = $this->layout()->role;
 <?php endif; ?>
 
 <script>
+function confirmarArchivarFormulario(btn) {
+    const form = btn.closest('form');
+    ConfirmService.confirm('¿Está seguro que desea deshabilitar este formulario? Una vez deshabilitado, ya no podrá recibir nuevas respuestas y las respuestas existentes pasarán a modo de solo lectura.', function() {
+        form.submit();
+    });
+}
+
 function confirmarEliminarFormulario(btn) {
     const form = btn.closest('form');
     const totalRespuestas = parseInt(form.getAttribute('data-respuestas')) || 0;
@@ -153,6 +180,22 @@ function confirmarEliminarFormulario(btn) {
     ConfirmService.confirm(mensaje, function() {
         form.submit();
     });
+}
+
+function copiarLinkFormulario() {
+    const input = document.getElementById('link-formulario');
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999); // Para móviles
+    try {
+        navigator.clipboard.writeText(input.value).then(function() {
+            ConfirmService.alert('Enlace copiado al portapapeles.');
+        });
+    } catch (err) {
+        // Fallback para navegadores sin Clipboard API
+        document.execCommand('copy');
+        ConfirmService.alert('Enlace copiado al portapapeles.');
+    }
 }
 </script>
 

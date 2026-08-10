@@ -1,5 +1,31 @@
 <?php
 $this->headTitle('Formulario de Admisión');
+
+// Helper para renderizar la pantalla de "no hay admisiones"
+function renderPantallaInactiva($titulo, $subtitulo = '') {
+    $logoEscuela = '/img/arquitectura.png';
+    ?>
+    <div class="text-center" style="padding: 60px 20px;">
+        <div style="max-width: 900px; margin: 0 auto;">
+            <!-- Logo escuela -->
+            <img src="<?= $logoEscuela ?>"
+                 class="img-responsive center-block"
+                 style="max-height: 450px; margin-bottom: 40px;"
+                 alt="Facultad de Arquitectura USAC">
+
+            <h2 style="font-size: 26px; font-weight: 700; color: #1a1a2e; margin: 0 0 12px;"><?= $titulo ?></h2>
+            <?php if ($subtitulo): ?>
+                <p style="font-size: 15px; color: #6c757d; margin: 0 0 30px; line-height: 1.6;"><?= $subtitulo ?></p>
+            <?php endif; ?>
+
+            <a href="https://farusac.edu.gt/escuela-de-postgrados/" target="_blank"
+               style="display: inline-block; background-color: #34495e; color: #fff; padding: 12px 28px; border-radius: 6px; font-size: 15px; text-decoration: none; font-weight: 500;">
+                <i class="fa fa-external-link" style="margin-right: 6px;"></i> Visitar Escuela de Postgrados
+            </a>
+        </div>
+    </div>
+    <?php
+}
 ?>
 <?php
 $now = new \DateTime();
@@ -7,31 +33,19 @@ if (isset($formulario)) {
     $start = new \DateTime($formulario->getFechaInicioAdmision());
     $end   = new \DateTime($formulario->getFechaFinAdmision());
     if ($now < $start || $now > $end) {
-        echo '<div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">'
-           . '<i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>'
-           . '<h3 style="margin-top: 20px;">El período de admisiones está inactivo en este momento.</h3>'
-           . '</div>';
+        renderPantallaInactiva('El período de admisiones está inactivo en este momento.');
         return;
     }
 }
 ?>
 
 <?php if (isset($message) && !isset($formulario)): ?>
-    <!-- Mostrar solo mensaje cuando no hay formulario disponible -->
-    <div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">
-        <i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>
-        <h3 style="margin-top: 20px;">No hay formularios de admisión disponibles en este momento.</h3>
-        <p class="text-muted"><?= $message->getMessage() ?></p>
-    </div>
+    <?php renderPantallaInactiva('No hay formularios de admisión disponibles en este momento.', $message->getMessage()); ?>
     <?php return; ?>
 <?php endif; ?>
 
 <?php if (!isset($formulario)): ?>
-    <!-- Fallback si no hay formulario ni mensaje -->
-    <div class="col-md-8 col-md-offset-2 text-center" style="padding-top:100px; padding-bottom:40px;">
-        <i class="fa fa-calendar-times-o" style="font-size: 64px; color: #999;"></i>
-        <h3 style="margin-top: 20px;">No hay formularios de admisión disponibles en este momento.</h3>
-    </div>
+    <?php renderPantallaInactiva('No hay formularios de admisión disponibles en este momento.'); ?>
     <?php return; ?>
 <?php endif; ?>
 
@@ -42,73 +56,256 @@ if (isset($formulario)) {
             <small>Período: <?= $this->escapeHtml($formulario->getPeriodoFormateado()) ?></small>
         </div>
         <div class="panel-body">
-            <?php if (isset($message)): ?>
-                <div class="alert alert-info">
-                    <?= $message->getMessage() ?>
+            <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
+            <!-- Agrupación de campos por sección -->
+<?php
+$seccionMap = [
+    'personal'    => ['titulo' => 'Datos Personales',       'icono' => 'fa-user',        'color' => '#667eea'],
+    'contacto'    => ['titulo' => 'Contacto y Ubicación',   'icono' => 'fa-envelope-o',  'color' => '#5cb85c'],
+    'laboral'     => ['titulo' => 'Información Laboral',    'icono' => 'fa-briefcase',   'color' => '#f0ad4e'],
+    'academico'   => ['titulo' => 'Información Académica',  'icono' => 'fa-graduation-cap','color' => '#5bc0de'],
+    'documentos'  => ['titulo' => 'Documentos',             'icono' => 'fa-file-o',      'color' => '#d9534f'],
+    'adicional'   => ['titulo' => 'Información Adicional',  'icono' => 'fa-list-alt',    'color' => '#999'],
+    'admin'       => ['titulo' => 'Datos de Inscripción',   'icono' => 'fa-lock',        'color' => '#34495e'],
+];
+
+$grupos = [];
+foreach ($campos as $campo) {
+    $seccion = $campo->getSeccion() ?: 'adicional';
+    if (!isset($grupos[$seccion])) {
+        $grupos[$seccion] = [];
+    }
+    $grupos[$seccion][] = $campo;
+}
+
+function renderCampo($campo, $nationalities, $degrees, $careers, $cohorts) {
+    $nombre = $campo->getNombreCampo();
+    $etiqueta = $campo->getEtiqueta();
+    $requerido = $campo->getRequerido();
+    $tipo = $campo->getTipoCampo();
+    $opciones = $campo->getOpciones();
+    $opcionesArray = $campo->getOpcionesArray();
+    ?>
+    <div class="form-group">
+        <label for="<?= $nombre ?>"><?= $etiqueta ?>
+            <?php if ($requerido): ?><span class="text-danger">*</span><?php endif; ?>
+        </label>
+        <?php switch ($tipo):
+            case 'texto': ?>
+                <input type="text" class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                <?php break;
+            case 'email': ?>
+                <input type="email" class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                <?php break;
+            case 'telefono': ?>
+                <input type="tel" class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                <?php break;
+            case 'fecha': ?>
+                <input type="date" class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                <?php break;
+            case 'time': ?>
+                <input type="time" class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                <?php break;
+            case 'textarea': ?>
+                <textarea class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>></textarea>
+                <?php break;
+            case 'boolean': ?>
+                <div class="radio-list">
+                    <label class="radio-inline">
+                        <input type="radio" name="<?= $nombre ?>" value="yes" <?= $requerido ? 'required' : '' ?>> Sí
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="<?= $nombre ?>" value="no" <?= $requerido ? 'required' : '' ?>> No
+                    </label>
                 </div>
-            <?php endif; ?>
-            <form method="post" enctype="multipart/form-data" action="<?= $this->url('admisiones') ?>" id="form-publico">
-                <div id="cui-mensaje" class="alert alert-danger" style="display:none;"></div>
-                <?php foreach ($campos as $campo): ?>
-                    <div class="form-group">
-                        <label for="<?= $campo->getNombreCampo() ?>"><?= $this->escapeHtml($campo->getEtiqueta()) ?>
-                            <?php if ($campo->getRequerido()): ?><span class="text-danger">*</span><?php endif; ?>
-                        </label>
-                        <?php switch ($campo->getTipoCampo()):
-                            case 'texto': ?>
-                                <input type="text" class="form-control"
-                                       name="<?= $campo->getNombreCampo() ?>"
-                                       id="<?= $campo->getNombreCampo() ?>"
-                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                <?php break;
-                            case 'email': ?>
-                                <input type="email" class="form-control"
-                                       name="<?= $campo->getNombreCampo() ?>"
-                                       id="<?= $campo->getNombreCampo() ?>"
-                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                <?php break;
-                            case 'telefono': ?>
-                                <input type="tel" class="form-control"
-                                       name="<?= $campo->getNombreCampo() ?>"
-                                       id="<?= $campo->getNombreCampo() ?>"
-                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                <?php break;
-                            case 'fecha': ?>
-                                <input type="date" class="form-control"
-                                       name="<?= $campo->getNombreCampo() ?>"
-                                       id="<?= $campo->getNombreCampo() ?>"
-                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                <?php break;
-                            case 'textarea': ?>
-                                <textarea class="form-control"
-                                          name="<?= $campo->getNombreCampo() ?>"
-                                          id="<?= $campo->getNombreCampo() ?>"
-                                          <?= $campo->getRequerido() ? 'required' : '' ?>></textarea>
-                                <?php break;
-                            case 'select': ?>
-                                <select class="form-control"
-                                        name="<?= $campo->getNombreCampo() ?>"
-                                        id="<?= $campo->getNombreCampo() ?>"
-                                        <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                    <option value="">-- Seleccione --</option>
-                                    <?php foreach (explode(',', $campo->getOpciones()) as $opt): ?>
-                                        <option value="<?= $this->escapeHtml($opt) ?>"><?= $this->escapeHtml($opt) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php break;
-                            case 'archivo': ?>
-                                <input type="file" class="form-control"
-                                       name="<?= $campo->getNombreCampo() ?>"
-                                       id="<?= $campo->getNombreCampo() ?>"
-                                       accept="image/jpeg,image/png,image/gif,application/pdf"
-                                       <?= $campo->getRequerido() ? 'required' : '' ?>>
-                                <small class="form-text text-muted">Formatos permitidos: JPG, JPEG, PNG, GIF, PDF. Máximo 5MB.</small>
-                                <?php break;
-                        endswitch; ?>
-                    </div>
-                <?php endforeach; ?>
-                <button type="submit" class="btn btn-primary">Enviar</button>
-            </form>
+                <?php break;
+            case 'multicheckbox': ?>
+                <div class="checkbox-list">
+                    <?php foreach (explode('|', $opciones ?: '') as $opt): ?>
+                        <?php $opt = trim($opt); ?>
+                        <?php if ($opt !== ''): ?>
+                            <label class="checkbox-inline" style="margin-right: 15px;">
+                                <input type="checkbox" name="<?= $nombre ?>[]" value="<?= $opt ?>">
+                                <?= ucfirst($opt) ?>
+                            </label>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+                <?php break;
+            case 'select': ?>
+                <select class="form-control" name="<?= $nombre ?>" id="<?= $nombre ?>" <?= $requerido ? 'required' : '' ?>>
+                    <option value="">-- Seleccione --</option>
+                    <?php if ($nombre === 'nacionalidad' && !empty($nationalities)): ?>
+                        <?php foreach ($nationalities as $pais): ?>
+                            <option value="<?= $pais['cod_pais'] ?>"><?= $pais['nombre'] ?></option>
+                        <?php endforeach; ?>
+                    <?php elseif ($nombre === 'grado_a_ingresar' && !empty($degrees)): ?>
+                        <?php foreach ($degrees as $grado): ?>
+                            <option value="<?= $grado['cod_grado'] ?>"><?= $grado['nombre'] ?></option>
+                        <?php endforeach; ?>
+                    <?php elseif ($nombre === 'carrera_a_ingresar' && !empty($careers)): ?>
+                        <?php foreach ($careers as $carrera): ?>
+                            <option value="<?= $carrera['cod_carrera'] ?>" data-grado="<?= $carrera['cod_grado'] ?>"><?= $carrera['alias_actual'] ?></option>
+                        <?php endforeach; ?>
+                    <?php elseif ($nombre === 'cohorte' && !empty($cohorts)): ?>
+                        <?php foreach ($cohorts as $cohorte): ?>
+                            <option value="<?= $cohorte['fecha_cohorte'] ?>"><?= date('d/m/Y', strtotime($cohorte['fecha_cohorte'])) ?></option>
+                        <?php endforeach; ?>
+                    <?php elseif ($nombre === 'sexo'): ?>
+                        <?php foreach (explode('|', $opciones ?: 'H|M') as $opt): ?>
+                            <?php $opt = trim($opt); ?>
+                            <option value="<?= $opt ?>"><?= ($opt === 'H' ? 'Hombre' : ($opt === 'M' ? 'Mujer' : $opt)) ?></option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <?php foreach ($opcionesArray as $opt): ?>
+                            <?php $opt = trim($opt); ?>
+                            <?php if ($opt !== ''): ?>
+                                <option value="<?= $opt ?>"><?= $opt ?></option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+                <?php break;
+            case 'archivo':
+                if ($nombre === 'adjunto_titulos') {
+                    echo '<input type="file" class="form-control" name="' . $nombre . '" id="' . $nombre . '" accept="application/pdf" ' . ($requerido ? 'required' : '') . '>';
+                    echo '<small class="form-text text-muted">Solo archivos PDF. Tamaño máximo: 10 MB. Adjunte fotocopia de títulos obtenidos o certificación general de cursos (anverso y reverso en un solo archivo PDF).</small>';
+                } else {
+                    echo '<input type="file" class="form-control" name="' . $nombre . '" id="' . $nombre . '" accept="image/jpeg,image/png,image/gif,application/pdf" ' . ($requerido ? 'required' : '') . '>';
+                    echo '<small class="form-text text-muted">Formatos permitidos: JPG, JPEG, PNG, GIF, PDF. Máximo 5MB.</small>';
+                }
+                break;
+        endswitch; ?>
+    </div>
+    <?php
+}
+
+function printWizardStep($secciones, $grupos, $map, $nationalities, $degrees, $careers, $cohorts) {
+    // Verificar si hay al menos una sección con campos
+    $tieneCampos = false;
+    foreach ($secciones as $seccionKey) {
+        if (!empty($grupos[$seccionKey])) {
+            $tieneCampos = true;
+            break;
+        }
+    }
+    if (!$tieneCampos) return;
+    ?>
+    <div class="wizard-step">
+        <?php foreach ($secciones as $seccionKey): ?>
+            <?php if (empty($grupos[$seccionKey])) continue; ?>
+            <?php $meta = $map[$seccionKey] ?? ['titulo' => $seccionKey, 'icono' => 'fa-circle', 'color' => '#666']; ?>
+            <div class="form-section">
+                <div class="form-section-header">
+                    <i class="fa <?= $meta['icono'] ?>" style="color: <?= $meta['color'] ?>;"></i> <?= $meta['titulo'] ?>
+                </div>
+                <div class="form-section-body">
+                    <?php foreach ($grupos[$seccionKey] as $campo): ?>
+                        <?php renderCampo($campo, $nationalities, $degrees, $careers, $cohorts); ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <?php
+}
+?>
+
+<style>
+    .wizard-step {
+        display: none;
+    }
+    .wizard-step.active {
+        display: block;
+    }
+    .form-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .form-section-header {
+        background-color: #f8f9fa;
+        padding: 12px 15px;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 14px;
+    }
+    .form-section-header i {
+        margin-right: 8px;
+        width: 20px;
+        text-align: center;
+    }
+    .form-section-body {
+        padding: 15px;
+    }
+    .wizard-nav {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+    }
+    .wizard-nav .btn {
+        min-width: 140px;
+    }
+    .wizard-nav .btn-anterior {
+        float: left;
+    }
+    .wizard-nav .btn-siguiente,
+    .wizard-nav .btn-enviar {
+        float: right;
+    }
+    /* Resaltar campos inválidos en el wizard */
+    .campo-invalido .form-control,
+    .campo-invalido input[type="checkbox"],
+    .campo-invalido input[type="radio"] {
+        border-color: #d9534f !important;
+        box-shadow: 0 0 0 1px #d9534f !important;
+    }
+    .campo-invalido .radio-inline,
+    .campo-invalido .checkbox-inline {
+        color: #d9534f;
+    }
+</style>
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+<form method="post" enctype="multipart/form-data" action="<?= $this->url('admisiones') ?>" id="form-publico">
+    <div id="cui-mensaje" class="note note-danger" style="display:none;">
+        <h4 class="box-heading"><i class="fa fa-times-circle"></i> DPI/CUI no disponible</h4>
+        <p id="cui-mensaje-texto"></p>
+    </div>
+
+    <?php
+    // Definición de pasos del wizard: cada paso puede contener una o más secciones
+    $pasosWizard = [
+        ['personal', 'contacto'],
+        ['laboral', 'academico'],
+        ['documentos'],
+        ['adicional'],
+    ];
+    foreach ($pasosWizard as $paso):
+        printWizardStep($paso, $grupos, $seccionMap, $nationalities, $degrees, $careers, $cohorts);
+    endforeach;
+    ?>
+
+    <div class="wizard-nav clearfix">
+        <button type="button" class="btn btn-default btn-anterior" id="btn-anterior" style="display:none;">
+            <i class="fa fa-arrow-left"></i> Regresar
+        </button>
+        <button type="button" class="btn btn-primary btn-siguiente" id="btn-siguiente">
+            Siguiente <i class="fa fa-arrow-right"></i>
+        </button>
+        <button type="submit" class="btn btn-success btn-enviar" id="btn-enviar" style="display:none;">
+            <i class="fa fa-paper-plane"></i> Enviar Solicitud
+        </button>
+    </div>
+</form>
+
+
+
+
         </div>
     </div>
 </div>
@@ -119,7 +316,9 @@ if (isset($formulario)) {
     const cuiMensaje = document.getElementById('cui-mensaje');
     const form = document.getElementById('form-publico');
 
-    if (cuiInput && cuiMensaje) {
+    const cuiMensajeTexto = document.getElementById('cui-mensaje-texto');
+
+    if (cuiInput && cuiMensaje && cuiMensajeTexto) {
         let timeout = null;
 
         cuiInput.addEventListener('blur', function() {
@@ -129,7 +328,6 @@ if (isset($formulario)) {
                 return;
             }
 
-            // Pequeña demora para no saturar peticiones
             clearTimeout(timeout);
             timeout = setTimeout(function() {
                 const xhr = new XMLHttpRequest();
@@ -140,7 +338,7 @@ if (isset($formulario)) {
                         try {
                             const resp = JSON.parse(xhr.responseText);
                             if (!resp.disponible) {
-                                cuiMensaje.textContent = resp.mensaje || 'Este DPI/CUI ya tiene una respuesta registrada.';
+                                cuiMensajeTexto.textContent = resp.mensaje || 'Este DPI/CUI ya tiene una respuesta registrada.';
                                 cuiMensaje.style.display = 'block';
                             } else {
                                 cuiMensaje.style.display = 'none';
@@ -154,21 +352,179 @@ if (isset($formulario)) {
             }, 300);
         });
 
-        // Ocultar mensaje al escribir de nuevo
         cuiInput.addEventListener('input', function() {
             cuiMensaje.style.display = 'none';
         });
 
-        // Validar antes de enviar
         if (form) {
             form.addEventListener('submit', function(e) {
                 if (cuiMensaje.style.display === 'block') {
                     e.preventDefault();
-                    alert(cuiMensaje.textContent);
+                    alert(cuiMensajeTexto.textContent);
                     return false;
                 }
             });
         }
     }
+
+    // Validación condicional: CUI/Pasaporte según nacionalidad
+    const nacionalidadSelect = document.getElementById('nacionalidad');
+    const pasaporteInput = document.getElementById('pasaporte');
+    const codGuatemala = '<?= $this->codGuatemala ?>';
+
+    function ajustarRequiredDocumentos() {
+        if (!nacionalidadSelect) return;
+        const esGuatemala = (nacionalidadSelect.value === codGuatemala);
+        if (cuiInput) {
+            cuiInput.required = esGuatemala;
+        }
+        if (pasaporteInput) {
+            pasaporteInput.required = !esGuatemala;
+        }
+    }
+
+    if (nacionalidadSelect) {
+        nacionalidadSelect.addEventListener('change', ajustarRequiredDocumentos);
+        ajustarRequiredDocumentos();
+    }
+
+    // Cascada grado -> carrera
+    const gradoSelect = document.getElementById('grado_a_ingresar');
+    const carreraSelect = document.getElementById('carrera_a_ingresar');
+    const careerTree = <?= json_encode($careerTree ?? []) ?>;
+
+    if (gradoSelect && carreraSelect) {
+        function filtrarCarreras() {
+            const gradoId = gradoSelect.value;
+            const carreras = careerTree[gradoId] || {};
+            let options = '<option value="">-- Seleccione --</option>';
+            for (const cod in carreras) {
+                options += '<option value="' + cod + '">' + carreras[cod] + '</option>';
+            }
+            carreraSelect.innerHTML = options;
+        }
+        gradoSelect.addEventListener('change', filtrarCarreras);
+        // Inicializar con el primer grado si está seleccionado
+        if (gradoSelect.value) {
+            filtrarCarreras();
+        }
+    }
+
+    // Wizard navigation
+    (function() {
+        const steps = document.querySelectorAll('.wizard-step');
+        const btnAnterior = document.getElementById('btn-anterior');
+        const btnSiguiente = document.getElementById('btn-siguiente');
+        const btnEnviar = document.getElementById('btn-enviar');
+        let currentStep = 0;
+        const totalSteps = steps.length;
+
+        function showStep(n) {
+            steps.forEach(function(s, i) {
+                s.classList.toggle('active', i === n);
+            });
+            currentStep = n;
+            btnAnterior.style.display = (n === 0) ? 'none' : 'inline-block';
+            if (n === totalSteps - 1) {
+                btnSiguiente.style.display = 'none';
+                btnEnviar.style.display = 'inline-block';
+            } else {
+                btnSiguiente.style.display = 'inline-block';
+                btnEnviar.style.display = 'none';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function validateStep(n) {
+            const step = steps[n];
+            if (!step) return true;
+
+            // Limpiar errores previos del paso actual
+            step.querySelectorAll('.campo-invalido').forEach(function(el) {
+                el.classList.remove('campo-invalido');
+            });
+
+            const fields = step.querySelectorAll('input, select, textarea');
+            let firstInvalid = null;
+            let invalidCount = 0;
+            let isValid = true;
+            const invalidLabels = [];
+
+            fields.forEach(function(field) {
+                let fieldValid = true;
+                if (field.type === 'checkbox' || field.type === 'radio') {
+                    const name = field.name;
+                    const group = step.querySelectorAll('[name="' + name + '"]');
+                    const anyChecked = Array.from(group).some(function(g) { return g.checked; });
+                    const isRequired = group[0] && group[0].required;
+                    if (isRequired && !anyChecked) {
+                        fieldValid = false;
+                        if (!firstInvalid) firstInvalid = group[0];
+                    }
+                } else {
+                    if (field.required && !field.value.trim()) {
+                        fieldValid = false;
+                        if (!firstInvalid) firstInvalid = field;
+                    }
+                }
+
+                if (!fieldValid) {
+                    isValid = false;
+                    invalidCount++;
+                    // Buscar el .form-group ancestro para marcarlo
+                    const group = field.closest('.form-group');
+                    if (group) {
+                        group.classList.add('campo-invalido');
+                        const label = group.querySelector('label');
+                        if (label && !invalidLabels.includes(label.textContent.trim())) {
+                            invalidLabels.push(label.textContent.trim());
+                        }
+                    }
+                }
+            });
+
+            if (!isValid && firstInvalid) {
+                firstInvalid.focus();
+                const msg = invalidCount === 1
+                    ? 'Complete el campo resaltado antes de continuar.'
+                    : 'Complete los ' + invalidCount + ' campos resaltados en rojo antes de continuar.';
+                ToastService.warning(msg);
+            }
+            return isValid;
+        }
+
+        // Limpiar borde rojo al interactuar con el campo
+        form.addEventListener('input', function(e) {
+            const group = e.target.closest('.campo-invalido');
+            if (group) {
+                group.classList.remove('campo-invalido');
+            }
+        });
+        form.addEventListener('change', function(e) {
+            const group = e.target.closest('.campo-invalido');
+            if (group) {
+                group.classList.remove('campo-invalido');
+            }
+        });
+
+        if (btnSiguiente) {
+            btnSiguiente.addEventListener('click', function() {
+                if (validateStep(currentStep)) {
+                    showStep(currentStep + 1);
+                }
+            });
+        }
+
+        if (btnAnterior) {
+            btnAnterior.addEventListener('click', function() {
+                if (currentStep > 0) {
+                    showStep(currentStep - 1);
+                }
+            });
+        }
+
+        // Initialize: mark first step active
+        showStep(0);
+    })();
 })();
 </script>

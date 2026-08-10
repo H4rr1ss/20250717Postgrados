@@ -32,3 +32,6 @@ Thumbs.db
 # Módulo de Graduación - Procesos individuales
 /data/graduacion/procesos/*
 !/data/graduacion/procesos/.gitkeep
+
+
+/data/admisiones/*

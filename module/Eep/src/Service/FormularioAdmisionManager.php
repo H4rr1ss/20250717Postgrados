@@ -302,12 +302,25 @@ class FormularioAdmisionManager extends Manager {
             // Seleccionar columnas de respuesta_campo y metadatos de campo_formulario
             $select->columns(['id_respuesta', 'id_campo', 'valor_respuesta', 'archivo_adjunto']);
             $select->join(['cf' => 'campo_formulario'], 'rc.id_campo = cf.id_campo',
-                         ['nombre_campo', 'etiqueta', 'tipo_campo', 'opciones', 'requerido', 'orden_campo']);
+                         ['nombre_campo', 'etiqueta', 'tipo_campo', 'opciones', 'requerido', 'orden_campo', 'seccion']);
 
             $select->where(['rc.id_respuesta' => $idRespuesta]);
             $select->order('cf.orden_campo ASC');
 
-            $respuestasCampos = $camposTable->selectWith($select)->toArray();
+            $resultSet = $camposTable->selectWith($select);
+            // Forzar arrays planos: algunos drivers devuelven ArrayObject en lugar de array
+            $respuestasCampos = [];
+            foreach ($resultSet as $row) {
+                if (is_array($row)) {
+                    $respuestasCampos[] = $row;
+                } elseif ($row instanceof \ArrayObject) {
+                    $respuestasCampos[] = $row->getArrayCopy();
+                } elseif (is_object($row)) {
+                    $respuestasCampos[] = get_object_vars($row);
+                } else {
+                    $respuestasCampos[] = (array) $row;
+                }
+            }
 
             if (empty($respuestasCampos)) {
                 $res->failure('Respuesta no encontrada');
@@ -492,7 +505,12 @@ class FormularioAdmisionManager extends Manager {
                 if ($campo->getTipoCampo() === 'archivo') {
                     $valorArchivo = null;
                     if (isset($files[$nombre]) && $files[$nombre]['error'] === UPLOAD_ERR_OK) {
-                        $valorArchivo = $this->guardarArchivoSeguro($files[$nombre], $idFormulario, $respuestaId);
+                        // Campo específico: adjunto_titulos solo permite PDF y hasta 10MB
+                        if ($nombre === 'adjunto_titulos') {
+                            $valorArchivo = $this->guardarArchivoSeguro($files[$nombre], $idFormulario, $respuestaId, ['application/pdf'], 10 * 1024 * 1024);
+                        } else {
+                            $valorArchivo = $this->guardarArchivoSeguro($files[$nombre], $idFormulario, $respuestaId);
+                        }
                     }
                     $campoRespTable->insert([
                         'id_respuesta' => $respuestaId,
@@ -501,6 +519,10 @@ class FormularioAdmisionManager extends Manager {
                     ]);
                 } else {
                     $valor = $data[$nombre] ?? null;
+                    // Si es multicheckbox, el valor viene como array; convertir a string separado por comas
+                    if ($campo->getTipoCampo() === 'multicheckbox' && is_array($valor)) {
+                        $valor = implode(',', $valor);
+                    }
                     $campoRespTable->insert([
                         'id_respuesta' => $respuestaId,
                         'id_campo' => $campo->getIdCampo(),
@@ -544,17 +566,26 @@ class FormularioAdmisionManager extends Manager {
 
     /**
      * Guarda un archivo de forma segura con nombre MD5
+     * @param array $fileInfo Array de $_FILES
+     * @param int $idFormulario
+     * @param int $idRespuesta
+     * @param array|null $tiposPermitidos Lista de MIME types permitidos (null = usar constante por defecto)
+     * @param int|null $tamanoMaximo Tamaño máximo en bytes (null = usar constante por defecto)
      */
-    private function guardarArchivoSeguro($fileInfo, $idFormulario, $idRespuesta) {
+    private function guardarArchivoSeguro($fileInfo, $idFormulario, $idRespuesta, $tiposPermitidos = null, $tamanoMaximo = null) {
         $tmpName = $fileInfo['tmp_name'];
         $originalName = $fileInfo['name'];
         $mimeType = mime_content_type($tmpName);
 
-        if (!in_array($mimeType, self::TIPOS_PERMITIDOS)) {
+        $tipos = $tiposPermitidos ?? self::TIPOS_PERMITIDOS;
+        $maxSize = $tamanoMaximo ?? self::TAMANO_MAXIMO;
+
+        if (!in_array($mimeType, $tipos)) {
             throw new \Exception('Tipo de archivo no permitido: ' . $mimeType);
         }
-        if ($fileInfo['size'] > self::TAMANO_MAXIMO) {
-            throw new \Exception('El archivo excede el tamaño máximo permitido de 5MB');
+        if ($fileInfo['size'] > $maxSize) {
+            $maxMb = $maxSize / 1024 / 1024;
+            throw new \Exception('El archivo excede el tamaño máximo permitido de ' . $maxMb . 'MB');
         }
 
         $ext = pathinfo($originalName, PATHINFO_EXTENSION);
@@ -573,7 +604,7 @@ class FormularioAdmisionManager extends Manager {
             throw new \Exception('No se pudo guardar el archivo adjunto');
         }
 
-        return 'admisiones/formularios/' . (int)$idFormulario . '/' . (int)$idRespuesta . '/' . $fileName;
+        return 'formularios/' . (int)$idFormulario . '/' . (int)$idRespuesta . '/' . $fileName;
     }
 
     /**
@@ -596,10 +627,17 @@ class FormularioAdmisionManager extends Manager {
     }
 
     /**
-     * Obtiene la ruta física completa de un archivo relativo
+     * Obtiene la ruta física completa de un archivo relativo.
+     * Compatible con registros antiguos que guardaban 'admisiones/formularios/...'
+     * y registros nuevos que guardan 'formularios/...'.
      */
     public function getRutaArchivoFisico($rutaRelativa) {
-        $ruta = self::RUTA_ARCHIVOS . '/' . ltrim($rutaRelativa, '/');
+        $rutaRelativa = ltrim($rutaRelativa, '/');
+        // Normalizar: quitar prefijo 'admisiones/' si existe (registros antiguos)
+        if (strpos($rutaRelativa, 'admisiones/') === 0) {
+            $rutaRelativa = substr($rutaRelativa, strlen('admisiones/'));
+        }
+        $ruta = self::RUTA_ARCHIVOS . '/' . $rutaRelativa;
         if (file_exists($ruta) && is_file($ruta)) {
             return $ruta;
         }
@@ -639,5 +677,40 @@ class FormularioAdmisionManager extends Manager {
         } catch (\Exception $ex) {
             return null;
         }
+    }
+
+    /**
+     * Verifica si ya existe un usuario registrado con el CUI o correo proporcionado.
+     * Usado en la lista de respuestas para indicar visualmente que el aspirante ya está en el sistema.
+     */
+    public function verificarUsuarioRegistrado($cui, $correo) {
+        $res = new R();
+        try {
+            $table = new TableGateway('usuario', $this->dbAdapter);
+            $select = $table->getSql()->select();
+
+            $predicates = [];
+            if (!empty($cui)) {
+                $predicates[] = new \Zend\Db\Sql\Predicate\Operator('cui', '=', $cui);
+            }
+            if (!empty($correo)) {
+                $predicates[] = new \Zend\Db\Sql\Predicate\Operator('correo', '=', $correo);
+            }
+            if (empty($predicates)) {
+                $res->failure('Sin identificadores');
+                return $res;
+            }
+
+            $select->where(new \Zend\Db\Sql\Predicate\PredicateSet($predicates, \Zend\Db\Sql\Predicate\PredicateSet::COMBINED_BY_OR));
+            $result = $table->selectWith($select);
+            if ($result->count() > 0) {
+                $res->success();
+            } else {
+                $res->failure('No encontrado');
+            }
+        } catch (\Exception $ex) {
+            $res->failure('Error: ' . $ex->getMessage());
+        }
+        return $res;
     }
 }

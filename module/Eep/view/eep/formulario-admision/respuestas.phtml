@@ -15,23 +15,32 @@ $formularioActivo = $formulario->getActivo();
                 (Período: <?= $formulario->getPeriodoFormateado() ?>)
             </small>
             <?php if (!$formularioActivo): ?>
-                <span class="label label-warning pull-right" style="margin-top: 2px;">
+                <span class="label label-warning pull-right" style="margin-top: 2px; font-weight: bold; font-size: 16px;">
                     <i class="fa fa-lock"></i> INACTIVO
                 </span>
             <?php endif; ?>
         </div>
         <div class="panel-body">
             <?php if (!$formularioActivo): ?>
-                <div class="alert alert-warning">
-                    <i class="fa fa-exclamation-triangle"></i>
-                    <strong>Atención:</strong> Este formulario está inactivo. 
-                    Las respuestas solo pueden ser visualizadas, no pueden ser editadas ni eliminadas.
+                <div class="note note-warning">
+                    <h4 class="box-heading"><i class="fa fa-exclamation-triangle"></i> Atención</h4>
+                    <p>Este formulario está inactivo. Las respuestas solo pueden ser visualizadas, no editadas ni eliminadas.</p>
                 </div>
             <?php endif; ?>
             
             <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
             <?= $this->partial('partial/msg', ['msg' => $respuestasMsg ?? null]) ?>
-            
+
+            <?php /* Notificaciones flashMessenger (toast de éxito/error) */ ?>
+            <?php if ($this->flashMessenger()->hasMessages()): ?>
+                <div class="flash-messages">
+                    <?= $this->flashMessenger()->render('success', ['alert', 'alert-success']) ?>
+                    <?= $this->flashMessenger()->render('error',   ['alert', 'alert-danger']) ?>
+                    <?= $this->flashMessenger()->render('info',    ['alert', 'alert-info']) ?>
+                    <?= $this->flashMessenger()->render('warning', ['alert', 'alert-warning']) ?>
+                </div>
+            <?php endif; ?>
+
             <?php if (!empty($respuestas)): ?>
                 <table class="table table-hover table-striped">
                     <thead>
@@ -46,9 +55,13 @@ $formularioActivo = $formulario->getActivo();
                     </thead>
                     <tbody>
                         <?php foreach ($respuestas as $respuesta): ?>
-                            <tr>
+                            <?php $estaRegistrado = !empty($yaRegistrados[$respuesta->getIdRespuesta()]); ?>
+                            <tr <?= $estaRegistrado ? 'class="success"' : '' ?>>
                                 <td>
                                     <strong><?= $this->escapeHtml($respuesta->getCuiAspirante()) ?></strong>
+                                    <?php if ($estaRegistrado): ?>
+                                        <br><span class="label label-success"><i class="fa fa-check-circle"></i> Ya registrado</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?= $this->escapeHtml($respuesta->getNombreCompletoAspirante()) ?>
@@ -67,6 +80,12 @@ $formularioActivo = $formulario->getActivo();
                                 <td class="text-center">
                                     <div class="btn-group">
                                         <?php if ($formularioActivo): ?>
+                                            <?php if (!$estaRegistrado): ?>
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'registrar-aspirante', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                   class="btn btn-success btn-sm" title="Registrar como estudiante">
+                                                    <i class="fa fa-user-plus"></i> Registrar
+                                                </a>
+                                            <?php endif; ?>
                                             <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
                                                class="btn btn-primary btn-sm" title="Editar Respuesta">
                                                 <i class="fa fa-edit"></i>
@@ -137,8 +156,9 @@ $formularioActivo = $formulario->getActivo();
                     <p class="text-muted"><?= $totalRecords ?> respuesta(s) en total</p>
                 <?php endif; ?>
             <?php else: ?>
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i> No hay respuestas para este formulario aún.
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Sin respuestas</h4>
+                    <p>No hay respuestas para este formulario aún.</p>
                 </div>
             <?php endif; ?>
             
