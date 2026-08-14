@@ -191,11 +191,17 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
             <small>
                 (<?= $this->escapeHtml($formulario->getNombre()) ?>)
             </small>
-            <?php if ($modoSoloLectura): ?>
-                <span class="label label-warning pull-right" style="margin-top: 2px;">
-                    <i class="fa fa-lock"></i> SOLO LECTURA
-                </span>
-            <?php endif; ?>
+            <div class="pull-right" style="margin-top: -2px;">
+                <?php if ($modoSoloLectura): ?>
+                    <span class="label label-warning" style="margin-right: 8px;">
+                        <i class="fa fa-lock"></i> SOLO LECTURA
+                    </span>
+                <?php endif; ?>
+                <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
+                   class="btn btn-default btn-xs">
+                    <i class="fa fa-arrow-left"></i> Regresar
+                </a>
+            </div>
         </div>
         <div class="panel-body">
             <?php if ($modoSoloLectura): ?>

@@ -172,6 +172,16 @@ class FormularioAdmisionController extends AbstractActionController {
         $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario, $page, $perPage);
         $respuestas = $respuestasResult->get() ? $respuestasResult->getObj() : [];
 
+        // Datos para asignación masiva y verificación
+        $nationalities = $this->userManager->getCountries();
+        $degrees = $this->academyManager->getAcademicDegrees();
+        $careers = $this->academyManager->getCareers();
+        $cohorts = $this->cohortManager->getCohorts(date('Y') . '-01-01');
+        $careerTree = [];
+        foreach ($careers as $career) {
+            $careerTree[$career['cod_grado']][$career['cod_carrera']] = $career['alias_actual'];
+        }
+
         // Verificar cuáles aspirantes ya están registrados como usuarios
         $yaRegistrados = [];
         foreach ($respuestas as $respuesta) {
@@ -185,12 +195,121 @@ class FormularioAdmisionController extends AbstractActionController {
             }
         }
 
-        // Manejar acciones POST (eliminar respuesta)
+        // Manejar acciones POST (eliminar respuesta o asignación masiva)
         $message = null;
         if ($this->getRequest()->isPost()) {
             $data = $this->params()->fromPost();
 
-            if (isset($data['eliminar_respuesta'])) {
+            if (isset($data['registrar_seleccionados']) && !empty($data['aspirantes'])) {
+                // ASIGNACIÓN MASIVA
+                $idsAspirantes = array_map('intval', $data['aspirantes']);
+                $careerCode = $data['carrera_a_ingresar'] ?? '';
+                $degreeCode = $data['grado_a_ingresar'] ?? '';
+                $cohortDate = $data['cohorte'] ?? '';
+
+                $exitosos = 0;
+                $fallidos = 0;
+                $erroresDetalle = [];
+
+                $formUrl = $this->url()->fromRoute('formulario-admision', ['action' => 'respuestas', 'id' => $idFormulario]);
+
+                foreach ($idsAspirantes as $idRespuesta) {
+                    $respuestaResult = $this->formularioAdmisionManager->getRespuestaDetallada($idRespuesta);
+                    if (!$respuestaResult->get()) {
+                        $fallidos++;
+                        $erroresDetalle[] = "Respuesta #$idRespuesta: no se pudo obtener";
+                        continue;
+                    }
+                    $userData = $this->mapearRespuestaAUsuario($respuestaResult->getObj());
+
+                    $formData = array_merge($userData, [
+                        CandidateForm::ACADEMIC_DEGREE => $degreeCode,
+                        CandidateForm::CAREER => $careerCode,
+                        CandidateForm::COHORT => $cohortDate,
+                    ]);
+
+                    $candidateForm = new CandidateForm($formUrl, $nationalities, $cohorts, $degrees, $careers);
+                    $candidateForm->setData($formData);
+
+                    if (!$candidateForm->isValid()) {
+                        $fallidos++;
+                        $msgs = [];
+                        foreach ($candidateForm->getElements() as $e) {
+                            $m = $e->getMessages();
+                            if (!empty($m)) $msgs[] = ($e->getLabel() ?: $e->getName()) . ': ' . implode(', ', $m);
+                        }
+                        $erroresDetalle[] = ($userData['nombres'] ?? "Aspirante #$idRespuesta") . ' — ' . implode('; ', $msgs);
+                        continue;
+                    }
+
+                    $validData = $candidateForm->getData();
+                    try {
+                        $this->academyManager->beginTransaction();
+                        $this->satuManager->beginTransaction();
+
+                        $result = $this->userManager->addUser($validData);
+                        if ($result->get() !== false) {
+                            $addedUser = $result->get();
+                            $result = $this->authManager->addUserRole($addedUser, Role::ESTUDIANTE);
+                            if ($result->get() === true) {
+                                if ($careerCode != Order::CURSO_ACTUALIZACION) {
+                                    $result = $this->academyManager->assignCareer($addedUser, $careerCode, $cohortDate);
+                                    $this->inscriptionManager->getInscriptionStatus($addedUser);
+                                }
+                            }
+                        }
+
+                        if ($result->get() == true) {
+                            $this->academyManager->commit();
+                            $this->satuManager->commit();
+                            $exitosos++;
+                        } else {
+                            $this->academyManager->rollback();
+                            $this->satuManager->rollback();
+                            $fallidos++;
+                            $erroresDetalle[] = ($userData['nombres'] ?? "Aspirante #$idRespuesta") . ' — No se pudo asignar carrera/rol';
+                        }
+                    } catch (\Exception $ex) {
+                        $fallidos++;
+                        $erroresDetalle[] = ($userData['nombres'] ?? "Aspirante #$idRespuesta") . ' — ' . $ex->getMessage();
+                    }
+                }
+
+                if ($exitosos > 0 && $fallidos == 0) {
+                    $message = new Message('Registro exitoso', "Se registraron $exitosos aspirante(s) correctamente.", Message::GREEN);
+                    $this->pg()->log(null, LM::SUCCESS, LM::CREATE);
+                } elseif ($exitosos > 0 && $fallidos > 0) {
+                    $msgText = "Registrados: $exitosos. Fallidos: $fallidos.<br/>Detalles:<br/>" . implode('<br/>', $erroresDetalle);
+                    $message = new Message('Registro parcial', $msgText, Message::YELLOW);
+                    $this->pg()->log($msgText, LM::FAILURE, LM::CREATE);
+                } else {
+                    $msgText = "No se registró ningún aspirante.<br/>Detalles:<br/>" . implode('<br/>', $erroresDetalle);
+                    $message = new Message('Registro fallido', $msgText, Message::RED);
+                    $this->pg()->log($msgText, LM::FAILURE, LM::CREATE);
+                }
+
+                // Refrescar lista de respuestas
+                $countResult = $this->formularioAdmisionManager->countRespuestasFormulario($idFormulario);
+                $totalRecords = ($countResult->get()) ? (int)$countResult->getObj() : 0;
+                $totalPages = ($totalRecords > 0) ? (int)ceil($totalRecords / $perPage) : 1;
+                if ($page > $totalPages) $page = $totalPages;
+                if ($page < 1) $page = 1;
+                $respuestasResult = $this->formularioAdmisionManager->getRespuestasFormulario($idFormulario, $page, $perPage);
+                $respuestas = $respuestasResult->get() ? $respuestasResult->getObj() : [];
+
+                // Re-verificar registrados tras la asignación masiva
+                $yaRegistrados = [];
+                foreach ($respuestas as $respuesta) {
+                    $cui = $respuesta->getAspiranteCui();
+                    $correo = $respuesta->getAspiranteCorreoElectronico();
+                    if (!empty($cui) || !empty($correo)) {
+                        $existeResult = $this->formularioAdmisionManager->verificarUsuarioRegistrado($cui, $correo);
+                        if ($existeResult->get()) {
+                            $yaRegistrados[$respuesta->getIdRespuesta()] = true;
+                        }
+                    }
+                }
+            } elseif (isset($data['eliminar_respuesta'])) {
                 $idRespuesta = (int) $data['eliminar_respuesta'];
                 $eliminarResult = $this->formularioAdmisionManager->eliminarRespuesta($idRespuesta);
 
@@ -240,6 +359,11 @@ class FormularioAdmisionController extends AbstractActionController {
             'totalRecords' => $totalRecords,
             'perPage' => $perPage,
             'yaRegistrados' => $yaRegistrados,
+            'nationalities' => $nationalities,
+            'degrees' => $degrees,
+            'careers' => $careers,
+            'cohorts' => $cohorts,
+            'careerTree' => $careerTree,
         ]);
     }
 
@@ -449,6 +573,25 @@ class FormularioAdmisionController extends AbstractActionController {
                 } else {
                     if (empty($data['pasaporte'])) {
                         $errors[] = 'Pasaporte (obligatorio para extranjeros)';
+                    }
+                }
+            }
+
+            // Validación condicional backend: información laboral obligatoria si trabaja_actualmente == yes
+            if (empty($errors)) {
+                $trabaja = $data['trabaja_actualmente'] ?? '';
+                if ($trabaja === 'yes') {
+                    if (empty($data['ubicacion_laboral'])) {
+                        $errors[] = 'Ubicación laboral';
+                    }
+                    if (empty($data['hora_inicio'])) {
+                        $errors[] = 'Hora inicio laboral';
+                    }
+                    if (empty($data['hora_fin'])) {
+                        $errors[] = 'Hora fin laboral';
+                    }
+                    if (empty($data['dias_labora'])) {
+                        $errors[] = 'Días que labora';
                     }
                 }
             }

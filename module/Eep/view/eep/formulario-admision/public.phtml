@@ -388,6 +388,36 @@ function printWizardStep($secciones, $grupos, $map, $nationalities, $degrees, $c
         ajustarRequiredDocumentos();
     }
 
+    // Validación condicional: campos laborales obligatorios si trabaja_actualmente == yes
+    const laboraRadios = document.querySelectorAll('input[name="trabaja_actualmente"]');
+    const ubicacionLaboral = document.getElementById('ubicacion_laboral');
+    const horaInicio = document.getElementById('hora_inicio');
+    const horaFin = document.getElementById('hora_fin');
+    const diasLaboraCheckboxes = document.querySelectorAll('input[name="dias_labora[]"]');
+
+    function ajustarRequiredLaboral() {
+        const laboraYes = Array.from(laboraRadios).some(function(r) { return r.checked && r.value === 'yes'; });
+        if (ubicacionLaboral) {
+            ubicacionLaboral.required = laboraYes;
+        }
+        if (horaInicio) {
+            horaInicio.required = laboraYes;
+        }
+        if (horaFin) {
+            horaFin.required = laboraYes;
+        }
+        diasLaboraCheckboxes.forEach(function(cb) {
+            cb.required = laboraYes;
+        });
+    }
+
+    if (laboraRadios.length > 0) {
+        laboraRadios.forEach(function(r) {
+            r.addEventListener('change', ajustarRequiredLaboral);
+        });
+        ajustarRequiredLaboral();
+    }
+
     // Cascada grado -> carrera
     const gradoSelect = document.getElementById('grado_a_ingresar');
     const carreraSelect = document.getElementById('carrera_a_ingresar');
@@ -482,6 +512,43 @@ function printWizardStep($secciones, $grupos, $map, $nationalities, $degrees, $c
                     }
                 }
             });
+
+            // Validación condicional: información laboral obligatoria si trabaja_actualmente == yes
+            const trabajaYes = step.querySelector('input[name="trabaja_actualmente"][value="yes"]:checked');
+            if (trabajaYes) {
+                const laboralIds = ['ubicacion_laboral', 'hora_inicio', 'hora_fin'];
+                laboralIds.forEach(function(id) {
+                    const el = step.querySelector('#' + id);
+                    if (el && !el.value.trim()) {
+                        isValid = false;
+                        invalidCount++;
+                        const group = el.closest('.form-group');
+                        if (group && !group.classList.contains('campo-invalido')) {
+                            group.classList.add('campo-invalido');
+                            const label = group.querySelector('label');
+                            if (label && !invalidLabels.includes(label.textContent.trim())) {
+                                invalidLabels.push(label.textContent.trim());
+                            }
+                        }
+                        if (!firstInvalid) firstInvalid = el;
+                    }
+                });
+                const diasChecked = step.querySelectorAll('input[name="dias_labora[]"]:checked');
+                if (diasChecked.length === 0) {
+                    isValid = false;
+                    invalidCount++;
+                    const firstCb = step.querySelector('input[name="dias_labora[]"]');
+                    const group = firstCb ? firstCb.closest('.form-group') : null;
+                    if (group && !group.classList.contains('campo-invalido')) {
+                        group.classList.add('campo-invalido');
+                        const label = group.querySelector('label');
+                        if (label && !invalidLabels.includes(label.textContent.trim())) {
+                            invalidLabels.push(label.textContent.trim());
+                        }
+                    }
+                    if (!firstInvalid && firstCb) firstInvalid = firstCb;
+                }
+            }
 
             if (!isValid && firstInvalid) {
                 firstInvalid.focus();
