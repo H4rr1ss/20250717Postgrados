@@ -927,15 +927,6 @@ class ExamenController extends AbstractActionController {
                 'subido_por'     => $userId,
             ]);
 
-            // 3. Registrar Historial
-            $this->examenManager->registrarHistorial([
-                'cod_proceso'  => $codProceso,
-                'cod_usuario'  => $userId,
-                'tipo_evento'  => 'subida_documento',
-                'descripcion'  => 'Documento subido: ' . $fileData['name'],
-                'datos_nuevos' => ['cod_documento' => $idDoc, 'archivo_nombre' => $nombreMd5],
-            ]);
-
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Archivo subido correctamente',
@@ -1517,15 +1508,6 @@ class ExamenController extends AbstractActionController {
             $success = $this->examenManager->avanzarPaso($codProceso, $userId);
             
             if ($success) {
-                // Registrar en historial
-                $this->examenManager->registrarHistorial([
-                    'cod_proceso' => $codProceso,
-                    'cod_usuario' => $userId,
-                    'tipo_evento' => 'avance_paso',
-                    'descripcion' => "El proceso avanzó desde el paso ID {$codPasoActual}",
-                    'datos_anteriores' => ['cod_paso' => $codPasoActual]
-                ]);
-
                 return new JsonModel(['status' => 'success', 'message' => 'Proceso avanzado correctamente']);
             }
             

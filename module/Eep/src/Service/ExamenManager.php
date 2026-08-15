@@ -192,15 +192,6 @@ class ExamenManager
             'paso'    => $primerPaso
         ])->execute();
 
-        // 4. Registrar en el historial de auditoría
-        $this->registrarHistorial([
-            'cod_proceso' => $codProceso,
-            'cod_usuario' => $codUsuario,
-            'tipo_evento' => 'otro',
-            'descripcion' => 'Iniciando proceso de graduación tipo ID: ' . $codTipoExamen,
-            'datos_nuevos' => ['cod_tipo_examen' => $codTipoExamen, 'cod_paso_inicial' => $primerPaso]
-        ]);
-
         return (int) $codProceso;
     }
 
@@ -1372,31 +1363,6 @@ class ExamenManager
         $sqlFin = 'UPDATE examen_proceso SET cod_paso_actual = NULL WHERE cod_proceso = :proceso';
         $this->adapter->createStatement($sqlFin, ['proceso' => $codProceso])->execute();
         return true;
-    }
-
-    /**
-     * Registra un evento en la tabla de auditoría (examen_historial).
-     * T-10
-     */
-    public function registrarHistorial(array $data): void
-    {
-        $sql = 'INSERT INTO examen_historial 
-                    (cod_proceso, cod_usuario, tipo_evento, descripcion, datos_anteriores, datos_nuevos, ip_address, user_agent)
-                VALUES 
-                    (:proceso, :usuario, :evento, :desc, :ant, :nue, :ip, :ua)';
-        
-        $params = [
-            'proceso' => $data['cod_proceso'],
-            'usuario' => $data['cod_usuario'],
-            'evento'  => $data['tipo_evento'],
-            'desc'    => $data['descripcion']      ?? null,
-            'ant'     => isset($data['datos_anteriores']) ? json_encode($data['datos_anteriores']) : null,
-            'nue'     => isset($data['datos_nuevos'])     ? json_encode($data['datos_nuevos'])     : null,
-            'ip'      => $data['ip_address']      ?? null,
-            'ua'      => $data['user_agent']      ?? null
-        ];
-
-        $this->adapter->createStatement($sql, $params)->execute();
     }
 
     /**

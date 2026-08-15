@@ -126,7 +126,6 @@ docker-compose exec -T db mysql -u user -ppassword db_postgrados < "database/mod
 8. `archivo_local` — Metadata de archivos locales (MD5)
 9. `examen_revision_documento` — Revisiones del staff (paso 1)
 10. `examen_documento_fisico` — Checklist de recepción física (paso 2)
-11. `examen_historial` — Auditoría de eventos
 
 #### Ternas (1 tabla)
 12. `examen_terna` — Examinadores asignados por proceso y fase

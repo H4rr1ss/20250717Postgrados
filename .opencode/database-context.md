@@ -128,7 +128,6 @@ Ubicados en: `database/modulo graduacion/`
 | `examen_revision_documento` | Decisiones del staff sobre documentos | examen_documento, examen_proceso, examen_requisito_documento |
 | `examen_documento_fisico` | Checklist de recepción de documentos físicos | examen_proceso, examen_requisito_documento |
 | `examen_terna` | Examinadores asignados al proceso (Paso 3) | examen_proceso, usuario |
-| `examen_historial` | Tabla de auditoría inmutable | examen_proceso, usuario |
 
 **Fases del Proceso:**
 
@@ -300,7 +299,6 @@ examen_proceso (FK: cod_usuario, cod_tipo_examen, cod_paso_actual)
     │       ↓
     │   examen_carta_examinadores (FK: cod_ciclo_aprobacion)
     ├── examen_autorizacion_proceso (FK: cod_proceso, cod_profesional) [Paso 6]
-    └── examen_historial (FK: cod_proceso, cod_usuario)
 ```
 
 ### Relaciones con Tablas del Sistema Core
@@ -315,7 +313,6 @@ usuario
     ├── examen_revision_documento (revisado_por)
     ├── examen_documento_fisico (recibido_por)
     ├── examen_terna (registrado_por)
-    ├── examen_historial (cod_usuario)
     ├── examen_correccion_ciclo (revisado_por)
     ├── examen_correccion_evidencia (subido_por)
     ├── examen_carta_examinadores (generada_por)
@@ -373,13 +370,6 @@ examen_proceso.cancelado (INDEX)
 examen_documento.cod_proceso (INDEX)
 examen_documento.archivo_nombre (INDEX)
 examen_documento.es_version_actual (INDEX compuesto)
-
--- Historial por proceso
-examen_historial.cod_proceso (INDEX)
-examen_historial.cod_usuario (INDEX)
-examen_historial.tipo_evento (INDEX)
-examen_historial.created_at (INDEX)
-```
 
 ---
 
@@ -444,24 +434,6 @@ JOIN accion a ON ea.cod_accion = a.cod_accion
 WHERE u.cod_usuario = ?
   AND (ur.fecha_fin IS NULL OR ur.fecha_fin >= CURDATE());
 ```
-
-### Obtener historial de un proceso
-
-```sql
-SELECT 
-    eh.tipo_evento,
-    eh.descripcion,
-    eh.datos_anteriores,
-    eh.datos_nuevos,
-    u.nombres,
-    u.apellidos,
-    eh.created_at
-FROM examen_historial eh
-JOIN usuario u ON eh.cod_usuario = u.cod_usuario
-WHERE eh.cod_proceso = ?
-ORDER BY eh.created_at DESC;
-```
-
 ---
 
 ## Almacenamiento de Archivos

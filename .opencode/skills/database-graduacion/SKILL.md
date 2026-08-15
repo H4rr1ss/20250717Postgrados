@@ -326,40 +326,6 @@ CREATE TABLE `examen_terna` (
 );
 ```
 
-**Note:** Same terna (examiners) is used for both private AND general exam
-
-### examen_historial - Immutable Audit Trail
-```sql
-CREATE TABLE `examen_historial` (
-  `cod_historial` bigint(20) unsigned AUTO_INCREMENT PRIMARY KEY,
-  `cod_proceso` int(11) unsigned NOT NULL,
-  `cod_usuario` int(11) NOT NULL COMMENT 'FK → usuario (actor)',
-  `tipo_evento` enum(
-    'avance_paso',
-    'retroceso_paso',
-    'subida_documento',
-    'revision_documento',
-    'rechazo_documento',
-    'asignacion_terna',
-    'cancelacion',
-    'reactivacion',
-    'otro'
-  ) NOT NULL,
-  `descripcion` text COMMENT 'Human-readable message',
-  `datos_anteriores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin 
-    CHECK (json_valid(`datos_anteriores`)),
-  `datos_nuevos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin 
-    CHECK (json_valid(`datos_nuevos`)),
-  `ip_address` varchar(45) COMMENT 'IPv4 or IPv6',
-  `user_agent` varchar(300),
-  `created_at` timestamp DEFAULT current_timestamp(),
-  
-  KEY `idx_eh_proceso` (`cod_proceso`),
-  KEY `idx_eh_usuario` (`cod_usuario`),
-  KEY `idx_eh_tipo_evento` (`tipo_evento`)
-);
-```
-
 ## Phase 5: Carta de Examinadores Tables
 
 ### examen_correccion_ciclo - Simplified Correction Cycle
@@ -619,22 +585,6 @@ WHERE erd.cod_paso = ?
 ORDER BY erd.orden_display;
 ```
 
-### Get process history
-```sql
-SELECT 
-    eh.tipo_evento,
-    eh.descripcion,
-    eh.datos_anteriores,
-    eh.datos_nuevos,
-    u.nombres,
-    u.apellidos,
-    eh.created_at
-FROM examen_historial eh
-JOIN usuario u ON eh.cod_usuario = u.cod_usuario
-WHERE eh.cod_proceso = ?
-ORDER BY eh.created_at DESC;
-```
-
 ### Get examiners for a process
 ```sql
 SELECT 
@@ -710,7 +660,6 @@ examen_tipo
             │       └─► examen_revision_documento
             ├─► examen_documento_fisico
             ├─► examen_terna
-            ├─► examen_historial
             ├─► examen_correccion_ciclo ──► examen_correccion_evidencia
             │       └─► examen_carta_examinadores
             │              └─► examen_carta_plantilla
