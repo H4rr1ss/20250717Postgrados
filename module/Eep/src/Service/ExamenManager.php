@@ -1731,6 +1731,8 @@ class ExamenManager
                     ep.ex1_completado,
                     ep.ex2_completado,
                     ep.ex3_completado,
+                    ep.fecha_examen_privado,
+                    ep.hora_examen_privado,
                     (
                         SELECT COUNT(DISTINCT eme.posicion_examinador)
                         FROM examen_matriz_evaluacion eme

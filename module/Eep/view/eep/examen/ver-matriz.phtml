@@ -61,6 +61,19 @@ $examinadores = $this->terna['examinadores'] ?? [];
                         <?= $this->escapeHtml($this->proceso['hora_cierre_evaluacion'] ? date('d/m/Y H:i', strtotime($this->proceso['hora_cierre_evaluacion'])) : 'N/A') ?></p>
                     </div>
                     <div class="col-md-4">
+                        <?php
+                        $fechaEx = $this->proceso['fecha_examen_privado'] ?? null;
+                        $horaEx  = $this->proceso['hora_examen_privado'] ?? null;
+                        if ($fechaEx && $horaEx) {
+                            $prog = date('d/m/Y', strtotime($fechaEx)) . ' ' . date('h:i A', strtotime($horaEx));
+                        } elseif ($fechaEx) {
+                            $prog = date('d/m/Y', strtotime($fechaEx));
+                        } else {
+                            $prog = 'No programado';
+                        }
+                        ?>
+                        <p><strong>Programación del Examen Privado:</strong><br>
+                        <?= $this->escapeHtml($prog) ?></p>
                     </div>
                 </div>
                 <div class="row" style="margin-top: 10px;">

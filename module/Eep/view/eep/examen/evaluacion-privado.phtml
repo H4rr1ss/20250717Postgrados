@@ -83,17 +83,18 @@ $this->headTitle('Evaluación Examen Privado');
                             <th style="width: 120px;">Registro</th>
                             <th>Estudiante</th>
                             <th>Carrera / Maestría</th>
+                            <th style="width: 130px;">Programación</th>
                             <th style="width: 100px;">Estado</th>
-                            <th style="width: 80px;" class="text-center">Ex1</th>
-                            <th style="width: 80px;" class="text-center">Ex2</th>
-                            <th style="width: 80px;" class="text-center">Ex3</th>
-                            <th style="width: 220px;">Acciones</th>
+                            <th style="width: 60px;" class="text-center">Ex1</th>
+                            <th style="width: 60px;" class="text-center">Ex2</th>
+                            <th style="width: 60px;" class="text-center">Ex3</th>
+                            <th style="width: 180px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($this->procesos)): ?>
                             <tr>
-                                <td colspan="8" class="text-center" style="padding: 20px; color: #999;">No hay procesos disponibles para evaluación.</td>
+                                <td colspan="9" class="text-center" style="padding: 20px; color: #999;">No hay procesos disponibles para evaluación.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($this->procesos as $p): ?>
@@ -108,6 +109,17 @@ $this->headTitle('Evaluación Examen Privado');
                                 $numReprog = (int) ($p['numero_reprogramacion'] ?? 0);
                                 $abierta = !empty($codigo) && !empty($horaApertura) && empty($horaCierre);
                                 $codProceso = (int) $p['cod_proceso'];
+
+                                $fechaExamen = $p['fecha_examen_privado'] ?? null;
+                                $horaExamen  = $p['hora_examen_privado'] ?? null;
+                                if ($fechaExamen && $horaExamen) {
+                                    $hora12h = date('h:i A', strtotime($horaExamen));
+                                    $calendarizacion = date('d/m/Y', strtotime($fechaExamen)) . '<br>' . $hora12h;
+                                } elseif ($fechaExamen) {
+                                    $calendarizacion = date('d/m/Y', strtotime($fechaExamen));
+                                } else {
+                                    $calendarizacion = 'No programado';
+                                }
                                 ?>
                                 <tr>
                                     <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
@@ -115,6 +127,9 @@ $this->headTitle('Evaluación Examen Privado');
                                         <?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?>
                                     </td>
                                     <td><?= $this->escapeHtml($p['carrera'] ?? 'N/A') ?></td>
+                                    <td class="text-center" style="font-size: 12px;">
+                                        <?= $calendarizacion ?>
+                                    </td>
                                     <td class="text-center">
                                         <?php if (!empty($horaCierre) && $completadas >= 2): ?>
                                             <span class="label label-info">Completada</span>
@@ -197,7 +212,7 @@ $(document).ready(function() {
 
             var registro = $(this).find('td:eq(0)').text().toLowerCase();
             var nombre = $(this).find('td:eq(1)').text().toLowerCase();
-            var estado = $(this).find('td:eq(3) span.label').text().trim();
+            var estado = $(this).find('td:eq(4) span.label').text().trim();
 
             var coincideBusqueda = textoBusqueda === '' ||
                 registro.indexOf(textoBusqueda) !== -1 ||
@@ -217,7 +232,7 @@ $(document).ready(function() {
         var $noResultados = $tbody.find('.no-resultados-filtro');
         if (hayFiltro && filasVisibles === 0) {
             if ($noResultados.length === 0) {
-                $tbody.append('<tr class="no-resultados-filtro"><td colspan="8" class="text-center" style="padding: 20px; color: #999;"><i class="fa fa-search"></i> No se encontraron resultados con los filtros aplicados.</td></tr>');
+                $tbody.append('<tr class="no-resultados-filtro"><td colspan="9" class="text-center" style="padding: 20px; color: #999;"><i class="fa fa-search"></i> No se encontraron resultados con los filtros aplicados.</td></tr>');
             }
         } else {
             $noResultados.remove();
