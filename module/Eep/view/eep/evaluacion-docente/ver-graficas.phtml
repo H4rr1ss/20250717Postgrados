@@ -1,0 +1,261 @@
+<?php
+$this->headTitle('Visualización de Gráficas - Evaluación Docente');
+
+$curso = $curso ?? [];
+$preguntas = $preguntas ?? [];
+$nombresMeses = [
+    1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+    5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+    9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+];
+
+$cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+?>
+
+<div class="col-lg-12">
+    <div class="row" style="margin-bottom: 15px;">
+        <div class="col-sm-6">
+            <a href="<?= $this->url('evaluacion-docente', ['action' => 'reporte-docente']) ?>" class="btn btn-default btn-md" style="font-weight: bold;">
+                <i class="fa fa-arrow-left"></i> Volver al Reporte de Evaluación Docente
+            </a>
+        </div>
+        <div class="col-sm-6 text-right">
+            <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['curso' => $curso['cod_horario']]]) ?>" class="btn btn-success btn-md" style="font-weight: bold;">
+                <i class="fa fa-download"></i> Descargar CSV
+            </a>
+        </div>
+    </div>
+
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            <i class="fa fa-bar-chart"></i> Visualización de Gráficas
+        </div>
+        <div class="panel-body">
+            <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+
+            <?php if (!empty($curso)): ?>
+                <!-- Encabezado de información del curso -->
+                <div class="panel panel-default" style="margin-bottom: 25px;">
+                    <div class="panel-heading" style="background-color: #f5f5f5;">
+                        <h4 class="panel-title" style="font-size: 15px; margin: 0;">
+                            <i class="fa fa-book"></i> Información del Curso Evaluado
+                        </h4>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p style="margin-bottom: 8px;">
+                                    <span class="text-muted" style="font-size: 12px; display: block;">Curso</span>
+                                    <strong style="font-size: 14px;"><?= $this->escapeHtml($curso['nombre_curso']) ?></strong>
+                                </p>
+                                <p style="margin-bottom: 8px;">
+                                    <span class="text-muted" style="font-size: 12px; display: block;">Docente</span>
+                                    <strong style="font-size: 14px;"><?= $this->escapeHtml($curso['nombre_docente']) ?></strong>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p style="margin-bottom: 8px;">
+                                    <span class="text-muted" style="font-size: 12px; display: block;">Sección</span>
+                                    <strong style="font-size: 14px;"><?= $this->escapeHtml($curso['seccion']) ?></strong>
+                                </p>
+                                <p style="margin-bottom: 8px;">
+                                    <span class="text-muted" style="font-size: 12px; display: block;">Período del Curso</span>
+                                    <strong style="font-size: 14px;"><?= $this->escapeHtml($curso['anio'] . ' - ' . ($nombresMeses[(int) $curso['mes']] ?? 'Mes ' . $curso['mes'])) ?></strong>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p style="margin-bottom: 8px;">
+                                    <span class="text-muted" style="font-size: 12px; display: block;">Total de Evaluaciones</span>
+                                    <strong style="font-size: 16px; color: #d9534f;"><?= (int) $curso['total_evaluaciones'] ?></strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualización de gráficas -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <i class="fa fa-bar-chart"></i> Resultados de la Evaluación
+                    </div>
+                    <div class="panel-body">
+                        <?php if (!empty($curso['preguntas'])): ?>
+                            <!-- Gráficas -->
+                            <div class="row">
+                                <?php foreach ($curso['preguntas'] as $pregunta): ?>
+                                    <?php if ($pregunta['tipo'] !== 'texto'): ?>
+                                        <?php
+                                        $chartId = 'chart-h' . (int) $curso['cod_horario'] . '-p' . (int) $pregunta['id_pregunta'];
+                                        $colClass = ($pregunta['tipo'] === 'boolean') ? 'col-md-4' : 'col-md-6';
+                                        $icono = ($pregunta['tipo'] === 'boolean') ? 'fa-pie-chart' : 'fa-bar-chart';
+                                        ?>
+                                        <div class="<?= $colClass ?>" style="margin-bottom: 30px;">
+                                            <div class="panel panel-default" style="border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+                                                <div class="panel-heading" style="background-color: #f8f9fa; border-bottom: 1px solid #ddd;">
+                                                    <h5 class="panel-title" style="font-size: 13px; margin: 0; line-height: 1.4;">
+                                                        <i class="fa <?= $icono ?>"></i>
+                                                        <?= $this->escapeHtml($pregunta['texto']) ?>
+                                                    </h5>
+                                                </div>
+                                                <div class="panel-body" style="padding: 15px;">
+                                                    <?php if ($pregunta['tipo'] === 'escala10'): ?>
+                                                        <p class="text-center text-muted" style="margin-bottom: 10px;">
+                                                            Promedio: <strong><?= $pregunta['promedio'] ?? 'N/A' ?></strong> / 10
+                                                        </p>
+                                                    <?php endif; ?>
+                                                    <div style="position: relative; height: 250px;">
+                                                        <canvas id="<?= $this->escapeHtmlAttr($chartId) ?>"></canvas>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <!-- Comentarios tipo texto en columnas -->
+                            <?php foreach ($curso['preguntas'] as $pregunta): ?>
+                                <?php if ($pregunta['tipo'] === 'texto'): ?>
+                                    <div class="panel panel-info" style="margin-top: 20px; border: 1px solid #bce8f1; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                        <div class="panel-heading" style="background-color: #d9edf7; border-bottom: 1px solid #bce8f1;">
+                                            <h5 class="panel-title" style="font-size: 14px; margin: 0; color: #31708f;">
+                                                <i class="fa fa-comments"></i>
+                                                <?= $this->escapeHtml($pregunta['texto']) ?>
+                                                <span class="badge pull-right" style="background-color: #31708f;">
+                                                    <?= (int) ($pregunta['count_respuestas'] ?? 0) ?> comentarios
+                                                </span>
+                                            </h5>
+                                        </div>
+                                        <div class="panel-body">
+                                            <?php
+                                            $comentariosPregunta = array_values(array_filter($curso['comentarios'], function ($c) use ($pregunta) {
+                                                return (int) $c['id_pregunta'] === (int) $pregunta['id_pregunta'];
+                                            }));
+                                            ?>
+                                            <?php if (!empty($comentariosPregunta)): ?>
+                                                <div class="row">
+                                                    <?php foreach ($comentariosPregunta as $comentario): ?>
+                                                        <div class="col-md-6" style="margin-bottom: 12px;">
+                                                            <div style="background: #f8f9fa; border-left: 4px solid #5bc0de; padding: 12px 15px; border-radius: 4px; height: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                                                                <i class="fa fa-quote-left text-muted" style="margin-right: 5px; font-size: 12px;"></i>
+                                                                <span style="font-size: 13px; color: #333;">
+                                                                    <?= nl2br($this->escapeHtml($comentario['comentario'])) ?>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <p class="text-muted text-center">No hay comentarios para esta pregunta.</p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-muted text-center">No hay preguntas configuradas para este curso.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i>
+                    No se encontró información del curso seleccionado.
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+(function() {
+    var curso = <?= $cursoJson ?>;
+    if (!curso || !curso.preguntas) return;
+
+    var charts = {};
+
+    curso.preguntas.forEach(function(pregunta) {
+        if (pregunta.tipo === 'texto') return;
+
+        var canvasId = 'chart-h' + curso.cod_horario + '-p' + pregunta.id_pregunta;
+        var ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        if (pregunta.tipo === 'boolean') {
+            var total = curso.total_evaluaciones;
+            var si = pregunta.count_si || 0;
+            var no = total - si;
+
+            charts[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Sí', 'No'],
+                    datasets: [{
+                        data: [si, no],
+                        backgroundColor: ['#5cb85c', '#d9534f'],
+                        borderColor: ['#4cae4c', '#c9302c'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var label = context.label || '';
+                                    var value = context.raw || 0;
+                                    var pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return label + ': ' + value + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else if (pregunta.tipo === 'escala10') {
+            var labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+            var data = [];
+            var distribucion = pregunta.distribucion || {};
+            for (var i = 1; i <= 10; i++) {
+                data.push(distribucion[i] || 0);
+            }
+
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cantidad de respuestas',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { title: { display: true, text: 'Calificación (1 = Deficiente, 10 = Excelente)' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Respuestas: ' + context.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+})();
+</script>

@@ -1,5 +1,6 @@
 <?php
 $this->headTitle('Reporte de Evaluación Docente');
+
 $periodos = $periodos ?? [];
 $docentes = $docentes ?? [];
 $reporte = $reporte ?? [];
@@ -88,38 +89,53 @@ ksort($meses);
             </div>
             <hr/>
             <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
-            <div class="overflow-x">
-                <table class="table table-hover table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Docente</th>
-                            <th>Curso</th>
-                            <th class="text-center">Sección</th>
-                            <th class="text-center">Período del Curso</th>
-                            <th class="text-center">Evaluaciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($reporte)): ?>
+
+            <?php if (!empty($reporte)): ?>
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Tip:</strong> Haga clic sobre cualquier fila de la tabla para visualizar las gráficas de evaluación de ese curso.
+                </div>
+                <div class="overflow-x">
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Curso</th>
+                                <th class="text-center">Sección</th>
+                                <th class="text-center">Período del Curso</th>
+                                <th class="text-center">Evaluaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                             <?php foreach ($reporte as $item): ?>
-                                <tr>
+                                <?php
+                                $graficasUrl = $this->url('evaluacion-docente', ['action' => 'ver-graficas', 'id' => $item['cod_horario']]);
+                                ?>
+                                <tr style="cursor: pointer;" onclick="window.location.href='<?= $this->escapeHtmlAttr($graficasUrl) ?>';" title="Haga clic para ver gráficas de este curso">
                                     <td><?= $this->escapeHtml($item['nombre_docente']) ?></td>
                                     <td><?= $this->escapeHtml($item['nombre_curso']) ?></td>
                                     <td class="text-center"><?= $this->escapeHtml($item['seccion']) ?></td>
                                     <td class="text-center"><?= $this->escapeHtml($item['anio'] . ' - ' . ($nombresMeses[(int) $item['mes']] ?? 'Mes ' . $item['mes'])) ?></td>
-                                    <td class="text-center"><?= $this->escapeHtml($item['total_evaluaciones']) ?></td>
+                                    <td class="text-center">
+                                        <span class="badge" style="background-color: #5bc0de;">
+                                            <?= $this->escapeHtml($item['total_evaluaciones']) ?>
+                                        </span>
+                                        <span class="text-info" style="margin-left: 8px; font-size: 13px;">
+                                            <i class="fa fa-bar-chart"></i> Ver resultados
+                                        </span>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">
-                                    No hay evaluaciones registradas para el período seleccionado.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-warning text-center" style="padding: 40px 20px; font-size: 18px; border: 2px solid #f0ad4e;">
+                    <i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #f0ad4e; display: block; margin-bottom: 15px;"></i>
+                    <strong style="font-size: 20px; display: block; margin-bottom: 10px;">No se encontraron evaluaciones</strong>
+                    <span style="color: #8a6d3b;">No hay evaluaciones registradas para el período seleccionado.<br>Por favor, ajuste los filtros y vuelva a intentar.</span>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

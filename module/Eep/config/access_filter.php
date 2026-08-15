@@ -808,5 +808,10 @@ return [
             'view' => View::EVALUACION_DOCENTE_REPORTE,
             'roles' => [Role::DIRECTOR]
         ],
+        'verGraficas' => [
+            'code' => 87,
+            'view' => View::EVALUACION_DOCENTE_REPORTE,
+            'roles' => [Role::DIRECTOR]
+        ],
     ],
 ];

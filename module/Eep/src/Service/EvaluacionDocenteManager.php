@@ -189,12 +189,13 @@ class EvaluacionDocenteManager extends Manager {
         return $res;
     }
 
-    public function getReportePorDocente($anio = null, $mes = null, $codDocente = null): R {
+    public function getReportePorDocente($anio = null, $mes = null, $codDocente = null, $codHorario = null): R {
         $res = new R();
         try {
             $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
             $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
             $docenteFilter = ($codDocente !== null && $codDocente !== '') ? (int) $codDocente : null;
+            $cursoFilter = ($codHorario !== null && $codHorario !== '') ? (int) $codHorario : null;
 
             $sql = "
                 SELECT
@@ -214,6 +215,7 @@ class EvaluacionDocenteManager extends Manager {
                 " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
                 " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
                 " . ($docenteFilter !== null ? " AND u.cod_usuario = " . $docenteFilter : "") . "
+                " . ($cursoFilter !== null ? " AND h.cod_horario = " . $cursoFilter : "") . "
                 GROUP BY h.cod_horario, h.seccion, h.anio, h.mes, cp.nombre, u.cod_usuario
                 ORDER BY nombre_docente, h.anio DESC, h.mes DESC, cp.nombre
             ";
@@ -249,9 +251,41 @@ class EvaluacionDocenteManager extends Manager {
             $stmtPreguntas = $this->dbAdapter->query($sqlPreguntas, Adapter::QUERY_MODE_EXECUTE);
             $preguntasRows = $stmtPreguntas->toArray();
 
-            $sqlComentarios = "
-                SELECT 
+            $sqlDistribucion = "
+                SELECT
                     er.cod_horario,
+                    p.id as id_pregunta,
+                    erd.respuesta as valor,
+                    COUNT(*) as cantidad
+                FROM evaluacion_respuesta er
+                JOIN evaluacion_respuesta_detalle erd ON er.id = erd.id_evaluacion_respuesta
+                JOIN evaluacion_pregunta p ON erd.id_pregunta = p.id
+                WHERE er.cod_horario IN ($inClause)
+                  AND p.tipo = 'escala10'
+                GROUP BY er.cod_horario, p.id, erd.respuesta
+                ORDER BY er.cod_horario, p.id, CAST(erd.respuesta AS UNSIGNED)
+            ";
+            $stmtDistribucion = $this->dbAdapter->query($sqlDistribucion, Adapter::QUERY_MODE_EXECUTE);
+            $distribucionRows = $stmtDistribucion->toArray();
+
+            $distribucionMap = [];
+            foreach ($distribucionRows as $row) {
+                $key = (int) $row['cod_horario'];
+                $idPregunta = (int) $row['id_pregunta'];
+                $valor = (int) $row['valor'];
+                if (!isset($distribucionMap[$key])) {
+                    $distribucionMap[$key] = [];
+                }
+                if (!isset($distribucionMap[$key][$idPregunta])) {
+                    $distribucionMap[$key][$idPregunta] = [];
+                }
+                $distribucionMap[$key][$idPregunta][$valor] = (int) $row['cantidad'];
+            }
+
+            $sqlComentarios = "
+                SELECT
+                    er.cod_horario,
+                    p.id as id_pregunta,
                     erd.respuesta as comentario
                 FROM evaluacion_respuesta er
                 JOIN evaluacion_respuesta_detalle erd ON er.id = erd.id_evaluacion_respuesta
@@ -260,7 +294,7 @@ class EvaluacionDocenteManager extends Manager {
                   AND p.tipo = 'texto'
                   AND erd.respuesta IS NOT NULL
                   AND TRIM(erd.respuesta) != ''
-                ORDER BY er.cod_horario
+                ORDER BY er.cod_horario, p.id
             ";
             $stmtComentarios = $this->dbAdapter->query($sqlComentarios, Adapter::QUERY_MODE_EXECUTE);
             $comentariosRows = $stmtComentarios->toArray();
@@ -287,12 +321,17 @@ class EvaluacionDocenteManager extends Manager {
                 if (!isset($reporte[$key])) {
                     continue;
                 }
+                $idPregunta = (int) $row['id_pregunta'];
+                $distribucion = $distribucionMap[$key][$idPregunta] ?? [];
                 $reporte[$key]['preguntas'][] = [
+                    'id_pregunta' => $idPregunta,
                     'texto' => $row['texto'],
                     'tipo' => $row['tipo'],
+                    'count_respuestas' => (int) $row['count_respuestas'],
                     'promedio' => $row['promedio'] !== null ? round((float) $row['promedio'], 2) : null,
                     'count_si' => (int) $row['count_si'],
                     'count_boolean_total' => (int) $row['count_boolean_total'],
+                    'distribucion' => $distribucion,
                 ];
             }
 
@@ -301,7 +340,10 @@ class EvaluacionDocenteManager extends Manager {
                 if (!isset($reporte[$key])) {
                     continue;
                 }
-                $reporte[$key]['comentarios'][] = $row['comentario'];
+                $reporte[$key]['comentarios'][] = [
+                    'id_pregunta' => (int) $row['id_pregunta'],
+                    'comentario' => $row['comentario'],
+                ];
             }
 
             $res->success();
@@ -312,12 +354,13 @@ class EvaluacionDocenteManager extends Manager {
         return $res;
     }
 
-    public function getEvaluacionesDetalle($anio = null, $mes = null, $codDocente = null): R {
+    public function getEvaluacionesDetalle($anio = null, $mes = null, $codDocente = null, $codHorario = null): R {
         $res = new R();
         try {
             $anioFilter = ($anio !== null && $anio !== '') ? (int) $anio : null;
             $mesFilter = ($mes !== null && $mes !== '') ? (int) $mes : null;
             $docenteFilter = ($codDocente !== null && $codDocente !== '') ? (int) $codDocente : null;
+            $cursoFilter = ($codHorario !== null && $codHorario !== '') ? (int) $codHorario : null;
 
             $sql = "
                 SELECT
@@ -343,6 +386,7 @@ class EvaluacionDocenteManager extends Manager {
                 " . ($anioFilter !== null ? " AND h.anio = " . $anioFilter : "") . "
                 " . ($mesFilter !== null ? " AND h.mes = " . $mesFilter : "") . "
                 " . ($docenteFilter !== null ? " AND u.cod_usuario = " . $docenteFilter : "") . "
+                " . ($cursoFilter !== null ? " AND h.cod_horario = " . $cursoFilter : "") . "
                 ORDER BY er.fecha_evaluacion, h.anio DESC, h.mes DESC, p.orden
             ";
             $stmt = $this->dbAdapter->query($sql, Adapter::QUERY_MODE_EXECUTE);

@@ -86,6 +86,11 @@ $preguntas = $preguntas ?? [];
                                                 </label>
                                             <?php endfor; ?>
                                         </div>
+                                        <div class="text-center text-muted" style="margin-top: 5px; font-size: 12px;">
+                                            <span class="text-danger"><strong>1</strong> = Deficiente</span>
+                                            &nbsp;·&nbsp;
+                                            <span class="text-success"><strong>10</strong> = Excelente</span>
+                                        </div>
 
                                     <?php elseif ($pregunta['tipo'] === 'boolean'): ?>
                                         <div>
@@ -143,56 +148,61 @@ $preguntas = $preguntas ?? [];
 </div>
 
 <script>
-document.getElementById('form-evaluacion').addEventListener('submit', function(e) {
-    let todasRespondidas = true;
-    let primerCampoFaltante = null;
+(function() {
+    const form = document.getElementById('form-evaluacion');
+    const btnEnviar = document.getElementById('btn-enviar');
 
-    // Validar todos los inputs radio requeridos (escala10 y boolean)
-    const radioGroups = {};
-    document.querySelectorAll('input[type="radio"][required]').forEach(function(input) {
-        radioGroups[input.name] = radioGroups[input.name] || [];
-        radioGroups[input.name].push(input);
-    });
+    form.addEventListener('submit', function(e) {
+        let todasRespondidas = true;
+        let primerCampoFaltante = null;
 
-    for (let nombre in radioGroups) {
-        if (radioGroups.hasOwnProperty(nombre)) {
-            const grupoRespondido = radioGroups[nombre].some(function(input) {
-                return input.checked;
-            });
-            if (!grupoRespondido) {
-                todasRespondidas = false;
-                if (!primerCampoFaltante) {
-                    primerCampoFaltante = radioGroups[nombre][0];
+        // Validar todos los inputs radio requeridos (escala10 y boolean)
+        const radioGroups = {};
+        document.querySelectorAll('input[type="radio"][required]').forEach(function(input) {
+            radioGroups[input.name] = radioGroups[input.name] || [];
+            radioGroups[input.name].push(input);
+        });
+
+        for (let nombre in radioGroups) {
+            if (radioGroups.hasOwnProperty(nombre)) {
+                const grupoRespondido = radioGroups[nombre].some(function(input) {
+                    return input.checked;
+                });
+                if (!grupoRespondido) {
+                    todasRespondidas = false;
+                    if (!primerCampoFaltante) {
+                        primerCampoFaltante = radioGroups[nombre][0];
+                    }
                 }
             }
         }
-    }
 
-    // Validar textareas requeridos
-    document.querySelectorAll('textarea[required]').forEach(function(textarea) {
-        if (!textarea.value.trim()) {
-            todasRespondidas = false;
-            if (!primerCampoFaltante) {
-                primerCampoFaltante = textarea;
+        // Validar textareas requeridos
+        document.querySelectorAll('textarea[required]').forEach(function(textarea) {
+            if (!textarea.value.trim()) {
+                todasRespondidas = false;
+                if (!primerCampoFaltante) {
+                    primerCampoFaltante = textarea;
+                }
             }
-        }
-    });
+        });
 
-    if (!todasRespondidas) {
+        if (!todasRespondidas) {
+            e.preventDefault();
+            alert('Por favor, responda todas las preguntas obligatorias antes de enviar la evaluación.');
+            if (primerCampoFaltante) {
+                primerCampoFaltante.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                primerCampoFaltante.focus();
+            }
+            return false;
+        }
+
         e.preventDefault();
-        alert('Por favor, responda todas las preguntas obligatorias antes de enviar la evaluación.');
-        if (primerCampoFaltante) {
-            primerCampoFaltante.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            primerCampoFaltante.focus();
-        }
-        return false;
-    }
-
-    e.preventDefault();
-    ConfirmService.confirm('¿Está seguro de enviar esta evaluación?\n\nUna vez enviada, no podrá modificarla.', function() {
-        document.getElementById('btn-enviar').disabled = true;
-        document.getElementById('btn-enviar').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
-        form.submit();
+        ConfirmService.confirm('¿Está seguro de enviar esta evaluación?\n\nUna vez enviada, no podrá modificarla.', function() {
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+            form.submit();
+        });
     });
-});
+})();
 </script>
