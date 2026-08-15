@@ -138,7 +138,7 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- ------------------------------------------------------------
--- 2.2 Evaluación Docente (80–86)
+-- 2.2 Evaluación Docente (80–87)
 -- ------------------------------------------------------------
 INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (80, 'Ver evaluación docente (pendientes)'),
@@ -147,11 +147,12 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (83, 'Ver historial de evaluaciones docentes'),
   (84, 'Ver confirmación de evaluación docente'),
   (85, 'Ver reporte de evaluación docente'),
-  (86, 'Descargar reporte de evaluación docente')
+  (86, 'Descargar reporte de evaluación docente'),
+  (87, 'Ver gráficas de evaluación docente')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- ------------------------------------------------------------
--- 2.3 Módulo de Graduación (100–168)
+-- 2.3 Módulo de Graduación (100–170)
 -- ------------------------------------------------------------
 INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (100, 'Gestión de Exámenes'),
@@ -220,7 +221,8 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (166, 'Ver listado de actas de examen general'),
   (167, 'Generar acta de examen general'),
   (168, 'Generar acta de examen general (POST)'),
-  (169, 'Guardar madrina/padrino')
+  (169, 'Guardar madrina/padrino'),
+  (170, 'Configurar madrina/padrino')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 

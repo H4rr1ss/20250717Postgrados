@@ -99,6 +99,7 @@ class ExamenController extends AbstractActionController {
     {
         $busqueda = $this->params()->fromQuery('busqueda', '') ?: null;
         $instrucciones = $this->autorizacionManager->getInstruccionesAmbas();
+        $this->pg()->log('Se consultó el listado de procesos en fase de Autorización de Impresión.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'procesos'            => $this->autorizacionManager->getProcesosEnFase($busqueda),
             'instruccionesParte1' => $instrucciones['parte1'],
@@ -167,8 +168,10 @@ class ExamenController extends AbstractActionController {
         try {
             $this->autorizacionManager->guardarInstrucciones($instrucciones, $userId, $parte);
             $nombreParte = $parte === 1 ? 'Parte 1 (Autorización de Imprímase)' : 'Parte 2 (Entrega de Proyecto)';
+            $this->pg()->log('Se actualizaron las instrucciones de la ' . $nombreParte . ' de Autorización de Impresión.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel(['status' => 'success', 'message' => "Instrucciones de {$nombreParte} guardadas correctamente"]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al actualizar las instrucciones de la Parte ' . $parte . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -199,8 +202,10 @@ class ExamenController extends AbstractActionController {
                 $cod,
                 $this->getRutaDocumentosSoporte()
             );
+            $this->pg()->log('Se eliminó el documento de soporte código ' . $cod . '.', LM::SUCCESS, LM::DELETE);
             return new JsonModel(['status' => 'success', 'message' => 'Documento eliminado']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al eliminar el documento de soporte código ' . $cod . ': ' . $e->getMessage(), LM::FAILURE, LM::DELETE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -278,12 +283,14 @@ class ExamenController extends AbstractActionController {
         }
         try {
             $id = $this->autorizacionManager->guardarProfesional($data);
+            $this->pg()->log($data['cod_profesional'] ? 'Se actualizó el profesional calificado código ' . $id . '.' : 'Se creó el profesional calificado código ' . $id . '.', LM::SUCCESS, $data['cod_profesional'] ? LM::UPDATE : LM::CREATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => $data['cod_profesional'] ? 'Profesional actualizado' : 'Profesional creado',
                 'id'      => $id,
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al ' . ($data['cod_profesional'] ? 'actualizar' : 'crear') . ' el profesional calificado: ' . $e->getMessage(), LM::FAILURE, $data['cod_profesional'] ? LM::UPDATE : LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -303,8 +310,10 @@ class ExamenController extends AbstractActionController {
         }
         try {
             $this->autorizacionManager->eliminarProfesional($cod);
+            $this->pg()->log('Se desactivó el profesional calificado código ' . $cod . '.', LM::SUCCESS, LM::DELETE);
             return new JsonModel(['status' => 'success', 'message' => 'Profesional desactivado']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al desactivar el profesional calificado código ' . $cod . ': ' . $e->getMessage(), LM::FAILURE, LM::DELETE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -335,8 +344,10 @@ class ExamenController extends AbstractActionController {
                 $cod,
                 $this->getRutaCartasDescarga()
             );
+            $this->pg()->log('Se eliminó la carta genérica de descarga código ' . $cod . '.', LM::SUCCESS, LM::DELETE);
             return new JsonModel(['status' => 'success', 'message' => 'Carta eliminada']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al eliminar la carta genérica de descarga código ' . $cod . ': ' . $e->getMessage(), LM::FAILURE, LM::DELETE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -371,12 +382,14 @@ class ExamenController extends AbstractActionController {
         }
         try {
             $id = $this->autorizacionManager->guardarMiembroJunta($data);
+            $this->pg()->log($data['cod_miembro'] ? 'Se actualizó el miembro de junta directiva código ' . $id . '.' : 'Se creó el miembro de junta directiva código ' . $id . '.', LM::SUCCESS, $data['cod_miembro'] ? LM::UPDATE : LM::CREATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => $data['cod_miembro'] ? 'Miembro actualizado' : 'Miembro creado',
                 'id'      => $id,
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al ' . ($data['cod_miembro'] ? 'actualizar' : 'crear') . ' el miembro de junta directiva: ' . $e->getMessage(), LM::FAILURE, $data['cod_miembro'] ? LM::UPDATE : LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -396,8 +409,10 @@ class ExamenController extends AbstractActionController {
         }
         try {
             $this->autorizacionManager->eliminarMiembroJunta($cod);
+            $this->pg()->log('Se eliminó el miembro de junta directiva código ' . $cod . '.', LM::SUCCESS, LM::DELETE);
             return new JsonModel(['status' => 'success', 'message' => 'Miembro eliminado']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al eliminar el miembro de junta directiva código ' . $cod . ': ' . $e->getMessage(), LM::FAILURE, LM::DELETE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -426,12 +441,15 @@ class ExamenController extends AbstractActionController {
                 $userId,
                 $observaciones
             );
+            $estudianteAut = $this->examenManager->getEstudiantePorProceso($codProceso);
+            $this->pg()->log('Se aprobó la revisión presencial del estudiante ' . $estudianteAut['nombre_completo'] . ' y se avanzó a la fase de Examen General.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Revisión presencial aprobada. El proceso avanzó a la fase de Examen General.',
                 'data'    => $res,
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al aprobar la revisión presencial del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -525,9 +543,11 @@ class ExamenController extends AbstractActionController {
             }
         } catch (\Exception $e) {
             @unlink($rutaDestino);
+            $this->pg()->log('Error al subir el archivo global tipo ' . $tipo . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => 'Error al registrar: ' . $e->getMessage()]);
         }
 
+        $this->pg()->log('Se subió exitosamente el archivo global tipo ' . $tipo . ' con identificador ' . $id . '.', LM::SUCCESS, LM::CREATE);
         return new JsonModel([
             'status'  => 'success',
             'message' => 'Archivo subido correctamente',
@@ -683,12 +703,14 @@ class ExamenController extends AbstractActionController {
                     }
                 }
 
+                $this->pg()->log('Se inició el proceso de graduación para el estudiante ' . $estudiante->getNombreCompleto() . ' con examen ' . $nombreTipoExamenTexto . '.', LM::SUCCESS, LM::CREATE);
                 $this->flashMessenger()->addSuccessMessage('Proceso de graduacion iniciado correctamente.');
                 return $this->redirect()->toRoute('examen', [
                     'action' => 'solicitudes',
                     'id'     => $idProceso
                 ], ['query' => ['paso' => 1]]);
             } catch (\Exception $e) {
+                $this->pg()->log('Error al iniciar el proceso de graduación para el estudiante ' . $codUsuario . ' con examen ' . $nombreTipoExamenTexto . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
                 $this->flashMessenger()->addErrorMessage('Error al iniciar el proceso: ' . $e->getMessage());
                 return $this->redirect()->toRoute('examen', ['action' => 'iniciar-proceso']);
             }
@@ -718,8 +740,10 @@ class ExamenController extends AbstractActionController {
 
         try {
             $estudiantes = $this->examenManager->buscarEstudiantesParaGraduacion($termino);
+            $this->pg()->log('Se realizó una búsqueda de estudiantes con el término "' . $termino . '".', LM::SUCCESS, LM::READ);
             return new JsonModel(['status' => 'success', 'data' => $estudiantes]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al buscar estudiantes con el término "' . $termino . '": ' . $e->getMessage(), LM::FAILURE, LM::READ);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -738,6 +762,8 @@ class ExamenController extends AbstractActionController {
         $requisitos = $this->examenManager->getTodosRequisitos($codTipoExamen);
         $nombreExamen = $this->examenManager->getNombreTipoExamen($codTipoExamen);
         $instrucciones = $this->examenManager->getInstruccionesEntregaFisica($codTipoExamen);
+
+        $this->pg()->log('Se consultó la gestión de requisitos de papelería para el tipo de examen ' . $nombreExamen . '.', LM::SUCCESS, LM::VIEW);
 
         return new ViewModel([
             'requisitos'    => $requisitos,
@@ -817,6 +843,7 @@ class ExamenController extends AbstractActionController {
             }
 
             $id = $this->examenManager->upsertRequisito($data);
+            $this->pg()->log(($data['id'] ? 'Se actualizó' : 'Se creó') . ' el requisito de papelería código ' . $id . ' para el tipo de examen ' . $nombreExamen . '.', LM::SUCCESS, LM::CREATE);
             return new JsonModel([
                 'status' => 'success',
                 'message' => $data['id'] ? 'Requisito actualizado' : 'Requisito creado',
@@ -824,6 +851,7 @@ class ExamenController extends AbstractActionController {
             ]);
         } catch (\Exception $e) {
             error_log('[guardarRequisito] Excepción: ' . $e->getMessage() . ' | Traza: ' . $e->getTraceAsString());
+            $this->pg()->log('Error al guardar el requisito de papelería para el tipo de examen ' . $nombreExamen . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
         }
     }
@@ -840,8 +868,10 @@ class ExamenController extends AbstractActionController {
         $id = (int) $request->getPost('id');
         try {
             $this->examenManager->desactivarRequisito($id);
+            $this->pg()->log('Se eliminó el requisito de papelería código ' . $id . '.', LM::SUCCESS, LM::DELETE);
             return new JsonModel(['status' => 'success', 'message' => 'Requisito eliminado']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al eliminar el requisito de papelería código ' . $id . ': ' . $e->getMessage(), LM::FAILURE, LM::DELETE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -864,8 +894,11 @@ class ExamenController extends AbstractActionController {
 
         try {
             $this->examenManager->guardarInstruccionesEntregaFisica($codTipoExamen, $instrucciones ?: null);
+            $nombreTipoExamenInst = $this->examenManager->getNombreTipoExamen($codTipoExamen);
+            $this->pg()->log('Se actualizaron las instrucciones de entrega física para el tipo de examen ' . $nombreTipoExamenInst . '.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel(['status' => 'success', 'message' => 'Instrucciones guardadas']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al guardar las instrucciones de entrega física para el tipo de examen ' . $codTipoExamen . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -927,6 +960,8 @@ class ExamenController extends AbstractActionController {
                 'subido_por'     => $userId,
             ]);
 
+            $this->pg()->log('Se subió el documento del requisito para revisión de papelería.', LM::SUCCESS, LM::CREATE);
+
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Archivo subido correctamente',
@@ -938,6 +973,7 @@ class ExamenController extends AbstractActionController {
             ]);
 
         } catch (\Exception $e) {
+            $this->pg()->log('Error al subir el documento del requisito ' . $codRequisito . ' del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => 'Error técnico al subir: ' . $e->getMessage()]);
         }
     }
@@ -1072,6 +1108,12 @@ class ExamenController extends AbstractActionController {
             $response['error'] = 'Solicitud sin datos (No POST)';
         }
 
+        $statusLog = !empty($response['status']) ? LM::SUCCESS : LM::FAILURE;
+        $mensajeRevision = !empty($response['avanzado'])
+            ? 'El proceso ' . ($codProceso ?? '??') . ' avanzó al siguiente paso tras aprobar toda la papelería.'
+            : 'Se guardó la revisión de documentos del proceso ' . ($codProceso ?? '??') . '.';
+        $this->pg()->log($mensajeRevision, $statusLog, LM::UPDATE);
+
         $view = new JsonModel($response);
         $view->setTerminal(true);
         return $view;
@@ -1147,6 +1189,7 @@ class ExamenController extends AbstractActionController {
                             );
                         }
 
+                        $this->pg()->log('Se completó la documentación física del estudiante ' . $procesoInfo['nombres'] . ' ' . $procesoInfo['apellidos'] . ' y se avanzó al siguiente paso.', LM::SUCCESS, LM::UPDATE);
                         return new JsonModel([
                             'status' => 'success',
                             'message' => 'Documentación física completada. El proceso ha avanzado al siguiente paso.',
@@ -1154,16 +1197,19 @@ class ExamenController extends AbstractActionController {
                         ]);
                     }
 
+                    $this->pg()->log('Se actualizó la recepción de documentación física del estudiante ' . $procesoInfo['nombres'] . ' ' . $procesoInfo['apellidos'] . '.', LM::SUCCESS, LM::UPDATE);
                     return new JsonModel([
-                        'status' => 'success', 
+                        'status' => 'success',
                         'message' => 'Documentación física actualizada',
                         'avanzado' => false
                     ]);
                 }
-                
+
+                $this->pg()->log('No se pudo guardar la información de documentación física del proceso ' . $codProceso . '.', LM::FAILURE, LM::UPDATE);
                 return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la información']);
 
             } catch (\Exception $e) {
+                $this->pg()->log('Error al registrar la documentación física del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
                 return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
             }
         } else {
@@ -1286,23 +1332,27 @@ class ExamenController extends AbstractActionController {
 
                 if ($ternaCompleta && ($numeroOrdenPasoActual == $pasoUrl)) {
                     $this->examenManager->avanzarPaso($codProceso, $userAdminId);
+                    $this->pg()->log('Se guardó la terna completa y se avanzó al siguiente paso.', LM::SUCCESS, LM::CREATE);
                     return new JsonModel([
-                        'status' => 'success', 
+                        'status' => 'success',
                         'message' => 'Terna completa. El proceso ha avanzado al siguiente paso.',
                         'avanzado' => true
                     ]);
                 }
 
+                $this->pg()->log('Se guardó la terna o programación (aún incompleta).', LM::SUCCESS, LM::CREATE);
                 return new JsonModel([
-                    'status' => 'success', 
+                    'status' => 'success',
                     'message' => 'Terna y programación guardadas correctamente',
                     'avanzado' => false
                 ]);
             }
-            
+
+            $this->pg()->log('No se pudo guardar la terna del proceso ' . $codProceso . '.', LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => 'No se pudo guardar la terna']);
 
         } catch (\Exception $e) {
+            $this->pg()->log('Error al guardar la terna del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
@@ -1437,12 +1487,15 @@ class ExamenController extends AbstractActionController {
                     $cuerpo['correosCc']
                 );
 
+                $this->pg()->log('Se notificó al estudiante ' . $estudiante['nombre_completo'] . ' y se cerró el paso 4.', LM::SUCCESS, LM::CREATE);
                 return new JsonModel(['success' => true, 'message' => 'Estudiante notificado y proceso cerrado correctamente']);
             }
 
+            $this->pg()->log('No se pudo cerrar el paso 4 del proceso ' . $codProceso . ' al intentar notificar al estudiante.', LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'No se pudo cerrar el paso']);
 
         } catch (\Exception $e) {
+            $this->pg()->log('Error al notificar al estudiante del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
@@ -1508,12 +1561,16 @@ class ExamenController extends AbstractActionController {
             $success = $this->examenManager->avanzarPaso($codProceso, $userId);
             
             if ($success) {
+                $estudianteAvance = $this->examenManager->getEstudiantePorProceso($codProceso);
+                $this->pg()->log('Se avanzó el proceso del estudiante ' . $estudianteAvance['nombre_completo'] . ' al siguiente paso.', LM::SUCCESS, LM::UPDATE);
                 return new JsonModel(['status' => 'success', 'message' => 'Proceso avanzado correctamente']);
             }
-            
+
+            $this->pg()->log('El proceso ' . $codProceso . ' no pudo avanzar al siguiente paso.', LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => 'No se pudo avanzar al siguiente paso']);
 
         } catch (\Exception $e) {
+            $this->pg()->log('Error al avanzar el proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
@@ -1556,6 +1613,7 @@ class ExamenController extends AbstractActionController {
             $terna = $this->examenManager->getTerna($idProceso);
         }
 
+        $this->pg()->log('Se consultó la revisión de papelería del estudiante ' . $estudiante['nombre_completo'] . '.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'idProceso'   => $idProceso,
             'pasoActual'  => $pasoActual,
@@ -1565,7 +1623,7 @@ class ExamenController extends AbstractActionController {
             'terna'       => $terna
         ]);
     }
-    
+
     public function solicitudesAction(){
         $idProceso = $this->params()->fromRoute('id', null);
 
@@ -1731,6 +1789,7 @@ class ExamenController extends AbstractActionController {
             'busqueda'        => $busqueda,
         ]);
 
+        $this->pg()->log('Se consultó el listado de procesos en paso 5 (Carta de Examinadores).', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'procesos'   => $resultado['procesos'],
             'paginacion' => [
@@ -1765,6 +1824,7 @@ class ExamenController extends AbstractActionController {
 
         $this->cartaManager->iniciarPasoCarta($idProceso);
 
+        $this->pg()->log('Se consultó el detalle de la Carta de Examinadores del estudiante ' . $proceso['nombres'] . ' ' . $proceso['apellidos'] . '.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'proceso'     => $proceso,
             'cicloActual' => $this->cartaManager->getCicloActual($idProceso),
@@ -2019,6 +2079,7 @@ class ExamenController extends AbstractActionController {
             }
         }
 
+        $this->pg()->log('Se enviaron ' . $enviados . ' notificaciones grupales de acto de graduación.' . ($fallidos > 0 ? ' (' . $fallidos . ' fallidos)' : ''), $fallidos > 0 ? LM::FAILURE : LM::SUCCESS, LM::CREATE);
         return new JsonModel([
             'success'   => true,
             'enviados'  => $enviados,
@@ -2044,6 +2105,7 @@ class ExamenController extends AbstractActionController {
             'limite' => 15,
         ]);
 
+        $this->pg()->log('Se consultó el listado de procesos listos para evaluación de examen privado.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'procesos' => $resultado['procesos'],
             'paginacion' => [
@@ -2077,12 +2139,14 @@ class ExamenController extends AbstractActionController {
                 'cod_proceso' => $codProceso
             ], ['query' => ['cod' => $codigo], 'force_canonical' => true]);
 
+            $this->pg()->log('Se abrió la evaluación del examen privado con código de acceso ' . $codigo . '.', LM::SUCCESS, LM::CREATE);
             return new JsonModel([
                 'status' => 'success',
                 'codigo' => $codigo,
                 'url'    => $url,
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al abrir la evaluación del examen privado del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -2104,17 +2168,16 @@ class ExamenController extends AbstractActionController {
 
         try {
             $this->examenManager->cerrarEvaluacion($codProceso);
+            $this->pg()->log('Se cerró la evaluación del examen privado.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Evaluación cerrada correctamente',
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al cerrar la evaluación del examen privado del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
-
-
-
 
     /**
      * AJAX: reprograma un examen privado cerrado.
@@ -2142,11 +2205,13 @@ class ExamenController extends AbstractActionController {
 
         try {
             $this->examenManager->reprogramarExamenPrivado($codProceso, $nuevaFecha, $nuevaHora, (int) $user->getId());
+            $this->pg()->log('Se reprogramó el examen privado.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Examen reprogramado correctamente. Se ha enviado notificación al estudiante y examinadores.',
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al reprogramar el examen privado del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -2188,6 +2253,7 @@ class ExamenController extends AbstractActionController {
         $isSecretario = $role && $role->isSecretarioExamenPrivado();
         $evaluacionPendiente = !empty($estado) && empty($estado['hora_apertura_evaluacion']);
 
+        $this->pg()->log('Se consultó la matriz de evaluaciones del estudiante ' . $estudiante['nombre_completo'] . '.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'proceso'       => $proceso,
             'estudiante'    => $estudiante,
@@ -2294,6 +2360,7 @@ class ExamenController extends AbstractActionController {
         $resultado = $this->examenManager->sustituirExaminador($codProceso, $posicion, $datos);
 
         if ($resultado['success']) {
+            $this->pg()->log('Se sustituyó el examinador en la posición ' . $posicion . ' de la terna.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'status' => 'success',
                 'message' => $resultado['message'],
@@ -2301,6 +2368,7 @@ class ExamenController extends AbstractActionController {
             ]);
         }
 
+        $this->pg()->log('Error al sustituir el examinador en la posición ' . $posicion . ' del proceso ' . $codProceso . ': ' . $resultado['message'], LM::FAILURE, LM::UPDATE);
         return new JsonModel([
             'status' => 'error',
             'message' => $resultado['message']
@@ -2444,11 +2512,13 @@ class ExamenController extends AbstractActionController {
 
             $this->examenManager->marcarExaminadorCompletado($codProceso, $posExaminador);
 
+            $this->pg()->log('El examinador completó la evaluación (posición ' . $posExaminador . ').', LM::SUCCESS, LM::CREATE);
             return new JsonModel([
                 'status'  => 'success',
                 'message' => 'Evaluación guardada correctamente',
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al guardar la evaluación del examinador del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
@@ -2496,6 +2566,7 @@ class ExamenController extends AbstractActionController {
         // Verificar si ya existe un acta privada generada para este proceso
         $actaPrivado = $this->examenManager->getActaPrivado($idProceso);
 
+        $this->pg()->log('Se consultó el acta de examen privado del estudiante ' . $estudiante['nombre_completo'] . '.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'proceso'    => $proceso,
             'estudiante' => $estudiante,
@@ -2900,10 +2971,12 @@ class ExamenController extends AbstractActionController {
             $headers->addHeaderLine('Pragma', 'public');
             $headers->addHeaderLine('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
             $response->setHeaders($headers);
+            $this->pg()->log('Se generó y descargó el acta de examen privado del estudiante ' . $nombreEstudiante . '.', LM::SUCCESS, LM::CREATE);
             return $response;
         } catch (\Exception $e) {
             $this->flashMessenger()->addErrorMessage('Error al generar el acta: ' . $e->getMessage());
             $_SESSION['acta_examen_privado_form'] = $this->params()->fromPost();
+            $this->pg()->log('Error al generar el acta de examen privado del proceso ' . $idProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-privado', 'id' => $idProceso]);
         }
     }
@@ -3099,6 +3172,7 @@ class ExamenController extends AbstractActionController {
             'estado_acta' => $estadoActa,
         ]);
 
+        $this->pg()->log('Se consultó el listado de actas de examen general pendientes.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'procesos'     => $procesos,
             'busqueda'     => $busqueda,
@@ -3130,6 +3204,7 @@ class ExamenController extends AbstractActionController {
         // Lista de docentes internos para dropdown de examinadores
         $docentes = $this->examenManager->getDocentes();
 
+        $this->pg()->log('Se consultó el formulario de generación de acta general del estudiante ' . $datos['nombre_completo'] . '.', LM::SUCCESS, LM::VIEW);
         return new ViewModel([
             'datos'      => $datos,
             'decano'     => $decano,
@@ -3447,12 +3522,14 @@ class ExamenController extends AbstractActionController {
             $headers->addHeaderLine('Pragma', 'public');
             $headers->addHeaderLine('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
             $response->setHeaders($headers);
+            $this->pg()->log('Se generó y descargó el acta de examen general del estudiante ' . $datos['nombre_completo'] . '.', LM::SUCCESS, LM::CREATE);
             return $response;
         } catch (\Exception $e) {
             $mensajeError = 'Error al generar el acta: ' . $e->getMessage();
             error_log('[ActaGeneral] Proceso ' . $idProceso . ': ' . $mensajeError);
             error_log('[ActaGeneral] Trace: ' . $e->getTraceAsString());
             $this->flashMessenger()->addErrorMessage($mensajeError);
+            $this->pg()->log('Error al generar el acta de examen general del proceso ' . $idProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-general', 'id' => $idProceso]);
         }
     }

@@ -467,6 +467,11 @@ return [
             'view' => View::EXAMEN,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
         ],
+        'solicitudesProcess' => [
+            'code' => 102,
+            'view' => View::EXAMEN,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
         'revisarpapeleria' => [
             'code' => 103,
             'view' => View::EXAMEN,

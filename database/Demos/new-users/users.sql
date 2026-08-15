@@ -158,22 +158,31 @@ VALUES ('018505003119', '20263119', 'Mariana', 'Salazar', '2001-10-30', '5551411
 
 -- NUEVOS USUARIOS DE PRUEBA
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('119616003220', '20263220', 'Fernando', 'Aguilar', '2002-04-14', '55514220', 'fernando.aguilar20@email.com', '$2y$10$1aKpL0mN2vM3xO4pQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWx', 73, 'H', 'Bachiller', CURDATE(), 'Fernando Aguilar');
+VALUES ('119616003220', '20263220', 'Fernando', 'Aguilar', '2002-04-14', '55514220', 'fernando.aguilar20@email.com', '$2y$10$pty6.OFhHQ/vF0jG7NLYJuIMy06uZj6.Ioe2rF1T4901zyvi31zz6', 73, 'H', 'Bachiller', CURDATE(), 'Fernando Aguilar');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('220727003321', '20263321', 'Daniela', 'Espinoza', '2000-09-08', '55514321', 'daniela.espinoza21@email.com', '$2y$10$2bLqM1nO3wP4yQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz', 73, 'M', 'Bachiller', CURDATE(), 'Daniela Espinoza');
+VALUES ('220727003321', '20263321', 'Daniela', 'Espinoza', '2000-09-08', '55514321', 'daniela.espinoza21@email.com', '$2y$10$.B7v.ufQFkyt5qTxkW9bSO5C0gR/hdNvMvHhcUXyfz9H4k3kdWEAW', 73, 'M', 'Bachiller', CURDATE(), 'Daniela Espinoza');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('321838003422', '20263422', 'Hector', 'Velasquez', '2001-12-16', '55514422', 'hector.velasquez22@email.com', '$2y$10$3cMrN2oP4xQ5rS6tUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAb', 73, 'H', 'Bachiller', CURDATE(), 'Hector Velasquez');
+VALUES ('321838003422', '20263422', 'Hector', 'Velasquez', '2001-12-16', '55514422', 'hector.velasquez22@email.com', '$2y$10$E1o6V6S5wTq9HCmIsinzhOAsiFyCvUraqslQl8JLi57/PMzB1iFvO', 73, 'H', 'Bachiller', CURDATE(), 'Hector Velasquez');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('422949003523', '20263523', 'Carolina', 'Miranda', '2002-05-22', '55514523', 'carolina.miranda23@email.com', '$2y$10$4dNsO3pQ5yR6sT7uVwXyZaBcCdEfGhIjKlMnOpQrStUvWxYzAbC', 73, 'M', 'Bachiller', CURDATE(), 'Carolina Miranda');
+VALUES ('422949003523', '20263523', 'Carolina', 'Miranda', '2002-05-22', '55514523', 'carolina.miranda23@email.com', '$2y$10$TnVYXEgRJ4rGparrwfTuA.RemwgObkWjC9nE.HB7tAyBIpQWg5D7e', 73, 'M', 'Bachiller', CURDATE(), 'Carolina Miranda');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('524050003624', '20263624', 'Raul', 'Muniz', '2000-10-11', '55514624', 'raul.muniz24@email.com', '$2y$10$5eOtP4qR6zS7tU8vWxXyZaBcCdEfGhIjKlMnOpQrStUvWxYzAbCd', 73, 'H', 'Bachiller', CURDATE(), 'Raul Muniz');
+VALUES ('524050003624', '20263624', 'Raul', 'Muniz', '2000-10-11', '55514624', 'raul.muniz24@email.com', '$2y$10$zU6lxYs8LmU42fZg07x/.eMX/udE3d2A.xK3IAEl0LXuFrGVfFWjK', 73, 'H', 'Bachiller', CURDATE(), 'Raul Muniz');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
-VALUES ('625161003725', '20263725', 'Patricia', 'Rios', '2001-07-29', '55514725', 'patricia.rios25@email.com', '$2y$10$6fPuQ5rS7aT8uV9wXyYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdE', 73, 'M', 'Bachiller', CURDATE(), 'Patricia Rios');
+VALUES ('625161003725', '20263725', 'Patricia', 'Rios', '2001-07-29', '55514725', 'patricia.rios25@email.com', '$2y$10$X04sv/jAuctVL3yr5Sf/See42WnCeycxgJFglK/1daK6h8KwJaqLy', 73, 'M', 'Bachiller', CURDATE(), 'Patricia Rios');
 
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('726272003826', '20263826', 'Sebastian', 'Vargas', '2002-11-05', '55514826', 'sebastian.vargas26@email.com', '$2y$10$7gQvR6sT8bU9vW0xYzZaBcCdEfGhIjKlMnOpQrStUvWxYzAbCdEf', 73, 'H', 'Bachiller', CURDATE(), 'Sebastian Vargas');
+
+-- ASIGNACION DE ROLES PARA LOS NUEVOS USUARIOS
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (21,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (22,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (23,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (24,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (25,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (26,6,CURDATE());
+INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (27,6,CURDATE());

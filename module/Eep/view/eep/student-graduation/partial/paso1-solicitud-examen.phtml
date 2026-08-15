@@ -136,6 +136,13 @@ if ($esPasoFisico && !empty($requisitosReferencia)) {
         </div>
     </div>
 
+    <!-- Botón regresar -->
+    <div style="margin-bottom: 14px;">
+        <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Regresar al proceso de graduación
+        </a>
+    </div>
+
     <div class="panel panel-blue">
         <div class="panel-heading">Examen <?= $this->escapeHtml($proceso['tipo_examen']) ?></div>
         <div class="panel-body">

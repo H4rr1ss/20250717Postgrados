@@ -107,6 +107,8 @@ class StudentGraduationController extends AbstractActionController {
             }
         }
 
+        $this->pg()->log('El estudiante consultó su panel principal de proceso de graduación.', LM::SUCCESS, LM::VIEW);
+
         return new ViewModel([
             'proceso' => $proceso,
             'terna'   => $terna,
@@ -194,6 +196,8 @@ class StudentGraduationController extends AbstractActionController {
             ],
             'instruccionesEntrega' => $instruccionesEntrega
         ]);
+        $this->pg()->log('El estudiante ingresó a la pantalla del Paso 1 (Solicitud de Examen / Papelería).', LM::SUCCESS, LM::VIEW);
+
         $view->setTemplate('eep/student-graduation/partial/paso1-solicitud-examen');
         return $view;
     }
@@ -226,6 +230,8 @@ class StudentGraduationController extends AbstractActionController {
             'proceso' => $proceso,
             'terna'   => $terna,
         ]);
+        $this->pg()->log('El estudiante consultó la pantalla del Paso 2 (Terna Examinadora).', LM::SUCCESS, LM::VIEW);
+
         $view->setTemplate('eep/student-graduation/partial/paso2-terna');
         return $view;
     }
@@ -331,8 +337,11 @@ class StudentGraduationController extends AbstractActionController {
         } catch (\Exception $e) {
             // Si falla el registro en BD, eliminar el archivo ya guardado
             @unlink($rutaDestino);
+            $this->pg()->log('Error al registrar el documento del requisito ' . $codRequisito . ' en el proceso del estudiante ' . $proceso['nombres'] . ' ' . $proceso['apellidos'] . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'Error al registrar el documento en la base de datos']);
         }
+
+        $this->pg()->log('El estudiante subió el documento del requisito para su proceso de graduación.', LM::SUCCESS, LM::CREATE);
 
         return new JsonModel([
             'success' => true,
@@ -352,6 +361,7 @@ class StudentGraduationController extends AbstractActionController {
         $codUsuario = $this->authService->getIdentity();
         error_log('[verDocumento] codUsuario=' . var_export($codUsuario, true));
         if (!$codUsuario) {
+            $this->pg()->log('Intento de visualizar documento sin autenticación.', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(403);
             return $this->getResponse();
         }
@@ -360,6 +370,7 @@ class StudentGraduationController extends AbstractActionController {
         $hash = $this->params()->fromQuery('h', '');
         error_log('[verDocumento] hash=' . var_export($hash, true));
         if (!preg_match('/^[a-f0-9]{32}$/', $hash)) {
+            $this->pg()->log('Se intentó visualizar un documento con un identificador hash inválido (' . $hash . ').', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(400);
             return $this->getResponse();
         }
@@ -368,6 +379,7 @@ class StudentGraduationController extends AbstractActionController {
         $archivoInfo = $this->processManager->getArchivoByHash($hash);
         error_log('[verDocumento] archivoInfo=' . var_export($archivoInfo, true));
         if (!$archivoInfo) {
+            $this->pg()->log('Se intentó visualizar un documento no encontrado en el sistema (hash ' . $hash . ').', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(403);
             return $this->getResponse();
         }
@@ -380,6 +392,7 @@ class StudentGraduationController extends AbstractActionController {
         error_log('[verDocumento] rutaFisica=' . $rutaFisica . ' exists=' . var_export(is_file($rutaFisica), true));
 
         if (!is_file($rutaFisica)) {
+            $this->pg()->log('El archivo físico del documento no existe en el servidor (hash ' . $hash . ').', LM::ERROR, LM::READ);
             $this->getResponse()->setStatusCode(404);
             return $this->getResponse();
         }
@@ -394,6 +407,8 @@ class StudentGraduationController extends AbstractActionController {
         $contentType = $mimeTypes[$archivoInfo['extension']] ?? 'application/octet-stream';
 
         // 6. Enviar archivo con headers seguros
+        $this->pg()->log('El estudiante visualizó un documento subido.', LM::SUCCESS, LM::READ);
+
         $response = $this->getResponse();
         $response->getHeaders()
             ->addHeaderLine('Content-Type', $contentType)
@@ -450,6 +465,8 @@ class StudentGraduationController extends AbstractActionController {
             'formatosEvidencia' => $this->cartaManager->getFormatosEvidencia(),
             'tamanoMaxMb'       => 5,
         ]);
+        $this->pg()->log('El estudiante consultó la pantalla del Paso 5 (Carta de Examinadores).', LM::SUCCESS, LM::VIEW);
+
         $view->setTemplate('eep/student-graduation/partial/paso5-carta-examinadores');
         return $view;
     }
@@ -531,8 +548,11 @@ class StudentGraduationController extends AbstractActionController {
             ]);
         } catch (\Exception $e) {
             @unlink($rutaDestino);
+            $this->pg()->log('Error al adjuntar evidencia al ciclo de correcciones: ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
+
+        $this->pg()->log('El estudiante adjuntó una nueva evidencia al ciclo de correcciones.', LM::SUCCESS, LM::CREATE);
 
         return new JsonModel([
             'success' => true,
@@ -574,6 +594,9 @@ class StudentGraduationController extends AbstractActionController {
         // NUEVA RUTA: data/graduacion/procesos/{cod_proceso}/
         $rutaBase = dirname($_SERVER['DOCUMENT_ROOT']) . '/data/graduacion/procesos/' . $proceso['cod_proceso'];
         $this->cartaManager->eliminarEvidencia($codEvidencia, rtrim($rutaBase, '/'));
+
+        $this->pg()->log('El estudiante eliminó una evidencia del ciclo de correcciones.', LM::SUCCESS, LM::DELETE);
+
         return new JsonModel(['success' => true, 'message' => 'Evidencia eliminada.']);
     }
 
@@ -598,11 +621,12 @@ class StudentGraduationController extends AbstractActionController {
             return new JsonModel(['success' => false, 'message' => 'Proceso no especificado']);
         }
 
+        $proceso = $this->processManager->getProceso($codProceso);
+
         try {
             $resultado = $this->cartaManager->aprobarTrabajo($codProceso, $codUsuario);
 
             // Notificar al estudiante que su trabajo fue aprobado y se generó la carta
-            $proceso = $this->processManager->getProceso($codProceso);
             if ($proceso && !empty($proceso['correo'])) {
                 $nombreEstudiante = htmlspecialchars(
                     ($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '')
@@ -624,8 +648,11 @@ class StudentGraduationController extends AbstractActionController {
                 );
             }
         } catch (\Exception $e) {
+            $this->pg()->log('Error al aprobar el trabajo de graduación del estudiante ' . ($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '') . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['success' => false, 'message' => $e->getMessage()]);
         }
+
+        $this->pg()->log('Se aprobó el trabajo de graduación del estudiante ' . ($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '') . ' y se generó la carta de examinadores.', LM::SUCCESS, LM::UPDATE);
 
         return new JsonModel([
             'success' => true,
@@ -642,19 +669,24 @@ class StudentGraduationController extends AbstractActionController {
     public function descargarCartaAction()
     {
         $codUsuario = $this->authService->getIdentity();
+        $procesoCarta = null;
         if (!$codUsuario) {
+            $this->pg()->log('Intento de descargar carta de examinadores sin autenticación.', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(403);
             return $this->getResponse();
         }
 
         $codProceso = (int) $this->params()->fromQuery('p', 0);
         if (!$codProceso) {
+            $this->pg()->log('Se intentó descargar carta de examinadores sin especificar el proceso.', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(400);
             return $this->getResponse();
         }
 
         $carta = $this->cartaManager->getCartaPorProceso($codProceso);
+        $procesoCarta = $this->processManager->getProceso($codProceso);
         if (!$carta) {
+            $this->pg()->log('No se encontró carta de examinadores para el estudiante ' . ($procesoCarta['nombres'] ?? '') . ' ' . ($procesoCarta['apellidos'] ?? '') . '.', LM::FAILURE, LM::READ);
             $this->getResponse()->setStatusCode(404);
             return $this->getResponse();
         }
@@ -664,9 +696,12 @@ class StudentGraduationController extends AbstractActionController {
         $rutaProyecto = dirname($_SERVER['DOCUMENT_ROOT']);
         $rutaFisica   = $rutaProyecto . '/' . ltrim($carta['archivo_generado'], '/');
         if (!is_file($rutaFisica)) {
+            $this->pg()->log('El archivo de la carta de examinadores del estudiante ' . ($procesoCarta['nombres'] ?? '') . ' ' . ($procesoCarta['apellidos'] ?? '') . ' no existe en el servidor.', LM::ERROR, LM::READ);
             $this->getResponse()->setStatusCode(404);
             return $this->getResponse();
         }
+
+        $this->pg()->log('Se descargó la carta de examinadores del estudiante ' . ($procesoCarta['nombres'] ?? '') . ' ' . ($procesoCarta['apellidos'] ?? '') . '.', LM::SUCCESS, LM::READ);
 
         $nombreDescarga = 'carta-examinadores-proceso-' . $codProceso . '.docx';
         $response = $this->getResponse();
@@ -722,6 +757,8 @@ class StudentGraduationController extends AbstractActionController {
             'cartas'        => $this->autorizacionManager->getCartasDescarga(true),
             'miembros'      => $this->autorizacionManager->getMiembrosJunta(true),
         ]);
+        $this->pg()->log('El estudiante consultó la pantalla del Paso 6 (Autorización de Impresión).', LM::SUCCESS, LM::VIEW);
+
         $view->setTemplate('eep/student-graduation/partial/paso6-autorizacion-impresion');
         return $view;
     }
@@ -758,8 +795,10 @@ class StudentGraduationController extends AbstractActionController {
                 (int) $proceso['cod_proceso'],
                 $codProfesional
             );
+            $this->pg()->log('El estudiante seleccionó al profesional calificado para la revisión de su proyecto.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel(['success' => true, 'message' => 'Profesional seleccionado correctamente']);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al seleccionar al profesional calificado para el estudiante ' . $proceso['nombres'] . ' ' . $proceso['apellidos'] . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -781,6 +820,7 @@ class StudentGraduationController extends AbstractActionController {
 
         $temaTesis = trim((string) $request->getPost('tema_tesis', ''));
         if (empty($temaTesis)) {
+            $this->pg()->log('El estudiante intentó guardar un tema de tesis vacío.', LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'Debe ingresar el título de su trabajo de graduación.']);
         }
 
@@ -802,8 +842,10 @@ class StudentGraduationController extends AbstractActionController {
                 $codUsuario,
                 $temaTesis
             );
+            $this->pg()->log('El estudiante registró el tema de tesis "' . substr($temaTesis, 0, 50) . '".', $result['success'] ? LM::SUCCESS : LM::FAILURE, LM::CREATE);
             return new JsonModel($result);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al registrar el tema de tesis del estudiante ' . $proceso['nombres'] . ' ' . $proceso['apellidos'] . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return new JsonModel(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
         }
     }
@@ -852,11 +894,13 @@ class StudentGraduationController extends AbstractActionController {
                 $nombre,
                 $titulo !== '' ? $titulo : null
             );
+            $this->pg()->log('El estudiante guardó los datos de su ' . $tipo . ' para el examen general público.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'success' => true,
                 'message' => 'Datos guardados correctamente.',
             ]);
         } catch (\Exception $e) {
+            $this->pg()->log('Error al guardar los datos de ' . $tipo . ' del estudiante ' . $proceso['nombres'] . ' ' . $proceso['apellidos'] . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['success' => false, 'message' => 'Error al guardar: ' . $e->getMessage()]);
         }
     }

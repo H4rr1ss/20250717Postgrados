@@ -5,6 +5,7 @@ namespace Eep\Controller;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Eep\Service\EvaluacionDocenteManager;
+use Eep\Service\LogManager as LM;
 use Eep\Entity\Result as R;
 use Eep\ValueObject\Message;
 
@@ -24,6 +25,8 @@ class EvaluacionDocenteController extends AbstractActionController {
         if (!$result->get()) {
             $msg = new Message('Error', $result);
         }
+
+        $this->pg()->log('El estudiante consultó la lista de cursos pendientes de evaluación docente.', LM::SUCCESS, LM::VIEW);
 
         return new ViewModel([
             'cursosPendientes' => $cursosPendientes,
@@ -64,6 +67,8 @@ class EvaluacionDocenteController extends AbstractActionController {
         $resultPreguntas = $this->evaluacionDocenteManager->getPreguntas();
         $preguntas = ($resultPreguntas->get() && is_array($resultPreguntas->getObj())) ? $resultPreguntas->getObj() : [];
 
+        $this->pg()->log('El estudiante abrió la evaluación docente del curso código ' . $idCursoProgramado . '.', LM::SUCCESS, LM::VIEW);
+
         return new ViewModel([
             'curso' => $cursoEncontrado,
             'preguntas' => $preguntas,
@@ -102,9 +107,11 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         $result = $this->evaluacionDocenteManager->guardarEvaluacion($userCode, $codHorario, $respuestas);
         if ($result->get()) {
+            $this->pg()->log('El estudiante envió la evaluación docente del curso código ' . $codHorario . '.', LM::SUCCESS, LM::CREATE);
             $this->flashMessenger()->addSuccessMessage('Evaluación enviada exitosamente');
             return $this->redirect()->toRoute('assignment', ['action' => 'assignment']);
         } else {
+            $this->pg()->log('Error al enviar la evaluación docente del curso código ' . $codHorario . ': ' . $result->getMsg(), LM::FAILURE, LM::CREATE);
             $this->flashMessenger()->addErrorMessage($result->getMsg());
             return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'evaluar', 'id' => $codHorario]);
         }
@@ -138,6 +145,8 @@ class EvaluacionDocenteController extends AbstractActionController {
         } else {
             $msg = new Message('Error', $reporteResult->getMsg());
         }
+
+        $this->pg()->log('Se consultó el reporte de evaluación docente.', LM::SUCCESS, LM::VIEW);
 
         return new ViewModel([
             'periodos' => $periodos,
@@ -178,6 +187,8 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         $preguntasResult = $this->evaluacionDocenteManager->getPreguntas();
         $preguntas = ($preguntasResult->get() && is_array($preguntasResult->getObj())) ? $preguntasResult->getObj() : [];
+
+        $this->pg()->log('Se consultaron las gráficas de evaluación del curso código ' . $codHorario . '.', LM::SUCCESS, LM::VIEW);
 
         return new ViewModel([
             'curso' => $reporte[0],
@@ -274,6 +285,8 @@ class EvaluacionDocenteController extends AbstractActionController {
         rewind($output);
         $csvContent = stream_get_contents($output);
         fclose($output);
+
+        $this->pg()->log('Se descargó el reporte CSV de evaluación docente.', LM::SUCCESS, LM::READ);
 
         $response = $this->getResponse();
         $response->setContent($csvContent);
