@@ -144,6 +144,26 @@ $examinadores = $this->terna['examinadores'] ?? [];
     </div>
 <?php else: ?>
 
+<?php
+// Detectar si realmente hay evaluaciones registradas (respuestas u observaciones con contenido)
+$hayEvaluaciones = false;
+$hayObservaciones = false;
+for ($i = 1; $i <= 3; $i++) {
+    $eval = $this->evaluaciones[$i] ?? null;
+    if ($eval && !empty($eval['respuestas'])) {
+        foreach ($eval['respuestas'] as $r) {
+            if (($r['punteo'] !== null && $r['punteo'] !== '') || !empty($r['respuesta_texto'])) {
+                $hayEvaluaciones = true;
+                break 2;
+            }
+        }
+    }
+    if ($eval && !empty($eval['observaciones_generales'])) {
+        $hayObservaciones = true;
+    }
+}
+?>
+
 <!-- Resumen comparativo -->
 <div class="row">
     <div class="col-lg-12">
@@ -172,6 +192,16 @@ $examinadores = $this->terna['examinadores'] ?? [];
                 <?php endif; ?>
             </div>
             <div class="panel-body" style="overflow-x: auto;">
+                <?php if (!$hayEvaluaciones): ?>
+                    <div class="alert alert-warning" style="margin: 0;">
+                        <i class="fa fa-info-circle" style="font-size: 20px; margin-right: 10px; vertical-align: middle;"></i>
+                        <strong style="font-size: 15px;">Aún no hay evaluaciones registradas para este proceso.</strong>
+                        <p style="margin: 8px 0 0 30px; font-size: 13px; color: #777;">
+                            Las evaluaciones de los examinadores aparecerán aquí una vez que hayan sido completadas. 
+                            Presione <strong>"Abrir Exámen"</strong> para generar el link de evaluación y compartirlo con los examinadores.
+                        </p>
+                    </div>
+                <?php else: ?>
                 <table class="table table-bordered table-striped" style="min-width: 800px;">
                     <thead>
                         <tr style="background-color: #f5f5f5;">
@@ -239,6 +269,7 @@ $examinadores = $this->terna['examinadores'] ?? [];
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -250,19 +281,31 @@ $examinadores = $this->terna['examinadores'] ?? [];
         <div class="panel panel-default">
             <div class="panel-heading" style="background-color: #f9f9f9;">Observaciones Generales por Examinador</div>
             <div class="panel-body">
+                <?php if (!$hayObservaciones): ?>
+                    <div class="alert alert-warning" style="margin: 0;">
+                        <i class="fa fa-info-circle" style="font-size: 18px; margin-right: 10px; vertical-align: middle;"></i>
+                        <strong>Aún no hay observaciones registradas.</strong>
+                        <p style="margin: 6px 0 0 28px; font-size: 13px; color: #777;">
+                            Las observaciones de los examinadores aparecerán aquí una vez que completen sus evaluaciones.
+                        </p>
+                    </div>
+                <?php else: ?>
                 <div class="row">
                     <?php for ($i = 1; $i <= 3; $i++): ?>
                         <?php $ex = $examinadores[$i - 1] ?? []; $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'Examinador ' . $i); ?>
+                        <?php
+                        $eval = $this->evaluaciones[$i] ?? null;
+                        $obs = ($eval && !empty($eval['observaciones_generales'])) ? $eval['observaciones_generales'] : null;
+                        ?>
+                        <?php if ($obs): ?>
                         <div class="col-md-4">
                             <h5 style="font-weight: 700;"><?= $this->escapeHtml($nombreEx) ?></h5>
-                            <?php
-                            $eval = $this->evaluaciones[$i] ?? null;
-                            $obs = ($eval && !empty($eval['observaciones_generales'])) ? $eval['observaciones_generales'] : 'Sin observaciones.';
-                            ?>
                             <p style="font-size: 13px; color: #555;"><?= nl2br($this->escapeHtml($obs)) ?></p>
                         </div>
+                        <?php endif; ?>
                     <?php endfor; ?>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
