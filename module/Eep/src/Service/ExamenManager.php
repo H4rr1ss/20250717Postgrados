@@ -1120,7 +1120,57 @@ class ExamenManager
         $titulo = $datosNuevoExaminador['titulo'] ?? null;
         $correo = $datosNuevoExaminador['correo'] ?? null;
 
-        // ... (resto del código del método, no se modifica)
+        if (!$codUsuario) {
+            return ['success' => false, 'message' => 'Debe seleccionar un docente interno.', 'cod_examinador' => null];
+        }
+
+        $faltantes = [];
+        if (!$colegiado) $faltantes[] = 'número de colegiado';
+        if (!$titulo) $faltantes[] = 'título profesional';
+        if (!$correo) $faltantes[] = 'correo electrónico';
+
+        if (!empty($faltantes)) {
+            $msg = 'El docente seleccionado no puede ser examinador sustituto porque le falta: ' . implode(', ', $faltantes) . '. Edite el usuario antes de continuar.';
+            return ['success' => false, 'message' => $msg, 'cod_examinador' => null];
+        }
+
+        // Verificar que el usuario tenga nombre completo en la BD
+        $sqlNombre = 'SELECT nombres, apellidos FROM usuario WHERE cod_usuario = :cod_usuario LIMIT 1';
+        $resNombre = $this->execute($sqlNombre, ['cod_usuario' => $codUsuario]);
+        if (empty($resNombre) || (empty($resNombre[0]['nombres']) && empty($resNombre[0]['apellidos']))) {
+            return ['success' => false, 'message' => 'El docente seleccionado no tiene nombre completo registrado. Edite el usuario antes de continuar.', 'cod_examinador' => null];
+        }
+
+        $codNuevoExaminador = $this->buscarOCrearExaminador(
+            $tipo,
+            $codUsuario,
+            null,
+            $colegiado,
+            $titulo,
+            $correo
+        );
+
+        if (!$codNuevoExaminador) {
+            return ['success' => false, 'message' => 'No se pudo crear el examinador.', 'cod_examinador' => null];
+        }
+
+        // Actualizar la terna
+        $sql = "UPDATE examen_terna
+                SET cod_examinador = :nuevo_examinador
+                WHERE cod_proceso = :proceso
+                  AND posicion = :posicion";
+
+        $this->adapter->createStatement($sql, [
+            'nuevo_examinador' => $codNuevoExaminador,
+            'proceso' => $codProceso,
+            'posicion' => $posicion
+        ])->execute();
+
+        return [
+            'success' => true,
+            'message' => 'Examinador sustituido correctamente.',
+            'cod_examinador' => $codNuevoExaminador
+        ];
     }
 
     /**
