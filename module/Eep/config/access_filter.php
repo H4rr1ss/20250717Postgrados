@@ -653,7 +653,7 @@ return [
         ],
         'reprogramarExamenPrivado' => [
             'code' => 160,
-            'roles' => [Role::DIRECTOR]
+            'roles' => [Role::DIRECTOR, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
         'actaExamenPrivado' => [
             'code' => 161,

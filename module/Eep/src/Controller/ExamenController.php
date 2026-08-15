@@ -5,6 +5,7 @@ namespace Eep\Controller;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
+use Zend\Authentication\AuthenticationService;
 // SERVICES
 use Eep\Service\ExamenManager;
 use Eep\Service\CartaExaminadoresManager;
@@ -41,6 +42,11 @@ class ExamenController extends AbstractActionController {
     private $mailManager;
 
     /**
+     * @var AuthenticationService
+     */
+    private $authService;
+
+    /**
      * @var array
      */
     private $config;
@@ -55,6 +61,7 @@ class ExamenController extends AbstractActionController {
         AutorizacionImpresionManager $autorizacionManager,
         UserManager $userManager,
         MailManager $mailManager,
+        AuthenticationService $authService,
         array $config = []
     ) {
         $this->examenManager       = $examenManager;
@@ -62,6 +69,7 @@ class ExamenController extends AbstractActionController {
         $this->autorizacionManager = $autorizacionManager;
         $this->userManager         = $userManager;
         $this->mailManager         = $mailManager;
+        $this->authService         = $authService;
         $this->config              = $config;
     }
 
@@ -2198,13 +2206,13 @@ class ExamenController extends AbstractActionController {
             return new JsonModel(['status' => 'error', 'message' => 'Datos incompletos']);
         }
 
-        $user = $this->currentUser();
-        if (!$user) {
+        $codUsuario = (int) $this->authService->getIdentity();
+        if ($codUsuario <= 0) {
             return new JsonModel(['status' => 'error', 'message' => 'Usuario no autenticado']);
         }
 
         try {
-            $this->examenManager->reprogramarExamenPrivado($codProceso, $nuevaFecha, $nuevaHora, (int) $user->getId());
+            $this->examenManager->reprogramarExamenPrivado($codProceso, $nuevaFecha, $nuevaHora, $codUsuario);
             $this->pg()->log('Se reprogramó el examen privado.', LM::SUCCESS, LM::UPDATE);
             return new JsonModel([
                 'status'  => 'success',

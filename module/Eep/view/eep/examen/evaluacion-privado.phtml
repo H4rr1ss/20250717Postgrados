@@ -52,13 +52,13 @@ $this->headTitle('Evaluación Examen Privado');
 
                 <!-- Filtros de búsqueda -->
                 <div class="row" style="margin-bottom: 15px;">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="input-group">
                             <span class="input-group-addon"><i class="fa fa-search"></i></span>
-                            <input type="text" id="filtroBusqueda" class="form-control" placeholder="Buscar por registro académico o nombre de estudiante...">
+                            <input type="text" id="filtroBusqueda" class="form-control" placeholder="Buscar por registro académico o nombre de estudiante..." onkeydown="if(event.key==='Enter') filtrarTabla();">
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="input-group">
                             <span class="input-group-addon"><i class="fa fa-filter"></i></span>
                             <select id="filtroEstado" class="form-control">
@@ -70,9 +70,18 @@ $this->headTitle('Evaluación Examen Privado');
                             </select>
                         </div>
                     </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                            <input type="date" id="filtroFecha" class="form-control" title="Filtrar por fecha de programación del examen">
+                        </div>
+                    </div>
                     <div class="col-md-3 text-right">
+                        <button type="button" class="btn btn-primary" onclick="filtrarTabla();">
+                            <i class="fa fa-search"></i> Filtrar
+                        </button>
                         <button type="button" class="btn btn-default" onclick="limpiarFiltros();">
-                            <i class="fa fa-eraser"></i> Limpiar filtros
+                            <i class="fa fa-eraser"></i> Limpiar
                         </button>
                     </div>
                 </div>
@@ -121,7 +130,7 @@ $this->headTitle('Evaluación Examen Privado');
                                     $calendarizacion = 'No programado';
                                 }
                                 ?>
-                                <tr>
+                                <tr data-fecha="<?= $this->escapeHtml($fechaExamen ?? '') ?>">
                                     <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
                                     <td>
                                         <?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?>
@@ -198,54 +207,52 @@ $this->headTitle('Evaluación Examen Privado');
 </div>
 
 <script>
-$(document).ready(function() {
-    // Filtro de búsqueda en tiempo real
-    function filtrarTabla() {
-        var textoBusqueda = $('#filtroBusqueda').val().toLowerCase().trim();
-        var valorEstado = $('#filtroEstado').val();
-        var hayFiltro = textoBusqueda !== '' || valorEstado !== '';
-        var filasVisibles = 0;
+function filtrarTabla() {
+    var textoBusqueda = $('#filtroBusqueda').val().toLowerCase().trim();
+    var valorEstado = $('#filtroEstado').val();
+    var valorFecha = $('#filtroFecha').val();
+    var hayFiltro = textoBusqueda !== '' || valorEstado !== '' || valorFecha !== '';
+    var filasVisibles = 0;
 
-        $('#tablaEvaluacion tbody tr').each(function() {
-            // Ignorar la fila de "No hay procesos"
-            if ($(this).find('td').length === 1) return;
+    $('#tablaEvaluacion tbody tr').each(function() {
+        // Ignorar la fila de "No hay procesos"
+        if ($(this).find('td').length === 1) return;
 
-            var registro = $(this).find('td:eq(0)').text().toLowerCase();
-            var nombre = $(this).find('td:eq(1)').text().toLowerCase();
-            var estado = $(this).find('td:eq(4) span.label').text().trim();
+        var registro = $(this).find('td:eq(0)').text().toLowerCase();
+        var nombre = $(this).find('td:eq(1)').text().toLowerCase();
+        var estado = $(this).find('td:eq(4) span.label').text().trim();
+        var fechaFila = $(this).data('fecha');
 
-            var coincideBusqueda = textoBusqueda === '' ||
-                registro.indexOf(textoBusqueda) !== -1 ||
-                nombre.indexOf(textoBusqueda) !== -1;
-            var coincideEstado = valorEstado === '' || estado === valorEstado;
+        var coincideBusqueda = textoBusqueda === '' ||
+            registro.indexOf(textoBusqueda) !== -1 ||
+            nombre.indexOf(textoBusqueda) !== -1;
+        var coincideEstado = valorEstado === '' || estado === valorEstado;
+        var coincideFecha = valorFecha === '' || fechaFila === valorFecha;
 
-            if (coincideBusqueda && coincideEstado) {
-                $(this).show();
-                filasVisibles++;
-            } else {
-                $(this).hide();
-            }
-        });
-
-        // Mostrar/ocultar mensaje de "no hay resultados"
-        var $tbody = $('#tablaEvaluacion tbody');
-        var $noResultados = $tbody.find('.no-resultados-filtro');
-        if (hayFiltro && filasVisibles === 0) {
-            if ($noResultados.length === 0) {
-                $tbody.append('<tr class="no-resultados-filtro"><td colspan="9" class="text-center" style="padding: 20px; color: #999;"><i class="fa fa-search"></i> No se encontraron resultados con los filtros aplicados.</td></tr>');
-            }
+        if (coincideBusqueda && coincideEstado && coincideFecha) {
+            $(this).show();
+            filasVisibles++;
         } else {
-            $noResultados.remove();
+            $(this).hide();
         }
-    }
+    });
 
-    $('#filtroBusqueda').on('input', filtrarTabla);
-    $('#filtroEstado').on('change', filtrarTabla);
-});
+    // Mostrar/ocultar mensaje de "no hay resultados"
+    var $tbody = $('#tablaEvaluacion tbody');
+    var $noResultados = $tbody.find('.no-resultados-filtro');
+    if (hayFiltro && filasVisibles === 0) {
+        if ($noResultados.length === 0) {
+            $tbody.append('<tr class="no-resultados-filtro"><td colspan="9" class="text-center" style="padding: 20px; color: #999;"><i class="fa fa-search"></i> No se encontraron resultados con los filtros aplicados.</td></tr>');
+        }
+    } else {
+        $noResultados.remove();
+    }
+}
 
 function limpiarFiltros() {
     $('#filtroBusqueda').val('');
     $('#filtroEstado').val('');
+    $('#filtroFecha').val('');
     $('#tablaEvaluacion tbody tr').show();
     $('#tablaEvaluacion tbody .no-resultados-filtro').remove();
 }

@@ -10,6 +10,7 @@ use Eep\Service\CartaExaminadoresManager;
 use Eep\Service\AutorizacionImpresionManager;
 use Eep\Service\UserManager;
 use Eep\Service\MailManager;
+use Zend\Authentication\AuthenticationService;
 
 class ExamenControllerFactory implements FactoryInterface
 {
@@ -20,6 +21,7 @@ class ExamenControllerFactory implements FactoryInterface
         $autorizacionManager = $container->get(AutorizacionImpresionManager::class);
         $userManager         = $container->get(UserManager::class);
         $mailManager         = $container->get(MailManager::class);
+        $authService         = $container->get(AuthenticationService::class);
         $config              = $container->get('Config');
 
         return new ExamenController(
@@ -28,6 +30,7 @@ class ExamenControllerFactory implements FactoryInterface
             $autorizacionManager,
             $userManager,
             $mailManager,
+            $authService,
             $config
         );
     }
