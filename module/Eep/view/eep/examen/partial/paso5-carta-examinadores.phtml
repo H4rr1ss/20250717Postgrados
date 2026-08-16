@@ -10,155 +10,236 @@
  */
 
 $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
+$totalEvidencias = count($evidencias ?? []);
 ?>
 
 <!-- Paso 5: Carta de Examinadores (staff) -->
-<div class="row" style="margin-top: 20px;">
+<div class="row" style="margin-top: 10px;">
     <div class="col-lg-12">
-        <div class="panel-revision">
-            <div class="panel-revision-heading">
-                <i class="fa fa-envelope-o"></i>
-                Carta de Examinadores
+
+        <!-- Alerta informativa -->
+        <div class="alert alert-info" style="margin-bottom: 16px;">
+            <i class="fa fa-info-circle" style="margin-right: 8px; font-size: 18px; vertical-align: middle;"></i>
+            El intercambio de correcciones entre el estudiante y el examinador ocurre
+            por <strong>correo electrónico</strong>. A continuación se muestra la
+            bitácora de evidencias que el estudiante ha registrado en la plataforma.
+            Cuando confirmes que el trabajo no tiene más correcciones pendientes,
+            aprueba el proceso para generar la carta de examinadores.
+        </div>
+
+        <!-- Estado / Acción principal -->
+        <?php if ($carta): ?>
+            <!-- APROBADO -->
+            <div class="panel panel-success" style="margin-bottom: 20px;">
+                <div class="panel-heading" style="font-size: 16px;">
+                    <i class="fa fa-check-circle"></i> Trabajo aprobado
+                </div>
+                <div class="panel-body">
+                    <div class="row" style="display: flex; align-items: center;">
+                        <div class="col-sm-8">
+                            <p style="margin: 0;">
+                                El trabajo fue aprobado y la carta de examinadores fue generada correctamente.
+                                El estudiante ya puede ingresar a su cuenta para descargarla.
+                            </p>
+                        </div>
+                        <div class="col-sm-4 text-right">
+                            <span class="label label-success" style="font-size: 13px; padding: 6px 12px;">
+                                <i class="fa fa-file-word-o"></i> Acta <?= $this->escapeHtml($carta['numero_acta'] ?? '—') ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="panel-revision-body" style="padding: 20px;">
-
-                <p style="color: #555; margin-top: 0;">
-                    El intercambio de correcciones entre el estudiante y el examinador ocurre
-                    por <strong>correo electrónico</strong>. A continuación se muestra la
-                    bitácora de evidencias que el estudiante ha registrado en la plataforma.
-                    Cuando confirmes que el trabajo no tiene más correcciones pendientes,
-                    aprueba el proceso para generar la carta de examinadores.
-                </p>
-
-                <?php if ($carta): ?>
-                <!-- ── APROBADO ── -->
-                <div class="note note-success">
-                    <h4 class="box-heading"><i class="fa fa-check-circle"></i> Trabajo aprobado</h4>
-                    <p>
-                        El trabajo fue aprobado y la carta de examinadores fue generada correctamente.
-                        El estudiante ya puede ingresar a su cuenta para descargarla.
-                    </p>
-                </div>
-
-                <?php else: ?>
-                <!-- ── Botón de aprobación ── -->
-                <?php if ($cicloActual): ?>
-                <div class="note note-default" style="margin-bottom: 20px;">
-                    <h4 class="box-heading">Acción requerida</h4>
-                    <p>
-                        Cuando hayas confirmado por correo que el trabajo está listo,
-                        aprueba el proceso aquí para generar la carta de examinadores.
-                    </p>
-                    <form id="form-aprobar-trabajo" method="post"
-                          action="<?= $this->url('student-graduation', ['action' => 'aprobar-trabajo']) ?>">
-                        <input type="hidden" name="cod_proceso" value="<?= $codProceso ?>">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fa fa-check"></i> Aprobar trabajo y generar carta
-                        </button>
-                    </form>
-                </div>
-                <?php endif; ?>
-                <?php endif; ?>
-
-                <!-- ── Bitácora de evidencias (solo lectura) ── -->
-                <div class="panel panel-default" style="margin-top: 10px;">
-                    <div class="panel-heading">
-                        <i class="fa fa-list"></i>
-                        Bitácora del estudiante
-                        <?php if (!empty($evidencias)): ?>
-                            <span class="badge" style="margin-left:6px;"><?= count($evidencias) ?></span>
-                        <?php endif; ?>
+        <?php else: ?>
+            <?php if ($cicloActual): ?>
+                <!-- ACCIÓN REQUERIDA -->
+                <div class="panel panel-warning" style="margin-bottom: 20px;">
+                    <div class="panel-heading" style="font-size: 16px;">
+                        <i class="fa fa-exclamation-circle"></i> Acción requerida
                     </div>
                     <div class="panel-body">
-                        <?php if (empty($evidencias)): ?>
-                            <p class="text-muted" style="text-align:center; padding: 20px 0;">
-                                <i class="fa fa-inbox fa-2x" style="display:block; margin-bottom:8px;"></i>
-                                El estudiante aún no ha registrado evidencias.
-                            </p>
-                        <?php else: ?>
-                        <!-- Línea de tiempo -->
-                        <div style="position:relative; padding-left:36px;">
-                            <!-- línea vertical -->
-                            <div style="position:absolute; left:15px; top:6px; bottom:6px;
-                                        width:2px; background:#dde3ef;"></div>
-
-                            <?php foreach ($evidencias as $i => $ev):
-                                $urlVerDoc   = $this->url('student-graduation', ['action' => 'ver-documento']) . '?h=' . $ev['archivo_md5'];
-                                $esImagen    = in_array(strtolower($ev['extension']), ['jpg', 'jpeg', 'png'], true);
-                                $iconoExt    = $esImagen ? 'fa-file-image-o' : 'fa-file-pdf-o';
-                                $colorExt    = $esImagen ? '#2980b9' : '#c0392b';
-                            ?>
-                            <div style="position:relative; margin-bottom:20px;">
-
-                                <!-- Punto de la línea de tiempo -->
-                                <div style="position:absolute; left:-28px; top:10px;
-                                            width:14px; height:14px; border-radius:50%;
-                                            background:#4a90d9; border:2px solid #fff;
-                                            box-shadow:0 0 0 2px #4a90d9;"></div>
-
-                                <!-- Número de orden -->
-                                <div style="position:absolute; left:-50px; top:4px;
-                                            font-size:15px; color:#4a90d9; font-weight:800;
-                                            text-align:right; width:18px;">
-                                    <?= $i + 1 ?>
-                                </div>
-
-                                <!-- Card -->
-                                <div style="display:flex; align-items:center; gap:16px;
-                                            border:1px solid #e4e8ef; border-radius:8px;
-                                            padding:16px 20px; background:#fff;
-                                            min-height:80px;">
-
-                                    <!-- Ícono de tipo -->
-                                    <div style="flex:0 0 54px; text-align:center;">
-                                        <i class="fa <?= $iconoExt ?>" style="color:<?= $colorExt ?>; font-size:30px;"></i>
-                                    </div>
-
-                                    <!-- Descripción y fecha -->
-                                    <div style="flex:1; min-width:0;">
-                                        <p style="margin:0 0 6px; font-weight:600; font-size:14px;
-                                                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                            <?= $this->escapeHtml($ev['descripcion'] ?? $ev['nombre_original'] ?? '—') ?>
-                                        </p>
-                                        <p style="margin:0; font-size:14px; color:#888;">
-                                            <i class="fa fa-clock-o"></i>
-                                            <?= date('d/m/Y H:i', strtotime($ev['fecha_subida'])) ?>
-                                            &nbsp;·&nbsp;
-                                            <?= strtoupper($this->escapeHtml($ev['extension'])) ?>
-                                        </p>
-                                    </div>
-
-                                    <!-- Miniatura (solo imágenes) -->
-                                    <?php if ($esImagen): ?>
-                                    <div style="flex:0 0 64px;">
-                                        <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" target="_blank">
-                                            <img src="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" alt=""
-                                                 style="width:64px; height:64px; object-fit:cover;
-                                                        border-radius:6px; border:1px solid #dde;">
-                                        </a>
-                                    </div>
-                                    <?php endif; ?>
-
-                                    <!-- Botón Ver -->
-                                    <div style="flex:0 0 auto;">
-                                        <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>"
-                                           target="_blank"
-                                           class="btn btn-sm btn-default"
-                                           title="Ver documento">
-                                            <i class="fa fa-eye"></i> Ver
-                                        </a>
-                                    </div>
-
-                                </div>
+                        <div class="row" style="display: flex; align-items: center;">
+                            <div class="col-sm-8">
+                                <p style="margin: 0;">
+                                    Cuando hayas confirmado por correo que el trabajo está listo,
+                                    aprueba el proceso aquí para generar la carta de examinadores.
+                                </p>
                             </div>
-                            <?php endforeach; ?>
+                            <div class="col-sm-4 text-right">
+                                <form id="form-aprobar-trabajo" method="post"
+                                      action="<?= $this->url('student-graduation', ['action' => 'aprobar-trabajo']) ?>"
+                                      style="margin: 0;">
+                                    <input type="hidden" name="cod_proceso" value="<?= $codProceso ?>">
+                                    <button type="submit" class="btn btn-success" style="font-size: 15px; padding: 10px 20px;">
+                                        <i class="fa fa-check"></i> Aprobar y generar carta
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <?php endif; ?>
                     </div>
                 </div>
+            <?php else: ?>
+                <!-- EN ESPERA -->
+                <div class="panel panel-default" style="margin-bottom: 20px;">
+                    <div class="panel-heading" style="font-size: 16px;">
+                        <i class="fa fa-pause-circle"></i> En espera
+                    </div>
+                    <div class="panel-body">
+                        <p style="margin: 0; color: #666;">
+                            Este proceso aún no ha llegado al paso de revisión de correcciones.
+                            Será habilitado cuando el estudiante avance en el flujo de graduación.
+                        </p>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
 
-            </div><!-- /panel-revision-body -->
-        </div><!-- /panel-revision -->
+        <!-- Bitácora de evidencias -->
+        <div class="panel panel-default">
+            <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>
+                    <i class="fa fa-list"></i> Bitácora del estudiante
+                    <span class="badge" id="badge-total-evidencias"><?= $totalEvidencias ?></span>
+                </span>
+                <?php if ($totalEvidencias > 0): ?>
+                    <small class="text-muted">Presione <strong>Abrir</strong> para ver el documento</small>
+                <?php endif; ?>
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+
+                <?php if (empty($evidencias)): ?>
+                    <!-- Estado vacío mejorado -->
+                    <div style="text-align: center; padding: 40px 0; color: #888;">
+                        <i class="fa fa-inbox fa-3x" style="display: block; margin-bottom: 16px; color: #ccc;"></i>
+                        <p style="font-size: 16px; margin-bottom: 8px;"><strong>Aún no hay evidencias registradas</strong></p>
+                        <p style="max-width: 500px; margin: 0 auto; font-size: 13px;">
+                            El estudiante debe subir aquí capturas o archivos PDF que acrediten
+                            el intercambio de correcciones con el examinador por correo electrónico.
+                            Una vez que registre al menos una evidencia, podrás revisarla en esta lista.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <!-- Filtros -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                        <div style="flex: 1; min-width: 220px;">
+                            <input type="text" id="input-buscar-evidencia"
+                                   class="form-control"
+                                   placeholder="Buscar por descripción o nombre de archivo...">
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-sm btn-primary active" data-filter="all" onclick="filtrarEvidencias('all')">
+                                <i class="fa fa-th"></i> Todas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-default" data-filter="image" onclick="filtrarEvidencias('image')">
+                                <i class="fa fa-file-image-o"></i> Imágenes
+                            </button>
+                            <button type="button" class="btn btn-sm btn-default" data-filter="pdf" onclick="filtrarEvidencias('pdf')">
+                                <i class="fa fa-file-pdf-o"></i> PDFs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Línea de tiempo -->
+                    <div style="position:relative; padding-left: 42px;" id="timeline-evidencias">
+                        <!-- línea vertical -->
+                        <div style="position:absolute; left:18px; top:8px; bottom:8px;
+                                    width:2px; background:linear-gradient(to bottom, #4a90d9, #b0c4de);"></div>
+
+                        <?php foreach ($evidencias as $i => $ev):
+                            $urlVerDoc   = $this->url('student-graduation', ['action' => 'ver-documento']) . '?h=' . $ev['archivo_md5'];
+                            $esImagen    = in_array(strtolower($ev['extension']), ['jpg', 'jpeg', 'png'], true);
+                            $iconoExt    = $esImagen ? 'fa-file-image-o' : 'fa-file-pdf-o';
+                            $colorExt    = $esImagen ? '#2980b9' : '#c0392b';
+                            $tipoFiltro  = $esImagen ? 'image' : 'pdf';
+                        ?>
+                        <div class="item-evidencia"
+                             data-tipo="<?= $tipoFiltro ?>"
+                             data-texto="<?= $this->escapeHtmlAttr(strtolower(($ev['descripcion'] ?? '') . ' ' . ($ev['nombre_original'] ?? ''))) ?>"
+                             style="position:relative; margin-bottom: 18px;">
+
+                            <!-- Punto de la línea de tiempo -->
+                            <div style="position:absolute; left:-30px; top:14px;
+                                        width:16px; height:16px; border-radius:50%;
+                                        background:#fff; border:3px solid #4a90d9;
+                                        box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></div>
+
+                            <!-- Número de orden -->
+                            <div style="position:absolute; left:-54px; top:10px;
+                                        font-size:13px; color:#4a90d9; font-weight:700;
+                                        text-align:right; width:20px;">
+                                <?= $i + 1 ?>
+                            </div>
+
+                            <!-- Card -->
+                            <div style="display:flex; align-items:center; gap:14px;
+                                        border:1px solid #e0e4ea; border-radius:8px;
+                                        padding:14px 18px; background:#fff;
+                                        transition: box-shadow 0.2s;">
+
+                                <!-- Ícono de tipo -->
+                                <div style="flex:0 0 50px; text-align:center;">
+                                    <i class="fa <?= $iconoExt ?>" style="color:<?= $colorExt ?>; font-size:28px;"></i>
+                                </div>
+
+                                <!-- Descripción y fecha -->
+                                <div style="flex:1; min-width:0;">
+                                    <p style="margin:0 0 4px; font-weight:600; font-size:14px;
+                                              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                        <?= $this->escapeHtml($ev['descripcion'] ?? $ev['nombre_original'] ?? '—') ?>
+                                    </p>
+                                    <p style="margin:0; font-size:12px; color:#888;">
+                                        <span class="label label-default" style="font-size: 11px; padding: 2px 6px;">
+                                            <?= strtoupper($this->escapeHtml($ev['extension'])) ?>
+                                        </span>
+                                        &nbsp;·&nbsp;
+                                        <i class="fa fa-clock-o"></i>
+                                        <?= date('d/m/Y H:i', strtotime($ev['fecha_subida'])) ?>
+                                    </p>
+                                </div>
+
+                                <!-- Miniatura (solo imágenes) -->
+                                <?php if ($esImagen): ?>
+                                <div style="flex:0 0 64px;">
+                                    <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" target="_blank">
+                                        <img src="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" alt=""
+                                             style="width:64px; height:64px; object-fit:cover;
+                                                    border-radius:6px; border:1px solid #dde;">
+                                    </a>
+                                </div>
+                                <?php endif; ?>
+
+                                <!-- Botones Ver y Descargar -->
+                                <div style="flex:0 0 auto; display:flex; gap:6px;">
+                                    <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>"
+                                       target="_blank"
+                                       class="btn btn-sm btn-default"
+                                       title="Abrir documento">
+                                        <i class="fa fa-eye"></i> Abrir
+                                    </a>
+                                    <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>"
+                                       download="<?= $this->escapeHtmlAttr($ev['nombre_original'] ?? 'documento') ?>"
+                                       class="btn btn-sm btn-default"
+                                       title="Descargar documento">
+                                        <i class="fa fa-download"></i>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <!-- Resultado de filtros vacío -->
+                    <div id="msg-filtro-vacio" style="display:none; text-align:center; padding: 30px 0; color: #888;">
+                        <i class="fa fa-search fa-2x" style="display:block; margin-bottom: 10px; color: #ccc;"></i>
+                        <p><strong>No se encontraron evidencias</strong></p>
+                        <p style="font-size: 13px;">Prueba con otro término de búsqueda o selecciona otro filtro.</p>
+                    </div>
+                <?php endif; ?>
+
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -166,39 +247,92 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
 <script>
 (function () {
     'use strict';
+
+    /* ---------- Aprobar trabajo ---------- */
     var form = document.getElementById('form-aprobar-trabajo');
-    if (!form) return;
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            ConfirmService.confirm(
+                '¿Confirma que desea aprobar el trabajo? Se generará la carta de examinadores y no podrá deshacer esta acción.',
+                function () {
+                    var btn = form.querySelector('button[type="submit"]');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generando...';
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        ConfirmService.confirm('\u00bfConfirma que desea aprobar el trabajo? Se generar\u00e1 la carta de examinadores y no podr\u00e1 deshacer esta acci\u00f3n.', function() {
-            var btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generando...';
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new FormData(form)
+                    })
+                    .then(function (res) { return res.json(); })
+                    .then(function (json) {
+                        if (json.success) {
+                            ToastService.success(json.message || 'Carta generada correctamente.');
+                            setTimeout(function () { location.reload(); }, 1800);
+                        } else {
+                            ToastService.error(json.message || 'No se pudo aprobar el trabajo.');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fa fa-check"></i> Aprobar y generar carta';
+                        }
+                    })
+                    .catch(function () {
+                        ToastService.error('Error de comunicación. Intenta de nuevo.');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa fa-check"></i> Aprobar y generar carta';
+                    });
+                }
+            );
+        });
+    }
 
-        fetch(form.action, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: new FormData(form)
-        })
-        .then(function (res) { return res.json(); })
-        .then(function (json) {
-            if (json.success) {
-                ToastService.success(json.message || 'Carta generada correctamente.');
-                setTimeout(function () { location.reload(); }, 1800);
+    /* ---------- Filtrar evidencias ---------- */
+    var items = document.querySelectorAll('.item-evidencia');
+    var inputBuscar = document.getElementById('input-buscar-evidencia');
+    var msgVacio = document.getElementById('msg-filtro-vacio');
+    var botonesFiltro = document.querySelectorAll('[data-filter]');
+    var filtroActivo = 'all';
+
+    function aplicarFiltros() {
+        var texto = (inputBuscar ? inputBuscar.value : '').toLowerCase().trim();
+        var visibles = 0;
+
+        items.forEach(function (item) {
+            var tipo = item.getAttribute('data-tipo');
+            var txt  = item.getAttribute('data-texto') || '';
+
+            var coincideTipo = (filtroActivo === 'all') || (tipo === filtroActivo);
+            var coincideTexto = !texto || txt.indexOf(texto) !== -1;
+
+            if (coincideTipo && coincideTexto) {
+                item.style.display = '';
+                visibles++;
             } else {
-                ToastService.error(json.message || 'No se pudo aprobar el trabajo.');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-check"></i> Aprobar trabajo y generar carta';
+                item.style.display = 'none';
             }
-        })
-        .catch(function () {
-            ToastService.error('Error de comunicaci\u00f3n. Intenta de nuevo.');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-check"></i> Aprobar trabajo y generar carta';
         });
+
+        if (msgVacio) {
+            msgVacio.style.display = (visibles === 0 && items.length > 0) ? 'block' : 'none';
+        }
+    }
+
+    window.filtrarEvidencias = function (tipo) {
+        filtroActivo = tipo;
+        botonesFiltro.forEach(function (btn) {
+            if (btn.getAttribute('data-filter') === tipo) {
+                btn.classList.remove('btn-default');
+                btn.classList.add('btn-primary', 'active');
+            } else {
+                btn.classList.remove('btn-primary', 'active');
+                btn.classList.add('btn-default');
+            }
         });
-    });
+        aplicarFiltros();
+    };
+
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', aplicarFiltros);
+    }
 }());
 </script>
-

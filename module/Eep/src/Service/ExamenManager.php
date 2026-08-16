@@ -2404,8 +2404,17 @@ class ExamenManager
      */
     public function guardarActaPrivado(array $datos): int
     {
-        $anio = (int) date('Y');
-        $actaNum = $this->generarNumeroActa($anio);
+        // Usar número de acta proporcionado; solo generar uno nuevo si no viene
+        if (!empty($datos['numero_acta']) && !empty($datos['anio_acta']) && isset($datos['correlativo_acta'])) {
+            $actaNum = [
+                'numero_acta' => $datos['numero_acta'],
+                'anio'        => (int) $datos['anio_acta'],
+                'correlativo' => (int) $datos['correlativo_acta'],
+            ];
+        } else {
+            $anio = (int) date('Y');
+            $actaNum = $this->generarNumeroActa($anio);
+        }
 
         $params = [
             'cod_proceso'           => $datos['cod_proceso'],

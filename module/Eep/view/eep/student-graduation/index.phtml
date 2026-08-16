@@ -401,8 +401,9 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?php if (($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores' && !empty($carta)): ?>
                                         <a href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= (int) $proceso['cod_proceso'] ?>"
-                                           class="btn btn-xs btn-success">
-                                            <i class="fa fa-download"></i> Descargar carta
+                                           class="btn btn-success"
+                                           style="font-weight: bold; font-size: 15px; padding: 8px 14px;">
+                                            <i class="fa fa-download" style="font-size: 16px; margin-right: 5px;"></i> Descargar carta
                                         </a>
                                     <?php else: ?>
                                         &mdash;

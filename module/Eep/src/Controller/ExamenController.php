@@ -147,13 +147,16 @@ class ExamenController extends AbstractActionController {
         if (!empty($estado['cod_profesional'])) {
             $profesional = $this->autorizacionManager->getProfesional((int) $estado['cod_profesional']);
         }
+        $instrucciones = $this->autorizacionManager->getInstruccionesAmbas();
 
         return new ViewModel([
-            'proceso'     => $proceso,
-            'estudiante'  => $estudiante,
-            'estado'      => $estado,
-            'profesional' => $profesional,
-            'enFase'      => $this->autorizacionManager->procesoEstaEnFase($codProceso),
+            'proceso'             => $proceso,
+            'estudiante'          => $estudiante,
+            'estado'              => $estado,
+            'profesional'         => $profesional,
+            'enFase'              => $this->autorizacionManager->procesoEstaEnFase($codProceso),
+            'instruccionesParte1' => $instrucciones['parte1'],
+            'instruccionesParte2' => $instrucciones['parte2'],
         ]);
     }
 

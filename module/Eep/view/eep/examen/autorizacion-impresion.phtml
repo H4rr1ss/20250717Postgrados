@@ -40,6 +40,13 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
         <li class="active">Autorización de Impresión</li>
     </ol>
 
+    <!-- Botón regresar fuera del contenido principal -->
+    <div style="margin-bottom: 14px;">
+        <a href="<?= $this->url('examen') ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Regresar a gestión de exámenes
+        </a>
+    </div>
+
     <div class="panel panel-green">
         <div class="panel-heading">
             <i class="fa fa-print"></i>
@@ -132,9 +139,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                                                     </td>
                                                     <td>
                                                         <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
-                                                            <span class="label label-success">APROBADO</span>
+                                                            <span class="label label-success" style="font-weight: bold; font-size: 13px;">APROBADO</span>
                                                         <?php else: ?>
-                                                            <span class="label label-warning">PENDIENTE</span>
+                                                            <span class="label label-warning" style="font-weight: bold; font-size: 13px;">PENDIENTE</span>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td style="text-align:center;">
@@ -200,9 +207,9 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                                                     </td>
                                                     <td>
                                                         <?php if (($p['estado_autorizacion'] ?? 'pendiente') === 'aprobado'): ?>
-                                                            <span class="label label-success">APROBADO</span>
+                                                            <span class="label label-success" style="font-weight: bold; font-size: 13px;">APROBADO</span>
                                                         <?php else: ?>
-                                                            <span class="label label-warning">PENDIENTE</span>
+                                                            <span class="label label-warning" style="font-weight: bold; font-size: 13px;">PENDIENTE</span>
                                                         <?php endif; ?>
                                                     </td>
                                                     <td style="text-align:center;">
@@ -233,7 +240,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                     <!-- Parte 1: Autorización de Imprímase -->
                     <div class="panel panel-info">
                         <div class="panel-heading">
-                            <i class="fa fa-file-text-o"></i> Parte 1: Autorización de Imprímase
+                            <i class="fa fa-file-text-o"></i> <strong>Parte 1: Autorización de Imprímase</strong>
                         </div>
                         <div class="panel-body">
                             <form id="form-instrucciones-parte1" class="form-instrucciones" data-parte="1">
@@ -252,7 +259,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                     <!-- Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha. -->
                     <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <i class="fa fa-file-text-o"></i> Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha.
+                            <i class="fa fa-file-text-o"></i> <strong>Parte 2: Instructivo para pagos correspondientes a examen público y procedimiento para solicitud de fecha.</strong>
                         </div>
                         <div class="panel-body">
                             <form id="form-instrucciones-parte2" class="form-instrucciones" data-parte="2">
@@ -757,7 +764,10 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
     if (formMiembro) {
         formMiembro.addEventListener('submit', function(e) {
             e.preventDefault();
-            postForm('<?= $urlGuardarMiembro ?>', formMiembro, function() { location.reload(); });
+            postForm('<?= $urlGuardarMiembro ?>', formMiembro, function(resp) {
+                ToastService.success(resp.message || 'Miembro de junta directiva guardado correctamente.');
+                setTimeout(function() { location.reload(); }, 1500);
+            });
         });
     }
     var btnMiembroReset = document.getElementById('btn-miembro-reset');

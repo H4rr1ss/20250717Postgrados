@@ -42,8 +42,9 @@ $codProceso = (int) ($proceso['cod_proceso'] ?? 0);
                 <h4 class="box-heading"><i class="fa fa-check-circle"></i> Trabajo aprobado</h4>
                 <p>Tu trabajo de graduación fue aprobado. Ya puedes descargar la carta de examinadores.</p>
                 <a class="btn btn-success"
-                   href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= $codProceso ?>">
-                    <i class="fa fa-download"></i> Descargar carta de examinadores (.docx)
+                   href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= $codProceso ?>"
+                   style="font-weight: bold; font-size: 16px; padding: 10px 18px;">
+                    <i class="fa fa-download" style="font-size: 18px; margin-right: 6px;"></i> Descargar carta de examinadores (.docx)
                 </a>
             </div>
 

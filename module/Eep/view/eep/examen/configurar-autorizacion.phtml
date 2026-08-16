@@ -118,6 +118,28 @@ if ($subPaso === 1) {
 
             <hr>
 
+            <!-- INSTRUCCIONES ACTUALES QUE VE EL ESTUDIANTE -->
+            <div class="panel panel-info" style="margin-bottom: 20px;">
+                <div class="panel-heading">
+                    <i class="fa fa-file-text-o"></i>
+                    <strong>Instrucciones publicadas para el estudiante (<?= $subPaso === 1 ? 'Parte 1' : 'Parte 2' ?>)</strong>
+                </div>
+                <div class="panel-body">
+                    <?php $instruccionesActuales = $subPaso === 1 ? ($instruccionesParte1 ?? '') : ($instruccionesParte2 ?? ''); ?>
+                    <?php if (!empty($instruccionesActuales)): ?>
+                        <div style="max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; background: #fff; border-radius: 4px;">
+                            <?= $instruccionesActuales ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted">
+                            <i class="fa fa-info-circle"></i>
+                            Aún no hay instrucciones publicadas para esta parte.
+                            Puedes configurarlas en la pestaña <strong>Instrucciones</strong> de la pantalla de Autorización de Impresión.
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- PANEL DE APROBACIÓN -->
             <?php if ($yaAprobado): ?>
                 <div class="alert alert-success">

@@ -6,6 +6,15 @@
 $this->headTitle('Carta de Examinadores — Proceso ' . (int) ($proceso['cod_proceso'] ?? 0));
 
 $nombreEstudiante = trim(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? ''));
+$totalEvidencias  = count($evidencias ?? []);
+$ultimaFecha      = null;
+foreach ($evidencias ?? [] as $ev) {
+    $f = strtotime($ev['fecha_subida'] ?? '');
+    if ($f && (!$ultimaFecha || $f > $ultimaFecha)) {
+        $ultimaFecha = $f;
+    }
+}
+$diasDesdeUltima = $ultimaFecha ? floor((time() - $ultimaFecha) / 86400) : null;
 ?>
 
 <div class="col-lg-12">
@@ -16,31 +25,100 @@ $nombreEstudiante = trim(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellido
         <li class="active"><?= $this->escapeHtml($nombreEstudiante ?: 'Proceso ' . (int) ($proceso['cod_proceso'] ?? 0)) ?></li>
     </ol>
 
-    <!-- Datos del estudiante -->
-    <div class="panel panel-default" style="margin-bottom: 14px;">
-        <div class="panel-body" style="padding: 12px 20px;">
-            <div class="row">
-                <div class="col-sm-6">
-                    <strong><i class="fa fa-user"></i> Estudiante:</strong>
-                    <?= $this->escapeHtml($nombreEstudiante ?: '-') ?>
-                </div>
-                <div class="col-sm-3">
-                    <strong>Carné:</strong>
-                    <?= $this->escapeHtml($proceso['registro_academico'] ?? $proceso['carne'] ?? '-') ?>
-                </div>
-                <div class="col-sm-3">
-                    <strong>Tipo de examen:</strong>
-                    <?= $this->escapeHtml($proceso['tipo_examen'] ?? '-') ?>
+    <!-- Cabecera con datos del estudiante y estado -->
+    <div class="row" style="margin-bottom: 14px;">
+        <div class="col-lg-12">
+            <div class="panel panel-default" style="margin-bottom: 0;">
+                <div class="panel-body" style="padding: 14px 20px;">
+                    <div class="row" style="display: flex; align-items: center;">
+                        <div class="col-sm-5">
+                            <h4 style="margin: 0; font-weight: 600;">
+                                <i class="fa fa-user" style="color: #6B8E23;"></i>
+                                <?= $this->escapeHtml($nombreEstudiante ?: 'Sin nombre') ?>
+                            </h4>
+                            <p style="margin: 4px 0 0; color: #777; font-size: 13px;">
+                                <i class="fa fa-id-card-o"></i> <?= $this->escapeHtml($proceso['registro_academico'] ?? $proceso['carne'] ?? '—') ?>
+                                &nbsp;|&nbsp;
+                                <i class="fa fa-graduation-cap"></i> <?= $this->escapeHtml($proceso['carrera'] ?? $proceso['tipo_examen'] ?? '—') ?>
+                            </p>
+                        </div>
+                        <div class="col-sm-4 text-center">
+                            <?php if ($carta): ?>
+                                <span class="label label-success" style="font-size: 14px; padding: 8px 16px;">
+                                    <i class="fa fa-check-circle"></i> Carta generada
+                                </span>
+                            <?php elseif ($cicloActual): ?>
+                                <span class="label label-warning" style="font-size: 14px; padding: 8px 16px;">
+                                    <i class="fa fa-clock-o"></i> Pendiente de aprobación
+                                </span>
+                            <?php else: ?>
+                                <span class="label label-default" style="font-size: 14px; padding: 8px 16px;">
+                                    <i class="fa fa-pause-circle"></i> En espera
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-sm-3 text-right">
+                            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
+                                <i class="fa fa-arrow-left"></i> Regresar al listado
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Botón regresar -->
-    <div style="margin-bottom: 14px;">
-        <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
-            <i class="fa fa-arrow-left"></i> Regresar al listado
-        </a>
+    <!-- Dashboard resumen -->
+    <div class="row" style="margin-bottom: 14px;">
+        <div class="col-sm-4">
+            <div class="panel panel-default" style="margin-bottom: 0;">
+                <div class="panel-body" style="padding: 14px 18px;">
+                    <div class="row">
+                        <div class="col-xs-3 text-center" style="font-size: 28px; color: #777;">
+                            <i class="fa fa-list-alt"></i>
+                        </div>
+                        <div class="col-xs-9">
+                            <div style="font-size: 22px; font-weight: 700; color: #555;"><?= $totalEvidencias ?></div>
+                            <div style="font-size: 12px; color: #777; text-transform: uppercase;">Evidencias registradas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="panel panel-default" style="margin-bottom: 0;">
+                <div class="panel-body" style="padding: 14px 18px;">
+                    <div class="row">
+                        <div class="col-xs-3 text-center" style="font-size: 28px; color: #777;">
+                            <i class="fa fa-calendar-check-o"></i>
+                        </div>
+                        <div class="col-xs-9">
+                            <div style="font-size: 22px; font-weight: 700; color: #555;">
+                                <?= $ultimaFecha ? date('d/m/Y', $ultimaFecha) : '—' ?>
+                            </div>
+                            <div style="font-size: 12px; color: #777; text-transform: uppercase;">Última evidencia</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="panel panel-default" style="margin-bottom: 0;">
+                <div class="panel-body" style="padding: 14px 18px;">
+                    <div class="row">
+                        <div class="col-xs-3 text-center" style="font-size: 28px; color: #777;">
+                            <i class="fa fa-hourglass-half"></i>
+                        </div>
+                        <div class="col-xs-9">
+                            <div style="font-size: 22px; font-weight: 700; color: #555;">
+                                <?= $diasDesdeUltima !== null ? $diasDesdeUltima . ' día' . ($diasDesdeUltima !== 1 ? 's' : '') : '—' ?>
+                            </div>
+                            <div style="font-size: 12px; color: #777; text-transform: uppercase;">Sin actividad</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Partial reutilizable con la lógica de staff del paso 5 -->
