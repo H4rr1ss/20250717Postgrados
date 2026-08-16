@@ -2052,10 +2052,11 @@ class ExamenController extends AbstractActionController {
         $fechaFormateada = $fechaSel->format('d/m/Y');
         $horaFormateada = date('g:i A', strtotime($hora));
 
-        $enviados = 0;
+        $correosEstudiantes = [];
         $fallidos = 0;
         $errores = [];
 
+        // Recolectar correos y guardar programación por cada proceso
         foreach ($codProcesos as $codProceso) {
             $codProceso = (int) $codProceso;
             if ($codProceso <= 0) continue;
@@ -2073,30 +2074,45 @@ class ExamenController extends AbstractActionController {
                 'hora'  => $hora,
             ], $userId, 'examen_general');
 
-            $html = $this->construirCuerpoNotificacionGrupal($fechaFormateada, $horaFormateada, $lugar, $infoExtra);
-
-            try {
-                $this->mailManager->sendHtmlMessage(
-                    $estudiante['correo'],
-                    'Acto de Graduación - Examen General',
-                    $html,
-                    [],
-                    $correosCc
-                );
-                $enviados++;
-            } catch (\Exception $e) {
-                $fallidos++;
-                $errores[] = 'Proceso ' . $codProceso . ': ' . $e->getMessage();
-            }
+            $correosEstudiantes[] = $estudiante['correo'];
         }
 
-        $this->pg()->log('Se enviaron ' . $enviados . ' notificaciones grupales de acto de graduación.' . ($fallidos > 0 ? ' (' . $fallidos . ' fallidos)' : ''), $fallidos > 0 ? LM::FAILURE : LM::SUCCESS, LM::CREATE);
+        if (empty($correosEstudiantes)) {
+            $this->pg()->log('No se pudo enviar notificación grupal: ningún estudiante tiene correo.', LM::FAILURE, LM::CREATE);
+            return new JsonModel([
+                'success'   => false,
+                'enviados'  => 0,
+                'fallidos'  => $fallidos,
+                'errores'   => $errores,
+                'message'   => 'No se pudo enviar la notificación. Ninguno de los estudiantes seleccionados tiene correo registrado.',
+            ]);
+        }
+
+        // Enviar UN SOLO correo con todos los estudiantes en "Para:"
+        $html = $this->construirCuerpoNotificacionGrupal($fechaFormateada, $horaFormateada, $lugar, $infoExtra);
+
+        try {
+            $this->mailManager->sendHtmlMessage(
+                $correosEstudiantes,
+                'Acto de Graduación - Examen General',
+                $html,
+                [],
+                $correosCc
+            );
+            $enviados = count($correosEstudiantes);
+        } catch (\Exception $e) {
+            $fallidos += count($correosEstudiantes);
+            $errores[] = 'Error al enviar notificación grupal: ' . $e->getMessage();
+            $enviados = 0;
+        }
+
+        $this->pg()->log('Se envió 1 notificación grupal a ' . $enviados . ' estudiante(s) de acto de graduación.' . ($fallidos > 0 ? ' (' . $fallidos . ' fallidos)' : ''), $fallidos > 0 ? LM::FAILURE : LM::SUCCESS, LM::CREATE);
         return new JsonModel([
             'success'   => true,
             'enviados'  => $enviados,
             'fallidos'  => $fallidos,
             'errores'   => $errores,
-            'message'   => "Se notificaron {$enviados} estudiantes correctamente." . ($fallidos > 0 ? " ({$fallidos} fallidos)" : ''),
+            'message'   => "Se notificaron {$enviados} estudiante(s) correctamente en un solo correo." . ($fallidos > 0 ? " ({$fallidos} fallidos)" : ''),
         ]);
     }
 

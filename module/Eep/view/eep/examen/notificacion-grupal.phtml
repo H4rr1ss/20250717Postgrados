@@ -335,9 +335,10 @@ $(document).ready(function() {
         if (!doc.titulo) faltantes.push('título profesional');
 
         var html = '<div style="padding: 10px 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 13px;">';
-        html += '<strong style="font-size: 14px;">' + (doc.titulo ? doc.titulo + ' ' : '') + doc.nombre + '</strong><br>';
-        html += '<span style="color: #666;"><i class="fa fa-envelope-o" style="width: 14px;"></i> ' + (doc.correo || '<em class="text-muted">Sin correo</em>') + '</span><br>';
-        html += '<span style="color: #666;"><i class="fa fa-id-card-o" style="width: 14px;"></i> ' + (doc.colegiado ? 'Colegiado: ' + doc.colegiado : '<em class="text-muted">Sin colegiado</em>') + '</span>';
+        html += '<strong style="font-size: 14px;">' + doc.nombre + '</strong><br>';
+        html += '<span style="color: #666;"><strong>Título prof.:</strong> ' + (doc.titulo || '<em class="text-muted">Sin título profesional</em>') + '</span><br>';
+        html += '<span style="color: #666;"><strong>Correo:</strong> ' + (doc.correo || '<em class="text-muted">Sin correo</em>') + '</span><br>';
+        html += '<span style="color: #666;"><strong>Colegiado:</strong> ' + (doc.colegiado || '<em class="text-muted">Sin colegiado</em>') + '</span>';
 
         if (faltantes.length > 0) {
             html += '<div class="alert alert-warning" style="margin: 8px 0 0; padding: 6px 10px; font-size: 12px;">';
