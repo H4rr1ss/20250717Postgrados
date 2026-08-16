@@ -3445,7 +3445,7 @@ class ExamenController extends AbstractActionController {
             $horaFirma24 = date('H:i', strtotime($horaFirma));
 
             $cuerpoRun->addText(
-                "Luego de la presentación y defensa del proyecto, los miembros del Tribunal Examinador deliberamos sobre la calificación del mismo y considerando que sí llena los requisitos de ley, acordamos {$verboAprobacion} {$articuloEstudiante} estudiante {$apellidosEstudiante}, y conferirle; previo el juramento de ley; el título de " . mb_strtoupper($carrera, 'UTF-8') . ", {$egresadoTexto} de la Escuela de Arquitectura de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala, en fe de lo cual firmamos la presente Acta a las {$horaFirma24} horas, en el mismo lugar y fecha indicados al inicio del acta."
+                "Luego de la presentación y defensa del proyecto, los miembros del Tribunal Examinador deliberamos sobre la calificación del mismo y considerando que sí llena los requisitos de ley, acordamos {$verboAprobacion} {$articuloEstudiante} estudiante {$apellidosEstudiante}, y conferirle; previo el juramento de ley; el título de {$carrera}, {$egresadoTexto} de la Escuela de Arquitectura de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala, en fe de lo cual firmamos la presente Acta a las {$horaFirma24} horas, en el mismo lugar y fecha indicados al inicio del acta."
             );
             $section->addTextBreak(1);
 
