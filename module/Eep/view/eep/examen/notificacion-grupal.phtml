@@ -83,7 +83,7 @@ $estudiantes = $this->estudiantes ?? [];
                                         <span class="text-muted" style="font-size: 12px;">— Pendiente —</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= !empty($est['fecha_completado']) ? date('d/m/Y H:i', strtotime($est['fecha_completado'])) : '-' ?></td>
+                                <td><?= !empty($est['fecha_completado']) ? date('d/m/Y g:i A', strtotime($est['fecha_completado'])) : '-' ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -108,11 +108,30 @@ $estudiantes = $this->estudiantes ?? [];
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Lugar <span style="color:red">*</span></label>
+                                <label>Lugar del acto <span style="color:red">*</span></label>
                                 <input type="text" class="form-control" id="ngLugar" placeholder="Ej: Auditorio Universidad, Ciudad de Guatemala">
+                                <p class="help-block" style="margin-top: 6px; font-size: 12px; color: #31708f;">
+                                    <i class="fa fa-info-circle"></i>
+                                    Este lugar aparecerá en el <strong>acta de examen general</strong> y en la notificación enviada a los estudiantes.
+                                </p>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Datos de docentes para JS -->
+                    <script>
+                        var docentesData = <?= json_encode(array_map(function($d) {
+                            return [
+                                'id' => (int) $d['cod_usuario'],
+                                'userCode' => (int) $d['cod_usuario'],
+                                'nombre' => $d['nombre_completo'] ?? '',
+                                'correo' => $d['correo'] ?? '',
+                                'titulo' => $d['titulo'] ?? '',
+                                'colegiado' => $d['colegiado'] ?? ''
+                            ];
+                        }, $this->docentes ?? [])) ?>;
+                        var urlBaseEditUser = '<?= $this->url('user', ['action' => 'editUser']) ?>';
+                    </script>
 
                     <div class="row">
                         <div class="col-md-4">
@@ -126,6 +145,7 @@ $estudiantes = $this->estudiantes ?? [];
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <div id="info-examinador-1" class="examinador-info" style="margin-top: 8px; display: none;"></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -139,6 +159,7 @@ $estudiantes = $this->estudiantes ?? [];
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <div id="info-examinador-2" class="examinador-info" style="margin-top: 8px; display: none;"></div>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -152,6 +173,7 @@ $estudiantes = $this->estudiantes ?? [];
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <div id="info-examinador-3" class="examinador-info" style="margin-top: 8px; display: none;"></div>
                             </div>
                         </div>
                     </div>
@@ -290,6 +312,54 @@ $(document).ready(function() {
     function obtenerCorreosCc() {
         return correos.join(',');
     }
+
+    // ── Mostrar info del examinador seleccionado ────
+    function mostrarInfoExaminador(selectId, containerId) {
+        var $sel = $('#' + selectId);
+        var $container = $('#' + containerId);
+        var id = parseInt($sel.val(), 10);
+
+        if (!id) {
+            $container.hide();
+            return;
+        }
+
+        var doc = docentesData.find(function(d) { return d.id === id; });
+        if (!doc) {
+            $container.hide();
+            return;
+        }
+
+        var faltantes = [];
+        if (!doc.correo) faltantes.push('correo');
+        if (!doc.titulo) faltantes.push('título profesional');
+
+        var html = '<div style="padding: 10px 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 13px;">';
+        html += '<strong style="font-size: 14px;">' + (doc.titulo ? doc.titulo + ' ' : '') + doc.nombre + '</strong><br>';
+        html += '<span style="color: #666;"><i class="fa fa-envelope-o" style="width: 14px;"></i> ' + (doc.correo || '<em class="text-muted">Sin correo</em>') + '</span><br>';
+        html += '<span style="color: #666;"><i class="fa fa-id-card-o" style="width: 14px;"></i> ' + (doc.colegiado ? 'Colegiado: ' + doc.colegiado : '<em class="text-muted">Sin colegiado</em>') + '</span>';
+
+        if (faltantes.length > 0) {
+            html += '<div class="alert alert-warning" style="margin: 8px 0 0; padding: 6px 10px; font-size: 12px;">';
+            html += '<i class="fa fa-exclamation-triangle"></i> <strong>Falta:</strong> ' + faltantes.join(', ') + '. ';
+            html += '<a href="' + urlBaseEditUser + '/' + doc.userCode + '" target="_blank" style="text-decoration: underline;">Ir a editar usuario <i class="fa fa-external-link" style="font-size: 10px;"></i></a>';
+            html += '</div>';
+        } else {
+            html += '<div class="alert alert-success" style="margin: 8px 0 0; padding: 6px 10px; font-size: 12px;">';
+            html += '<i class="fa fa-check-circle"></i> Información completa';
+            html += '</div>';
+        }
+
+        html += '</div>';
+        $container.html(html).show();
+    }
+
+    ['ngExaminador1', 'ngExaminador2', 'ngExaminador3'].forEach(function(selId, idx) {
+        var containerId = 'info-examinador-' + (idx + 1);
+        $('#' + selId).on('change', function() {
+            mostrarInfoExaminador(selId, containerId);
+        });
+    });
 
     // ── Helpers comunes ─────────────────────────────
     function obtenerDatosFormulario() {
