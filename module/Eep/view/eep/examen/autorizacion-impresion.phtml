@@ -518,8 +518,8 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                                 <input type="text" name="nombre_completo" class="form-control" required>
                             </div>
                             <div class="col-sm-6">
-                                <label>Puesto *</label>
-                                <input type="text" name="puesto" class="form-control" required placeholder="Ej: Presidente">
+                                <label>Rol *</label>
+                                <input type="text" name="rol" class="form-control" required placeholder="Ej: Presidente">
                             </div>
                             <div class="col-sm-2" style="margin-top:25px;">
                                 <button type="submit" class="btn btn-success btn-sm">
@@ -536,7 +536,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                         <thead style="background:#f5f5f5;">
                             <tr>
                                 <th>Nombre completo</th>
-                                <th>Puesto</th>
+                                <th>Rol</th>
                                 <th style="width:18%; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
@@ -544,12 +544,12 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
                             <?php foreach ($miembros as $m): ?>
                             <tr>
                                 <td><?= $this->escapeHtml($m['nombre_completo']) ?></td>
-                                <td><?= $this->escapeHtml($m['puesto']) ?></td>
+                                <td><?= $this->escapeHtml($m['rol']) ?></td>
                                 <td style="text-align:center;">
                                     <button type="button" class="btn btn-xs btn-warning btn-edit-miembro"
                                             data-id="<?= (int) $m['cod_miembro'] ?>"
                                             data-nombre="<?= $this->escapeHtmlAttr($m['nombre_completo']) ?>"
-                                            data-puesto="<?= $this->escapeHtmlAttr($m['puesto']) ?>">
+                                            data-rol="<?= $this->escapeHtmlAttr($m['rol']) ?>">
                                         <i class="fa fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-xs btn-danger btn-del-miembro"
@@ -782,7 +782,7 @@ $urlEliminarMiembro      = $this->url('examen', ['action' => 'eliminarMiembroJun
         btn.addEventListener('click', function() {
             formMiembro.elements['cod_miembro'].value     = btn.dataset.id;
             formMiembro.elements['nombre_completo'].value = btn.dataset.nombre;
-            formMiembro.elements['puesto'].value          = btn.dataset.puesto;
+            formMiembro.elements['rol'].value          = btn.dataset.rol;
             setMiembroEditMode(true);
             formMiembro.scrollIntoView({ behavior: 'smooth' });
         });

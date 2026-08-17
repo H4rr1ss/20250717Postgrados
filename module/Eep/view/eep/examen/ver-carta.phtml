@@ -25,6 +25,15 @@ $diasDesdeUltima = $ultimaFecha ? floor((time() - $ultimaFecha) / 86400) : null;
         <li class="active"><?= $this->escapeHtml($nombreEstudiante ?: 'Proceso ' . (int) ($proceso['cod_proceso'] ?? 0)) ?></li>
     </ol>
 
+    <!-- Botón regresar -->
+    <div class="row" style="margin-bottom: 15px;">
+        <div class="col-lg-12">
+            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar al listado
+            </a>
+        </div>
+    </div>
+
     <!-- Cabecera con datos del estudiante y estado -->
     <div class="row" style="margin-bottom: 14px;">
         <div class="col-lg-12">
@@ -56,11 +65,6 @@ $diasDesdeUltima = $ultimaFecha ? floor((time() - $ultimaFecha) / 86400) : null;
                                     <i class="fa fa-pause-circle"></i> En espera
                                 </span>
                             <?php endif; ?>
-                        </div>
-                        <div class="col-sm-3 text-right">
-                            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
-                                <i class="fa fa-arrow-left"></i> Regresar al listado
-                            </a>
                         </div>
                     </div>
                 </div>

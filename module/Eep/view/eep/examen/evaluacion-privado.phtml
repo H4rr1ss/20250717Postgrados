@@ -28,7 +28,12 @@ $this->headTitle('Evaluación Examen Privado');
 
 <div class="row">
     <div class="col-lg-12">
-        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Evaluación Examen Privado</h3>
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Evaluación Examen Privado</h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
     </div>
 </div>
 
@@ -94,10 +99,10 @@ $this->headTitle('Evaluación Examen Privado');
                             <th>Carrera / Maestría</th>
                             <th style="width: 130px;">Programación</th>
                             <th style="width: 100px;">Estado</th>
-                            <th style="width: 60px;" class="text-center">Ex1</th>
-                            <th style="width: 60px;" class="text-center">Ex2</th>
-                            <th style="width: 60px;" class="text-center">Ex3</th>
-                            <th style="width: 180px;">Acciones</th>
+                            <th style="width: 50px;" class="text-center">Ex1</th>
+                            <th style="width: 50px;" class="text-center">Ex2</th>
+                            <th style="width: 50px;" class="text-center">Ex3</th>
+                            <th style="width: 220px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -174,7 +179,7 @@ $this->headTitle('Evaluación Examen Privado');
                                     <td class="text-center">
                                         <a href="<?= $this->url('examen', ['action' => 'ver-matriz', 'id' => $codProceso]) ?>"
                                            class="btn btn-sm btn-info" title="Ver resumen">
-                                            <i class="fa fa-eye"></i> Ver
+                                            <i class="fa fa-eye"></i> Evaluar
                                         </a>
                                         <?php if (!empty($horaCierre) && ($ex1 + $ex2 + $ex3) >= 2): ?>
                                             <a href="<?= $this->url('examen', ['action' => 'acta-examen-privado', 'id' => $codProceso]) ?>"

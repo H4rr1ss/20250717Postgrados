@@ -24,7 +24,12 @@ $this->headTitle('Gestión de Requisitos de Papelería');
 
 <div class="row">
     <div class="col-lg-12">
-        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Gestión de Papelería para <strong><?= $this->escapeHtml($this->nombreExamen) ?></strong></h3>
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Gestión de Papelería para <strong><?= $this->escapeHtml($this->nombreExamen) ?></strong></h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
         <div style="margin-bottom: 20px;">
             <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;"><strong>Información</strong></p>
             <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
