@@ -4,7 +4,11 @@ namespace Eep\Controller;
 
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
+use Zend\View\Renderer\PhpRenderer;
+use Spipu\Html2Pdf\Html2Pdf;
+use Spipu\Html2Pdf\Exception\Html2PdfException;
 use Eep\Service\EvaluacionDocenteManager;
+use Eep\Service\EvaluacionDocenteGraficaService;
 use Eep\Service\LogManager as LM;
 use Eep\Entity\Result as R;
 use Eep\ValueObject\Message;
@@ -12,9 +16,13 @@ use Eep\ValueObject\Message;
 class EvaluacionDocenteController extends AbstractActionController {
 
     private $evaluacionDocenteManager;
+    private $renderer;
+    private $graficaService;
 
-    public function __construct(EvaluacionDocenteManager $evaluacionDocenteManager) {
+    public function __construct(EvaluacionDocenteManager $evaluacionDocenteManager, PhpRenderer $renderer, EvaluacionDocenteGraficaService $graficaService) {
         $this->evaluacionDocenteManager = $evaluacionDocenteManager;
+        $this->renderer = $renderer;
+        $this->graficaService = $graficaService;
     }
 
     public function indexAction() {
@@ -294,6 +302,107 @@ class EvaluacionDocenteController extends AbstractActionController {
         $responseHeaders->addHeaderLine('Content-Type', 'text/csv; charset=utf-8');
         $responseHeaders->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
         $response->setHeaders($responseHeaders);
+
+        return $response;
+    }
+
+    public function descargarPdfGraficasAction() {
+        $role = $this->layout()->role;
+        if ($role == null || !$role->isDirector()) {
+            return $this->redirect()->toRoute('home');
+        }
+
+        $codHorario = (int) $this->params()->fromRoute('id', 0);
+        if ($codHorario === 0) {
+            $this->flashMessenger()->addErrorMessage('ID de curso inválido');
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
+        }
+
+        $reporteResult = $this->evaluacionDocenteManager->getReportePorDocente(null, null, null, $codHorario);
+        $reporte = [];
+        if ($reporteResult->get() && is_array($reporteResult->getObj())) {
+            $reporte = $reporteResult->getObj();
+        } else {
+            $this->flashMessenger()->addErrorMessage('No se encontraron evaluaciones para el curso seleccionado');
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
+        }
+
+        if (empty($reporte)) {
+            $this->flashMessenger()->addErrorMessage('No se encontraron evaluaciones para el curso seleccionado');
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'reporte-docente']);
+        }
+
+        $curso = $reporte[0];
+        $filename = 'resultados_evaluacion_' . $codHorario . '.pdf';
+
+        $graficasPaths = [];
+
+        if (!empty($curso['preguntas'])) {
+            foreach ($curso['preguntas'] as &$pregunta) {
+                if ($pregunta['tipo'] === 'escala10') {
+                    $path = $this->graficaService->generarGraficaEscala10(
+                        $pregunta['distribucion'] ?? [],
+                        $pregunta['promedio'] ?? 0
+                    );
+                    $pregunta['grafica_path'] = $path;
+                    $graficasPaths[] = $path;
+                } elseif ($pregunta['tipo'] === 'boolean') {
+                    $si = (int) ($pregunta['count_si'] ?? 0);
+                    $total = (int) ($curso['total_evaluaciones'] ?? 0);
+                    $no = $total - $si;
+                    $path = $this->graficaService->generarGraficaBoolean($si, $no, $total);
+                    $pregunta['grafica_path'] = $path;
+                    $graficasPaths[] = $path;
+                }
+            }
+            unset($pregunta);
+        }
+
+        $html = $this->renderer->render('eep/evaluacion-docente/descargar-pdf-graficas', [
+            'curso' => $curso,
+        ]);
+
+        $pdfContent = null;
+        $status = LM::FAILURE;
+
+        set_error_handler(function () {
+            return true;
+        });
+        ob_start();
+
+        try {
+            $pdf = new Html2Pdf('P', 'Letter', 'es', true, 'UTF-8', [15, 15, 15, 15]);
+            $pdf->pdf->SetDisplayMode('fullpage');
+            $pdf->pdf->SetTitle('Resultados de Evaluación Docente');
+            $pdf->WriteHTML($html);
+            $pdfContent = $pdf->output($filename, 'S');
+            $status = LM::SUCCESS;
+        } catch (Html2PdfException $ex) {
+            $this->flashMessenger()->addErrorMessage('No se pudo generar el PDF: ' . $ex->getMessage());
+        } catch (\Exception $ex) {
+            $this->flashMessenger()->addErrorMessage('No se pudo generar el PDF: ' . $ex->getMessage());
+        } finally {
+            if (!empty($graficasPaths)) {
+                $this->graficaService->limpiarGraficas($graficasPaths);
+            }
+        }
+
+        ob_end_clean();
+        restore_error_handler();
+
+        $this->pg()->log('Se descargó el PDF de resultados de evaluación del curso código ' . $codHorario . '.', $status, LM::READ);
+
+        if ($status === LM::FAILURE) {
+            return $this->redirect()->toRoute('evaluacion-docente', ['action' => 'ver-graficas', 'id' => $codHorario]);
+        }
+
+        $response = $this->getResponse();
+        $response->setContent($pdfContent);
+        $headers = $response->getHeaders();
+        $headers->addHeaderLine('Content-Type', 'application/pdf');
+        $headers->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        $headers->addHeaderLine('Content-Length', strlen($pdfContent));
+        $response->setHeaders($headers);
 
         return $response;
     }

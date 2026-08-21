@@ -113,6 +113,46 @@ Si se necesita revertir esta funcionalidad:
 
 ---
 
+## 7. Gráficas PNG en el PDF de resultados (2026-08-20)
+
+Mejora sobre la descarga de PDF de gráficas (`descargar-pdf-graficas`): ahora las gráficas se generan como imágenes PNG nativas con PHP GD en lugar de tablas HTML/CSS que TCPDF renderizaba mal.
+
+### 7.1 Requisitos del servidor
+- PHP GD habilitado con soporte FreeType (`libfreetype6-dev` en Debian/Ubuntu).
+- Fuente `DejaVuSans.ttf` disponible en `/var/www/data/fonts/DejaVuSans.ttf`.
+
+### 7.2 Pasos de despliegue adicionales
+
+1. **Reconstruir contenedor** (si usa Docker):
+   ```bash
+   docker compose up -d --build web
+   ```
+2. **Copiar fuente TTF** (si no está en la imagen base):
+   ```bash
+   mkdir -p /var/www/data/fonts
+   cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf /var/www/data/fonts/
+   chown -R www-data:www-data /var/www/data/fonts
+   ```
+3. **Verificar GD + FreeType**:
+   ```bash
+   php -r "echo extension_loaded('gd') && function_exists('imagettftext') ? 'OK' : 'FALTA FREETYPE';"
+   ```
+
+### 7.3 Archivos adicionales a desplegar
+- `module/Eep/src/Service/EvaluacionDocenteGraficaService.php` (nuevo)
+- `module/Eep/src/Controller/EvaluacionDocenteController.php` (modificado)
+- `module/Eep/src/Controller/Factory/EvaluacionDocenteControllerFactory.php` (modificado)
+- `module/Eep/view/eep/evaluacion-docente/descargar-pdf-graficas.phtml` (modificado)
+- `module/Eep/view/eep/evaluacion-docente/ver-graficas.phtml` (modificado)
+
+### 7.4 Verificación post-instalación
+- Descargar el PDF de resultados desde la vista de gráficas (`/evaluacion-docente/descargar-pdf-graficas/:id`).
+- Verificar que las gráficas de barras (escala 1–10) y de pastel (Sí/No) se vean correctamente.
+- Verificar que los textos de las leyendas no estén cortados ni con caracteres corruptos (tildes y eñes deben verse bien).
+- Verificar que cada título de pregunta y su gráfica aparezcan juntos (no separados por salto de página).
+
+---
+
 **Responsable de despliegue:** ___________________  
 **Fecha de despliegue en producción:** ___________________  
 **Verificado por:** ___________________

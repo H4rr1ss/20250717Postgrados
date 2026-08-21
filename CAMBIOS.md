@@ -675,3 +675,36 @@ ALTER TABLE examen_acta_general ADD COLUMN acuerdo_decanato VARCHAR(255) DEFAULT
 - `module/Eep/src/Service/ExamenManager.php` — `guardarActaGeneral()` ahora inserta `acuerdo_decanato` en `examen_acta_general`.
 - `module/Eep/src/Controller/ExamenController.php` — `generarActaGeneralAction()` recibe `acuerdo_decanato` desde POST y lo incluye en el array de guardado.
 - `module/Eep/view/eep/examen/acta-examen-general.phtml` — Agregado input "Acuerdo de Decanato" en el formulario de generación del acta.
+
+## Gráficas de evaluación docente en PDF — generación nativa con PHP GD (2026-08-20)
+
+Reemplazo de las gráficas HTML/CSS "pixel art" por imágenes PNG generadas dinámicamente con PHP GD. Esto soluciona el problema de TCPDF colapsando celdas de tabla, haciendo que las gráficas de barras (escala 1–10) y pastel (Sí/No) se rendericen correctamente en el PDF descargable por el director.
+
+### Cambios en infraestructura / Docker
+- `docker/Dockerfile` — Se agregó `libfreetype6-dev` y `--with-freetype --with-jpeg` en la configuración de GD para soporte de fuentes TrueType (`imagettftext`).
+- **Rebuild obligatorio:** `docker compose up -d --build web` para compilar GD con FreeType.
+- **Fuente TTF:** Se copió `DejaVuSans.ttf` a `/var/www/data/fonts/DejaVuSans.ttf` dentro del contenedor (requerido para tildes y eñes en las gráficas PNG).
+
+### Archivos nuevos
+- `module/Eep/src/Service/EvaluacionDocenteGraficaService.php`
+  - `generarGraficaEscala10(array $distribucion, $promedio): string` — PNG de barras con ejes etiquetados.
+  - `generarGraficaBoolean(int $si, int $no, int $total): string` — PNG de pastel (pie chart) con leyenda.
+  - `limpiarGraficas(array $paths): void` — borra los PNG temporales tras generar el PDF.
+  - Usa fuente TTF (DejaVuSans) si está disponible; fallback a `imagestring` si no.
+
+### Archivos modificados
+- `module/Eep/src/Controller/Factory/EvaluacionDocenteControllerFactory.php` — Inyecta `EvaluacionDocenteGraficaService` en el constructor del controller.
+- `module/Eep/src/Controller/EvaluacionDocenteController.php`
+  - `descargarPdfGraficasAction()` ahora genera PNGs para cada pregunta de tipo `escala10` y `boolean`, inyecta `$pregunta['grafica_path']`, y limpia los archivos temporales en un bloque `finally`.
+- `module/Eep/view/eep/evaluacion-docente/descargar-pdf-graficas.phtml`
+  - Reemplazadas las tablas HTML/CSS "pixel art" por `<img src="ruta_absoluta_png">`.
+  - Agregada clase `.question-block { page-break-inside: avoid; }` para evitar que el título de la pregunta se separe de su gráfica entre páginas.
+  - Aumentado el espaciado entre gráficas (`h2 { margin-top: 40px; }`, `.question-block { margin-bottom: 30px; }`, `img { margin-bottom: 25px; }`).
+- `module/Eep/view/eep/evaluacion-docente/ver-graficas.phtml`
+  - Badge de conteo de comentarios aumentado a `font-size: 20px !important;` para mejor legibilidad.
+  - Eje Y de Chart.js etiquetado: **"Cantidad de respuestas"**.
+
+### Notas para producción
+- Verificar que `extension=gd` esté habilitada en PHP y compilada con soporte FreeType.
+- Verificar que el archivo `/var/www/data/fonts/DejaVuSans.ttf` exista en producción (copiar manualmente si no se reconstruye la imagen Docker).
+- No se agregaron nuevas acciones ACL ni dependencias de Composer.

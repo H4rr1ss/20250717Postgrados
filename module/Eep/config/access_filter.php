@@ -818,5 +818,10 @@ return [
             'view' => View::EVALUACION_DOCENTE_REPORTE,
             'roles' => [Role::DIRECTOR]
         ],
+        'descargarPdfGraficas' => [
+            'code' => 87,
+            'view' => View::EVALUACION_DOCENTE_REPORTE,
+            'roles' => [Role::DIRECTOR]
+        ],
     ],
 ];

@@ -20,6 +20,9 @@ $cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | 
             </a>
         </div>
         <div class="col-sm-6 text-right">
+            <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-pdf-graficas', 'id' => $curso['cod_horario']]) ?>" class="btn btn-danger btn-md" style="font-weight: bold;">
+                <i class="fa fa-file-pdf-o"></i> Descargar PDF
+            </a>
             <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['curso' => $curso['cod_horario']]]) ?>" class="btn btn-success btn-md" style="font-weight: bold;">
                 <i class="fa fa-download"></i> Descargar CSV
             </a>
@@ -121,7 +124,7 @@ $cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | 
                                             <h5 class="panel-title" style="font-size: 14px; margin: 0; color: #31708f;">
                                                 <i class="fa fa-comments"></i>
                                                 <?= $this->escapeHtml($pregunta['texto']) ?>
-                                                <span class="badge pull-right" style="background-color: #31708f;">
+                                                <span class="badge pull-right" style="background-color: #31708f; font-size: 15px !important;">
                                                     <?= (int) ($pregunta['count_respuestas'] ?? 0) ?> comentarios
                                                 </span>
                                             </h5>
@@ -240,7 +243,11 @@ $cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | 
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'Cantidad de respuestas' }
+                        },
                         x: { title: { display: true, text: 'Calificación (1 = Deficiente, 10 = Excelente)' } }
                     },
                     plugins: {
