@@ -241,16 +241,6 @@ return [
                     ],
                 ],
             ],
-            'recover-password' => [
-                'type' => Segment::class,
-                'options' => [
-                    'route' => '/recover-password',
-                    'defaults' => [
-                        'controller' => UserController::class,
-                        'action' => 'recoverPassword',
-                    ],
-                ],
-            ],
             'user' => [
                 'type' => Segment::class,
                 'options' => [

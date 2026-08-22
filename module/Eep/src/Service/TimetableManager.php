@@ -685,7 +685,7 @@ class TimetableManager extends Manager {
                         $variante = O::VARIANTE_CURSOS_ACTUALIZACION;
                         break;
                     default:
-                        continue 2;
+                        continue;
                 }
                 $courseCode = $timetable['cod_curso'];
                 $careerCode = $timetable['cod_carrera'];

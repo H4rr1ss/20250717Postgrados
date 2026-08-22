@@ -59,30 +59,6 @@ class UserController extends AbstractActionController {
         $this->satuManager = $satuManager;
     }
 
-    public function recoverPasswordAction() {
-        $form = new \Eep\Form\RecoverPasswordForm();
-        $msg = null;
-        $status = LM::FAILURE;
-        if ($this->getRequest()->isPost()) {
-            $data = $this->params()->fromPost();
-            $form->setData($data);
-            if ($form->isValid()) {
-                // Aquí se procesará el envío del correo de recuperación
-                $status = LM::SUCCESS;
-                $msg = new Message('Si el correo está registrado, se enviará un enlace de recuperación.', '', Message::GREEN);
-            } else {
-                $msg = new Message('Correo inválido.', 'Por favor ingrese un correo válido.', Message::YELLOW);
-            }
-            $this->pg()->log($msg ?? null, $status, LM::CREATE);
-        } else {
-            $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
-        }
-        return new ViewModel([
-            'form' => $form,
-            'msg' => $msg
-        ]);
-    }
-
     public function candidatesAction() {
         $params = $this->getCandParams();
         $candidateForm = $params['candidateForm'];

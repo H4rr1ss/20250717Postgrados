@@ -49,8 +49,7 @@ $form->prepare();
                 </div>
                 <?php echo $this->partial('eep/msg', ['msg' => isset($this->message) ? $this->message : null]); ?>
             </div>
-            <div class="form-actions w-100 d-flex justify-content-between align-items-center" style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                <a href="/recover-password" class="btn btn-link">¿Olvidaste tu contraseña?</a>
+            <div class="form-actions text-right pal">
                 <?= $this->formElement($form->get(LoginForm::SIGN_IN)) ?>
             </div>
             <!--            </form>-->
