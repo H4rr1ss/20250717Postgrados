@@ -134,7 +134,8 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (72, 'Eliminar formulario'),
   (73, 'Formulario de admisión público'),
   (74, 'Verificar CUI de aspirante'),
-  (75, 'Descargar respuesta de aspirante')
+  (75, 'Descargar respuesta de aspirante'),
+  (76, 'Registrar aspirante desde formulario de admisión')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- ------------------------------------------------------------
