@@ -76,9 +76,9 @@ Después de desplegar los archivos y aplicar los cambios en la BD, verificar lo 
 - Debe cargar la pantalla con filtros de **Año** y **Mes**.
 - Si ya existen evaluaciones docentes registradas, debe mostrar la tabla con los docentes, cursos, secciones, período y promedio general.
 
-### 4.3 Descarga del CSV
-- Presionar el botón **"Descargar CSV"**.
-- Debe descargarse un archivo `.csv` que se abre correctamente en Excel.
+### 4.3 Descarga del XLS
+- Presionar el botón **"Descargar XLS"**.
+- Debe descargarse un archivo `.xls` que se abre correctamente en Excel.
 - Verificar que los acentos y caracteres especiales se vean bien (el archivo incluye BOM UTF-8).
 
 ### 4.4 Seguridad — acceso denegado a no directores

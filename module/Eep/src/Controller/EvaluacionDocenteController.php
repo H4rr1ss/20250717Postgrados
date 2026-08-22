@@ -251,7 +251,7 @@ class EvaluacionDocenteController extends AbstractActionController {
             9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
         ];
 
-        $filename = 'reporte_evaluacion_docente' . ($anio ? "_$anio" : '') . ($mes ? "_$mes" : '') . '.csv';
+        $filename = 'reporte_evaluacion_docente' . ($anio ? "_$anio" : '') . ($mes ? "_$mes" : '') . '.xls';
 
         $headers = ['Fecha Evaluacion', 'Docente', 'Curso', 'Seccion', 'Periodo'];
         foreach ($columnasPregunta as $col) {
@@ -260,7 +260,7 @@ class EvaluacionDocenteController extends AbstractActionController {
 
         $output = fopen('php://temp', 'r+');
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
-        fputcsv($output, $headers);
+        fputcsv($output, $headers, "\t");
 
         foreach ($evaluaciones as $ev) {
             $row = [
@@ -287,19 +287,19 @@ class EvaluacionDocenteController extends AbstractActionController {
                 }
             }
 
-            fputcsv($output, $row);
+            fputcsv($output, $row, "\t");
         }
 
         rewind($output);
-        $csvContent = stream_get_contents($output);
+        $xlsContent = stream_get_contents($output);
         fclose($output);
 
-        $this->pg()->log('Se descargó el reporte CSV de evaluación docente.', LM::SUCCESS, LM::READ);
+        $this->pg()->log('Se descargó el reporte XLS de evaluación docente.', LM::SUCCESS, LM::READ);
 
         $response = $this->getResponse();
-        $response->setContent($csvContent);
+        $response->setContent($xlsContent);
         $responseHeaders = $response->getHeaders();
-        $responseHeaders->addHeaderLine('Content-Type', 'text/csv; charset=utf-8');
+        $responseHeaders->addHeaderLine('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
         $responseHeaders->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
         $response->setHeaders($responseHeaders);
 

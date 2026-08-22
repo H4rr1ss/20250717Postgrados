@@ -24,7 +24,7 @@ $cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | 
                 <i class="fa fa-file-pdf-o"></i> Descargar PDF
             </a>
             <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['curso' => $curso['cod_horario']]]) ?>" class="btn btn-success btn-md" style="font-weight: bold;">
-                <i class="fa fa-download"></i> Descargar CSV
+                <i class="fa fa-download"></i> Descargar excel
             </a>
         </div>
     </div>

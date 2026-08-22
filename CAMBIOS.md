@@ -228,7 +228,7 @@ Archivo afectado: `module/Eep/src/Service/EvaluacionDocenteManager.php`.
 
 ## Reporte de Evaluación Docente para Director (2026-05-27)
 
-Nueva funcionalidad para que el director descargue un reporte CSV con los
+Nueva funcionalidad para que el director descargue un reporte XLS con los
 resultados agregados de la evaluación docente. El reporte se organiza por
 docente y curso (horario), mostrando promedios de escalas, porcentajes de
 respuestas Sí/No y comentarios textuales (anónimos).
@@ -239,7 +239,7 @@ Archivos nuevos/modificados:
   - `getReportePorDocente($anio, $mes)`: genera el reporte agrupado.
 - `module/Eep/src/Controller/EvaluacionDocenteController.php`
   - `reporteDocenteAction()`: vista con filtros de período y tabla resumen.
-  - `descargarReporteDocenteAction()`: genera y descarga CSV con BOM UTF-8.
+  - `descargarReporteDocenteAction()`: genera y descarga XLS con BOM UTF-8 (formato TSV/tab-separated).
 - `module/Eep/view/eep/evaluacion-docente/reporte-docente.phtml` (nueva)
 - `module/Eep/config/access_filter.php`
   - Acciones 145 y 146 agregadas (rol DIRECTOR).
