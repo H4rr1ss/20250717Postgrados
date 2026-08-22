@@ -6,21 +6,21 @@
 
 ---
 
-## 🚀 INICIO RÁPIDO (Método Automático)
+## 🚀 INICIO RÁPIDO — Creación automática de carpetas únicamente
 
-### Opción A: Automático con Scripts
+> **El script `inicializar-modulo-graduacion.sh` SOLO crea la estructura de carpetas y permisos.**  
+> Toda la instalación de base de datos, dependencias, SMTP y verificación se realiza **manualmente** siguiendo el checklist de abajo. Esto evita que un fallo en un script automatizado deje el módulo en estado inconsistente.
+
+### Opción A: Crear carpetas y permisos (automático)
 
 ```bash
-# 1. Ejecutar script de inicialización (crea carpetas, instala BD, etc.)
+# 1. Ejecutar script de inicialización (SOLO carpetas + permisos + README)
 ./inicializar-modulo-graduacion.sh
-
-# 2. IMPORTANTE: Copiar la plantilla de carta (MANUAL)
-# Coloca el archivo general.docx en:
-# data/graduacion/plantillas/carta-examinadores/general.docx
-
-# 3. Verificar la instalación
-./verificar-modulo-graduacion.sh
 ```
+
+### Opción B: Todo manual (recomendado para producción)
+
+Saltar directamente al **Checklist Manual** de abajo y ejecutar cada fase paso a paso.
 
 ---
 
@@ -101,7 +101,7 @@ chmod -R 755 /var/www/data/graduacion
 
 □ Ejecutar matriz de evaluación (4 tablas + seeds):
   docker-compose exec -T db mysql -u user -ppassword db_postgrados < \
-    "database/matriz_evaluacion_completo.sql"
+    "database/modulo graduacion/matriz_evaluacion_completo.sql"
 
 □ Ejecutar datos semilla (roles, usuarios, tipos, pasos):
   docker-compose exec -T db mysql -u user -ppassword db_postgrados < \
@@ -117,6 +117,12 @@ chmod -R 755 /var/www/data/graduacion
   
 □ Debe mostrar al menos 23 tablas empezando con 'examen_'
 
+□ Verificar tablas de matriz:
+  docker-compose exec db mysql -u user -ppassword db_postgrados \
+    -e "SHOW TABLES LIKE 'examen_matriz_%';"
+  
+□ Debe mostrar 4 tablas (examen_matriz_tipo, examen_matriz_pregunta, examen_matriz_evaluacion, examen_matriz_respuesta)
+
 □ Verificar pasos:
   docker-compose exec db mysql -u user -ppassword db_postgrados \
     -e "SELECT numero_orden, fase, nombre FROM examen_paso_catalogo ORDER BY cod_paso;"
@@ -131,9 +137,15 @@ chmod -R 755 /var/www/data/graduacion
 
 □ Verificar usuario:
   docker-compose exec db mysql -u user -ppassword db_postgrados \
-    -e "SELECT cod_usuario, correo, nombre, apellido FROM usuario WHERE cod_rol = 11;"
+    -e "SELECT cod_usuario, correo, nombres, apellidos FROM usuario WHERE cod_usuario = 3568;"
   
 □ Debe mostrar usuario con correo: secretario.examen@farusac.edu.gt
+
+□ Verificar acciones ACL del módulo:
+  docker-compose exec db mysql -u user -ppassword db_postgrados \
+    -e "SELECT cod_accion, nombre FROM accion WHERE cod_accion BETWEEN 100 AND 170 ORDER BY cod_accion;"
+  
+□ Debe mostrar acciones 100–170 (aprox. 40+ registros de graduación)
 ```
 
 ---
@@ -149,7 +161,18 @@ chmod -R 755 /var/www/data/graduacion
 □ Salir: exit
 ```
 
-#### 5.2 ✅ Configuración SMTP (Opcional pero Recomendado)
+#### 5.2 ✅ Fuente TTF para Gráficas PDF (Opcional, compartido con Evaluación Docente)
+
+```bash
+□ Verificar que existe: /var/www/data/fonts/DejaVuSans.ttf
+□ Si no existe y se usarán gráficas PDF:
+  docker-compose exec web mkdir -p /var/www/data/fonts
+  docker-compose exec web bash -c "apt-get update && apt-get install -y fonts-dejavu-core || true"
+  docker-compose exec web cp /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf /var/www/data/fonts/
+  docker-compose exec web chown www-data:www-data /var/www/data/fonts/DejaVuSans.ttf
+```
+
+#### 5.3 ✅ Configuración SMTP (Opcional pero Recomendado)
 
 ```bash
 □ Editar archivo: config/autoload/local.php
@@ -238,6 +261,76 @@ return [
 
 ---
 
+## 🔙 ROLLBACK (En caso de emergencia)
+
+> **Advertencia:** El rollback elimina tablas y datos del módulo de graduación. Realizar solo si es estrictamente necesario y con backup previo.
+
+### Pasos de desinstalación
+
+```bash
+□ 1. Detener contenedores (opcional, para evitar writes durante rollback):
+  docker-compose stop web
+
+□ 2. Eliminar tablas del módulo (en orden inverso de dependencias):
+  docker-compose exec -T db mysql -u user -ppassword db_postgrados -e "
+    DROP TABLE IF EXISTS examen_matriz_respuesta;
+    DROP TABLE IF EXISTS examen_matriz_evaluacion;
+    DROP TABLE IF EXISTS examen_matriz_pregunta;
+    DROP TABLE IF EXISTS examen_matriz_tipo;
+    DROP TABLE IF EXISTS examen_acta_general;
+    DROP TABLE IF EXISTS examen_acta_privado;
+    DROP TABLE IF EXISTS examen_acta_correlativo;
+    DROP TABLE IF EXISTS examen_autorizacion_proceso;
+    DROP TABLE IF EXISTS examen_junta_directiva;
+    DROP TABLE IF EXISTS examen_carta_descarga;
+    DROP TABLE IF EXISTS examen_profesional_calificado;
+    DROP TABLE IF EXISTS examen_autorizacion_documento_soporte;
+    DROP TABLE IF EXISTS examen_autorizacion_config;
+    DROP TABLE IF EXISTS examen_correccion_evidencia;
+    DROP TABLE IF EXISTS examen_correccion_ciclo;
+    DROP TABLE IF EXISTS examen_terna;
+    DROP TABLE IF EXISTS examen_examinador;
+    DROP TABLE IF EXISTS examen_documento_fisico;
+    DROP TABLE IF EXISTS examen_revision_documento;
+    DROP TABLE IF EXISTS archivo_local;
+    DROP TABLE IF EXISTS examen_documento;
+    DROP TABLE IF EXISTS examen_proceso_paso;
+    DROP TABLE IF EXISTS examen_proceso;
+    DROP TABLE IF EXISTS examen_requisito_documento;
+    DROP TABLE IF EXISTS examen_paso_catalogo;
+    DROP TABLE IF EXISTS examen_tipo;
+  "
+
+□ 3. Eliminar rol y usuario de prueba (opcional):
+  docker-compose exec -T db mysql -u user -ppassword db_postgrados -e "
+    DELETE FROM usuario_rol WHERE cod_rol = 11;
+    DELETE FROM usuario WHERE cod_rol = 11;
+    DELETE FROM rol WHERE cod_rol = 11;
+  "
+
+□ 4. Eliminar acciones ACL del módulo:
+  docker-compose exec -T db mysql -u user -ppassword db_postgrados -e "
+    DELETE FROM accion WHERE cod_accion BETWEEN 100 AND 170;
+  "
+
+□ 5. Limpiar carpeta de archivos:
+  docker-compose exec web rm -rf /var/www/data/graduacion
+
+□ 6. Limpiar caché de sesiones:
+  docker-compose exec web rm -rf /var/www/data/cache/*
+
+□ 7. Restaurar archivos de configuración modificados desde backup:
+  - module/Eep/config/module.config.php
+  - module/Eep/config/access_filter.php
+  - module/Eep/config/menus.php
+  - module/Eep/src/ValueObject/View.php
+
+□ 8. Reiniciar servicios:
+  docker-compose restart web
+```
+
+---
+
 ## 🔧 RESOLUCIÓN DE PROBLEMAS COMUNES
 
 ### ❌ Error: "Plantilla general.docx no encontrada"
@@ -303,9 +396,9 @@ Al finalizar, debes tener:
 Para información detallada, consultar:
 
 1. **MODULO_GRADUACION_REQUISITOS_INICIALES.md** — Documentación exhaustiva
-2. **ESTRUCTURA_ARCHIVOS_GRADUACION.md** — Estructura de carpetas explicada
-3. **database/modulo graduacion/GUIA_INSTALACION.md** — Guía oficial de instalación
-4. **EXPLICACION_RUTAS_ZF3.md** — Convenciones de desarrollo
+2. **../ESTRUCTURA_ARCHIVOS_GRADUACION.md** — Estructura de carpetas explicada
+3. **../EXPLICACION_RUTAS_ZF3.md** — Convenciones de desarrollo
+4. **../INSTALACION_PRODUCCION_GENERAL.md** — Plan maestro de instalación de todos los módulos
 
 ---
 

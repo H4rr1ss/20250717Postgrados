@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Zend Framework 3 MVC app (PHP 7.4) for university postgraduate management. Runs on Apache via Docker. README is the upstream ZF skeleton README — most of it does not reflect this project. Trust this file plus `DOCUMENTACION_PROYECTO.md` and `EXPLICACION_RUTAS_ZF3.md`.
+Zend Framework 3 MVC app (PHP 7.4) for university postgraduate management. Runs on Apache via Docker. README is the upstream ZF skeleton README — most of it does not reflect this project. Trust this file plus `documentacion/DOCUMENTACION_PROYECTO.md` and `documentacion/EXPLICACION_RUTAS_ZF3.md`.
 
 ## Modules
 
@@ -42,7 +42,7 @@ There is no lint/typecheck pipeline beyond `phpcs`. No CI workflows. The `Eep` t
 
 ## ZF3 routing gotcha (read before adding/renaming an action)
 
-`EXPLICACION_RUTAS_ZF3.md` is required reading. Any new/renamed controller action must be updated in **all four** places or it silently breaks:
+`documentacion/EXPLICACION_RUTAS_ZF3.md` is required reading. Any new/renamed controller action must be updated in **all four** places or it silently breaks:
 
 1. Method name in the controller (`fooAction`).
 2. `module/Eep/config/menus.php` — menu entries reference the action by name.
@@ -57,7 +57,7 @@ Routes are defined in `module/Eep/config/module.config.php`.
 - Controllers are wired through factories in `module/Eep/src/Controller/Factory/` (constructor DI via ServiceManager).
 - Entities in `module/Eep/src/Entity/`, Forms in `module/Eep/src/Form/`, VOs in `module/Eep/src/ValueObject/`.
 - `RyE` and `SIIF` only expose `Model/` — they are data-access modules consumed elsewhere.
-- New permissions/actions sometimes require a SQL insert into `accion` (see `CAMBIOS.md` for the pattern).
+- New permissions/actions sometimes require a SQL insert into `accion` (see `documentacion/CAMBIOS.md` for the pattern).
 
 ## Style
 

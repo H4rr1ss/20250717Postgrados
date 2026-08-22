@@ -31,7 +31,7 @@ INSERT INTO `usuario` (
 ) VALUES (
     'NombreSecretario', 'ApellidoSecretario', '202600001', 
     'secretario.examen@farusac.edu.gt', 
-    '$2y$10$...hash_de_password_hash...', 
+    '$2y$10$5VeFW4dGf0p9Sxm9W2md3egPMN/qsRELeL4uxcgJ8mMWNVwj9VzlS', 
     73, 'H', NOW(), 'Nombre Apellido'
 );
 

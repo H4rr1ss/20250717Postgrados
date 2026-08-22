@@ -1,5 +1,15 @@
 # Aca se registraran los cambios a tener en cuenta al desarrollar las nuevas funcionalidades
 
+> ⚠️ **ADVERTENCIA:** Este documento es un historial de desarrollo. Los INSERTs de acciones (ACL) listados a continuación son **códigos históricos** que pueden haber sido reasignados a otros módulos.  
+> **Para instalación en producción, usar únicamente:**
+> - `database/modulo graduacion/ejecuciones_extra.sql` (ACLs de graduación)
+> - `database/evaluacion_docente.sql` (ACLs de evaluación docente)
+> - `INSTALACION_PRODUCCION_FORMULARIO_ADMISION.md` (ACLs de admisiones)
+> - `INSTALACION_PRODUCCION_GENERAL.md` (plan maestro)
+> **NO ejecutar los INSERTs de este archivo directamente en producción sin verificar que los códigos no collisionen.**
+
+---
+
 Se agrego una nueva acción, "Recupeción de contraseña"
 '''
 INSERT INTO accion (cod_accion, nombre) VALUES (67, 'Recuperar contraseña');

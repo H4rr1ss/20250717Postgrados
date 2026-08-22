@@ -28,42 +28,45 @@ Esta carpeta contiene toda la documentación, scripts y herramientas necesarias 
    - Crea estructura de carpetas
    - Instala base de datos
    - Configura permisos
-   - **Uso:** `cd .. && ./modulo_graduacion_docs/inicializar-modulo-graduacion.sh`
+    - **Uso:** `cd .. && ./documentacion/modulo-graduacion/inicializar-modulo-graduacion.sh`
 
 4. **[verificar-modulo-graduacion.sh](verificar-modulo-graduacion.sh)** ✅
    - Verificación automática completa
    - Revisa carpetas, archivos, BD, permisos
    - Reporte detallado con errores/warnings
-   - **Uso:** `cd .. && ./modulo_graduacion_docs/verificar-modulo-graduacion.sh`
+    - **Uso:** `cd .. && ./documentacion/modulo-graduacion/verificar-modulo-graduacion.sh`
 
 ---
 
-## 🚀 Inicio Rápido (3 pasos)
+## 🚀 Inicio Rápido
 
-### 1. Inicializar el Módulo
+> **El script de inicialización SOLO crea carpetas y permisos.**  
+> La instalación completa (BD, dependencias, SMTP, archivos, verificación) se realiza **manualmente** siguiendo el `CHECKLIST_MODULO_GRADUACION.md`.
+
+### 1. Crear carpetas y permisos (automático)
 
 ```bash
 # Desde el directorio raíz del proyecto
 cd /home/harris/Escritorio/20250717Postgrados
 
-# Ejecutar script de inicialización
-./modulo_graduacion_docs/inicializar-modulo-graduacion.sh
+# Ejecutar script de inicialización (SOLO estructura de carpetas)
+./documentacion/modulo-graduacion/inicializar-modulo-graduacion.sh
 ```
 
-### 2. Copiar Plantilla CRÍTICA
+### 2. Completar instalación manual
 
-```bash
-# Coloca el archivo general.docx en:
-data/graduacion/plantillas/carta-examinadores/general.docx
-
-# Este archivo es OBLIGATORIO para el paso 5 (Carta de Examinadores)
-```
+Seguir paso a paso el archivo **`CHECKLIST_MODULO_GRADUACION.md`**:
+- Copiar plantilla `general.docx`
+- Ejecutar scripts SQL de base de datos
+- Instalar dependencias Composer
+- Configurar SMTP
+- Reiniciar servicios
 
 ### 3. Verificar Instalación
 
 ```bash
 # Ejecutar verificación automática
-./modulo_graduacion_docs/verificar-modulo-graduacion.sh
+./documentacion/modulo-graduacion/verificar-modulo-graduacion.sh
 ```
 
 ---
@@ -158,9 +161,8 @@ Después de la instalación:
 
 Otros archivos relevantes en el directorio raíz:
 
-- `ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de archivos
-- `database/modulo graduacion/GUIA_INSTALACION.md` — Guía oficial
-- `EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
+- `documentacion/ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de archivos
+- `documentacion/EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
 - `AGENTS.md` — Arquitectura general del proyecto
 
 ---
@@ -178,7 +180,7 @@ Otros archivos relevantes en el directorio raíz:
 Si encuentras problemas:
 
 1. Revisa la sección "Resolución de Problemas" en [CHECKLIST_MODULO_GRADUACION.md](CHECKLIST_MODULO_GRADUACION.md)
-2. Ejecuta `./modulo_graduacion_docs/verificar-modulo-graduacion.sh` para diagnóstico
+2. Ejecuta `./documentacion/modulo-graduacion/verificar-modulo-graduacion.sh` para diagnóstico
 3. Consulta la documentación completa en [MODULO_GRADUACION_REQUISITOS_INICIALES.md](MODULO_GRADUACION_REQUISITOS_INICIALES.md)
 
 ---
