@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Zend Framework 3 MVC app (PHP 7.4) for university postgraduate management. Runs on Apache via Docker. README is the upstream ZF skeleton README — most of it does not reflect this project. Trust this file plus `documentacion/DOCUMENTACION_PROYECTO.md` and `documentacion/EXPLICACION_RUTAS_ZF3.md`.
+Zend Framework 3 MVC app (PHP 7.4) for university postgraduate management. Runs on Apache via Docker. README is the upstream ZF skeleton README — most of it does not reflect this project. Trust this file plus `documentacion/general/DOCUMENTACION_PROYECTO.md` and `documentacion/general/EXPLICACION_RUTAS_ZF3.md`.
 
 ## Modules
 
@@ -42,7 +42,7 @@ There is no lint/typecheck pipeline beyond `phpcs`. No CI workflows. The `Eep` t
 
 ## ZF3 routing gotcha (read before adding/renaming an action)
 
-`documentacion/EXPLICACION_RUTAS_ZF3.md` is required reading. Any new/renamed controller action must be updated in **all four** places or it silently breaks:
+`documentacion/general/EXPLICACION_RUTAS_ZF3.md` is required reading. Any new/renamed controller action must be updated in **all four** places or it silently breaks:
 
 1. Method name in the controller (`fooAction`).
 2. `module/Eep/config/menus.php` — menu entries reference the action by name.

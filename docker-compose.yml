@@ -32,3 +32,50 @@ services:
       # - ./database:/docker-entrypoint-initdb.d
 volumes:
   db_data:
+
+
+# Instrucciones para levantar el ambiente:
+# Abre una terminal en la raíz del proyecto y ejecuta:
+# # 1. Construir la imagen de la app y levantar los contenedores
+# docker-compose up -d --build
+
+# # 2. Verificar que los contenedores estén corriendo
+# docker-compose ps
+
+# # 3. Ver logs (opcional, útil si hay errores)
+# docker-compose logs -f app
+# docker-compose logs -f db
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Comandos útiles
+# # Ver logs de la aplicación
+# docker compose logs -f app
+
+# # Ver logs de la base de datos
+# docker compose logs -f db
+
+# # Entrar al contenedor de la app
+# docker compose exec app bash
+
+# # Entrar a MySQL
+# docker compose exec db mysql -u user -p db_postgrados
+# # Password: password
+
+# # Instalar dependencias de Composer (si es necesario)
+# docker compose exec app composer install

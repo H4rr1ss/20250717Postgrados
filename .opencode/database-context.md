@@ -550,9 +550,9 @@ mysql -uuser -ppassword db_postgrados < "database/modulo graduacion/modulo_autor
 
 ## Recursos Adicionales
 
-- **Documentación de rutas**: `documentacion/EXPLICACION_RUTAS_ZF3.md`
+- **Documentación de rutas**: `documentacion/general/EXPLICACION_RUTAS_ZF3.md`
 
-- **Notas del proyecto**: `documentacion/DOCUMENTACION_PROYECTO.md`
+- **Notas del proyecto**: `documentacion/general/DOCUMENTACION_PROYECTO.md`
 - **Estructura de módulos**: `module/Eep/`
 
 ---

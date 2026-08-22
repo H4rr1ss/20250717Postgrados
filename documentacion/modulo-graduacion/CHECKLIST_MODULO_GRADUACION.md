@@ -396,8 +396,8 @@ Al finalizar, debes tener:
 Para información detallada, consultar:
 
 1. **MODULO_GRADUACION_REQUISITOS_INICIALES.md** — Documentación exhaustiva
-2. **../ESTRUCTURA_ARCHIVOS_GRADUACION.md** — Estructura de carpetas explicada
-3. **../EXPLICACION_RUTAS_ZF3.md** — Convenciones de desarrollo
+2. **../general/ESTRUCTURA_ARCHIVOS_GRADUACION.md** — Estructura de carpetas explicada
+3. **../general/EXPLICACION_RUTAS_ZF3.md** — Convenciones de desarrollo
 4. **../INSTALACION_PRODUCCION_GENERAL.md** — Plan maestro de instalación de todos los módulos
 
 ---

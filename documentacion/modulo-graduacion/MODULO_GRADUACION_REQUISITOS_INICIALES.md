@@ -560,8 +560,8 @@ docker-compose exec web chmod -R 755 /var/www/data/graduacion
 ## 📚 DOCUMENTACIÓN RELACIONADA
 
 ### Archivos clave del proyecto:
-1. `../ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de carpetas
-2. `../EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
+1. `../general/ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de carpetas
+2. `../general/EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
 3. `../../AGENTS.md` — Arquitectura general del proyecto
 4. `../CAMBIOS.md` — Historial de cambios del módulo
 

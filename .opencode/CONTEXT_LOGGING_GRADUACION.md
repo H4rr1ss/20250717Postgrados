@@ -60,7 +60,7 @@
 ### Fase 2 — StudentGraduationController ✅ COMPLETADA
 
 - Ya importa LM (línea 15). No hay que agregar use.
-- Actions a cubrir: 13 críticas (ver documentacion/PLAN_LOGGING_GRADUACION.md).
+- Actions a cubrir: 13 críticas (ver documentacion/general/PLAN_LOGGING_GRADUACION.md).
 - Atención especial a actions AJAX con múltiples early returns.
 - Sintaxis validada con `php -l` — sin errores.
 

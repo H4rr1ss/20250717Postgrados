@@ -161,8 +161,8 @@ Después de la instalación:
 
 Otros archivos relevantes en el directorio raíz:
 
-- `documentacion/ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de archivos
-- `documentacion/EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
+- `documentacion/general/ESTRUCTURA_ARCHIVOS_GRADUACION.md` — Estructura detallada de archivos
+- `documentacion/general/EXPLICACION_RUTAS_ZF3.md` — Convenciones de desarrollo
 - `AGENTS.md` — Arquitectura general del proyecto
 
 ---
