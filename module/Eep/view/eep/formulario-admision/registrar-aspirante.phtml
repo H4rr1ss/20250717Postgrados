@@ -1,0 +1,361 @@
+<?php
+use Eep\Form\CandidateForm;
+$this->headTitle('Registrar Aspirante como Estudiante');
+
+// Mapeo de secciones para título, icono y color
+$seccionMap = [
+    'personal'    => ['titulo' => 'Datos Personales',       'icono' => 'fa-user',        'color' => '#667eea'],
+    'contacto'    => ['titulo' => 'Contacto y Ubicación',   'icono' => 'fa-envelope-o',  'color' => '#5cb85c'],
+    'laboral'     => ['titulo' => 'Información Laboral',    'icono' => 'fa-briefcase',   'color' => '#f0ad4e'],
+    'academico'   => ['titulo' => 'Información Académica',  'icono' => 'fa-graduation-cap','color' => '#5bc0de'],
+    'documentos'  => ['titulo' => 'Documentos',             'icono' => 'fa-file-o',      'color' => '#d9534f'],
+    'adicional'   => ['titulo' => 'Información Adicional',  'icono' => 'fa-list-alt',    'color' => '#999'],
+    'admin'       => ['titulo' => 'Datos de Inscripción',   'icono' => 'fa-lock',        'color' => '#34495e'],
+];
+
+// Agrupar campos dinámicamente por sección
+$grupos = [];
+foreach ($respuesta as $campo) {
+    $seccion = $campo['seccion'] ?? 'adicional';
+    if (!isset($grupos[$seccion])) {
+        $grupos[$seccion] = [];
+    }
+    $grupos[$seccion][] = $campo;
+}
+
+// Helper para renderizar el valor de un campo según su tipo/nombre
+function renderCampoValor($campo, $nationalities = []) {
+    $nombre = $campo['nombre_campo'];
+    $valor = $campo['valor_respuesta'];
+    $tipo  = $campo['tipo_campo'];
+
+    if ($nombre === 'sexo') {
+        echo '<span class="label label-default">' . (($valor === 'H') ? 'Hombre' : (($valor === 'M') ? 'Mujer' : htmlspecialchars($valor))) . '</span>';
+    } elseif ($nombre === 'nacionalidad') {
+        $nombrePais = '—';
+        foreach ($nationalities as $pais) {
+            if (isset($pais['cod_pais']) && $pais['cod_pais'] == $valor) {
+                $nombrePais = $pais['nombre'] ?? 'País #' . $valor;
+                break;
+            }
+        }
+        echo htmlspecialchars($nombrePais);
+    } elseif ($nombre === 'correo_electronico') {
+        echo '<a href="mailto:' . htmlspecialchars($valor) . '">' . htmlspecialchars($valor) . '</a>';
+    } elseif ($nombre === 'telefono') {
+        echo '<a href="tel:' . htmlspecialchars($valor) . '"><i class="fa fa-phone"></i> ' . htmlspecialchars($valor) . '</a>';
+    } elseif ($tipo === 'boolean') {
+        echo '<span class="label label-' . (($valor === 'yes') ? 'success' : 'default') . '">' . (($valor === 'yes') ? 'Sí' : 'No') . '</span>';
+    } elseif ($nombre === 'dias_labora') {
+        echo htmlspecialchars($valor ? str_replace(',', ', ', $valor) : '—');
+    } elseif ($tipo === 'textarea') {
+        echo nl2br(htmlspecialchars($valor ?: '—'));
+    } else {
+        echo htmlspecialchars($valor ?: '—');
+    }
+}
+
+// Extraer datos clave para el header
+$nombreCompleto = '';
+$cui = '';
+$correo = '';
+$telefono = '';
+$photoDpiUrl = null;
+$photoDpiNombre = null;
+foreach ($respuesta as $campo) {
+    switch ($campo['nombre_campo']) {
+        case 'nombres':
+            $nombreCompleto = $campo['valor_respuesta'];
+            break;
+        case 'apellidos':
+            $nombreCompleto .= ' ' . $campo['valor_respuesta'];
+            break;
+        case 'cui':
+            $cui = $campo['valor_respuesta'];
+            break;
+        case 'correo_electronico':
+            $correo = $campo['valor_respuesta'];
+            break;
+        case 'telefono':
+            $telefono = $campo['valor_respuesta'];
+            break;
+        case 'photo_dpi':
+            if (!empty($campo['archivo_adjunto'])) {
+                $photoDpiUrl = $this->url('formulario-admision', ['action' => 'descargar', 'id' => $campo['id_respuesta']], ['query' => ['campo' => 'photo_dpi']]);
+                $photoDpiNombre = $campo['archivo_adjunto'];
+            }
+            break;
+    }
+}
+$esImagenDpi = $photoDpiNombre ? in_array(strtolower(pathinfo($photoDpiNombre, PATHINFO_EXTENSION)), ['jpg','jpeg','png','gif']) : false;
+?>
+
+<style>
+    .aspirante-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .aspirante-header h2 {
+        margin: 0 0 5px 0;
+        font-weight: 300;
+    }
+    .aspirante-header .badge-custom {
+        background-color: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        display: inline-block;
+        margin-top: 8px;
+    }
+    .grupo-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+    .grupo-header {
+        background-color: #f8f9fa;
+        padding: 12px 15px;
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 14px;
+    }
+    .grupo-header i {
+        margin-right: 8px;
+        width: 20px;
+        text-align: center;
+    }
+    .grupo-body {
+        padding: 0;
+    }
+    .dato-row {
+        display: flex;
+        padding: 10px 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .dato-row:last-child {
+        border-bottom: none;
+    }
+    .dato-label {
+        width: 40%;
+        color: #6c757d;
+        font-size: 13px;
+        font-weight: 500;
+        padding-right: 10px;
+    }
+    .dato-value {
+        width: 60%;
+        color: #212529;
+        font-size: 13px;
+        font-weight: 400;
+    }
+    .dato-value .label {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    .photo-dpi-container {
+        text-align: center;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    .photo-dpi-container img {
+        max-height: 250px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        margin-bottom: 10px;
+    }
+    .photo-placeholder {
+        padding: 40px 20px;
+        color: #6c757d;
+        text-align: center;
+    }
+</style>
+
+<div class="col-md-12">
+    <div class="panel panel-default" style="border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+        <div class="panel-heading" style="background-color: #fff; border-bottom: 2px solid #f0f0f0;">
+            <h3 style="margin: 0; display: inline-block;">
+                <i class="fa fa-user-plus" style="color: #5cb85c;"></i> Registrar Aspirante como Estudiante
+            </h3>
+            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $idFormulario]) ?>" class="btn btn-default btn-sm pull-right">
+                <i class="fa fa-arrow-left"></i> Volver a Respuestas
+            </a>
+            <div class="clearfix"></div>
+        </div>
+        <div class="panel-body">
+            <!-- Fila 1: Confirmación académica -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-primary" style="border-color: #337ab7;">
+                        <div class="panel-heading" style="background-color: #337ab7; border-color: #337ab7;">
+                            <h4 style="margin: 0;"><i class="fa fa-check-square-o"></i> Confirmación Académica</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="note note-info">
+                                <h4 class="box-heading"><i class="fa fa-info-circle"></i> Instrucción</h4>
+                                <p>Por favor confirme la información académica del aspirante y seleccione la <strong>cohorte</strong> a la que será asignado.</p>
+                            </div>
+
+                            <?php if (!empty($this->candidateMsg)): ?>
+                                <div class="note note-<?= $this->candidateMsg->getType() ?>">
+                                    <h4 class="box-heading"><?= $this->candidateMsg->getTitle(); ?></h4>
+                                    <p><?= $this->candidateMsg->getMessage(); ?></p>
+                                </div>
+                            <?php endif; ?>
+
+                            <form method="post" action="<?= $this->url('formulario-admision', ['action' => 'registrar-aspirante', 'id' => $respuesta[0]['id_respuesta'] ?? 0]) ?>">
+                                <div class="form-group">
+                                    <label for="grado_a_ingresar">Grado académico a ingresar <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="grado_a_ingresar" name="grado_a_ingresar" required>
+                                        <option value="">-- Seleccione --</option>
+                                        <?php foreach ($degrees as $grado): ?>
+                                            <option value="<?= $this->escapeHtml($grado['cod_grado']) ?>"
+                                                <?= (($userData['grado_a_ingresar'] ?? '') == $grado['cod_grado']) ? 'selected' : '' ?>>
+                                                <?= $this->escapeHtml($grado['nombre']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="carrera_a_ingresar">Carrera a ingresar <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="carrera_a_ingresar" name="carrera_a_ingresar" required>
+                                        <option value="">-- Seleccione --</option>
+                                        <?php foreach ($careers as $carrera): ?>
+                                            <option value="<?= $this->escapeHtml($carrera['cod_carrera']) ?>"
+                                                data-grado="<?= $carrera['cod_grado'] ?>"
+                                                <?= (($userData['carrera'] ?? '') == $carrera['cod_carrera']) ? 'selected' : '' ?>>
+                                                <?= $this->escapeHtml($carrera['alias_actual']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cohorte">Cohorte <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="cohorte" name="cohorte" required>
+                                        <option value="">-- Seleccione una cohorte --</option>
+                                        <?php foreach ($cohorts as $cohorte): ?>
+                                            <option value="<?= $this->escapeHtml($cohorte['fecha_cohorte']) ?>"
+                                                <?= (($userData['cohorte'] ?? '') == $cohorte['fecha_cohorte']) ? 'selected' : '' ?>>
+                                                <?= date('d/m/Y', strtotime($cohorte['fecha_cohorte'])) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                        <option value="<?= CandidateForm::UPG_COURSE_COHORT ?>"
+                                            <?= (($userData['cohorte'] ?? '') == CandidateForm::UPG_COURSE_COHORT) ? 'selected' : '' ?>>
+                                            (Cursos de Actualización)
+                                        </option>
+                                    </select>
+                                    <span class="help-block">Seleccione la cohorte correspondiente al período de ingreso del aspirante.</span>
+                                </div>
+
+                                <hr style="border-color: #e0e0e0;">
+
+                                <div class="form-actions text-right">
+                                    <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $idFormulario]) ?>" class="btn btn-default">
+                                        <i class="fa fa-arrow-left"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fa fa-check"></i> Confirmar y Registrar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fila 2: Datos del aspirante -->
+            <div class="row">
+                <div class="col-md-12">
+                    <!-- Header del aspirante -->
+                    <div class="aspirante-header">
+                        <h2><?= $this->escapeHtml($nombreCompleto) ?></h2>
+                        <div class="badge-custom">
+                            <i class="fa fa-id-card-o"></i> CUI: <?= $this->escapeHtml($cui ?: 'No proporcionado') ?>
+                        </div>
+                    </div>
+
+                    <!-- Documento DPI -->
+                    <?php if ($photoDpiUrl): ?>
+                        <div class="photo-dpi-container">
+                            <?php if ($esImagenDpi): ?>
+                                <img src="<?= $photoDpiUrl ?>" class="img-responsive center-block" alt="Foto DPI">
+                                <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                    <i class="fa fa-external-link"></i> Ver en tamaño completo
+                                </a>
+                            <?php else: ?>
+                                <div style="padding: 20px 10px;">
+                                    <i class="fa fa-file-pdf-o" style="font-size: 64px; color: #d9534f; margin-bottom: 15px;"></i>
+                                    <p class="text-success" style="font-size: 14px; margin-bottom: 15px;">
+                                        <i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong>
+                                    </p>
+                                    <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                        <i class="fa fa-download"></i> Descargar documento
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php
+                    // Renderizar grupos dinámicamente por sección
+                    $ordenSecciones = ['personal', 'contacto', 'laboral', 'academico', 'documentos', 'adicional'];
+                    foreach ($ordenSecciones as $seccionKey):
+                        if (empty($grupos[$seccionKey])) continue;
+                        $meta = $seccionMap[$seccionKey] ?? ['titulo' => $seccionKey, 'icono' => 'fa-circle', 'color' => '#666'];
+                    ?>
+                        <div class="grupo-card">
+                            <div class="grupo-header">
+                                <i class="fa <?= $meta['icono'] ?>" style="color: <?= $meta['color'] ?>;"></i> <?= $meta['titulo'] ?>
+                            </div>
+                            <div class="grupo-body">
+                                <?php foreach ($grupos[$seccionKey] as $campo): ?>
+                                    <div class="dato-row">
+                                        <div class="dato-label"><?= $this->escapeHtml($campo['etiqueta']) ?></div>
+                                        <div class="dato-value"><?php renderCampoValor($campo, $nationalities ?? []); ?></div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const gradoSelect = document.getElementById('grado_a_ingresar');
+    const carreraSelect = document.getElementById('carrera_a_ingresar');
+    const careerTree = <?= json_encode($careerTree ?? []) ?>;
+    const carreraPreseleccionada = '<?= $this->escapeHtml($userData['carrera'] ?? '') ?>';
+
+    function filtrarCarreras() {
+        const gradoId = gradoSelect.value;
+        const carreras = careerTree[gradoId] || {};
+        let options = '<option value="">-- Seleccione --</option>';
+        for (const cod in carreras) {
+            const selected = (cod === carreraPreseleccionada) ? ' selected' : '';
+            options += '<option value="' + cod + '" data-grado="' + gradoId + '"' + selected + '>' + carreras[cod] + '</option>';
+        }
+        carreraSelect.innerHTML = options;
+    }
+
+    if (gradoSelect && carreraSelect) {
+        gradoSelect.addEventListener('change', filtrarCarreras);
+        if (gradoSelect.value) {
+            filtrarCarreras();
+        }
+    }
+})();
+</script>

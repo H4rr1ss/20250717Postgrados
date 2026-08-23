@@ -85,6 +85,7 @@
 //                ->appendFile($this->basePath("script/jplist.min.js"))
 //                ->appendFile($this->basePath("script/modernizr.min.js"))
                 ->appendFile($this->basePath("script/main.js"))
+                ->appendFile($this->basePath("js/confirm-service.js"))
         ?>
         <div>
             <!--BEGIN BACK TO TOP-->
@@ -120,8 +121,40 @@
                             <div class="clearfix"></div>
 
                             <?php
+                            use Eep\ValueObject\MenuGroup;
                             if (isset($this->menus) && !empty($this->menus)):
                                 foreach ($this->menus as $menu):
+                                    if ($menu instanceof MenuGroup):
+                                        $groupId = 'mg-' . preg_replace('/[^a-z0-9]/', '', strtolower($menu->getName()));
+                                    ?>
+                                    <li class="<?= $menu->isActive() ? 'active' : '' ?>">
+                                        <a href="#<?= $groupId ?>" data-toggle="collapse" aria-expanded="<?= $menu->isActive() ? 'true' : 'false' ?>">
+                                            <i class="fa <?= $menu->getIcon() ?>"></i>
+                                            <span class="menu-title"><?= $menu->getName() ?></span>
+                                            <span class="fa arrow"></span>
+                                        </a>
+                                        <ul id="<?= $groupId ?>" class="nav nav-second-level <?= $menu->isActive() ? 'in' : 'collapse' ?>">
+                                            <?php foreach ($menu->getItems() as $child): ?>
+                                            <li class="<?= $child->isActive() ? 'active' : '' ?>">
+                                                <?php
+                                                    $badgeCount = 0;
+                                                    if ($child->getName() === 'Gestión de Exámenes' && isset($this->procesosDocCompleta)) {
+                                                        $badgeCount = (int) $this->procesosDocCompleta;
+                                                    }
+                                                ?>
+                                                <a href="<?= $this->url($child->getSection(), ['action' => $child->getAction()]) ?>">
+                                                    <i class="fa <?= $child->getIcon() ?>"></i>
+                                                    <?= $child->getName() ?>
+                                                    <?php if ($badgeCount > 0): ?>
+                                                        <span class="badge" style="margin-left:8px; background:#d9534f; color:#fff; font-size:11px; padding:2px 6px; border-radius:10px;"><?= $badgeCount ?></span>
+                                                    <?php endif; ?>
+                                                </a>
+                                            </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </li>
+                                    <?php
+                                    else:
                                     ?>
                                     <li 
                                     <?php
@@ -139,6 +172,7 @@
                                         </a>
                                     </li>
                                     <?php
+                                    endif;
                                 endforeach;
                             else:
                                 ?>
@@ -163,7 +197,7 @@
                 <div id="page-wrapper" style="padding-top: 50px;">
                     <!--BEGIN TITLE & BREADCRUMB PAGE-->
                     <div id="title-breadcrumb-option-demo" class="page-title-breadcrumb" style="padding-top: 60px;">
-                        <div class="page-header pull-left <?= (!empty($role) && $role->hasRole() && ($role->hasAdminRole()) || $role->hasUdicaRole()) ? 'admin' : 'student' ?>">
+                        <div class="page-header pull-left <?= (!empty($role) && $role->hasRole() && ($role->hasAdminRole() || $role->hasUdicaRole())) ? 'admin' : 'student' ?>">
                             <div class="page-title">
                                 <?= $menuTitle ?? '' ?>
                             </div>                            

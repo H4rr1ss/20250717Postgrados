@@ -17,7 +17,16 @@ use Eep\Service\Factory\AuthAdapterFactory;
 use Eep\Service\AuthManager;
 use Eep\Service\Factory\AuthManagerFactory;
 use Eep\Service\CohortManager;
-use Eep\Service\Factory\CohortManagerFactory;
+use Eep\Service\Factory\CohortManagerFactory;use Eep\Service\ExamenManager;
+use Eep\Service\Factory\ExamenManagerFactory;
+use Eep\Service\StudentGraduationManager;
+use Eep\Service\Factory\StudentGraduationManagerFactory;
+use Eep\Service\CartaExaminadoresManager;
+use Eep\Service\Factory\CartaExaminadoresManagerFactory;
+use Eep\Service\CartaGenerator;
+use Eep\Service\Factory\CartaGeneratorFactory;
+use Eep\Service\AutorizacionImpresionManager;
+use Eep\Service\Factory\AutorizacionImpresionManagerFactory;
 use Eep\Service\UserManager;
 use Eep\Service\Factory\UserManagerFactory;
 use Eep\Service\OrderManager;
@@ -40,6 +49,12 @@ use Eep\Service\GradesManager;
 use Eep\Service\Factory\GradesManagerFactory;
 use Eep\Service\GeneralManager;
 use Eep\Service\Factory\GeneralManagerFactory;
+use Eep\Service\FormularioAdmisionManager;
+use Eep\Service\Factory\FormularioAdmisionManagerFactory;
+use Eep\Service\EvaluacionDocenteManager;
+use Eep\Service\Factory\EvaluacionDocenteManagerFactory;
+use Eep\Service\MailManager;
+use Eep\Service\Factory\MailManagerFactory;
 //PLUGIN
 use Eep\Controller\Plugin\PluginHandler;
 use Eep\Controller\Plugin\Factory\PluginHandlerFactory;
@@ -57,6 +72,15 @@ use Eep\Controller\MassiveLoadController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use Eep\Controller\GradesController;
 use Eep\Controller\OfficialController;
+use Eep\Controller\FormularioAdmisionController;
+use Eep\Controller\Factory\FormularioAdmisionControllerFactory;
+use Eep\Controller\ExamenController;
+use Eep\Controller\Factory\ExamenControllerFactory;
+use Eep\Controller\StudentGraduationController;
+use Eep\Controller\Factory\StudentGraduationControllerFactory;
+use Eep\Controller\EvaluacionDocenteController;
+use Eep\Controller\Factory\EvaluacionDocenteControllerFactory;
+use Eep\Controller\Factory\AssignmentControllerFactory;
 //OTHERS
 use Eep\Form\CategorizeTimetableForm as CTF;
 
@@ -64,7 +88,7 @@ return [
     'controllers' => [
         'factories' => [
             UpgCourseController::class => LazyControllerAbstractFactory::class,
-            AssignmentController::class => LazyControllerAbstractFactory::class,
+            AssignmentController::class => AssignmentControllerFactory::class,
             AuthController::class => LazyControllerAbstractFactory::class,
             CohortController::class => LazyControllerAbstractFactory::class,
             TimetableController::class => TimetableControllerFactory::class,
@@ -74,6 +98,10 @@ return [
             MassiveLoadController::class => LazyControllerAbstractFactory::class,
             GradesController::class => LazyControllerAbstractFactory::class,
             OfficialController::class => LazyControllerAbstractFactory::class,
+            ExamenController::class => ExamenControllerFactory::class,
+            StudentGraduationController::class => StudentGraduationControllerFactory::class,
+            EvaluacionDocenteController::class => EvaluacionDocenteControllerFactory::class,
+            FormularioAdmisionController::class => FormularioAdmisionControllerFactory::class,
         ],
     ],
     'controller_plugins' => [
@@ -187,6 +215,26 @@ return [
                     ],
                 ],
             ],
+            'admisiones' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/admisiones',
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action'     => 'public',
+                    ],
+                ],
+            ],
+            'verificar-cui' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/admisiones/verificar-cui',
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action'     => 'verificarCui',
+                    ],
+                ],
+            ],
             'timetable' => [
                 'type' => Segment::class,
                 'options' => [
@@ -241,6 +289,26 @@ return [
                     ],
                 ],
             ],
+            'recover-password' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/recover-password',
+                    'defaults' => [
+                        'controller' => UserController::class,
+                        'action' => 'recoverPassword',
+                    ],
+                ],
+            ],
+            'reset-password' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/reset-password',
+                    'defaults' => [
+                        'controller' => UserController::class,
+                        'action' => 'resetPassword',
+                    ],
+                ],
+            ],
             'user' => [
                 'type' => Segment::class,
                 'options' => [
@@ -255,6 +323,110 @@ return [
                     ],
                 ],
             ],
+            'formulario-admision' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/formulario-admision[/:action][/:id]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => FormularioAdmisionController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
+            'examen' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen[/:action[/:id]]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
+            'reprogramar-examen' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/examen/reprogramar-examen-privado',
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'reprogramarExamenPrivado',
+                    ],
+                ],
+            ],
+            'examen-papeleria' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen/papeleria/:cod_tipo_examen',
+                    'constraints' => [
+                        'cod_tipo_examen' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'papeleria',
+                    ],
+                ],
+            ],
+            'previsualizar-acta' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen/previsualizar-acta/:id',
+                    'constraints' => [
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'previsualizarActaExamenPrivado',
+                    ],
+                ],
+            ],
+            'eval-privado' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/eval-privado/:cod_proceso',
+                    'constraints' => [
+                        'cod_proceso' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'evaluacionExamenPrivado',
+                    ],
+                ],
+            ],
+            'student-graduation' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/student-graduation[/:action]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                    ],
+                    'defaults' => [
+                        'controller' => StudentGraduationController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
+            'evaluacion-docente' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/evaluacion-docente[/:action[/:id]]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => EvaluacionDocenteController::class,
+                        'action' => 'index',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [
@@ -266,6 +438,7 @@ return [
             AuthAdapter::class => AuthAdapterFactory::class,
             AuthManager::class => AuthManagerFactory::class,
             CohortManager::class => CohortManagerFactory::class,
+            ExamenManager::class => ExamenManagerFactory::class,
             MassiveLoadManager::class => MassiveLoaderManagerFactory::class,
             GradesManager::class => GradesManagerFactory::class,
             GeneralManager::class => GeneralManagerFactory::class,
@@ -274,8 +447,15 @@ return [
             OrderManager::class => OrderManagerFactory::class,
             ReportManager::class => ReportManagerFactory::class,
             SatuManager::class => SatuManagerFactory::class,
+            StudentGraduationManager::class => StudentGraduationManagerFactory::class,
+            CartaExaminadoresManager::class => CartaExaminadoresManagerFactory::class,
+            CartaGenerator::class => CartaGeneratorFactory::class,
+            AutorizacionImpresionManager::class => AutorizacionImpresionManagerFactory::class,
             TimetableManager::class => TimetableManagerFactory::class,
             UserManager::class => UserManagerFactory::class,
+            FormularioAdmisionManager::class => FormularioAdmisionManagerFactory::class,
+            EvaluacionDocenteManager::class => EvaluacionDocenteManagerFactory::class,
+            MailManager::class => MailManagerFactory::class,
         ],
     ],
     'view_manager' => [

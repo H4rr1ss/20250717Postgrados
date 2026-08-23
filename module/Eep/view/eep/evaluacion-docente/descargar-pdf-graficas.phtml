@@ -1,0 +1,111 @@
+<?php
+$curso = $curso ?? [];
+$nombresMeses = [
+    1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+    5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+    9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+];
+
+$renderer = $this;
+
+$renderPregunta = function ($pregunta) use ($curso, $renderer) {
+    if (empty($pregunta)) {
+        return;
+    }
+?>
+    <h2><?= $renderer->escapeHtml($pregunta['texto'] ?? '') ?></h2>
+
+<?php if ($pregunta['tipo'] === 'boolean'): ?>
+<?php
+    $total = (int) ($curso['total_evaluaciones'] ?? 0);
+    $si = (int) ($pregunta['count_si'] ?? 0);
+    $no = $total - $si;
+    $pctSi = $total > 0 ? round(($si / $total) * 100, 1) : 0;
+    $pctNo = $total > 0 ? round(($no / $total) * 100, 1) : 0;
+?>
+    <p style="margin-bottom: 5px;">
+        <strong>Total:</strong> <?= $total ?> evaluaciones &nbsp;|&nbsp;
+        <span style="color: #5cb85c; font-weight: bold;">Sí: <?= $si ?> (<?= $pctSi ?>%)</span> &nbsp;|&nbsp;
+        <span style="color: #d9534f; font-weight: bold;">No: <?= $no ?> (<?= $pctNo ?>%)</span>
+    </p>
+<?php if (!empty($pregunta['grafica_path'])): ?>
+    <img src="<?= $renderer->escapeHtml($pregunta['grafica_path']) ?>">
+<?php endif; ?>
+
+<?php elseif ($pregunta['tipo'] === 'escala10'): ?>
+    <p><strong>Promedio:</strong> <?= $renderer->escapeHtml($pregunta['promedio'] ?? 'N/A') ?> / 10</p>
+<?php if (!empty($pregunta['grafica_path'])): ?>
+    <img src="<?= $renderer->escapeHtml($pregunta['grafica_path']) ?>">
+<?php endif; ?>
+
+<?php elseif ($pregunta['tipo'] === 'texto'): ?>
+<?php
+    $comentariosPregunta = array_values(array_filter($curso['comentarios'] ?? [], function ($c) use ($pregunta) {
+        return (int) ($c['id_pregunta'] ?? 0) === (int) ($pregunta['id_pregunta'] ?? 0);
+    }));
+?>
+    <p>
+        <span class="badge"><?= count($comentariosPregunta) ?> comentarios</span>
+    </p>
+<?php if (!empty($comentariosPregunta)): ?>
+<?php foreach ($comentariosPregunta as $comentario): ?>
+    <div class="comentario">
+        <?= nl2br($renderer->escapeHtml($comentario['comentario'] ?? '')) ?>
+    </div>
+<?php endforeach; ?>
+<?php else: ?>
+    <p class="text-muted text-center">No hay comentarios para esta pregunta.</p>
+<?php endif; ?>
+<?php endif; ?>
+<?php
+};
+?>
+<style>
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #333; }
+    h1 { font-size: 16px; text-align: center; color: #2c3e50; margin-bottom: 15px; }
+    h2 { font-size: 13px; color: #2c3e50; margin-top: 40px; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    table.info { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+    table.info td { padding: 4px 6px; border: 1px solid #ddd; }
+    table.info td.label { background: #f5f5f5; font-weight: bold; width: 30%; }
+    .comentario { background: #f9f9f9; border-left: 3px solid #5bc0de; padding: 6px 8px; margin-bottom: 6px; }
+    .badge { background: #31708f; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 9px; }
+    .text-center { text-align: center; }
+    .text-muted { color: #777; }
+    .question-block { page-break-inside: avoid; margin-bottom: 30px; }
+    .question-block img { margin-bottom: 25px; }
+</style>
+
+<h1>Resultados de la Evaluación Docente</h1>
+
+<table class="info">
+    <tr>
+        <td class="label">Curso</td>
+        <td><?= $this->escapeHtml($curso['nombre_curso'] ?? 'N/A') ?></td>
+    </tr>
+    <tr>
+        <td class="label">Docente</td>
+        <td><?= $this->escapeHtml($curso['nombre_docente'] ?? 'N/A') ?></td>
+    </tr>
+    <tr>
+        <td class="label">Sección</td>
+        <td><?= $this->escapeHtml($curso['seccion'] ?? 'N/A') ?></td>
+    </tr>
+    <tr>
+        <td class="label">Período</td>
+        <td><?= $this->escapeHtml(($curso['anio'] ?? '') . ' - ' . ($nombresMeses[(int) ($curso['mes'] ?? 0)] ?? 'Mes ' . ($curso['mes'] ?? ''))) ?></td>
+    </tr>
+    <tr>
+        <td class="label">Total de Evaluaciones</td>
+        <td><strong><?= (int) ($curso['total_evaluaciones'] ?? 0) ?></strong></td>
+    </tr>
+</table>
+
+<?php if (!empty($curso['preguntas'])): ?>
+<?php foreach ($curso['preguntas'] as $pregunta): ?>
+    <div class="question-block">
+        <?php $renderPregunta($pregunta); ?>
+    </div>
+<?php endforeach; ?>
+<?php else: ?>
+    <p class="text-muted text-center">No hay preguntas configuradas para este curso.</p>
+<?php endif; ?>

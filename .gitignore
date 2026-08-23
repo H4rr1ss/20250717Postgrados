@@ -12,6 +12,7 @@
 # IDEs
 /.idea/
 /.vscode/
+.env
 
 # Sistema operativo
 .DS_Store
@@ -20,3 +21,8 @@ Thumbs.db
 /data/sessions/
 /data/sessiones/
 .env
+
+# Módulo de Graduación - Procesos individuales
+/data/admisiones/
+/data/graduacion/
+/data/graficas/

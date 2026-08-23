@@ -1,0 +1,331 @@
+<?php
+$this->headTitle('Respuestas del Formulario');
+$role = $this->layout()->role;
+
+// Determinar si el formulario está activo
+$formularioActivo = $formulario->getActivo();
+?>
+
+<div class="col-md-12">
+    <div class="panel panel-<?= ($role->hasAdminRole()) ? 'green' : 'blue' ?>">
+        <div class="panel-heading">
+            <i class="fa fa-users"></i> 
+            <?= $this->escapeHtml($formulario->getNombre()) ?>
+            <small class="text-muted" style="color: #fff;">
+                (Período: <?= $formulario->getPeriodoFormateado() ?>)
+            </small>
+            <?php if (!$formularioActivo): ?>
+                <span class="label label-warning pull-right" style="margin-top: 2px; font-weight: bold; font-size: 16px;">
+                    <i class="fa fa-lock"></i> INACTIVO
+                </span>
+            <?php endif; ?>
+        </div>
+        <div class="panel-body">
+            <div class="note note-info">
+                <h4 class="box-heading"><i class="fa fa-exclamation-circle"></i> Importante</h4>
+                <ul>
+                    <li>Al agregar a un estudiante, se le asignará la carrera indicada. Esta asignación no podrá ser revocada por lo que la correcta selección es de suma importancia.</li>
+                    <li>Los datos ingresados deben ser doblemente corroborados antes de agregarlos al sistema.</li>
+                    <li>Los datos de identificación (CUI o Pasaporte), la nacionalidad, el sexo y fecha de nacimiento no serán editables posteriormente.</li>
+                </ul>
+            </div>
+
+            <?php if (!$formularioActivo): ?>
+                <div class="note note-warning">
+                    <h4 class="box-heading"><i class="fa fa-exclamation-triangle"></i> Atención</h4>
+                    <p>Este formulario está inactivo. Las respuestas solo pueden ser visualizadas, no editadas ni eliminadas.</p>
+                </div>
+            <?php endif; ?>
+            
+            <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
+            <?= $this->partial('partial/msg', ['msg' => $respuestasMsg ?? null]) ?>
+
+            <?php /* Notificaciones flashMessenger (toast de éxito/error) */ ?>
+            <?php if ($this->flashMessenger()->hasMessages()): ?>
+                <div class="flash-messages">
+                    <?= $this->flashMessenger()->render('success', ['alert', 'alert-success']) ?>
+                    <?= $this->flashMessenger()->render('error',   ['alert', 'alert-danger']) ?>
+                    <?= $this->flashMessenger()->render('info',    ['alert', 'alert-info']) ?>
+                    <?= $this->flashMessenger()->render('warning', ['alert', 'alert-warning']) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($respuestas)): ?>
+                <form method="post" action="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page]]) ?>" id="formRegistrarAspirantes">
+                    
+                    <?php if ($formularioActivo): ?>
+                        <!-- Panel de asignación masiva -->
+                        <div class="well well-sm" style="margin-bottom: 15px;">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5 style="margin-top: 0;"><i class="fa fa-users"></i> Asignación Masiva</h5>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="grado_a_ingresar" class="control-label" style="font-size: 12px;">Grado Académico</label>
+                                        <select name="grado_a_ingresar" id="grado_a_ingresar" class="form-control input-sm">
+                                            <option value="">-- Seleccione --</option>
+                                            <?php foreach ($degrees as $degree): ?>
+                                                <option value="<?= $this->escapeHtml($degree['cod_grado']) ?>">
+                                                    <?= $this->escapeHtml($degree['nombre']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="carrera_a_ingresar" class="control-label" style="font-size: 12px;">Carrera</label>
+                                        <select name="carrera_a_ingresar" id="carrera_a_ingresar" class="form-control input-sm">
+                                            <option value="">-- Seleccione primero el grado --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="cohorte" class="control-label" style="font-size: 12px;">Cohorte</label>
+                                        <select name="cohorte" id="cohorte" class="form-control input-sm">
+                                            <option value="">-- Seleccione --</option>
+                                            <?php foreach ($cohorts as $cohort): ?>
+                                                <option value="<?= $this->escapeHtml($cohort['fecha_cohorte']) ?>">
+                                                    <?= date('d/m/Y', strtotime($cohort['fecha_cohorte'])) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                            <option value="0000-01-01">(Cursos de Actualización)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="control-label" style="font-size: 12px;">&nbsp;</label>
+                                        <button type="button" class="btn btn-success btn-sm btn-block" onclick="registrarAspirantesSeleccionados()">
+                                            <i class="fa fa-user-plus"></i> Registrar Seleccionados
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <?php if ($formularioActivo): ?>
+                                    <th class="text-center" style="width: 30px;">
+                                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Seleccionar todos">
+                                    </th>
+                                <?php endif; ?>
+                                <th>CUI</th>
+                                <th>Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th class="text-center">Fecha Envío</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($respuestas as $respuesta): ?>
+                                <?php $estaRegistrado = !empty($yaRegistrados[$respuesta->getIdRespuesta()]); ?>
+                                <tr <?= $estaRegistrado ? 'class="success"' : '' ?>>
+                                    <?php if ($formularioActivo): ?>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="aspirantes[]" value="<?= $respuesta->getIdRespuesta() ?>" class="aspirante-checkbox" <?= $estaRegistrado ? 'disabled' : '' ?>>
+                                        </td>
+                                    <?php endif; ?>
+                                    <td>
+                                        <strong><?= $this->escapeHtml($respuesta->getCuiAspirante()) ?></strong>
+                                        <?php if ($estaRegistrado): ?>
+                                            <br><span class="label label-success"><i class="fa fa-check-circle"></i> Ya registrado</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?= $this->escapeHtml($respuesta->getNombreCompletoAspirante()) ?>
+                                    </td>
+                                    <td>
+                                        <a href="mailto:<?= $respuesta->getCorreoAspirante() ?>">
+                                            <?= $this->escapeHtml($respuesta->getCorreoAspirante()) ?>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <?= $this->escapeHtml($respuesta->getTelefonoAspirante()) ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <small><?= $respuesta->getFechaEnvioFormateada() ?></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <?php if ($formularioActivo): ?>
+                                                <?php if (!$estaRegistrado): ?>
+                                                    <a href="<?= $this->url('formulario-admision', ['action' => 'registrar-aspirante', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                       class="btn btn-success btn-sm" title="Registrar como estudiante">
+                                                        <i class="fa fa-user-plus"></i> Registrar
+                                                    </a>
+                                                    <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                       class="btn btn-primary btn-sm" title="Editar Respuesta">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                <?php endif; ?>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="eliminarRespuesta(<?= $respuesta->getIdRespuesta() ?>)" 
+                                                        title="Eliminar Respuesta">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'editar-respuesta', 'id' => $respuesta->getIdRespuesta()]) ?>" 
+                                                   class="btn btn-info btn-sm" title="Ver Respuesta (Solo Lectura)">
+                                                    <i class="fa fa-eye"></i> Ver
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </form>
+
+                <!-- Paginación simple -->
+                <?php if ($totalPages > 1): ?>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted">Mostrando página <?= $page ?> de <?= $totalPages ?> (<?= $totalRecords ?> registros)</p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <nav>
+                                <ul class="pagination pagination-sm" style="margin-top: 0;">
+                                    <?php if ($page > 1): ?>
+                                        <li>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page - 1]]) ?>">
+                                                &laquo; Anterior
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="disabled"><span>&laquo; Anterior</span></li>
+                                    <?php endif; ?>
+
+                                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                        <?php if ($i == $page): ?>
+                                            <li class="active"><span><?= $i ?></span></li>
+                                        <?php else: ?>
+                                            <li>
+                                                <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $i]]) ?>">
+                                                    <?= $i ?>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+
+                                    <?php if ($page < $totalPages): ?>
+                                        <li>
+                                            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page + 1]]) ?>">
+                                                Siguiente &raquo;
+                                            </a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="disabled"><span>Siguiente &raquo;</span></li>
+                                    <?php endif; ?>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <p class="text-muted"><?= $totalRecords ?> respuesta(s) en total</p>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-info-circle"></i> Sin respuestas</h4>
+                    <p>No hay respuestas para este formulario aún.</p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="row">
+                <div class="col-md-12 text-right">
+                    <a href="<?= $this->url('formulario-admision')?>" class="btn btn-default">
+                        <i class="fa fa-arrow-left"></i> Volver a Formularios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.aspirante-checkbox:not(:disabled)');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function registrarAspirantesSeleccionados() {
+    const checkboxes = document.querySelectorAll('.aspirante-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        ConfirmService.alert('Debe seleccionar al menos un aspirante para registrar.');
+        return;
+    }
+
+    const grado = document.getElementById('grado_a_ingresar').value;
+    const carrera = document.getElementById('carrera_a_ingresar').value;
+    const cohorte = document.getElementById('cohorte').value;
+
+    if (!grado || !carrera || !cohorte) {
+        ConfirmService.alert('Debe seleccionar grado, carrera y cohorte antes de registrar.');
+        return;
+    }
+
+    ConfirmService.confirm('¿Está seguro que desea registrar ' + checkboxes.length + ' aspirante(s) como estudiantes en el sistema?', function() {
+        // Agregar input hidden para indicar la acción de asignación masiva
+        const form = document.getElementById('formRegistrarAspirantes');
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'registrar_seleccionados';
+        hidden.value = '1';
+        form.appendChild(hidden);
+        form.submit();
+    });
+}
+
+function eliminarRespuesta(idRespuesta) {
+    ConfirmService.confirm('¿Está seguro que desea eliminar esta respuesta? Esta acción no se puede deshacer.', function() {
+        // Crear formulario temporal para eliminación
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.href;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'eliminar_respuesta';
+        input.value = idRespuesta;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    });
+}
+
+// Cascada Grado -> Carrera en el panel de asignación masiva
+(function() {
+    const gradoSelect = document.getElementById('grado_a_ingresar');
+    const carreraSelect = document.getElementById('carrera_a_ingresar');
+    const careerTree = <?= json_encode($careerTree ?? []) ?>;
+
+    function filtrarCarreras() {
+        const gradoId = gradoSelect.value;
+        const carreras = careerTree[gradoId] || {};
+        let options = '<option value="">-- Seleccione --</option>';
+        for (const cod in carreras) {
+            options += '<option value="' + cod + '">' + carreras[cod] + '</option>';
+        }
+        carreraSelect.innerHTML = options;
+    }
+
+    if (gradoSelect && carreraSelect) {
+        gradoSelect.addEventListener('change', filtrarCarreras);
+    }
+})();
+</script>

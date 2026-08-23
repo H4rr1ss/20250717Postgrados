@@ -1,0 +1,266 @@
+<?php
+$this->headTitle('Evaluación Examen Privado');
+?>
+<style>
+    /* Estados más oscuros y texto bold para mejor legibilidad */
+    #tablaEvaluacion .label {
+        font-weight: bold;
+        font-size: 12px;
+        padding: .35em .7em;
+    }
+    #tablaEvaluacion .label-info    { background-color: #0275d8; }
+    #tablaEvaluacion .label-success { background-color: #3d8b40; }
+    #tablaEvaluacion .label-warning { background-color: #d58512; }
+    #tablaEvaluacion .label-default { background-color: #555555; }
+</style>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li class="active">Evaluación Examen Privado</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Evaluación Examen Privado</h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h4 style="font-weight: bold; margin-bottom: 15px;">Información</h4>
+        <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
+            <li>En esta sección se listan los estudiantes con examen privado notificado.</li>
+            <li>Puede registrar la evaluación de cada uno de los 3 examinadores por proceso.</li>
+            <li>La matriz de preguntas se carga automáticamente según la maestría del estudiante.</li>
+        </ul>
+    </div>
+</div>
+
+<br>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div style="padding: 15px; background-color: white;">
+
+                <!-- Filtros de búsqueda -->
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                            <input type="text" id="filtroBusqueda" class="form-control" placeholder="Buscar por registro académico o nombre de estudiante..." onkeydown="if(event.key==='Enter') filtrarTabla();">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-filter"></i></span>
+                            <select id="filtroEstado" class="form-control">
+                                <option value="">Todos los estados</option>
+                                <option value="Completada">Completada</option>
+                                <option value="Abierta">Abierta</option>
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Cerrada">Cerrada</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                            <input type="date" id="filtroFecha" class="form-control" title="Filtrar por fecha de programación del examen">
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-right">
+                        <button type="button" class="btn btn-primary" onclick="filtrarTabla();">
+                            <i class="fa fa-search"></i> Filtrar
+                        </button>
+                        <button type="button" class="btn btn-default" onclick="limpiarFiltros();">
+                            <i class="fa fa-eraser"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <table class="table table-bordered table-hover" id="tablaEvaluacion" style="margin-bottom: 0;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 120px;">Registro</th>
+                            <th>Estudiante</th>
+                            <th>Carrera / Maestría</th>
+                            <th style="width: 130px;">Programación</th>
+                            <th style="width: 100px;">Estado</th>
+                            <th style="width: 50px;" class="text-center">Ex1</th>
+                            <th style="width: 50px;" class="text-center">Ex2</th>
+                            <th style="width: 50px;" class="text-center">Ex3</th>
+                            <th style="width: 220px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($this->procesos)): ?>
+                            <tr>
+                                <td colspan="9" class="text-center" style="padding: 20px; color: #999;">No hay procesos disponibles para evaluación.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($this->procesos as $p): ?>
+                                <?php
+                                $ex1 = (int) ($p['ex1_completado'] ?? 0);
+                                $ex2 = (int) ($p['ex2_completado'] ?? 0);
+                                $ex3 = (int) ($p['ex3_completado'] ?? 0);
+                                $completadas = (int) ($p['evaluaciones_completadas'] ?? 0);
+                                $codigo = $p['codigo_evaluacion'] ?? null;
+                                $horaApertura = $p['hora_apertura_evaluacion'] ?? null;
+                                $horaCierre = $p['hora_cierre_evaluacion'] ?? null;
+                                $numReprog = (int) ($p['numero_reprogramacion'] ?? 0);
+                                $abierta = !empty($codigo) && !empty($horaApertura) && empty($horaCierre);
+                                $codProceso = (int) $p['cod_proceso'];
+
+                                $fechaExamen = $p['fecha_examen_privado'] ?? null;
+                                $horaExamen  = $p['hora_examen_privado'] ?? null;
+                                if ($fechaExamen && $horaExamen) {
+                                    $hora12h = date('h:i A', strtotime($horaExamen));
+                                    $calendarizacion = date('d/m/Y', strtotime($fechaExamen)) . '<br>' . $hora12h;
+                                } elseif ($fechaExamen) {
+                                    $calendarizacion = date('d/m/Y', strtotime($fechaExamen));
+                                } else {
+                                    $calendarizacion = 'No programado';
+                                }
+                                ?>
+                                <tr data-fecha="<?= $this->escapeHtml($fechaExamen ?? '') ?>">
+                                    <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                    <td>
+                                        <?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?>
+                                    </td>
+                                    <td><?= $this->escapeHtml($p['carrera'] ?? 'N/A') ?></td>
+                                    <td class="text-center" style="font-size: 12px;">
+                                        <?= $calendarizacion ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if (!empty($horaCierre) && $completadas >= 2): ?>
+                                            <span class="label label-info">Completada</span>
+                                        <?php elseif ($abierta): ?>
+                                            <span class="label label-success">Abierta</span>
+                                        <?php elseif (empty($horaApertura)): ?>
+                                            <span class="label label-warning">Pendiente</span>
+                                        <?php else: ?>
+                                            <span class="label label-default">Cerrada</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if ($ex1): ?>
+                                            <span class="text-success"><i class="fa fa-check-circle"></i></span>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-circle-o"></i></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if ($ex2): ?>
+                                            <span class="text-success"><i class="fa fa-check-circle"></i></span>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-circle-o"></i></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if ($ex3): ?>
+                                            <span class="text-success"><i class="fa fa-check-circle"></i></span>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-circle-o"></i></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="<?= $this->url('examen', ['action' => 'ver-matriz', 'id' => $codProceso]) ?>"
+                                           class="btn btn-sm btn-info" title="Ver resumen">
+                                            <i class="fa fa-eye"></i> Evaluar
+                                        </a>
+                                        <?php if (!empty($horaCierre) && ($ex1 + $ex2 + $ex3) >= 2): ?>
+                                            <a href="<?= $this->url('examen', ['action' => 'acta-examen-privado', 'id' => $codProceso]) ?>"
+                                               class="btn btn-sm btn-success" title="Generar acta de examen privado">
+                                                <i class="fa fa-check-circle"></i> Generar acta
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+
+                <!-- Paginación -->
+                <?php if ($this->paginacion['paginas_total'] > 1): ?>
+                    <nav class="text-center" style="margin-top: 15px;">
+                        <ul class="pagination" style="margin: 0;">
+                            <?php for ($i = 1; $i <= $this->paginacion['paginas_total']; $i++): ?>
+                                <li class="<?= $i === $this->paginacion['pagina'] ? 'active' : '' ?>">
+                                    <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>?page=<?= $i ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </nav>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filtrarTabla() {
+    var textoBusqueda = $('#filtroBusqueda').val().toLowerCase().trim();
+    var valorEstado = $('#filtroEstado').val();
+    var valorFecha = $('#filtroFecha').val();
+    var hayFiltro = textoBusqueda !== '' || valorEstado !== '' || valorFecha !== '';
+    var filasVisibles = 0;
+
+    $('#tablaEvaluacion tbody tr').each(function() {
+        // Ignorar la fila de "No hay procesos"
+        if ($(this).find('td').length === 1) return;
+
+        var registro = $(this).find('td:eq(0)').text().toLowerCase();
+        var nombre = $(this).find('td:eq(1)').text().toLowerCase();
+        var estado = $(this).find('td:eq(4) span.label').text().trim();
+        var fechaFila = $(this).data('fecha');
+
+        var coincideBusqueda = textoBusqueda === '' ||
+            registro.indexOf(textoBusqueda) !== -1 ||
+            nombre.indexOf(textoBusqueda) !== -1;
+        var coincideEstado = valorEstado === '' || estado === valorEstado;
+        var coincideFecha = valorFecha === '' || fechaFila === valorFecha;
+
+        if (coincideBusqueda && coincideEstado && coincideFecha) {
+            $(this).show();
+            filasVisibles++;
+        } else {
+            $(this).hide();
+        }
+    });
+
+    // Mostrar/ocultar mensaje de "no hay resultados"
+    var $tbody = $('#tablaEvaluacion tbody');
+    var $noResultados = $tbody.find('.no-resultados-filtro');
+    if (hayFiltro && filasVisibles === 0) {
+        if ($noResultados.length === 0) {
+            $tbody.append('<tr class="no-resultados-filtro"><td colspan="9" class="text-center" style="padding: 20px; color: #999;"><i class="fa fa-search"></i> No se encontraron resultados con los filtros aplicados.</td></tr>');
+        }
+    } else {
+        $noResultados.remove();
+    }
+}
+
+function limpiarFiltros() {
+    $('#filtroBusqueda').val('');
+    $('#filtroEstado').val('');
+    $('#filtroFecha').val('');
+    $('#tablaEvaluacion tbody tr').show();
+    $('#tablaEvaluacion tbody .no-resultados-filtro').remove();
+}
+</script>
+
+</div>

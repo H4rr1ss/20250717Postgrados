@@ -28,7 +28,7 @@ return [//ICON, MENU text
         'action' => 'studentSearch',
         'icon' => 'fa-search',
         'text' => 'Búsqueda de usuarios',
-        'roles' => [Role::DIRECTOR, Role::TESORERO, Role::ASISTENTE, Role::UDICA_JEFE, Role::UDICA_OPERADOR]],
+        'roles' => [Role::DIRECTOR, Role::TESORERO, Role::ASISTENTE, Role::UDICA_JEFE, Role::UDICA_OPERADOR, Role::SECRETARIO_EXAMEN_PRIVADO]],
     View::UPG_COURSES => [
         'controller' => 'upgCourse',
         'action' => 'view',
@@ -137,10 +137,68 @@ return [//ICON, MENU text
 //        'icon' => 'fa-retweet',
 //        'text' => 'Actualización de Órdenes',
 //        'roles' => [Role::TESORERO]],
+    View::EXAMEN => [
+        'controller' => 'examen',
+        'action' => 'index',
+        'icon' => 'fa-list-alt',
+        'text' => 'Gestión de Exámenes',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::EVALUACION_PRIVADO => [
+        'controller' => 'examen',
+        'action' => 'evaluacion-privado',
+        'icon' => 'fa-star',
+        'text' => 'Evaluación Examen Privado',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::CARTA_EXAMINADORES => [
+        'controller' => 'examen',
+        'action' => 'carta-examinadores',
+        'icon' => 'fa-envelope-o',
+        'text' => 'Carta de Examinadores',
+        'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::AUTORIZACION_IMPRESION => [
+        'controller' => 'examen',
+        'action' => 'autorizacion-impresion',
+        'icon' => 'fa-print',
+        'text' => 'Autorización de Impresión',
+        'roles' => [Role::DIRECTOR, Role::COORDINADOR, Role::ASISTENTE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::ACTAS_EXAMEN_GENERAL => [
+        'controller' => 'examen',
+        'action' => 'actas-examen-general',
+        'icon' => 'fa-file-text-o',
+        'text' => 'Actas de Examen General',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE],
+        'group' => ['key' => 'modulo_graduacion', 'icon' => 'fa-graduation-cap', 'text' => 'Módulo de Graduación']
+    ],
+    View::STUDENT_GRADUATION => [
+        'controller' => 'student-graduation',
+        'action' => 'index',
+        'icon' => 'fa-graduation-cap',
+        'text' => 'Proceso de Graduación',
+        'roles' => [Role::ESTUDIANTE]],
     View::LOG_VIEW => [
         'controller' => 'user',
         'action' => 'logView',
         'icon' => 'fa-history',
         'text' => 'Bitácora',
         'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::TESORERO, Role::UDICA_JEFE]],
+    View::FORMULARIO_ADMISION => [
+        'controller' => 'formulario-admision',
+        'action' => 'index',
+        'icon' => 'fa-file-text-o',
+        'text' => 'Formulario de Admisión',
+        'roles' => [Role::DIRECTOR, Role::ASISTENTE]],
+    View::EVALUACION_DOCENTE_REPORTE => [
+        'controller' => 'evaluacion-docente',
+        'action' => 'reporte-docente',
+        'icon' => 'fa-bar-chart',
+        'text' => 'Reporte Evaluación Docente',
+        'roles' => [Role::DIRECTOR]],
 ];

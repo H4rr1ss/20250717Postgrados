@@ -1,0 +1,141 @@
+<?php
+$this->headTitle('Reporte de Evaluación Docente');
+
+$periodos = $periodos ?? [];
+$docentes = $docentes ?? [];
+$reporte = $reporte ?? [];
+$anio = $anio ?? null;
+$mes = $mes ?? null;
+$docente = $docente ?? null;
+
+$nombresMeses = [
+    1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+    5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+    9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+];
+
+$anios = [];
+$meses = [];
+foreach ($periodos as $p) {
+    $anios[(int) $p['anio']] = $p['anio'];
+    $meses[(int) $p['mes']] = $p['mes'];
+}
+rsort($anios);
+ksort($meses);
+?>
+<div class="col-lg-12">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            Reporte de Evaluación Docente
+            <small>— Período del Curso</small>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <form method="get" action="<?= $this->url('evaluacion-docente', ['action' => 'reporte-docente']) ?>">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Año</label>
+                            <select name="anio" class="form-control">
+                                <option value="">Todos</option>
+                                <?php foreach ($anios as $a): ?>
+                                    <option value="<?= $this->escapeHtml($a) ?>" <?= $anio == $a ? 'selected' : '' ?>>
+                                        <?= $this->escapeHtml($a) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Mes</label>
+                            <select name="mes" class="form-control">
+                                <option value="">Todos</option>
+                                <?php foreach ($meses as $m): ?>
+                                    <option value="<?= $this->escapeHtml($m) ?>" <?= $mes == $m ? 'selected' : '' ?>>
+                                        <?= $this->escapeHtml($nombresMeses[(int) $m] ?? $m) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Docente</label>
+                            <select name="docente" class="form-control">
+                                <option value="">Todos</option>
+                                <?php foreach ($docentes as $d): ?>
+                                    <option value="<?= $this->escapeHtml($d['cod_usuario']) ?>" <?= $docente == $d['cod_usuario'] ? 'selected' : '' ?>>
+                                        <?= $this->escapeHtml($d['nombre_docente']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <br/>
+                        <button type="submit" class="btn btn-blue">
+                            <i class="fa fa-filter"></i> Filtrar
+                        </button>
+                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'reporte-docente']) ?>"
+                           class="btn btn-default">
+                            <i class="fa fa-eraser"></i> Limpiar
+                        </a>
+                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['anio' => $anio, 'mes' => $mes, 'docente' => $docente]]) ?>"
+                           class="btn btn-success">
+                            <i class="fa fa-download"></i> Descargar excel
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <hr/>
+            <?= $this->partial('eep/msg', ['msg' => $msg ?? null]) ?>
+
+            <?php if (!empty($reporte)): ?>
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Tip:</strong> Haga clic sobre cualquier fila de la tabla para visualizar las gráficas de evaluación de ese curso.
+                </div>
+                <div class="overflow-x">
+                    <table class="table table-hover table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Docente</th>
+                                <th>Curso</th>
+                                <th class="text-center">Sección</th>
+                                <th class="text-center">Período del Curso</th>
+                                <th class="text-center">Evaluaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($reporte as $item): ?>
+                                <?php
+                                $graficasUrl = $this->url('evaluacion-docente', ['action' => 'ver-graficas', 'id' => $item['cod_horario']]);
+                                ?>
+                                <tr style="cursor: pointer;" onclick="window.location.href='<?= $this->escapeHtmlAttr($graficasUrl) ?>';" title="Haga clic para ver gráficas de este curso">
+                                    <td><?= $this->escapeHtml($item['nombre_docente']) ?></td>
+                                    <td><?= $this->escapeHtml($item['nombre_curso']) ?></td>
+                                    <td class="text-center"><?= $this->escapeHtml($item['seccion']) ?></td>
+                                    <td class="text-center"><?= $this->escapeHtml($item['anio'] . ' - ' . ($nombresMeses[(int) $item['mes']] ?? 'Mes ' . $item['mes'])) ?></td>
+                                    <td class="text-center">
+                                        <span class="badge" style="background-color: #5bc0de;">
+                                            <?= $this->escapeHtml($item['total_evaluaciones']) ?>
+                                        </span>
+                                        <span class="text-info" style="margin-left: 8px; font-size: 13px;">
+                                            <i class="fa fa-bar-chart"></i> Ver resultados
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-warning text-center" style="padding: 40px 20px; font-size: 18px; border: 2px solid #f0ad4e;">
+                    <i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #f0ad4e; display: block; margin-bottom: 15px;"></i>
+                    <strong style="font-size: 20px; display: block; margin-bottom: 10px;">No se encontraron evaluaciones</strong>
+                    <span style="color: #8a6d3b;">No hay evaluaciones registradas para el período seleccionado.<br>Por favor, ajuste los filtros y vuelva a intentar.</span>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>

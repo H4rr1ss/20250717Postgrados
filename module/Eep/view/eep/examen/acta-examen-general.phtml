@@ -1,0 +1,280 @@
+<?php
+$this->headTitle('Generar Acta de Examen General');
+
+$datos      = $this->datos ?? [];
+$decano     = $this->decano ?? 'Decano';
+$secretario = $this->secretario ?? 'Secretario Académico';
+
+$nombreEstudiante = trim($datos['nombre_completo'] ?? '');
+$carrera         = $datos['carrera'] ?? 'N/A';
+$temaTesis       = $datos['tema_tesis'] ?? '';
+$registro        = $datos['registro_academico'] ?? '';
+$fechaActo       = !empty($datos['fecha_examen_general']) ? date('d/m/Y', strtotime($datos['fecha_examen_general'])) : '';
+$horaActo        = !empty($datos['hora_examen_general']) ? date('g:i A', strtotime($datos['hora_examen_general'])) : '';
+$sexo            = strtoupper($datos['sexo'] ?? '');
+$esFemenino      = in_array($sexo, ['F', 'M', 'MUJER', '2'], true);
+$prefijoAlumno   = $esFemenino ? 'la alumna' : 'el alumno';
+
+// Si ya existe un acto grupal (creado desde notificación grupal),
+// precargamos los datos compartidos para no repetirlos.
+// Nota: usamos examinador_1 o lugar_acto como indicador de existencia,
+// ya que cod_acto_graduacion es NULL hasta que se genere la primera acta.
+$tieneActoGrupal = !empty($datos['examinador_1']) || !empty($datos['lugar_acto']);
+$lugarCompartido = $datos['lugar_acto'] ?? '';
+$horaFirmaCompartida = $datos['hora_firma'] ?? '';
+$ex1Compartido = $datos['examinador_1'] ?? '';
+$ex2Compartido = $datos['examinador_2'] ?? '';
+$ex3Compartido = $datos['examinador_3'] ?? '';
+
+$lugar = $datos['lugar'] ?? $lugarCompartido;
+
+$numeroActaExistente = $datos['numero_acta'] ?? '';
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li><a href="<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>">Actas de Examen General</a></li>
+            <li class="active">Generar acta</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">Generar Acta de Examen General</h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-1"></div>
+    <div class="col-lg-10">
+        <div class="panel panel-green">
+            <div class="panel-heading">
+                <i class="fa fa-file-text-o"></i> Acta de Examen General — Acto de Graduación
+            </div>
+            <div class="panel-body pan" style="padding: 20px;">
+
+                <!-- Mostrar mensajes flashMessenger (errores / éxitos) -->
+                <?php
+                    $flash = $this->flashMessenger();
+                    $flashMessages = $flash->getMessages();
+                    if (!empty($flashMessages)):
+                        foreach ($flashMessages as $type => $messages):
+                            foreach ($messages as $msg):
+                                $alertClass = ($type === 'error' || $type === 'danger') ? 'alert-danger' : 'alert-success';
+                ?>
+                    <div class="alert <?= $alertClass ?>" style="margin-bottom: 15px;">
+                        <i class="fa <?= ($alertClass === 'alert-danger') ? 'fa-exclamation-triangle' : 'fa-check-circle' ?>"></i>
+                        <?= $this->escapeHtml($msg) ?>
+                    </div>
+                <?php
+                            endforeach;
+                        endforeach;
+                    endif;
+                ?>
+
+                <?php if (!empty($numeroActaExistente)): ?>
+                    <div class="alert alert-success">
+                        <i class="fa fa-check-circle"></i>
+                        Este estudiante ya tiene un acta generada:
+                        <strong><?= $this->escapeHtml($numeroActaExistente) ?></strong>.
+                        <br>Al generar nuevamente se reutilizará el mismo número.
+                    </div>
+                <?php endif; ?>
+
+                <form action="<?= $this->url('examen', ['action' => 'generar-acta-general', 'id' => (int) ($datos['cod_proceso'] ?? 0)]) ?>"
+                      method="post" class="form-body pal" target="actaDownloadFrame">
+
+                    <!-- Datos del estudiante (solo lectura) -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Estudiante</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($nombreEstudiante) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Carné</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($registro) ?>" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Carrera / Maestría</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($carrera) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tema del Proyecto de Graduación</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($temaTesis) ?>" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Fecha del acto</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($fechaActo) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Hora del acto</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($horaActo) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Lugar <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" name="lugar" value="<?= $this->escapeHtml($lugar) ?>" required placeholder="Ej: Auditorio Universidad">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                                <i class="fa fa-edit"></i> Datos del Acta
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Acuerdo de Decanato <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" name="acuerdo_decanato" value="<?= $this->escapeHtml($datos['acuerdo_decanato'] ?? '') ?>" placeholder="Ej. 154/2024" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Número de Recibo <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" name="numero_recibo" value="<?= $this->escapeHtml($datos['numero_recibo'] ?? '') ?>" placeholder="Ej. 735816401" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Promedio <span style="color:red">*</span></label>
+                                <input type="number" class="form-control" name="promedio" value="<?= $this->escapeHtml($datos['promedio'] ?? '') ?>" placeholder="Ej. 85.50" min="0" max="100" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Hora de firma del acta <span style="color:red">*</span></label>
+                                <input type="time" class="form-control" name="hora_firma" value="<?= $this->escapeHtml($horaFirmaCompartida) ?>" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos ocultos para enviar los examinadores ya definidos -->
+                    <input type="hidden" name="examinador_1" value="<?= $this->escapeHtml($ex1Compartido) ?>">
+                    <input type="hidden" name="examinador_2" value="<?= $this->escapeHtml($ex2Compartido) ?>">
+                    <input type="hidden" name="examinador_3" value="<?= $this->escapeHtml($ex3Compartido) ?>">
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 1</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex1Compartido) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 2</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex2Compartido) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 3</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($ex3Compartido) ?>" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Decano</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($decano) ?>" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Secretario Académico</label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($secretario) ?>" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Madrina / Padrino</label>
+                                <?php
+                                    $mTipo   = $this->datos['madrina_tipo'] ?? '';
+                                    $mNombre = $this->datos['madrina_nombre'] ?? '';
+                                    $mTitulo = $this->datos['madrina_titulo'] ?? '';
+                                    $mTexto  = '(No definido)';
+                                    if ($mNombre !== '') {
+                                        $mTexto = ($mTitulo !== '')
+                                            ? $mTitulo . ' ' . $mNombre
+                                            : $mNombre;
+                                        $mTexto .= ' (' . ucfirst($mTipo ?: 'madrina') . ')';
+                                    }
+                                ?>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($mTexto) ?>" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 text-right" style="margin-top: 20px;">
+                            <a href="<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>" class="btn btn-default">
+                                <i class="fa fa-arrow-left"></i> Volver
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa fa-file-text-o"></i> <?= empty($numeroActaExistente) ? 'Generar acta' : 'Volver a generar acta' ?>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-1"></div>
+</div>
+
+<iframe name="actaDownloadFrame" style="display:none;"></iframe>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+$(document).ready(function() {
+    var $form = $('form');
+    var $btn  = $form.find('button[type="submit"]');
+
+    $form.on('submit', function() {
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Generando...');
+        ToastService.success('Generando acta... La descarga comenzará en breve.');
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    });
+});
+</script>
+
+</div>

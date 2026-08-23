@@ -26,7 +26,10 @@
         "zendframework/zend-crypt": "^3.3",
         "zendframework/zend-soap": "^2.7",
         "spipu/html2pdf": "^5.1",
-        "zendframework/zend-json": "^3.1"
+        "zendframework/zend-json": "^3.1",
+        "phpoffice/phpword": "^1.4",
+        "ezyang/htmlpurifier": "^4.19",
+        "zendframework/zend-mail": "^2.10"
     },
     "autoload": {
         "psr-4": {

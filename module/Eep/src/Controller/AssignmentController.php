@@ -19,6 +19,7 @@ use Eep\Service\TimetableManager;
 use Eep\Service\AssignmentManager;
 use Eep\Service\OrderManager;
 use Eep\Service\AcademyManager;
+use Eep\Service\EvaluacionDocenteManager;
 //FORMS
 use Eep\Form\AssignmentForm;
 use Eep\Form\AssignmentTypeForm;
@@ -33,13 +34,15 @@ class AssignmentController extends AbstractActionController {
     private $orderManager;
     private $userManager;
     private $academyManager;
+    private $evaluacionDocenteManager;
 
-    public function __construct(TimetableManager $timetableManager, AssignmentManager $assignmentManager, OrderManager $orderManager, UserManager $userManager, AcademyManager $academyManager) {
+    public function __construct(TimetableManager $timetableManager, AssignmentManager $assignmentManager, OrderManager $orderManager, UserManager $userManager, AcademyManager $academyManager, EvaluacionDocenteManager $evaluacionDocenteManager) {
         $this->timetableManager = $timetableManager;
         $this->assignmentManager = $assignmentManager;
         $this->orderManager = $orderManager;
         $this->userManager = $userManager;
         $this->academyManager = $academyManager;
+        $this->evaluacionDocenteManager = $evaluacionDocenteManager;
     }
 
     public function assignedCoursesAction() {
@@ -236,8 +239,17 @@ class AssignmentController extends AbstractActionController {
     }
 
     public function assignmentAction() {
-        //GETTING FORM
         $userCode = $this->identity();
+
+        // Verificar si tiene evaluaciones docentes pendientes
+        $evaluacionResult = $this->evaluacionDocenteManager->getCursosPendientes($userCode);
+        if ($evaluacionResult->get() && is_array($evaluacionResult->getObj()) && count($evaluacionResult->getObj()) > 0) {
+            $this->flashMessenger()->addWarningMessage(
+                'Tiene evaluaciones docentes pendientes. Debe completarlas antes de asignar nuevos cursos.'
+            );
+            return $this->redirect()->toRoute('evaluacion-docente');
+        }
+
         $result = $this->getAssignmentForm($userCode, AssignmentTypeForm::TYPE_STUDENT_REGULAR);
         if (!empty($result->getMsg())) {
             $formMsg = new Message('Observación de Asignación', $result);

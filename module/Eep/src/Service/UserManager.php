@@ -160,6 +160,8 @@ class UserManager extends Manager {
                         'cod_pais' => $user->getCodPais(),
                         'sexo' => $user->getSexo(),
                         'grado_academico' => $user->getGradoAcademico(),
+                        'titulo_profesional' => $user->getTituloProfesional(),
+                        'numero_colegiado' => $user->getNumeroColegiado(),
                         'fecha_creacion' => new Expression('curdate()'),
                         'cod_info_laboral' => empty($infoLaboral) ? null : $infoLaboral->getCode(),
                         'nombre_completo' => $user->getNombreCompleto()
@@ -170,8 +172,8 @@ class UserManager extends Manager {
                     $userTable->insert($values);
                     $response->success();
                     $response->set($userTable->getLastInsertValue());
-                } catch (InvalidQueryException $ex) {
-                    $response->addMsg("No se pudo agregar el nuevo usuario");
+                } catch (\Exception $ex) {
+                    $response->addMsg("No se pudo agregar el nuevo usuario: " . $ex->getMessage());
                 }
             }
         }
@@ -192,6 +194,16 @@ class UserManager extends Manager {
         $updateData = [];
         if (!empty($user->getGradoAcademico())) {
             $updateData['grado_academico'] = $user->getGradoAcademico();
+        }
+        if (!empty($user->getTituloProfesional())) {
+            $updateData['titulo_profesional'] = $user->getTituloProfesional();
+        } else {
+            $updateData['titulo_profesional'] = null;
+        }
+        if (!empty($user->getNumeroColegiado())) {
+            $updateData['numero_colegiado'] = $user->getNumeroColegiado();
+        } else {
+            $updateData['numero_colegiado'] = null;
         }
         if (!empty($user->getCui())) {
             $updateData['cui'] = $user->getCui();
@@ -602,6 +614,73 @@ class UserManager extends Manager {
             }
         }
         return $res;
+    }
+
+    public function getUserByEmail(string $email): ?User {
+        if (empty($email)) {
+            return null;
+        }
+        $userTable = new TableGateway(['u' => 'usuario'], $this->dbAdapter);
+        $select = $userTable->getSql()->select();
+        $select->where(['u.correo' => $email]);
+        $select->limit(1);
+        $result = $userTable->selectWith($select)->current();
+        if ($result) {
+            return new User($result);
+        }
+        return null;
+    }
+
+    public function createPasswordResetToken(int $userId): string {
+        $tokenTable = new TableGateway('password_reset_token', $this->dbAdapter);
+        $tokenTable->delete(['cod_usuario' => $userId]);
+
+        $token = bin2hex(random_bytes(32));
+        $tokenTable->insert([
+            'token' => $token,
+            'cod_usuario' => $userId,
+            'expires_at' => new Expression('DATE_ADD(NOW(), INTERVAL 30 MINUTE)'),
+            'used' => 0,
+        ]);
+        return $token;
+    }
+
+    public function validatePasswordResetToken(string $token): ?int {
+        $tokenTable = new TableGateway('password_reset_token', $this->dbAdapter);
+        $result = $tokenTable->select([
+            'token' => $token,
+            'used' => 0,
+        ])->current();
+        if (!$result) {
+            return null;
+        }
+        $expiresAt = $result['expires_at'] ?? null;
+        if ($expiresAt && strtotime($expiresAt) < time()) {
+            return null;
+        }
+        return (int) $result['cod_usuario'];
+    }
+
+    public function resetPasswordByToken(string $token, string $newPassword): bool {
+        $this->beginTransaction();
+        try {
+            $userId = $this->validatePasswordResetToken($token);
+            if ($userId === null) {
+                $this->rollback();
+                return false;
+            }
+            if (!$this->changePassword($userId, $newPassword)) {
+                $this->rollback();
+                return false;
+            }
+            $tokenTable = new TableGateway('password_reset_token', $this->dbAdapter);
+            $tokenTable->update(['used' => 1], ['token' => $token]);
+            $this->commit();
+            return true;
+        } catch (\Exception $ex) {
+            $this->rollback();
+            return false;
+        }
     }
 
 }

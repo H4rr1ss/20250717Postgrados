@@ -1,0 +1,208 @@
+<?php
+$this->headTitle('Evaluación Docente - Formulario');
+$role = $this->layout()->role;
+$curso = $curso ?? [];
+$preguntas = $preguntas ?? [];
+?>
+
+<div class="col-lg-12">
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb">
+                <li>
+                    <a href="<?= $this->url('evaluacion-docente') ?>">
+                        <i class="fa fa-star"></i> Evaluación Docente
+                    </a>
+                </li>
+                <li class="active">Formulario de Evaluación</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="panel panel-blue">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-book"></i> Información del Curso
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Curso:</strong> <?= $this->escapeHtml($curso['nombre_curso'] ?? 'Curso sin nombre') ?></p>
+                            <p><strong>Sección:</strong> <?= $this->escapeHtml($curso['seccion'] ?? '-') ?></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Período:</strong> <?= $this->escapeHtml(($curso['anio'] ?? '') . ' - ' . ($curso['mes'] ?? '')) ?></p>
+                            <p><strong>Docente:</strong> <?= $this->escapeHtml($curso['nombre_docente'] ?? 'Docente no asignado') ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="alert alert-warning">
+                <i class="fa fa-exclamation-triangle"></i>
+                <strong>Importante:</strong> Por favor, responda todas las preguntas con honestidad.
+                Sus respuestas son anónimas y ayudarán a mejorar la calidad educativa.
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <form method="post" action="<?= $this->url('evaluacion-docente', ['action' => 'guardar-evaluacion']) ?>" id="form-evaluacion">
+                <input type="hidden" name="cod_horario" value="<?= $this->escapeHtmlAttr($curso['cod_horario'] ?? '') ?>">
+
+                <?php if (!empty($preguntas)): ?>
+                <?php foreach ($preguntas as $seccion): ?>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <i class="fa fa-check-square-o"></i> <?= $this->escapeHtml($seccion['categoria']) ?>
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <?php foreach ($seccion['preguntas'] as $pregunta): ?>
+                                <div class="form-group">
+                                    <label>
+                                        <?= $this->escapeHtml($pregunta['texto']) ?>
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <?php if ($pregunta['tipo'] === 'escala10'): ?>
+                                        <div class="text-center" style="margin-top: 10px;">
+                                            <?php for ($i = 1; $i <= 10; $i++): ?>
+                                                <label class="radio-inline" style="margin-right: 15px;">
+                                                    <strong><?= $i ?></strong><br>
+                                                    <input type="radio"
+                                                           name="pregunta_<?= $pregunta['id'] ?>"
+                                                           value="<?= $i ?>"
+                                                           required>
+                                                </label>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <div class="text-center text-muted" style="margin-top: 5px; font-size: 12px;">
+                                            <span class="text-danger"><strong>1</strong> = Deficiente</span>
+                                            &nbsp;·&nbsp;
+                                            <span class="text-success"><strong>10</strong> = Excelente</span>
+                                        </div>
+
+                                    <?php elseif ($pregunta['tipo'] === 'boolean'): ?>
+                                        <div>
+                                            <label class="radio-inline" style="display: block; margin-bottom: 5px;">
+                                                <input type="radio"
+                                                       name="pregunta_<?= $pregunta['id'] ?>"
+                                                       value="si"
+                                                       required>
+                                                Sí
+                                            </label>
+                                            <label class="radio-inline" style="display: block;">
+                                                <input type="radio"
+                                                       name="pregunta_<?= $pregunta['id'] ?>"
+                                                       value="no"
+                                                       required>
+                                                No
+                                            </label>
+                                        </div>
+
+                                    <?php elseif ($pregunta['tipo'] === 'texto'): ?>
+                                        <textarea name="pregunta_<?= $pregunta['id'] ?>"
+                                                  class="form-control"
+                                                  rows="4"
+                                                  placeholder="Escriba sus comentarios aquí..."
+                                                  required></textarea>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i>
+                        Aún no hay preguntas configuradas para esta evaluación.
+                    </div>
+                <?php endif; ?>
+
+                <div class="panel panel-default">
+                    <div class="panel-body text-center">
+                        <a href="<?= $this->url('evaluacion-docente') ?>"
+                           class="btn btn-default btn-lg">
+                            <i class="fa fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit"
+                                class="btn btn-success btn-lg"
+                                id="btn-enviar">
+                            <i class="fa fa-paper-plane"></i> Enviar Evaluación
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const form = document.getElementById('form-evaluacion');
+    const btnEnviar = document.getElementById('btn-enviar');
+
+    form.addEventListener('submit', function(e) {
+        let todasRespondidas = true;
+        let primerCampoFaltante = null;
+
+        // Validar todos los inputs radio requeridos (escala10 y boolean)
+        const radioGroups = {};
+        document.querySelectorAll('input[type="radio"][required]').forEach(function(input) {
+            radioGroups[input.name] = radioGroups[input.name] || [];
+            radioGroups[input.name].push(input);
+        });
+
+        for (let nombre in radioGroups) {
+            if (radioGroups.hasOwnProperty(nombre)) {
+                const grupoRespondido = radioGroups[nombre].some(function(input) {
+                    return input.checked;
+                });
+                if (!grupoRespondido) {
+                    todasRespondidas = false;
+                    if (!primerCampoFaltante) {
+                        primerCampoFaltante = radioGroups[nombre][0];
+                    }
+                }
+            }
+        }
+
+        // Validar textareas requeridos
+        document.querySelectorAll('textarea[required]').forEach(function(textarea) {
+            if (!textarea.value.trim()) {
+                todasRespondidas = false;
+                if (!primerCampoFaltante) {
+                    primerCampoFaltante = textarea;
+                }
+            }
+        });
+
+        if (!todasRespondidas) {
+            e.preventDefault();
+            alert('Por favor, responda todas las preguntas obligatorias antes de enviar la evaluación.');
+            if (primerCampoFaltante) {
+                primerCampoFaltante.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                primerCampoFaltante.focus();
+            }
+            return false;
+        }
+
+        e.preventDefault();
+        ConfirmService.confirm('¿Está seguro de enviar esta evaluación?\n\nUna vez enviada, no podrá modificarla.', function() {
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+            form.submit();
+        });
+    });
+})();
+</script>

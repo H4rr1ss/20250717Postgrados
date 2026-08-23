@@ -1,0 +1,272 @@
+<?php
+/**
+ * Configurar Autorización — vista de detalle por proceso (Director).
+ *
+ * Variables:
+ *   $proceso      array
+ *   $estudiante   array|null
+ *   $estado       array  registro de examen_autorizacion_proceso (incluye sub_paso)
+ *   $profesional  array|null  Datos del profesional seleccionado por el estudiante
+ *   $enFase       bool
+ */
+$this->headTitle('Revisar Autorización de Impresión');
+
+$urlAprobar = $this->url('examen', ['action' => 'aprobarRevisionPresencial']);
+
+$tieneProfesional = !empty($estado['cod_profesional']);
+$yaAprobado       = ($estado['estado'] ?? 'pendiente') === 'aprobado';
+$subPaso          = (int) ($estado['sub_paso'] ?? 1);
+
+// Lógica de aprobación por parte
+if ($subPaso === 1) {
+    // Parte 1: Requiere profesional seleccionado
+    $puedeAprobar = $enFase && $tieneProfesional && !$yaAprobado;
+} else {
+    // Parte 2: Solo requiere estar en fase y no aprobado
+    $puedeAprobar = $enFase && !$yaAprobado;
+}
+?>
+<div class="col-lg-12">
+
+    <ol class="breadcrumb">
+        <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+        <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+        <li><a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>">Autorización de Impresión</a></li>
+        <li class="active">Proceso #<?= (int) $proceso['cod_proceso'] ?></li>
+    </ol>
+
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            <i class="fa fa-print"></i>
+            Proceso #<?= (int) $proceso['cod_proceso'] ?> — Autorización de Impresión
+        </div>
+        <div class="panel-body">
+
+            <!-- DATOS DEL ESTUDIANTE -->
+            <div class="row">
+                <div class="col-sm-6">
+                    <h4><i class="fa fa-user"></i> Estudiante</h4>
+                    <table class="table table-condensed table-bordered" style="font-size:13px;">
+                        <tr>
+                            <th style="width:35%; background:#f5f5f5;">Nombre</th>
+                            <td><?= $this->escapeHtml($estudiante['nombre_completo'] ?? '-') ?></td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f5f5f5;">Carné</th>
+                            <td><?= $this->escapeHtml($estudiante['registro_academico'] ?? '-') ?></td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f5f5f5;">Correo</th>
+                            <td><?= $this->escapeHtml($estudiante['correo'] ?? '-') ?></td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f5f5f5;">Tipo de examen</th>
+                            <td><?= $this->escapeHtml($proceso['tipo_examen'] ?? '-') ?></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-sm-6">
+                    <h4><i class="fa fa-tasks"></i> Estado del paso 6</h4>
+                    <table class="table table-condensed table-bordered" style="font-size:13px;">
+                        <tr>
+                            <th style="width:40%; background:#f5f5f5;">Parte actual</th>
+                            <td>
+                                <?php if ($subPaso === 1): ?>
+                                    <span class="label label-info">Parte 1</span>
+                                    <small class="text-muted">Selección de profesional</small>
+                                <?php else: ?>
+                                    <span class="label label-primary">Parte 2</span>
+                                    <small class="text-muted">Confirmación final</small>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f5f5f5;">Profesional seleccionado</th>
+                            <td>
+                                <?php if ($profesional): ?>
+                                    <strong><?= $this->escapeHtml($profesional['nombre_completo']) ?></strong><br>
+                                    <small class="text-muted">
+                                        <?= $this->escapeHtml($profesional['correo'] ?? '') ?>
+                                        <?php if (!empty($profesional['telefono'])): ?>
+                                            · <?= $this->escapeHtml($profesional['telefono']) ?>
+                                        <?php endif; ?>
+                                    </small>
+                                <?php else: ?>
+                                    <span class="text-warning">
+                                        <i class="fa fa-exclamation-triangle"></i> El estudiante aún no selecciona un profesional
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="background:#f5f5f5;">Estado autorización</th>
+                            <td>
+                                <?php if ($yaAprobado): ?>
+                                    <span class="label label-success">APROBADO</span>
+                                    <?php if (!empty($estado['fecha_aprobacion'])): ?>
+                                        <small class="text-muted">(<?= date('d/m/Y H:i', strtotime($estado['fecha_aprobacion'])) ?>)</small>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="label label-warning">PENDIENTE</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- INSTRUCCIONES ACTUALES QUE VE EL ESTUDIANTE -->
+            <div class="panel panel-info" style="margin-bottom: 20px;">
+                <div class="panel-heading">
+                    <i class="fa fa-file-text-o"></i>
+                    <strong>Instrucciones publicadas para el estudiante (<?= $subPaso === 1 ? 'Parte 1' : 'Parte 2' ?>)</strong>
+                </div>
+                <div class="panel-body">
+                    <?php $instruccionesActuales = $subPaso === 1 ? ($instruccionesParte1 ?? '') : ($instruccionesParte2 ?? ''); ?>
+                    <?php if (!empty($instruccionesActuales)): ?>
+                        <div style="max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; background: #fff; border-radius: 4px;">
+                            <?= $instruccionesActuales ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted">
+                            <i class="fa fa-info-circle"></i>
+                            Aún no hay instrucciones publicadas para esta parte.
+                            Puedes configurarlas en la pestaña <strong>Instrucciones</strong> de la pantalla de Autorización de Impresión.
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- PANEL DE APROBACIÓN -->
+            <?php if ($yaAprobado): ?>
+                <div class="alert alert-success">
+                    <i class="fa fa-check-circle"></i>
+                    Esta fase ya fue aprobada. El proceso continuó al paso de Examen General.
+                </div>
+            <?php elseif (!$enFase): ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i>
+                    Este proceso ya no se encuentra en la fase de Autorización de Impresión.
+                </div>
+            <?php else: ?>
+                <?php if ($subPaso === 1): ?>
+                    <!-- PARTE 1: Requiere profesional -->
+                    <h4><i class="fa fa-gavel"></i> Aprobar Parte 1</h4>
+
+                    <div class="alert alert-danger" style="margin-bottom: 20px;">
+                        <i class="fa fa-hand-o-right"></i>
+                        <strong>Importante:</strong> Hasta que se aprueben los documentos llevados físicamente por el estudiante, <strong>no se podrá avanzar a la Parte 2</strong>.
+                        Verifique que la entrega presencial esté completa antes de aprobar.
+                    </div>
+
+                    <p style="color:#555;">
+                        Verificar que el estudiante haya seleccionado al profesional calificado (Licenciado en Letras)
+                        y que toda la documentación de la Parte 1 esté en orden.
+                        Al aprobar, el proceso avanzará a la <strong>Parte 2</strong>.
+                    </p>
+
+                    <?php if (!$tieneProfesional): ?>
+                        <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            El estudiante todavía no ha seleccionado un profesional calificado.
+                            No se puede aprobar la Parte 1 hasta que lo haga.
+                        </div>
+                    <?php endif; ?>
+
+                    <form id="form-aprobar">
+                        <input type="hidden" name="cod_proceso" value="<?= (int) $proceso['cod_proceso'] ?>">
+                        <button type="submit" class="btn btn-info" <?= $puedeAprobar ? '' : 'disabled' ?>>
+                            <i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2
+                        </button>
+                        <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-default">
+                            <i class="fa fa-arrow-left"></i> Volver al listado
+                        </a>
+                    </form>
+                <?php else: ?>
+                    <!-- PARTE 2: Entrega de documentos finales -->
+                    <h4><i class="fa fa-gavel"></i> Aprobar Parte 2 - Entrega de Documentos</h4>
+
+                    <div class="alert alert-danger" style="margin-bottom: 20px;">
+                        <i class="fa fa-hand-o-right"></i>
+                        <strong>Importante:</strong> Se debe aprobar el paso hasta que el estudiante se le haya firmado y sellado la constancia de recepción de que se recibió los ejemplares correspondientes del libro y CD.
+                    </div>
+
+                    <p style="color:#555;">
+                        El estudiante debe entregar los documentos finales (empastados, CDs, etc.) de forma presencial.
+                        Una vez verificada la entrega completa, aprobar para avanzar al <strong>Examen General</strong>.
+                    </p>
+
+                    <form id="form-aprobar">
+                        <input type="hidden" name="cod_proceso" value="<?= (int) $proceso['cod_proceso'] ?>">
+                        <button type="submit" class="btn btn-success" <?= $puedeAprobar ? '' : 'disabled' ?>>
+                            <i class="fa fa-check"></i> Aprobar y Avanzar a Examen General
+                        </button>
+                        <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-default">
+                            <i class="fa fa-arrow-left"></i> Volver al listado
+                        </a>
+                    </form>
+                <?php endif; ?>
+            <?php endif; ?>
+
+        </div>
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script src="<?= $this->basePath('js/confirm-service.js') ?>"></script>
+<script>
+(function() {
+    'use strict';
+    var form = document.getElementById('form-aprobar');
+    if (!form) return;
+    var subPaso = <?= $subPaso ?>;
+    var confirmMsg = subPaso === 1
+        ? '\u00bfConfirma que desea aprobar la Parte 1? El proceso avanzar\u00e1 a la Parte 2 y no podr\u00e1 deshacer esta acci\u00f3n.'
+        : '\u00bfConfirma la aprobaci\u00f3n final? El proceso avanzar\u00e1 a Examen General y no podr\u00e1 deshacer esta acci\u00f3n.';
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        ConfirmService.confirm(confirmMsg, function() {
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Procesando...';
+            }
+            var fd = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '<?= $urlAprobar ?>');
+            xhr.onload = function() {
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    if (r.status === 'success') {
+                        ToastService.success(r.message || 'Aprobado correctamente.');
+                        setTimeout(function() {
+                            window.location = '<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>';
+                        }, 1500);
+                    } else {
+                        ToastService.error(r.message || 'No se pudo aprobar.');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = subPaso === 1
+                                ? '<i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2'
+                                : '<i class="fa fa-check"></i> Aprobar y Avanzar a Examen General';
+                        }
+                    }
+                } catch (e) {
+                    ToastService.error('Respuesta inv\u00e1lida del servidor');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = subPaso === 1
+                            ? '<i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2'
+                            : '<i class="fa fa-check"></i> Aprobar y Avanzar a Examen General';
+                    }
+                }
+            };
+            xhr.send(fd);
+        });
+    });
+})();
+</script>

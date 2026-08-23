@@ -1,0 +1,105 @@
+<?php
+$this->headTitle('Previsualización Acta de Examen Privado');
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Previsualización Acta de Examen Privado</title>
+    <style>
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: right;
+            margin-bottom: 30px;
+        }
+        .header h2 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .header .sustentante {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .body-text {
+            text-align: justify;
+            margin-bottom: 15px;
+        }
+        .draft-banner {
+            text-align: center;
+            margin: 40px 0;
+            padding: 15px;
+            border: 2px dashed #999;
+            color: #999;
+            font-style: italic;
+        }
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print draft-banner">
+        <strong>PREVISUALIZACIÓN — BORRADOR</strong><br>
+        El contenido posterior (notas, acuerdos y cierre) se generará una vez finalizado el examen.
+    </div>
+
+    <div class="header">
+        <h2>ACTA DE EXAMEN PRIVADO DE MAESTRÍA</h2>
+        <h1>Maestría XXX-<?= date('Y') ?></h1>
+        <div class="sustentante">Sustentante: <?= $this->escapeHtml($this->nombreEstudiante) ?></div>
+    </div>
+
+    <div class="body-text">
+        <p>
+            El <?= $this->escapeHtml($this->fechaExamenFormateada) ?>, la terna examinadora designada por el Señor Decano,
+            e integrada por los siguientes profesionales: <?= $this->escapeHtml($this->examinadoresTexto) ?>,
+            <?= $this->escapeHtml($this->decano) ?>, Decano y <?= $this->escapeHtml($this->secretarioAcademico) ?>,
+            Secretario; para realizar el examen final de su trabajo de graduación titulado:
+            <strong>"<?= $this->escapeHtml($this->temaTesis) ?>"</strong>,
+            presentado por <?= $this->escapeHtml($this->prefijoAlumno) ?> <strong><?= $this->escapeHtml($this->nombreEstudiante) ?></strong>,
+            Registro Académico <?= $this->escapeHtml($this->registroAcademico) ?>,
+            para optar al título de <strong><?= mb_strtoupper($this->escapeHtml($this->carrera), 'UTF-8') ?></strong>,
+            de la Facultad de Arquitectura de la Universidad de San Carlos de Guatemala.
+        </p>
+    </div>
+
+    <div class="body-text">
+        <p>
+            Previo al inicio del examen se instruye y exhorta a los examinadores a cumplir con los fines
+            de la Universidad de San Carlos de Guatemala y la misión de la Facultad de Arquitectura,
+            verificando que el trabajo de investigación que hoy se presenta, cumpla con los requisitos
+            y la calidad correspondiente y se demuestre que la sustentante posee el conocimiento y
+            destrezas propias de su especialidad.
+        </p>
+    </div>
+
+    <?php if (!empty($this->horaExamen)): ?>
+    <div class="body-text">
+        <p>
+            Y siendo las <strong><?= $this->escapeHtml($this->horaTextoHora) ?></strong> horas con <strong><?= $this->escapeHtml($this->horaTextoMinutos) ?></strong> minutos,
+            el infrascrito Secretario, da apertura al mismo para su desarrollo,
+            como la terna examinadora lo crea conveniente.
+        </p>
+    </div>
+    <?php endif; ?>
+
+    <div class="no-print draft-banner" style="margin-top: 60px;">
+        — Fin de la previsualización —
+    </div>
+</body>
+</html>

@@ -30,6 +30,8 @@ class EditUserForm extends Form {
     const EMAIL = 'correo';
     const PHONE = 'telefono';
     const ACTUAL_DEGREE = 'grado_academico';
+    const TITULO_PROFESIONAL = 'titulo_profesional';
+    const NUMERO_COLEGIADO = 'numero_colegiado';
     //LABORAL INFO
     const CURRENTLY_WORKS = 'worksCurrently';
     const WORK_PLACE = 'ubicacion';
@@ -176,6 +178,43 @@ class EditUserForm extends Form {
             ],
             'options' => [
                 'label' => 'Grado académico actual',
+                'label_attributes' => [
+                    'class' => 'control-label'
+                ]
+            ],
+        ]);
+
+        //TITULO PROFESIONAL
+        $this->add([
+            'type' => 'text',
+            'name' => self::TITULO_PROFESIONAL,
+            'attributes' => [
+                'id' => self::TITULO_PROFESIONAL,
+                'class' => 'form-control',
+                'placeholder' => 'Ej: Ing., Arq., Dr.',
+                'maxlength' => 20,
+                'value' => $this->user->getTituloProfesional()
+            ],
+            'options' => [
+                'label' => 'Título profesional',
+                'label_attributes' => [
+                    'class' => 'control-label'
+                ]
+            ],
+        ]);
+
+        //NUMERO COLEGIADO
+        $this->add([
+            'type' => 'text',
+            'name' => self::NUMERO_COLEGIADO,
+            'attributes' => [
+                'id' => self::NUMERO_COLEGIADO,
+                'class' => 'form-control',
+                'placeholder' => 'Número de colegiado',
+                'value' => $this->user->getNumeroColegiado()
+            ],
+            'options' => [
+                'label' => 'Número de colegiado',
                 'label_attributes' => [
                     'class' => 'control-label'
                 ]
@@ -417,6 +456,34 @@ class EditUserForm extends Form {
                         'messages' => FieldError::STRING_LENGTH
                     ],
                 ],
+            ],
+        ]);
+
+        //TITULO PROFESIONAL
+        $inputFilter->add([
+            'name' => self::TITULO_PROFESIONAL,
+            'required' => false,
+            'filters' => [
+                ['name' => 'StringTrim'],
+            ],
+            'validators' => [
+                [
+                    'name' => StringLength::class,
+                    'options' => [
+                        'min' => 0,
+                        'max' => 20,
+                        'messages' => FieldError::STRING_LENGTH
+                    ],
+                ],
+            ],
+        ]);
+
+        //NUMERO COLEGIADO
+        $inputFilter->add([
+            'name' => self::NUMERO_COLEGIADO,
+            'required' => false,
+            'filters' => [
+                ['name' => 'StringTrim'],
             ],
         ]);
 

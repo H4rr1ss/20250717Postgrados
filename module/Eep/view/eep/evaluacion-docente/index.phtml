@@ -1,0 +1,119 @@
+<?php
+$this->headTitle('Evaluación Docente en Línea');
+$role = $this->layout()->role;
+$cursosPendientes = $cursosPendientes ?? [];
+?>
+
+<div class="col-lg-12">
+    <div class="panel panel-blue">
+        <div class="panel-heading">
+            Evaluación Docente en Línea
+        </div>
+        <div class="panel-body">
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i>
+                <strong>Sus respuestas son almacenadas de forma anónima y segura.</strong>
+                <p>
+                    La evaluación docente es un proceso importante para mejorar la calidad educativa.
+                    Por favor, evalúe de manera honesta y constructiva el desempeño de sus docentes.
+                </p>
+                <p>
+                    <i class="fa fa-exclamation-circle"></i>
+                    <strong>Importante:</strong> Una vez que complete todas las evaluaciones docentes pendientes,
+                    podrá realizar normalmente la asignación de cursos.
+                </p>
+            </div>
+
+            <div class="row">
+                <?php if (!empty($cursosPendientes)): ?>
+                    <?php foreach ($cursosPendientes as $curso): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="panel panel-blue">
+                                <div class="panel-heading">
+                                    <h4 class="panel-title">
+                                        <?= $this->escapeHtml($curso['nombre_curso']) ?>
+                                    </h4>
+                                </div>
+                                <div class="panel-body">
+                                    <p>
+                                        <strong>Sección <?= $this->escapeHtml($curso['seccion']) ?></strong>
+                                    </p>
+                                    <p class="text-muted">
+                                        <?= $this->escapeHtml($curso['anio'] . ' - Mes ' . $curso['mes']) ?>
+                                    </p>
+                                    <p>
+                                        <strong>Docente:</strong>
+                                        <?= $this->escapeHtml($curso['nombre_docente'] ?? 'Docente no asignado') ?>
+                                    </p>
+                                    <div class="text-center">
+                                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'evaluar', 'id' => $curso['cod_horario']]) ?>"
+                                           class="btn btn-blue btn-block">
+                                            <i class="fa fa-edit"></i> EVALUAR
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="col-lg-12">
+                        <div class="panel panel-default">
+                            <div class="panel-body text-center">
+                                <i class="fa fa-check-circle text-success fa-5x"></i>
+                                <h3>¡Todo al día!</h3>
+                                <p class="text-muted">
+                                    No tienes cursos pendientes de evaluación en este momento.
+                                </p>
+                                <p class="text-muted">
+                                    Las evaluaciones de los cursos finalizados el mes anterior aparecerán automáticamente.
+                                    Debes completarlas para poder asignarte nuevos cursos.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-question-circle"></i> Información Importante
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h4 class="text-blue">
+                                        <i class="fa fa-shield"></i> Confidencialidad
+                                    </h4>
+                                    <p class="text-muted">
+                                        Sus respuestas son completamente anónimas. Los docentes no podrán
+                                        identificar quién realizó cada evaluación.
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-blue">
+                                        <i class="fa fa-clock-o"></i> Tiempo de Evaluación
+                                    </h4>
+                                    <p class="text-muted">
+                                        Cada evaluación toma aproximadamente 5-10 minutos. Puede completarla
+                                        en una sola sesión o guardar su progreso.
+                                    </p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-blue">
+                                        <i class="fa fa-lightbulb-o"></i> Constructiva
+                                    </h4>
+                                    <p class="text-muted">
+                                        Sus comentarios ayudan a mejorar la calidad educativa. Sea honesto
+                                        pero respetuoso en sus evaluaciones.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

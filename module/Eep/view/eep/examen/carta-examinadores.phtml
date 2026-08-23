@@ -1,0 +1,142 @@
+<?php
+/**
+ * Carta de Examinadores — listado de procesos en paso 5
+ * Variables: $procesos, $paginacion, $filtros
+ */
+$this->headTitle('Carta de Examinadores');
+?>
+
+<div class="col-lg-12">
+
+    <ol class="breadcrumb">
+        <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+        <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+        <li class="active">Carta de Examinadores</li>
+    </ol>
+
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            <i class="fa fa-envelope-o"></i>
+            Carta de Examinadores — Paso 5
+        </div>
+        <div class="panel-body">
+
+            <p style="color:#555; margin-top:0;">
+                Listado de estudiantes que se encuentran en el paso 5 del proceso de graduación.
+                Haz clic en <strong>Ver proceso</strong> para registrar observaciones, aprobar el
+                trabajo o descargar la carta generada.
+            </p>
+
+            <!-- Filtro de búsqueda -->
+            <form method="get" action="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="form-inline" style="margin-bottom: 16px;">
+                <div class="input-group" style="max-width: 400px;">
+                    <input type="text"
+                           name="busqueda"
+                           class="form-control"
+                           placeholder="Buscar por nombre o carné..."
+                           value="<?= $this->escapeHtml($filtros['busqueda'] ?? '') ?>">
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search"></i> Buscar
+                        </button>
+                        <?php if (!empty($filtros['busqueda'])): ?>
+                        <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>" class="btn btn-default">
+                            <i class="fa fa-times"></i> Limpiar
+                        </a>
+                        <?php endif; ?>
+                    </span>
+                </div>
+            </form>
+
+            <?php if (empty($procesos)): ?>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i>
+                    No hay procesos activos en el paso 5 en este momento.
+                </div>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" style="font-size: 13px;">
+                        <thead style="background:#f5f5f5;">
+                            <tr>
+                                <th style="width:5%;">#</th>
+                                <th>Estudiante</th>
+                                <th style="width:14%;">Carné</th>
+                                <th style="width:18%;">Tipo de Examen</th>
+                                <th style="width:13%;">Fecha Solicitud</th>
+                                <th style="width:14%;">Estado Ciclo</th>
+                                <th style="width:10%; text-align:center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($procesos as $i => $p): ?>
+                            <tr>
+                                <td><?= $i + 1 ?></td>
+                                <td><?= $this->escapeHtml(($p['nombres'] ?? '') . ' ' . ($p['apellidos'] ?? '')) ?></td>
+                                <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                <td><?= $this->escapeHtml($p['tipo_examen'] ?? '-') ?></td>
+                                <td>
+                                    <?= !empty($p['fecha_solicitud'])
+                                        ? date('d/m/Y', strtotime($p['fecha_solicitud']))
+                                        : '-' ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    $completados = (int)($p['ex1_completado'] ?? 0) + (int)($p['ex2_completado'] ?? 0) + (int)($p['ex3_completado'] ?? 0);
+                                    $evalCompleta = $completados >= 2;
+                                    $estadoPaso = $p['estado_paso'] ?? '';
+                                    if (!$evalCompleta) {
+                                        $labelClass = 'info';
+                                        $labelTexto = 'Pendiente evaluación privado';
+                                    } else {
+                                        switch ($estadoPaso) {
+                                            case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
+                                            case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
+                                            case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado'; break;
+                                            default:            $labelClass = 'default'; $labelTexto = 'Pendiente'; break;
+                                        }
+                                    }
+                                    ?>
+                                    <span class="label label-<?= $labelClass ?>" style="font-weight: 700; font-size: 14px;">
+                                        <?= $this->escapeHtml($labelTexto) ?>
+                                    </span>
+                                </td>
+                                <td style="text-align:center;">
+                                    <?php if ($evalCompleta): ?>
+                                        <a class="btn btn-xs btn-primary"
+                                           href="<?= $this->url('examen', ['action' => 'ver-carta', 'id' => $p['cod_proceso']]) ?>">
+                                            <i class="fa fa-eye"></i> Ver proceso
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="btn btn-xs btn-default disabled" style="cursor: not-allowed; opacity: 0.6;"
+                                              title="Evaluación de examen privado pendiente. Al menos 2 examinadores deben completar sus evaluaciones.">
+                                            <i class="fa fa-lock"></i> Bloqueado
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <?php if ($paginacion['paginas_total'] > 1): ?>
+                <nav style="text-align:center; margin-top:16px;">
+                    <ul class="pagination">
+                        <?php for ($pg = 1; $pg <= $paginacion['paginas_total']; $pg++): ?>
+                        <li class="<?= $pg === $paginacion['pagina'] ? 'active' : '' ?>">
+                            <a href="<?= $this->url('examen', ['action' => 'carta-examinadores']) ?>?page=<?= $pg ?><?= !empty($filtros['busqueda']) ? '&busqueda=' . urlencode($filtros['busqueda']) : '' ?>">
+                                <?= $pg ?>
+                            </a>
+                        </li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+                <?php endif; ?>
+
+            <?php endif; ?>
+
+        </div><!-- /panel-body -->
+    </div><!-- /panel-green -->
+
+</div><!-- /col-lg-12 -->

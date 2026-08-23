@@ -1,0 +1,246 @@
+<?php
+/**
+ * Paso 5 — Carta de Examinadores  (vista del ESTUDIANTE — bitácora simplificada)
+ *
+ * Variables del ViewModel (cargadas en paso5CartaExaminadoresAction):
+ *   $proceso            proceso activo del estudiante
+ *   $cicloActual        fila de examen_correccion_ciclo o null (interna, para cod_ciclo)
+ *   $evidencias         lista plana de evidencias del proceso, ordenada por fecha ASC
+ *   $carta              fila de examen_carta_examinadores o null
+ *   $formatosEvidencia  formatos permitidos para evidencias
+ *   $tamanoMaxMb        tamaño máximo de evidencias en MB
+ */
+$this->headTitle('Paso 5 - Carta de Examinadores');
+
+$codProceso = (int) ($proceso['cod_proceso'] ?? 0);
+?>
+
+<div class="col-lg-12" style="padding-left: 40px; padding-right: 40px;">
+
+    <ol class="breadcrumb">
+        <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+        <li><a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>">Proceso de Graduación</a></li>
+        <li class="active">Paso 5 — Carta de Examinadores</li>
+    </ol>
+
+    <div style="margin-bottom: 14px;">
+        <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Regresar al proceso de graduación
+        </a>
+    </div>
+
+    <div class="panel panel-blue">
+        <div class="panel-heading">
+            <i class="fa fa-envelope-o"></i>
+            Paso 5 — Carta de Examinadores
+        </div>
+        <div class="panel-body">
+
+            <?php if ($carta): ?>
+            <!-- ── APROBADO ── -->
+            <div class="note note-success" style="margin-bottom: 20px;">
+                <h4 class="box-heading"><i class="fa fa-check-circle"></i> Trabajo aprobado</h4>
+                <p>Tu trabajo de graduación fue aprobado. Ya puedes descargar la carta de examinadores.</p>
+                <a class="btn btn-success"
+                   href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= $codProceso ?>"
+                   style="font-weight: bold; font-size: 16px; padding: 10px 18px;">
+                    <i class="fa fa-download" style="font-size: 18px; margin-right: 6px;"></i> Descargar carta de examinadores (.docx)
+                </a>
+            </div>
+
+            <?php else: ?>
+            <!-- ── EN PROCESO ── -->
+            <div class="note note-info" style="margin-bottom: 20px;">
+                <h4 class="box-heading"><i class="fa fa-info-circle"></i> Cómo funciona este paso</h4>
+                <p>
+                    Las correcciones al trabajo se coordinan <strong>por correo electrónico</strong>
+                    con el examinador. Cada vez que envíes o recibas un correo relacionado
+                    con las correcciones, <strong>sube aquí una captura o PDF</strong> como
+                    evidencia del seguimiento. Cuando el examinador confirme que el trabajo
+                    está listo, aprobará el proceso y podrás descargar tu carta.
+                </p>
+            </div>
+
+            <!-- ── Formulario de subida ── -->
+            <?php if ($cicloActual): ?>
+            <div class="panel panel-default" style="margin-bottom: 24px;">
+                <div class="panel-heading">
+                    <i class="fa fa-paperclip"></i> Agregar entrada a la bitácora
+                </div>
+                <div class="panel-body">
+                    <form id="form-subir-evidencia"
+                          method="post"
+                          action="<?= $this->url('student-graduation', ['action' => 'subir-evidencia']) ?>"
+                          enctype="multipart/form-data">
+                        <input type="hidden" name="cod_ciclo" value="<?= (int) $cicloActual['cod_ciclo'] ?>">
+                        <div class="form-group">
+                            <label>Archivo <span class="text-danger">*</span></label>
+                            <input type="file" name="archivo"
+                                   accept=".<?= implode(',.', $formatosEvidencia) ?>" required>
+                            <p class="help-block">
+                                Formatos aceptados: <?= $this->escapeHtml(implode(', ', $formatosEvidencia)) ?>.
+                                Tamaño máximo: <?= (int) $tamanoMaxMb ?> MB.
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción <span class="text-danger">*</span></label>
+                            <input type="text" name="descripcion" class="form-control" required
+                                   placeholder="Ej: Correo enviado al examinador con trabajo corregido (15/05)">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-plus"></i> Agregar a bitácora
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+            <?php endif; ?>
+
+            <!-- ── Bitácora de evidencias ── -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-list"></i>
+                    Bitácora
+                    <?php if (!empty($evidencias)): ?>
+                        <span class="badge" style="margin-left:6px;"><?= count($evidencias) ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="panel-body">
+                    <?php if (empty($evidencias)): ?>
+                        <p class="text-muted" style="text-align:center; padding: 20px 0;">
+                            <i class="fa fa-inbox fa-2x" style="display:block; margin-bottom:8px;"></i>
+                            Aún no hay entradas. Sube la primera captura de correo para comenzar el registro.
+                        </p>
+                    <?php else: ?>
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                        <?php foreach ($evidencias as $ev):
+                            $urlVerDoc   = $this->url('student-graduation', ['action' => 'ver-documento']) . '?h=' . $ev['archivo_md5'];
+                            $esImagen    = in_array(strtolower($ev['extension']), ['jpg', 'jpeg', 'png'], true);
+                        ?>
+                        <div style="display:flex; align-items:flex-start; gap:14px;
+                                    border:1px solid #e4e8ef; border-radius:6px; padding:12px 14px;">
+
+                            <!-- Miniatura / ícono -->
+                            <div style="flex:0 0 80px; text-align:center;">
+                                <?php if ($esImagen): ?>
+                                    <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" target="_blank">
+                                        <img src="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" alt=""
+                                             style="max-width:120px; max-height:120px; border-radius:4px; border:1px solid #dde;">
+                                    </a>
+                                <?php else: ?>
+                                    <a href="<?= $this->escapeHtmlAttr($urlVerDoc) ?>" target="_blank"
+                                       style="display:flex; flex-direction:column; align-items:center; justify-content:center;
+                                              width:90px; height:90px; border:2px dashed #e0e0e0; border-radius:8px;
+                                              background:#fafafa; text-decoration:none;">
+                                        <i class="fa fa-file-pdf-o" style="color:#c0392b; font-size:48px;"></i>
+                                        <span style="font-size:11px; color:#888; margin-top:4px;">Ver PDF</span>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Datos de la entrada -->
+                            <div style="flex:1;">
+                                <p style="margin:0 0 4px; font-weight:600;">
+                                    <?= $this->escapeHtml($ev['descripcion'] ?? $ev['nombre_original'] ?? '—') ?>
+                                </p>
+                                <p style="margin:0; font-size:12px; color:#888;">
+                                    <i class="fa fa-clock-o"></i>
+                                    <?= date('d/m/Y H:i', strtotime($ev['fecha_subida'])) ?>
+                                    &nbsp;·&nbsp;
+                                    <?= strtoupper($this->escapeHtml($ev['extension'])) ?>
+                                </p>
+                            </div>
+
+                            <!-- Botón eliminar (solo si no está aprobado) -->
+                            <?php if (!$carta): ?>
+                            <div style="flex:0 0 auto; align-self:center;">
+                                <form class="form-eliminar-evidencia"
+                                      method="post"
+                                      action="<?= $this->url('student-graduation', ['action' => 'eliminar-evidencia']) ?>">
+                                    <input type="hidden" name="cod_evidencia" value="<?= (int) $ev['cod_evidencia'] ?>">
+                                    <button type="submit" class="btn btn-xs btn-link" style="color:#c0392b;">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <?php endif; ?>
+
+                        </div>
+                        <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+        </div><!-- /panel-body -->
+    </div><!-- /panel-blue -->
+
+</div><!-- /col-lg-12 -->
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+(function () {
+    'use strict';
+
+    /* ── Subir evidencia ── */
+    var formSubir = document.getElementById('form-subir-evidencia');
+    if (formSubir) {
+        formSubir.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = formSubir.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            var fd = new FormData(formSubir);
+            fetch(formSubir.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (json) {
+                if (json.success) {
+                    ToastService.success(json.message || 'Evidencia agregada correctamente.');
+                    setTimeout(function () { location.reload(); }, 1200);
+                } else {
+                    ToastService.error(json.message || 'No se pudo agregar la evidencia.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(function () {
+                ToastService.error('Error de comunicación. Intenta de nuevo.');
+                btn.disabled = false;
+            });
+        });
+    }
+
+    /* ── Eliminar evidencia ── */
+    document.querySelectorAll('.form-eliminar-evidencia').forEach(function (f) {
+        f.addEventListener('submit', function (e) {
+            e.preventDefault();
+            ConfirmService.confirm('¿Eliminar esta entrada de la bitácora?', function() {
+                var btn = f.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            var fd = new FormData(f);
+            fetch(f.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (json) {
+                if (json.success) {
+                    ToastService.success(json.message || 'Entrada eliminada.');
+                    setTimeout(function () { location.reload(); }, 1000);
+                } else {
+                    ToastService.error(json.message || 'No se pudo eliminar.');
+                    btn.disabled = false;
+                }
+            })
+            .catch(function () {
+                ToastService.error('Error de comunicación. Intenta de nuevo.');
+                btn.disabled = false;
+            });
+            });
+        });
+    });
+}());
+</script>

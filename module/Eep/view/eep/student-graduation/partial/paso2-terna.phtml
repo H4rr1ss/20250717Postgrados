@@ -1,0 +1,136 @@
+<?php
+$miembros     = $this->terna['examinadores'] ?? [];
+$programacion = $this->terna['programacion'] ?? ['fecha' => null, 'hora' => null];
+$fechaExamen  = $programacion['fecha'] ? date('d/m/Y', strtotime($programacion['fecha'])) : null;
+$horaRaw      = $programacion['hora'] ?? null;
+$horaExamen   = $horaRaw ? date('g:i A', strtotime($horaRaw)) : null;
+?>
+
+<div class="panel panel-green">
+    <div class="panel-heading">Terna Examinadora</div>
+    <div class="panel-body pan">
+        <div class="form-body pal">
+            <div class="row">
+                <div class="col-lg-12">
+
+                    <h3>Información</h3>
+                    <ul>
+                        <li>La terna examinadora es asignada por la administración una vez aprobada tu papelería.</li>
+                        <li>Recibirás una notificación cuando la terna y la fecha de examen sean confirmadas.</li>
+                        <li>La fecha y hora del examen serán coordinadas entre los miembros de la terna y la administración.</li>
+                    </ul>
+
+                    <?php if (empty($miembros)): ?>
+                        <div style="background:#fdf2f2; border:1px solid #e8b4b4; border-radius:6px; padding:18px 22px; margin-top:18px;">
+                            <h4 style="color:#c0392b; margin-top:0;">Terna aún no asignada</h4>
+                            <ul>
+                                <li>La terna examinadora todavía no ha sido asignada para tu proceso.</li>
+                                <li>Esto ocurre después de que tu papelería es aprobada por la administración.</li>
+                                <li>Vuelve a consultar esta sección más adelante.</li>
+                            </ul>
+                        </div>
+                    <?php else: ?>
+
+                    <!-- Programación -->
+                    <h3 style="margin-top:32px;">Programación del Examen</h3>
+                    <div class="note note-info">
+                        <h4 class="box-heading">Fecha y Hora</h4>
+                        <ul>
+                            <li><?= $fechaExamen ? $this->escapeHtml($fechaExamen) : 'Por definir' ?></li>
+                            <li><?= $horaExamen ? $this->escapeHtml($horaExamen) : 'Hora pendiente de asignar' ?></li>
+                        </ul>
+                    </div>
+
+                    <!-- Miembros -->
+                    <h3 style="margin-top:32px;">Miembros de la Terna</h3>
+                    <div class="terna-cards-row">
+                        <?php foreach ($miembros as $miembro): ?>
+                        <div class="terna-card">
+                            <div class="terna-avatar-wrap">
+                                <div class="terna-avatar-fallback">
+                                    <i class="fa fa-user"></i>
+                                </div>
+                            </div>
+                            <?php $nombreMiembro = ($miembro['titulo'] ?? '') ? trim($miembro['titulo'] . ' ' . $miembro['nombre']) : $miembro['nombre']; ?>
+                            <div class="terna-member-name"><?= $this->escapeHtml($nombreMiembro) ?></div>
+                            <?php if (!empty($miembro['correo'])): ?>
+                            <p class="terna-member-titulo"><?= $this->escapeHtml($miembro['correo']) ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($miembro['colegiado'])): ?>
+                            <p style="font-size:13px; color:#4D4D4D; margin:4px 0 0;">Col. <?= $this->escapeHtml($miembro['colegiado']) ?></p>
+                            <?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <?php endif; ?>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .terna-cards-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+    .terna-card {
+        flex: 1;
+        min-width: 160px;
+        background: #fff;
+        border: 1px solid #e4e8ef;
+        border-radius: 10px;
+        padding: 28px 20px 24px 20px;
+        text-align: center;
+        transition: box-shadow 0.2s;
+    }
+    .terna-card:hover {
+        box-shadow: 0 4px 18px rgba(26,42,68,0.10);
+    }
+    .terna-avatar-wrap {
+        display: inline-block;
+        margin-bottom: 14px;
+    }
+    .terna-avatar-fallback {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        font-size: 20px;
+        color: #7eb8f7;
+    }
+    .terna-rol-badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+    }
+    .terna-member-name {
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #1a2a44;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .terna-member-titulo {
+        font-size: 14px;
+        color: #7a8799;
+        margin: 0;
+    }
+</style>

@@ -61,8 +61,33 @@
                             <div class="clearfix"></div>
 
                             <?php
+                            use Eep\ValueObject\MenuGroup;
                             if (isset($this->menus) && !empty($this->menus)):
                                 foreach ($this->menus as $menu):
+                                    if ($menu instanceof MenuGroup):
+                                        $groupId = 'mg-' . preg_replace('/[^a-z0-9]/', '', strtolower($menu->getName()));
+                                    ?>
+                                    <li class="<?= $menu->isActive() ? 'active' : '' ?>">
+                                        <a href="#<?= $groupId ?>" data-toggle="collapse" aria-expanded="<?= $menu->isActive() ? 'true' : 'false' ?>">
+                                            <i class="fa <?= $menu->getIcon() ?> fa-fw">
+                                                <div class="icon-bg bg-violet"></div>
+                                            </i>
+                                            <span class="menu-title"><?= $menu->getName() ?></span>
+                                            <span class="fa arrow"></span>
+                                        </a>
+                                        <ul id="<?= $groupId ?>" class="nav nav-second-level <?= $menu->isActive() ? 'in' : 'collapse' ?>">
+                                            <?php foreach ($menu->getItems() as $child): ?>
+                                            <li class="<?= $child->isActive() ? 'active' : '' ?>">
+                                                <a href="<?= $this->url($child->getSection(), ['action' => $child->getAction()]) ?>">
+                                                    <i class="fa <?= $child->getIcon() ?> fa-fw"></i>
+                                                    <?= $child->getName() ?>
+                                                </a>
+                                            </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </li>
+                                    <?php
+                                    else:
                                     ?>
                                     <li 
                                     <?php
@@ -80,6 +105,7 @@
                                         </a>
                                     </li>
                                     <?php
+                                    endif;
                                 endforeach;
                             else:
                                 ?>

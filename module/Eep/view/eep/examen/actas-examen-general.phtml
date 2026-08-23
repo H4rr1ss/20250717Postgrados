@@ -1,0 +1,200 @@
+<?php
+$this->headTitle('Actas de Examen General');
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li class="active">Actas de Examen General</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Actas de Examen General — Acto de Graduación</h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i>
+            Estudiantes que ya recibieron notificación grupal del acto de graduación. Puede generar el acta oficial para cada uno.
+        </div>
+    </div>
+</div>
+
+<br>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                Estudiantes con notificación enviada
+            </div>
+            <div style="padding: 15px; background-color: white;">
+
+                <!-- Filtros de tabla -->
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                            <input type="text" class="form-control" id="buscarActa"
+                                placeholder="Buscar por nombre o carné..."
+                                value="<?= $this->escapeHtmlAttr($this->busqueda ?? '') ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-md-offset-3">
+                        <select class="form-control" id="filtroEstadoActa">
+                            <option value="">Estado de acta</option>
+                            <option value="generada" <?= ($this->estado_acta ?? '') === 'generada' ? 'selected' : '' ?>>Generada</option>
+                            <option value="pendiente" <?= ($this->estado_acta ?? '') === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom-solicitudes" id="tablaActas">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%;">Carné</th>
+                                <th>Estudiante</th>
+                                <th style="width: 18%;">Carrera</th>
+                                <th style="width: 12%;">Fecha del acto</th>
+                                <th style="width: 10%;">Hora</th>
+                                <th style="width: 14%;">Estado acta</th>
+                                <th style="width: 12%; text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($this->procesos)): ?>
+                                <tr>
+                                    <td colspan="7" class="text-center" style="padding: 20px; color: #999;">
+                                        No hay estudiantes con notificación grupal enviada.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($this->procesos as $p): ?>
+                                    <?php $yaTieneActa = !empty($p['acta_generada']); ?>
+                                    <tr>
+                                        <td><?= $this->escapeHtml($p['registro_academico'] ?? '-') ?></td>
+                                        <td><?= $this->escapeHtml($p['nombre_completo'] ?? '-') ?></td>
+                                        <td><?= $this->escapeHtml($p['carrera'] ?? 'N/A') ?></td>
+                                        <td>
+                                            <?= !empty($p['fecha_examen_general']) ? date('d/m/Y', strtotime($p['fecha_examen_general'])) : '-' ?>
+                                        </td>
+                                        <td>
+                                            <?= !empty($p['hora_examen_general']) ? date('g:i A', strtotime($p['hora_examen_general'])) : '-' ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if ($yaTieneActa): ?>
+                                                <span class="label label-success">Generada</span>
+                                            <?php else: ?>
+                                                <span class="label label-warning">Pendiente</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <a href="<?= $this->url('examen', ['action' => 'acta-examen-general', 'id' => $p['cod_proceso']]) ?>"
+                                               class="btn-accion-sol btn-revisar" title="<?= $yaTieneActa ? 'Volver a generar acta' : 'Generar acta' ?>">
+                                                <i class="fa fa-file-text-o"></i>
+                                                <?= $yaTieneActa ? 'Regenerar' : 'Generar' ?>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .panel-verde-tabla {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .panel-verde-heading-tabla {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+    .table-custom-solicitudes {
+        margin-bottom: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .table-custom-solicitudes thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: bold;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        border-top: none;
+    }
+    .table-custom-solicitudes tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        border-top: 1px solid #ddd;
+    }
+    .table-custom-solicitudes tbody tr:nth-child(even) {
+        background-color: #e8e8e8;
+    }
+    .table-custom-solicitudes tbody tr:nth-child(odd) {
+        background-color: white;
+    }
+    .btn-accion-sol {
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-revisar {
+        background-color: #5b9bd5;
+    }
+    .btn-revisar:hover {
+        background-color: #4a8bc2;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    function aplicarFiltros() {
+        var busqueda = $('#buscarActa').val();
+        var estado   = $('#filtroEstadoActa').val();
+        var url      = '<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>';
+        window.location.href = url + '?busqueda=' + encodeURIComponent(busqueda) + '&estado_acta=' + encodeURIComponent(estado);
+    }
+
+    $('#filtroEstadoActa').on('change', aplicarFiltros);
+    $('#buscarActa').on('keypress', function(e) {
+        if (e.which == 13) aplicarFiltros();
+    });
+});
+</script>
+
+</div>

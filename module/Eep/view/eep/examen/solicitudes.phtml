@@ -1,0 +1,472 @@
+<?php
+$this->headTitle('Gestión de Solicitudes de Examen');
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li class="active">Solicitudes</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Gestión de Solicitudes de Examen público</h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Información -->
+<div class="row">
+    <div class="col-lg-12">
+        <h4 style="font-weight: bold; margin-bottom: 15px;">Información</h4>
+        <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
+            <li>En esta sección se mostrarán todas las solicitudes de examen realizadas por los estudiantes.</li>
+            <li>La solicitud se eliminará automáticamente después de la fecha programada para la realización del examen.</li>
+            <li>Búsqueda disponible únicamente por número de carné del estudiante.</li>
+        </ul>
+    </div>
+</div>
+
+<br>
+
+<!-- Sección de Solicitudes -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                Solicitudes
+            </div>
+            <div style="padding: 15px; background-color: white;">
+                <!-- Barra de búsqueda y filtros -->
+                <div class="row" style="margin-bottom: 15px;">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                            <input type="text" class="form-control" id="buscarSolicitud" 
+                                placeholder="Buscar por carné de estudiante..." 
+                                value="<?= $this->escapeHtmlAttr($this->filtros['carne']) ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-md-offset-3">
+                        <select class="form-control" id="filtroEstado">
+                            <option value="">Estado de solicitud</option>
+                            <option value="activo" <?= $this->filtros['estado'] == 'activo' ? 'selected' : '' ?>>Activo</option>
+                            <option value="finalizado" <?= $this->filtros['estado'] == 'finalizado' ? 'selected' : '' ?>>Finalizado</option>
+                            <option value="cancelado" <?= $this->filtros['estado'] == 'cancelado' ? 'selected' : '' ?>>Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- <pre>
+                    <?php var_dump($this->procesos); ?>
+                    <div>-------------------------</div>
+                    <?php var_dump($this->paginacion); ?>
+                    <div>-------------------------</div>
+                    <?php var_dump($this->filtros); ?>
+                </pre> -->
+
+                <!-- Tabla de solicitudes -->
+                <div class="table-responsive">
+                    <table class="table table-custom-solicitudes" id="tablaSolicitudes">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Carné de estudiante</th>
+                                <th style="width: 20%;">Nombre de estudiante</th>
+                                <th style="width: 20%;">Creación de solicitud</th>
+                                <th style="width: 20%;">Estado solicitud</th>
+                                <th style="width: 20%; text-align: center;">Revisar</th>
+                                <th style="width: 20%; text-align: center;">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <?php foreach ($this->procesos as $p): ?>
+                  
+                            <?php
+                                // Ocultar procesos que ya pasaron el paso 4 (se gestionan en otra sección)
+                                $numeroOrden = (int)($p['numero_orden'] ?? 0);
+                                if ($numeroOrden > 4) continue;
+
+                                $estadoPaso = $p['estado_paso'] ?? 'pendiente';
+                                $labelClass = 'default';
+                                $labelTexto = ucfirst($estadoPaso);
+                                switch ($estadoPaso) {
+                                    case 'completado':  $labelClass = 'success'; $labelTexto = 'Completado'; break;
+                                    case 'en_progreso': $labelClass = 'warning'; $labelTexto = 'En progreso'; break;
+                                    case 'rechazado':   $labelClass = 'danger';  $labelTexto = 'Rechazado';  break;
+                                    case 'pendiente':   $labelClass = 'default'; $labelTexto = 'Pendiente';  break;
+                                }
+                                $completado = ($estadoPaso === 'completado');
+                            ?>
+                            <tr>
+                                <td><?= $this->escapeHtml($p['registro_academico']) ?></td>
+                                <td><?= $this->escapeHtml($p['nombres'] . ' ' . $p['apellidos']) ?></td>
+                                <td><?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?></td>
+                                <td>
+                                    <span class="label label-<?= $labelClass ?>" style="font-size: 14px; font-weight: 700;">
+                                        <?= $labelTexto ?>
+                                    </span>
+                                </td>
+                                <td style="text-align: center;">
+                                    <?php if ($completado): ?>
+                                        <span class="btn-accion-sol" style="background-color:#ccc; cursor:not-allowed; opacity:0.6;" title="Proceso completado">
+                                            <i class="fa fa-eye"></i>
+                                        </span>
+                                    <?php else: ?>
+                                        <a href="<?= $this->url('examen', ['action' => 'solicitudes', 'id' => $p['cod_proceso']]) ?>?paso=<?= (int)($p['numero_orden'] ?? 1) ?>" class="btn-accion-sol btn-revisar" title="Revisar">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="text-align: center;">
+                                    <button class="btn-accion-sol btn-info-sol"
+                                        data-completado="<?= $completado ? '1' : '0' ?>"
+                                        data-carne="<?= $this->escapeHtmlAttr($p['registro_academico']) ?>"
+                                        data-nombre="<?= $this->escapeHtmlAttr($p['nombres'] . ' ' . $p['apellidos']) ?>"
+                                        data-fecha="<?= date('d/m/Y', strtotime($p['fecha_solicitud'])) ?>"
+                                        data-tipo="<?= $this->escapeHtmlAttr($p['tipo_examen'] ?? '') ?>"
+                                        data-estado="<?= $labelTexto ?>"
+                                        data-fecha-completado="<?= !empty($p['fecha_completado']) ? date('d/m/Y', strtotime($p['fecha_completado'])) : '' ?>"
+                                        title="Ver Detalle">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <?php if (empty($procesos)) : ?>
+                        <div style="padding: 65px; text-align: center;">
+                            <p style="margin: 0; font-size: 20px; color: #6c757f;">
+                                No hay solicitudes de estudiantes registradas.
+                            </p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Paginación -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <nav aria-label="Paginación" style="text-align: right;">
+                        <?php
+                            $pag       = $this->paginacion;
+                            $pagActual = (int)$pag['pagina'];
+                            $pagTotal  = (int)$pag['paginas_total'];
+                            $baseUrl   = $this->url('examen', ['action' => 'solicitudes'])
+                                       . '?carne=' . urlencode($this->filtros['carne'] ?? '')
+                                       . '&estado=' . urlencode($this->filtros['estado'] ?? '')
+                                       . ($this->filtros['cod_tipo_examen'] ? '&cod_tipo_examen=' . (int)$this->filtros['cod_tipo_examen'] : '')
+                                       . '&page=';
+                        ?>
+                        <?php if ($pagTotal > 1): ?>
+                        <ul class="pagination pagination-sm" style="display:inline-flex;">
+                            <li class="<?= $pagActual <= 1 ? 'disabled' : '' ?>">
+                                <a href="<?= $baseUrl . max(1, $pagActual - 1) ?>">&laquo;</a>
+                            </li>
+                            <?php for ($i = max(1, $pagActual - 2); $i <= min($pagTotal, $pagActual + 2); $i++): ?>
+                            <li class="<?= $i === $pagActual ? 'active' : '' ?>">
+                                <a href="<?= $baseUrl . $i ?>"><?= $i ?></a>
+                            </li>
+                            <?php endfor; ?>
+                            <li class="<?= $pagActual >= $pagTotal ? 'disabled' : '' ?>">
+                                <a href="<?= $baseUrl . min($pagTotal, $pagActual + 1) ?>">&raquo;</a>
+                            </li>
+                        </ul>
+                        <small class="text-muted" style="margin-left:10px;">
+                            Página <?= $pagActual ?> de <?= $pagTotal ?> &mdash; <?= $pag['total'] ?> resultados
+                        </small>
+                        <?php endif; ?>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    var codTipoExamen = '<?= (int)($this->filtros['cod_tipo_examen'] ?? 0) ?>';
+    function aplicarFiltros() {
+        var carne = $('#buscarSolicitud').val();
+        var estado = $('#filtroEstado').val();
+        var url = '<?= $this->url('examen', ['action' => 'solicitudes']) ?>';
+        window.location.href = url + '?carne=' + encodeURIComponent(carne) + '&estado=' + encodeURIComponent(estado) + (codTipoExamen ? '&cod_tipo_examen=' + codTipoExamen : '');
+    }
+
+    $('#filtroEstado').on('change', aplicarFiltros);
+    $('#buscarSolicitud').on('keypress', function(e) {
+        if (e.which == 13) aplicarFiltros();
+    });
+});
+</script>
+
+<!-- Modal Detalle Solicitud -->
+<div class="modal fade" id="modalDetalleSolicitud" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header" id="modalDetalleHeader">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalDetalleTitulo">Detalle de Solicitud</h4>
+            </div>
+            <div class="modal-body">
+                <!-- Bloque activo/pendiente -->
+                <div id="bloqueActivo">
+                    <table class="table table-bordered" style="font-size:13px;">
+                        <tbody>
+                            <tr>
+                                <th style="width:35%; background:#f5f5f5;">Estudiante</th>
+                                <td id="detalleNombre"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Carné</th>
+                                <td id="detalleCarne"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Tipo de Examen</th>
+                                <td id="detalleTipo"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Solicitud</th>
+                                <td id="detalleFecha"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Estado</th>
+                                <td><span id="detalleEstado"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Bloque completado -->
+                <div id="bloqueCompletado" style="display:none;">
+                    <div style="text-align:center; padding: 10px 0 20px;">
+                        <i class="fa fa-check-circle" style="font-size:48px; color:#28a745;"></i>
+                        <h4 style="color:#28a745; margin-top:10px;">Proceso Finalizado</h4>
+                        <p class="text-muted">Este proceso de graduación ha sido completado exitosamente.</p>
+                    </div>
+                    <table class="table table-bordered" style="font-size:13px;">
+                        <tbody>
+                            <tr>
+                                <th style="width:35%; background:#f5f5f5;">Estudiante</th>
+                                <td id="resNombre"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Carné</th>
+                                <td id="resCarne"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Tipo de Examen</th>
+                                <td id="resTipo"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Solicitud</th>
+                                <td id="resFecha"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Fecha de Completado</th>
+                                <td id="resFechaCompletado"></td>
+                            </tr>
+                            <tr>
+                                <th style="background:#f5f5f5;">Estado</th>
+                                <td><span class="label label-success" style="font-size:13px;">Completado</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Panel verde para tabla */
+    .panel-verde-tabla {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    
+    .panel-verde-heading-tabla {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+    
+    /* Tabla personalizada para solicitudes */
+    .table-custom-solicitudes {
+        margin-bottom: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    .table-custom-solicitudes thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: bold;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        border-top: none;
+    }
+    
+    .table-custom-solicitudes tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        border-top: 1px solid #ddd;
+    }
+    
+    .table-custom-solicitudes tbody tr:nth-child(even) {
+        background-color: #e8e8e8;
+    }
+    
+    .table-custom-solicitudes tbody tr:nth-child(odd) {
+        background-color: white;
+    }
+    
+    /* Botones de acción para solicitudes */
+    .btn-accion-sol {
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .btn-revisar {
+        background-color: #5b9bd5;
+    }
+    
+    .btn-revisar:hover {
+        background-color: #4a8bc2;
+    }
+    
+    .btn-info-sol {
+        background-color: #70ad47;
+    }
+    
+    .btn-info-sol:hover {
+        background-color: #5a8c38;
+    }
+    
+    /* Estilos para inputs */
+    .form-control {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #5f9876;
+        box-shadow: 0 0 0 0.2rem rgba(95, 152, 118, 0.25);
+    }
+    
+    .input-group-addon {
+        background-color: #f5f5f5;
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+    }
+    
+    /* Paginación */
+    .pagination > li > a {
+        color: #5f9876;
+        border: 1px solid #ddd;
+        padding: 6px 12px;
+        margin: 0 2px;
+    }
+    
+    .pagination > li.active > a {
+        background-color: #5f9876;
+        border-color: #5f9876;
+        color: white;
+    }
+    
+    .pagination > li.disabled > a {
+        color: #999;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Abrir modal de detalle
+    $('.btn-info-sol').on('click', function() {
+        var completado = $(this).data('completado') == '1';
+        var carne  = $(this).data('carne');
+        var nombre = $(this).data('nombre');
+        var fecha  = $(this).data('fecha');
+        var tipo   = $(this).data('tipo');
+        var estado = $(this).data('estado');
+
+        if (completado) {
+            $('#modalDetalleTitulo').text('Resumen del Proceso');
+            $('#bloqueActivo').hide();
+            $('#bloqueCompletado').show();
+            $('#resNombre').text(nombre);
+            $('#resCarne').text(carne);
+            $('#resTipo').text(tipo || '-');
+            $('#resFecha').text(fecha);
+            $('#resFechaCompletado').text($(this).data('fecha-completado') || '-');
+        } else {
+            $('#modalDetalleTitulo').text('Detalle de Solicitud');
+            $('#bloqueActivo').show();
+            $('#bloqueCompletado').hide();
+            $('#detalleCarne').text(carne);
+            $('#detalleNombre').text(nombre);
+            $('#detalleFecha').text(fecha);
+            $('#detalleTipo').text(tipo || '-');
+            var estadoClases = {
+                'Completado':  'label-success',
+                'En progreso': 'label-warning',
+                'Rechazado':   'label-danger',
+                'Pendiente':   'label-default'
+            };
+            var estadoClass = estadoClases[estado] || 'label-default';
+            $('#detalleEstado').html('<span class="label ' + estadoClass + '" style="font-size:13px;">' + estado + '</span>');
+        }
+
+        $('#modalDetalleSolicitud').modal('show');
+    });
+    
+    // Aprobar solicitud
+    $('#btnAprobar').on('click', function() {
+        ConfirmService.confirm('¿Está seguro de aprobar esta solicitud?', function() {
+            // Aquí iría la llamada AJAX para aprobar
+            $('#modalRevisarSolicitud').modal('hide');
+        });
+    });
+
+    // Rechazar solicitud
+    $('#btnRechazar').on('click', function() {
+        ConfirmService.confirm('¿Está seguro de rechazar esta solicitud?', function() {
+            // Aquí iría la llamada AJAX para rechazar
+            $('#modalRevisarSolicitud').modal('hide');
+        });
+    });
+});
+</script>
