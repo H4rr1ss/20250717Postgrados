@@ -197,7 +197,7 @@
                 <div id="page-wrapper" style="padding-top: 50px;">
                     <!--BEGIN TITLE & BREADCRUMB PAGE-->
                     <div id="title-breadcrumb-option-demo" class="page-title-breadcrumb" style="padding-top: 60px;">
-                        <div class="page-header pull-left <?= (!empty($role) && $role->hasRole() && ($role->hasAdminRole()) || $role->hasUdicaRole()) ? 'admin' : 'student' ?>">
+                        <div class="page-header pull-left <?= (!empty($role) && $role->hasRole() && ($role->hasAdminRole() || $role->hasUdicaRole())) ? 'admin' : 'student' ?>">
                             <div class="page-title">
                                 <?= $menuTitle ?? '' ?>
                             </div>                            

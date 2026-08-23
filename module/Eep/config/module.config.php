@@ -459,21 +459,20 @@ return [
         ],
     ],
     'view_manager' => [
+        //        'display_not_found_reason' => true,
+//        'display_exceptions'       => true,
+//        'doctype'                  => 'HTML5',
+//        'not_found_template'       => 'error/404',
+//        'exception_template'       => 'error/index',
         'template_map' => [
-            // Layout minimal disponible (sin sidebar)
-            'layout/empty' => __DIR__ . '/../view/layout/empty.phtml',
-            // Alias para layout minimal con prefijo de módulo
+            'eep/layout' => __DIR__ . '/../view/layout/layout.phtml',
             'eep/empty-layout' => __DIR__ . '/../view/layout/empty.phtml',
-            // Layout público para admisiones (alias de empty)
-            'layout/login' => __DIR__ . '/../view/layout/empty.phtml',
-            'layout/layout'           => __DIR__ . '/../view/layout/layout.phtml',
-            'layout/flash'            => __DIR__ . '/../view/layout/flash.phtml',
-            'error/404'               => __DIR__ . '/../view/error/404.phtml',
-            'error/index'             => __DIR__ . '/../view/error/index.phtml',
-            // Alias para el partial de mensajes usado en muchas vistas
-            'eep/msg'                 => __DIR__ . '/../view/partial/msg.phtml',
-            // Alias para layout por defecto (fallback)
-            'eep/layout'              => __DIR__ . '/../view/layout/layout.phtml',
+            'eep/msg' => __DIR__ . '/../view/partial/msg.phtml',
+            'eep/order' => __DIR__ . '/../view/partial/payment-order.phtml',
+            'eep/act' => __DIR__ . '/../view/partial/official-act.phtml',
+            //            'application/index/index' => __DIR__ . '/../view/application/index/index.phtml',
+            'error/404' => __DIR__ . '/../view/error/404.phtml',
+            'error/index' => __DIR__ . '/../view/error/index.phtml',
         ],
         'template_path_stack' => [
             'Eep' => __DIR__ . '/../view',

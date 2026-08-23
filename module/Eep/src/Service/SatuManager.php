@@ -108,10 +108,8 @@ class SatuManager extends Manager {
                         $res->success();
                     }
                 } catch (\Exception $ex) {
-                    // En desarrollo, loguear error pero continuar sin fallar
-                    error_log("SATU no disponible - Usuario '$userCode': " . $ex->getMessage());
-                    $res->success("Usuario agregado exitosamente (SATU no disponible en desarrollo)");
-                    $res->setType(R::WARNING);
+                    $res->failure("No se pudo grabar al usuario código '$userCode' en SATU.");
+                    $res->addError($ex);
                     return $res;
                 }
             }
@@ -137,11 +135,8 @@ class SatuManager extends Manager {
                 return $res;
             }
         } catch (\Exception $ex) {
-            // En desarrollo, loguear error pero continuar
-            error_log("SATU no disponible - Consulta estudiante: " . $ex->getMessage());
-            $res->success("Carreras actualizadas (SATU no disponible en desarrollo)");
-            $res->setType(R::WARNING);
-            return $res;
+            $res->failure('No se pudo consultar SATU para buscar al estudiante');
+            $res->addError($ex);
         }
         //CHECKING EEP CAREERS
         try {
@@ -173,10 +168,8 @@ class SatuManager extends Manager {
                 $satuCareerArray[$value['carrera']] = $value;
             }
         } catch (\Exception $ex) {
-            // En desarrollo, loguear error pero continuar
-            error_log("SATU no disponible - Búsqueda carreras: " . $ex->getMessage());
-            $res->success("Carreras del usuario procesadas (SATU no disponible en desarrollo)");
-            $res->setType(R::WARNING);
+            $res->failure('No se pudieron buscar las carreras del usuario en SATU.');
+            $res->addError($ex);
             return $res;
         }
         //ADDING EEP MISSING CAREERS TO SATU
@@ -201,41 +194,24 @@ class SatuManager extends Manager {
                 $satuCareers->insert($set);
             }
         } catch (\Exception $ex) {
-            // En desarrollo, loguear error pero continuar
-            error_log("SATU no disponible - Inserción carreras: " . $ex->getMessage());
-            error_log("Set: " . json_encode($set ?? '(No declarada)'));
-            $res->success("Carreras faltantes procesadas (SATU no disponible en desarrollo)");
-            $res->setType(R::WARNING);
+            $res->failure('No se pudieron insertar las carreras faltantes del SEEP del usuario en SATU.');
+            $res->addError($ex);
+            $res->addError('Set: ' . json_encode($set ?? '(No declarada)'));
             return $res;
         }
         return $res;
     }
 
     public function beginTransaction() {
-        try {
-            $this->satuAdapter->getDriver()->getConnection()->beginTransaction();
-        } catch (\Exception $ex) {
-            // En desarrollo, loguear pero no fallar
-            error_log("SATU no disponible - Begin transaction: " . $ex->getMessage());
-        }
+        $this->satuAdapter->getDriver()->getConnection()->beginTransaction();
     }
 
     public function commit() {
-        try {
-            $this->satuAdapter->getDriver()->getConnection()->commit();
-        } catch (\Exception $ex) {
-            // En desarrollo, loguear pero no fallar
-            error_log("SATU no disponible - Commit: " . $ex->getMessage());
-        }
+        $this->satuAdapter->getDriver()->getConnection()->commit();
     }
 
     public function rollback() {
-        try {
-            $this->satuAdapter->getDriver()->getConnection()->rollback();
-        } catch (\Exception $ex) {
-            // En desarrollo, loguear pero no fallar
-            error_log("SATU no disponible - Rollback: " . $ex->getMessage());
-        }
+        $this->satuAdapter->getDriver()->getConnection()->rollback();
     }
 
     /*
@@ -284,13 +260,8 @@ class SatuManager extends Manager {
             ]);
             $satuGradesData = $satu->selectWith($select)->toArray();
         } catch (\Exception $ex) {
-            // En desarrollo, loguear error pero continuar
-            error_log("SATU no disponible - Lectura notas finales: " . $ex->getMessage());
-            error_log("Usuario: $userCode");
-            $res->success('Notas finales procesadas (SATU no disponible en desarrollo)');
-            $res->setType(R::WARNING);
-            $res->setObj($counterArray);
-            return $res;
+            $res->failure('Hubo un problema con la lectura de las notas finales de SATU o el SEEP', $ex);
+            $res->addError("Usuario: $userCode");
         }
         if ($res->get()) {
             //FORMATTING EEP GRADES
