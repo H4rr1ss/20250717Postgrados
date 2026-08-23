@@ -17,15 +17,16 @@ Este checklist maestro unifica la instalación de los tres módulos nuevos despl
 
 ---
 
-## 🔗 Referencias Rápidas por Módulo
+## 🔗 Referencias Rápidas por Módulo / Funcionalidad
 
-| Módulo | Guía de Producción Detallada | Script SQL Principal | Script Bash |
+| Módulo / Funcionalidad | Guía de Producción Detallada | Script SQL Principal | Script Bash |
 |--------|------------------------------|----------------------|-------------|
 | Evaluación Docente | `INSTALACION_PRODUCCION_EVALUACION_DOCENTE.md` | `database/evaluacion_docente.sql` | Ninguno |
 | Formulario de Admisión | `INSTALACION_PRODUCCION_FORMULARIO_ADMISION.md` | `database/modulo_aspirantes_final.sql` | Ninguno |
 | Graduación | `documentacion/modulo-graduacion/CHECKLIST_MODULO_GRADUACION.md` | `database/modulo graduacion/modulo_graduacion_schema.sql` | `documentacion/modulo-graduacion/inicializar-modulo-graduacion.sh` (carpetas) |
 | Graduación (verificación) | `documentacion/modulo-graduacion/verificar-modulo-graduacion.sh` | `database/modulo graduacion/matriz_evaluacion_completo.sql` | `documentacion/modulo-graduacion/verificar-modulo-graduacion.sh` |
 | Graduación (seeds) | `documentacion/modulo-graduacion/MODULO_GRADUACION_REQUISITOS_INICIALES.md` | `database/modulo graduacion/ejecuciones_extra.sql` | Ninguno |
+| Recuperación de Contraseña | `documentacion/CAMBIOS.md` (sección 2026-08-22) | `database/recuperacion_contrasena.sql` | Ninguno |
 
 ---
 
@@ -98,6 +99,52 @@ Este checklist maestro unifica la instalación de los tres módulos nuevos despl
 ```
 
 **Responsable Fase 1:** ___________________  
+**Fecha:** ___________________  
+**Verificado por:** ___________________
+
+---
+
+## ✅ FASE 1.5: Recuperación de Contraseña
+
+> **Dependencias:** Ninguna. Requiere que `zendframework/zend-mail` ya esté instalado (normalmente ya lo está por el Módulo de Graduación). Requiere SMTP configurado en `config/autoload/local.php`.
+
+```bash
+□ 1.5.1 Desplegar archivos PHP y vistas
+  Asegurar que estos archivos estén en producción:
+  - module/Eep/src/Controller/UserController.php (acciones recoverPassword y resetPassword)
+  - module/Eep/src/Service/UserManager.php (métodos de tokens)
+  - module/Eep/src/Service/MailManager.php (ya existente, verificar disponible)
+  - module/Eep/src/Form/ResetPasswordForm.php
+  - module/Eep/view/eep/user/recover-password.phtml
+  - module/Eep/view/eep/user/reset-password.phtml
+  - module/Eep/config/module.config.php (rutas recover-password y reset-password)
+  - module/Eep/config/access_filter.php (permisos código 67 y 171)
+
+□ 1.5.2 Ejecutar script SQL de base de datos
+  docker-compose exec -T db mysql -u user -ppassword db_postgrados < database/recuperacion_contrasena.sql
+
+□ 1.5.3 Verificar acciones ACL
+  docker-compose exec db mysql -u user -ppassword db_postgrados \
+    -e "SELECT cod_accion, nombre FROM accion WHERE cod_accion IN (67, 171);"
+  # Debe mostrar:
+  #   67 | Recuperar contraseña
+  #  171 | Restablecer contraseña
+
+□ 1.5.4 Verificar configuración SMTP
+  # La misma configuración de correo usada por Graduación.
+  # Confirmar que config/autoload/local.php tiene la sección 'mail' completa.
+
+□ 1.5.5 Verificación post-instalación
+  - Desde el login (/auth/login), clicar "¿Olvidaste tu contraseña?"
+  - Ingresar un correo real registrado en la tabla usuario.
+  - Verificar que llega el correo con el enlace (asunto: "Recuperación de contraseña...").
+  - Abrir el enlace /reset-password?token=..., ingresar nueva contraseña y confirmar.
+  - Verificar que redirige al login con mensaje de éxito.
+  - Verificar que se puede iniciar sesión con la nueva contraseña.
+  - Verificar que el token anterior ya no funciona (usar el mismo link dos veces debe fallar).
+```
+
+**Responsable Fase 1.5:** ___________________  
 **Fecha:** ___________________  
 **Verificado por:** ___________________
 
@@ -272,12 +319,18 @@ Este checklist maestro unifica la instalación de los tres módulos nuevos despl
     SHOW TABLES LIKE 'evaluacion_%';
     SHOW TABLES LIKE 'formulario_%';
     SHOW TABLES LIKE 'examen_%';
+    SHOW TABLES LIKE 'password_reset_token';
   "
 
 □ Sin archivos críticos faltantes:
   docker-compose exec web test -f /var/www/data/graduacion/plantillas/carta-examinadores/general.docx
   docker-compose exec web test -d /var/www/data/admisiones
   docker-compose exec web test -f /var/www/public/img/email-footer.jpg
+
+□ Recuperación de contraseña funcional:
+  - Ruta /recover-password accesible sin login
+  - Ruta /reset-password?token=... responde correctamente
+  - Correo de recuperación se envía y contiene enlace válido
 
 □ phpcs limpio sobre archivos nuevos:
   docker-compose exec web composer cs-check
@@ -343,14 +396,22 @@ Este checklist maestro unifica la instalación de los tres módulos nuevos despl
     DELETE FROM accion WHERE cod_accion IN (80,81,82,85,86,87,140,141,142,144,145,146);
   "
 
-□ 5.5 Restaurar archivos de configuración modificados:
+□ 5.5 Rollback Recuperación de Contraseña:
+  docker-compose exec -T db mysql -u user -ppassword db_postgrados -e "
+    DROP TABLE IF EXISTS password_reset_token;
+    DELETE FROM accion WHERE cod_accion IN (67, 171);
+  "
+
+□ 5.6 Restaurar archivos de configuración modificados:
   # Restaurar desde backup:
   # - module/Eep/config/module.config.php
   # - module/Eep/config/access_filter.php
   # - module/Eep/config/menus.php
   # - module/Eep/src/ValueObject/View.php
+  # - module/Eep/src/Controller/UserController.php
+  # - module/Eep/src/Service/UserManager.php
 
-□ 5.6 Limpiar caché y reiniciar:
+□ 5.7 Limpiar caché y reiniciar:
   docker-compose exec web rm -rf /var/www/data/cache/*
   docker-compose restart web
 ```
@@ -369,6 +430,10 @@ Usar esta tabla para registrar manualmente cada paso ejecutado en producción.
 | 1 | 1.2 | Ejecutar evaluacion_docente.sql | | | ☐ | |
 | 1 | 1.3 | Verificar ACL 80-87, 140-146 | | | ☐ | |
 | 1 | 1.5 | Verificación post-instalación EdD | | | ☐ | |
+| 1.5 | 1.5.1 | Desplegar archivos Recuperación de Contraseña | | | ☐ | |
+| 1.5 | 1.5.2 | Ejecutar recuperacion_contrasena.sql | | | ☐ | |
+| 1.5 | 1.5.3 | Verificar ACL 67, 171 | | | ☐ | |
+| 1.5 | 1.5.5 | Verificación post-instalación Recuperación | | | ☐ | |
 | 2 | 2.1 | Desplegar archivos Formulario Admisión | | | ☐ | |
 | 2 | 2.2 | Ejecutar modulo_aspirantes_final.sql | | | ☐ | |
 | 2 | 2.3 | Verificar ACL 68-76 | | | ☐ | |
@@ -382,7 +447,7 @@ Usar esta tabla para registrar manualmente cada paso ejecutado en producción.
 | 3 | 3.2 | Verificar tablas, rol, usuario, ACL | | | ☐ | |
 | 3 | 3.3 | Dependencias Composer + SMTP | | | ☐ | |
 | 3 | 3.4 | Verificación automática + prueba funcional | | | ☐ | |
-| 4 | Global | Verificación de coexistencia (menús, ACL, tablas) | | | ☐ | |
+| 4 | Global | Verificación de coexistencia (menús, ACL, tablas, correos) | | | ☐ | |
 
 ---
 
@@ -396,13 +461,15 @@ Usar esta tabla para registrar manualmente cada paso ejecutado en producción.
 
 4. **Archivos físicos en `data/`:** Ninguno de los scripts SQL o Composer crea automáticamente las carpetas `data/graduacion/` ni `data/admisiones/`. Deben crearse manualmente o mediante los scripts bash indicados.
 
-5. **SMTP:** La configuración SMTP en `config/autoload/local.php` es compartida entre módulos (Graduación y futuras mejoras). Configurarla una sola vez con credenciales válidas de aplicación (App Password, no contraseña principal de Google).
+5. **SMTP:** La configuración SMTP en `config/autoload/local.php` es compartida entre módulos (Graduación, Recuperación de Contraseña y futuras mejoras). Configurarla una sola vez con credenciales válidas de aplicación (App Password, no contraseña principal de Google).
+
+6. **Recuperación de Contraseña:** Requiere que `zend-mail` esté instalado (normalmente ya lo está por Graduación). Si no se instaló Graduación, ejecutar `composer require zendframework/zend-mail`. La tabla `password_reset_token` usa `utf8mb4` y una FK a `usuario(cod_usuario)`; asegurar que el collation coincida con la tabla `usuario`.
 
 6. **Fuente `DejaVuSans.ttf`:** Es un requisito compartido entre Graduación y Evaluación Docente para la generación de gráficas PNG en PDFs. Si el servidor usa Docker, la fuente puede instalarse via `apt-get install fonts-dejavu-core` y copiarse a `/var/www/data/fonts/`.
 
 ---
 
 **Documento creado:** 2026-08-22  
-**Última actualización:** 2026-08-22  
+**Última actualización:** 2026-08-22 (incluye Recuperación de Contraseña)  
 **Responsable del despliegue general:** ___________________  
 **Aprobación:** ___________________
