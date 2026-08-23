@@ -314,6 +314,49 @@ Total: **2** archivos eliminados del código fuente (excluyendo `data/sessiones/
 
 ---
 
+## 4. Archivos Ignorados por Git pero de Configuración Vital (Comparación Dev vs Main/Prod)
+
+Los siguientes archivos están en `.gitignore` por seguridad (credenciales, rutas locales, etc.) y **no aparecen en el diff de Git entre ramas**, pero son críticos para el funcionamiento de la plataforma. Se comparó el working tree de `development` (`/home/harris/Escritorio/unificacion/20250717Postgrados/`) contra el de `main`/`prod` (`/home/harris/Escritorio/unificacion/prod/20250717Postgrados/`).
+
+### `config/autoload/local.php` — DIFERENCIAS CRÍTICAS
+
+| Aspecto | `development` | `main` / `prod` |
+|---------|---------------|-----------------|
+| **db** | `username: user`, `password: password`, adaptador `satu` idéntico | `username: user`, `password: password`, adaptador `satu` idéntico |
+| **session_config.save_path** | `/var/www/data/sessiones/` | `/var/www/data/sessiones/` |
+| **mail** (SMTP) | ✅ Presente: host `smtp.gmail.com`, puerto `587`, TLS, credenciales `harry.usac20@gmail.com` / `aady eqbz ylke gepo` | ❌ **AUSENTE** |
+| **decano** | ✅ Presente: `nombre: Arq. Francisco Bonini`, `titulo: Decano` | ❌ **AUSENTE** |
+
+> **⚠️ Acción requerida:** Al hacer merge de `development` → `main`, asegurarse de que `config/autoload/local.php` en producción incluya las nuevas claves `mail` y `decano`, o los módulos de envío de correo y generación de documentos oficiales fallarán silenciosamente.
+
+### `config/development.config.php` — Modo desarrollo de ZF3
+
+| Aspecto | `development` | `main` / `prod` |
+|---------|---------------|-----------------|
+| **Activo** | ❌ No (solo existe `.dist`) | ❌ No (solo existe `.dist`) |
+
+> **ℹ️ Nota:** Ambos entornos tienen únicamente `development.config.php.dist`. No hay riesgo de que el modo desarrollo quede activado accidentalmente en producción.
+
+### Carpetas de datos en `.gitignore` — Referencia para revisión
+
+Estas carpetas contienen archivos de runtime subidos por usuarios o generados por la plataforma. No deben versionarse, pero se listan para que al desplegar en producción se verifique que:
+
+1. Los permisos de escritura estén correctos (`www-data` o equivalente).
+2. El `.gitkeep` de `data/graduacion/procesos/` se respete para que la carpeta exista al clonar.
+
+| Carpeta | Ignorada | Contenido tipo | Revisar al desplegar |
+|---------|----------|----------------|----------------------|
+| `data/graduacion/procesos/*` | ✅ Sí | Documentos de estudiantes (PDF, JPG, PNG) por proceso de graduación | Permisos de escritura y existencia del directorio raíz |
+| `data/admisiones/*` | ✅ Sí | Archivos adjuntos de formularios de admisión | Permisos de escritura y existencia del directorio raíz |
+| `data/sessiones/` | ✅ Sí | Cache de sesiones PHP | Ignorar (se regenera) |
+| `data/cache/` | ✅ Sí | Cache de la aplicación | Ignorar (se regenera) |
+| `data/logs/` | ✅ Sí | Logs de la aplicación | Ignorar (se regenera) |
+| `data/tmp/` | ✅ Sí | Archivos temporales | Ignorar (se regenera) |
+
+> **⚠️ Acción requerida:** `data/graduacion/procesos/.gitkeep` está en ambos entornos y debe seguir estando en `main` para que Git cree la carpeta vacía al clonar. Si se pierde, la subida de documentos de graduación fallará.
+
+---
+
 ## Notas
 
 - Los 9,040 archivos de sesión (`data/sessiones/sess_*`) del primer commit fueron excluidos del análisis porque son datos temporales de runtime y no aportan valor al análisis de cambios del código fuente.
