@@ -20,6 +20,7 @@ Thumbs.db
 
 /data/sessions/
 /data/sessiones/
+.env
 
 # Módulo de Graduación - Procesos individuales
 /data/admisiones/
