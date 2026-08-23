@@ -1,22 +1,15 @@
 services:
-  web:
+  app:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8090:80"
     volumes:
       - .:/var/www
     depends_on:
       - db
-    environment:
-      - APACHE_DOCUMENT_ROOT=/var/www/public
-      # - DB_HOST=db
-      # - DB_NAME=db_postgrados
-      # - DB_USER=user
-      # - DB_PASSWORD=password
-      # - DB_ROOT_PASSWORD=rootpassword
-      # - SESSION_SAVE_PATH=/var/www/data/sessiones
+
   db:
     image: mysql:5.7
     restart: always
@@ -26,56 +19,9 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: rootpassword
     ports:
-      - "3307:3306"
+      - "3309:3306"
     volumes:
       - db_data:/var/lib/mysql
-      # - ./database:/docker-entrypoint-initdb.d
+
 volumes:
   db_data:
-
-
-# Instrucciones para levantar el ambiente:
-# Abre una terminal en la raíz del proyecto y ejecuta:
-# # 1. Construir la imagen de la app y levantar los contenedores
-# docker-compose up -d --build
-
-# # 2. Verificar que los contenedores estén corriendo
-# docker-compose ps
-
-# # 3. Ver logs (opcional, útil si hay errores)
-# docker-compose logs -f app
-# docker-compose logs -f db
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Comandos útiles
-# # Ver logs de la aplicación
-# docker compose logs -f app
-
-# # Ver logs de la base de datos
-# docker compose logs -f db
-
-# # Entrar al contenedor de la app
-# docker compose exec app bash
-
-# # Entrar a MySQL
-# docker compose exec db mysql -u user -p db_postgrados
-# # Password: password
-
-# # Instalar dependencias de Composer (si es necesario)
-# docker compose exec app composer install
