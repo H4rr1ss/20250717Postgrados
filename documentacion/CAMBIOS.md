@@ -718,3 +718,36 @@ Reemplazo de las gráficas HTML/CSS "pixel art" por imágenes PNG generadas din�
 - Verificar que `extension=gd` esté habilitada en PHP y compilada con soporte FreeType.
 - Verificar que el archivo `/var/www/data/fonts/DejaVuSans.ttf` exista en producción (copiar manualmente si no se reconstruye la imagen Docker).
 - No se agregaron nuevas acciones ACL ni dependencias de Composer.
+
+## Recuperación de Contraseña con correo electrónico (2026-08-22)
+
+Se terminó la funcionalidad de recuperación de contraseña que estaba como stub. Ahora genera tokens de un solo uso (30 minutos de validez), envía el enlace por correo vía `MailManager` y permite restablecer la contraseña desde una pantalla pública.
+
+### Cambios en base de datos
+- `database/recuperacion_contrasena.sql` — Schema nuevo y acción ACL:
+  - Tabla `password_reset_token` (`token` PK, `cod_usuario`, `expires_at`, `used`, `created_at`).
+  - Índice `idx_cod_usuario` para invalidar tokens previos rápidamente.
+  - Acción `171` — "Restablecer contraseña".
+
+### Archivos nuevos
+- `module/Eep/src/Form/ResetPasswordForm.php` — Formulario de nueva contraseña (password + confirmación, validadores `StringLength` min 6 e `Identical`).
+- `module/Eep/view/eep/user/reset-password.phtml` — Vista de restablecimiento.
+
+### Archivos modificados
+- `module/Eep/src/Service/UserManager.php`
+  - `getUserByEmail(string $email): ?User`
+  - `createPasswordResetToken(int $userId): string` — invalida tokens anteriores del mismo usuario, genera token criptográfico con expiración de 30 minutos.
+  - `validatePasswordResetToken(string $token): ?int` — verifica existencia, no usado y no expirado.
+  - `resetPasswordByToken(string $token, string $newPassword): bool` — transacción que valida token, actualiza contraseña con bcrypt y marca token como usado.
+- `module/Eep/src/Controller/UserController.php`
+  - Inyecta `MailManager` en el constructor (resuelto automáticamente por `LazyControllerAbstractFactory`).
+  - `recoverPasswordAction()` — ahora busca el usuario por correo, genera token, envía correo HTML con enlace absoluto a `/reset-password?token=xxx` y muestra mensaje genérico de seguridad.
+  - `resetPasswordAction()` — valida token, muestra formulario de nueva contraseña, verifica coincidencia, llama a `resetPasswordByToken` y redirige a `/login` con mensaje flash de éxito.
+- `module/Eep/config/module.config.php` — Ruta `reset-password` agregada.
+- `module/Eep/config/access_filter.php` — Entrada `resetPassword` con código `171`, roles `NO_AUTH`, `AUTH`, `ALL`.
+
+### Reglas de seguridad
+- El token expira en **30 minutos**.
+- **Uso único**: al restablecer la contraseña se marca `used = 1`.
+- Al solicitar un nuevo token se **invalida el anterior** del mismo usuario.
+- El mensaje mostrado en `recover-password` es genérico (*"Si el correo está registrado..."*) para no revelar existencia de correos.

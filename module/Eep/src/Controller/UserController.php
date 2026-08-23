@@ -33,6 +33,7 @@ use Eep\Form\EditUserForm;
 use Eep\Controller\GP;
 use Eep\Form\LogForm;
 use Eep\Service\SatuManager;
+use Eep\Service\MailManager;
 use Eep\Form\UserIdForm;
 
 class UserController extends AbstractActionController {
@@ -46,8 +47,9 @@ class UserController extends AbstractActionController {
     private $authManager;
     private $logManager;
     private $satuManager;
+    private $mailManager;
 
-    public function __construct(AuthManager $authManager, UserManager $userManager, AcademyManager $academyManager, OrderManager $orderManager, InscriptionManager $inscriptionManager, CohortManager $cohortManager, TimetableManager $timetableManager, LM $logManager, SatuManager $satuManager) {
+    public function __construct(AuthManager $authManager, UserManager $userManager, AcademyManager $academyManager, OrderManager $orderManager, InscriptionManager $inscriptionManager, CohortManager $cohortManager, TimetableManager $timetableManager, LM $logManager, SatuManager $satuManager, MailManager $mailManager) {
         $this->userManager = $userManager;
         $this->academyManager = $academyManager;
         $this->orderManager = $orderManager;
@@ -57,6 +59,7 @@ class UserController extends AbstractActionController {
         $this->timetableManager = $timetableManager;
         $this->logManager = $logManager;
         $this->satuManager = $satuManager;
+        $this->mailManager = $mailManager;
     }
 
     public function recoverPasswordAction() {
@@ -67,7 +70,27 @@ class UserController extends AbstractActionController {
             $data = $this->params()->fromPost();
             $form->setData($data);
             if ($form->isValid()) {
-                // Aquí se procesará el envío del correo de recuperación
+                $email = $form->getData()['email'] ?? '';
+                $user = $this->userManager->getUserByEmail($email);
+                if ($user !== null) {
+                    $token = $this->userManager->createPasswordResetToken($user->getCode());
+                    $resetUrl = $this->url()->fromRoute('reset-password', [], [
+                        'query' => ['token' => $token],
+                        'force_canonical' => true,
+                    ]);
+                    $html = '<p>Estimado(a) <strong>' . htmlspecialchars($user->getNombreCompleto()) . '</strong>,</p>'
+                        . '<p>Ha solicitado restablecer su contraseña en la Plataforma de Postgrados.</p>'
+                        . '<p>Haga clic en el siguiente enlace para continuar:</p>'
+                        . '<p><a href="' . htmlspecialchars($resetUrl) . '" style="color:#003366;text-decoration:underline;">Restablecer contraseña</a></p>'
+                        . '<p>El enlace expira en <strong>30 minutos</strong> y solo puede utilizarse una vez.</p>'
+                        . '<p>Si no realizó esta solicitud, ignore este mensaje.</p>';
+                    $this->mailManager->sendHtmlMessage(
+                        $user->getCorreo(),
+                        'Recuperación de contraseña - Plataforma de Postgrados',
+                        $html
+                    );
+                }
+                // Mensaje genérico por seguridad (sin revelar si el correo existe)
                 $status = LM::SUCCESS;
                 $msg = new Message('Si el correo está registrado, se enviará un enlace de recuperación.', '', Message::GREEN);
             } else {
@@ -80,6 +103,52 @@ class UserController extends AbstractActionController {
         return new ViewModel([
             'form' => $form,
             'msg' => $msg
+        ]);
+    }
+
+    public function resetPasswordAction() {
+        $token = $this->params()->fromQuery('token', '');
+        $form = new \Eep\Form\ResetPasswordForm();
+        $msg = null;
+
+        if (empty($token) || $this->userManager->validatePasswordResetToken($token) === null) {
+            $msg = new Message('Enlace inválido o expirado', 'El enlace de recuperación ya no es válido. Solicite uno nuevo.', Message::RED);
+            $this->pg()->log($msg, LM::FAILURE, LM::VIEW);
+            return new ViewModel([
+                'form' => null,
+                'msg' => $msg,
+            ]);
+        }
+
+        if ($this->getRequest()->isPost()) {
+            $data = $this->params()->fromPost();
+            $form->setData($data);
+            if ($form->isValid()) {
+                $newPassword = $data['password'] ?? '';
+                $confirmPassword = $data['confirm_password'] ?? '';
+                $status = LM::FAILURE;
+                if ($newPassword !== $confirmPassword) {
+                    $msg = new Message('Error', 'Las contraseñas no coinciden.', Message::YELLOW);
+                } else {
+                    $result = $this->userManager->resetPasswordByToken($token, $newPassword);
+                    if ($result) {
+                        $this->flashMessenger()->addSuccessMessage('Su contraseña ha sido restablecida. Inicie sesión con su nueva contraseña.');
+                        $this->pg()->log(null, LM::SUCCESS, LM::UPDATE);
+                        return $this->redirect()->toRoute('auth', ['action' => 'login']);
+                    }
+                    $msg = new Message('Error', 'No se pudo restablecer la contraseña. El enlace puede haber expirado o ya fue utilizado.', Message::RED);
+                }
+                $this->pg()->log($msg ?? null, $status, LM::UPDATE);
+            } else {
+                $this->pg()->log($form->getMessages(), LM::FAILURE, LM::UPDATE);
+            }
+        } else {
+            $this->pg()->log(null, LM::SUCCESS, LM::VIEW);
+        }
+
+        return new ViewModel([
+            'form' => $form,
+            'msg' => $msg,
         ]);
     }
 

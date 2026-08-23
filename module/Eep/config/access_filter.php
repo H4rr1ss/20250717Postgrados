@@ -395,6 +395,10 @@ return [
             'code' => 67,
             'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
         ],
+        'resetPassword' => [
+            'code' => 171,
+            'roles' => [Role::NO_AUTH, Role::AUTH, Role::ALL]
+        ],
     ],
     FormularioAdmisionController::class => [
         'index' => [
