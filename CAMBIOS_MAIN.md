@@ -38,3 +38,13 @@
 - El único archivo **nuevo** (`A`) desde el primer commit es `borrar.sql`.
 - El resto son modificaciones o el renombrado del dump SQL inicial.
 - Los archivos temporales de sesión (`data/sessiones/sess_*`) fueron excluidos del listado.
+
+
+# ARCHIVOS QUE NO SE DEBEN ENVIAR CAMBIOS A PROD
+- config/autoload/local.php
+- TimetableManager.php
+- docker-compose.yml
+- config/autoload/global.php
+
+# Cosas a preguntar
+- que carreras o de donde se obtienen las carreras que salen a elegir por el aspirante a la cual quieren ingresar
