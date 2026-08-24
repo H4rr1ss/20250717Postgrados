@@ -719,7 +719,7 @@ class ExamenController extends AbstractActionController {
                 return $this->redirect()->toRoute('examen', [
                     'action' => 'solicitudes',
                     'id'     => $idProceso
-                ], ['query' => ['paso' => 1]]);
+                ], ['query' => ['paso' => 1, 'cod_tipo_examen' => $codTipoExamen]]);
             } catch (\Exception $e) {
                 $this->pg()->log('Error al iniciar el proceso de graduación para el estudiante ' . $codUsuario . ' con examen ' . $nombreTipoExamenTexto . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
                 $this->flashMessenger()->addErrorMessage('Error al iniciar el proceso: ' . $e->getMessage());
@@ -1746,6 +1746,7 @@ class ExamenController extends AbstractActionController {
                 'terna'                 => $terna,
                 'docentes'              => $docentes,
                 'instruccionesEntrega'  => $instruccionesEntrega,
+                'codTipoExamenFase'     => $codTipoExamenFase,
             ]);
             $vm->setTemplate('eep/examen/revisarpapeleria');
             return $vm;
@@ -1753,7 +1754,7 @@ class ExamenController extends AbstractActionController {
 
         // Listado de solicitudes (Paginado)
         $pagina        = (int) $this->params()->fromQuery('page', 1);
-        $estado        = $this->params()->fromQuery('estado', null);
+        $estado        = $this->params()->fromQuery('estado', 'pendiente');
         $carne         = $this->params()->fromQuery('carne', null);
         $codTipoExamen = (int) $this->params()->fromQuery('cod_tipo_examen', 0) ?: null;
 
@@ -2239,6 +2240,41 @@ class ExamenController extends AbstractActionController {
             ]);
         } catch (\Exception $e) {
             $this->pg()->log('Error al reprogramar el examen privado del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
+            return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * AJAX: cancela un proceso de examen privado.
+     */
+    public function cancelarProcesoPrivadoAction()
+    {
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            return new JsonModel(['status' => 'error', 'message' => 'Método no permitido']);
+        }
+
+        $codProceso = (int) $request->getPost('cod_proceso', 0);
+        $motivo     = (string) $request->getPost('motivo', '');
+
+        if ($codProceso <= 0) {
+            return new JsonModel(['status' => 'error', 'message' => 'Datos incompletos']);
+        }
+
+        $codUsuario = (int) $this->authService->getIdentity();
+        if ($codUsuario <= 0) {
+            return new JsonModel(['status' => 'error', 'message' => 'Usuario no autenticado']);
+        }
+
+        try {
+            $this->examenManager->cancelarProcesoPrivado($codProceso, $motivo, $codUsuario);
+            $this->pg()->log('Se canceló el proceso de examen privado.', LM::SUCCESS, LM::UPDATE);
+            return new JsonModel([
+                'status'  => 'success',
+                'message' => 'Proceso cancelado correctamente.',
+            ]);
+        } catch (\Exception $e) {
+            $this->pg()->log('Error al cancelar el proceso de examen privado ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::UPDATE);
             return new JsonModel(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }

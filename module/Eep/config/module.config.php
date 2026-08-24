@@ -361,6 +361,16 @@ return [
                     ],
                 ],
             ],
+            'cancelar-proceso-privado' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route' => '/examen/cancelar-proceso-privado',
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'cancelarProcesoPrivado',
+                    ],
+                ],
+            ],
             'examen-papeleria' => [
                 'type' => Segment::class,
                 'options' => [

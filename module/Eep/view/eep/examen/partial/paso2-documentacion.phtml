@@ -360,7 +360,7 @@ $(document).ready(function() {
                         setTimeout(function() {
                             <?php if ($fase === 'examen_general'): ?>
                                 // Examen general solo tiene 2 pasos; volver a la lista
-                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes"]) ?>';
+                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes"]) ?>?cod_tipo_examen=<?= (int)$this->codTipoExamenFase ?>';
                             <?php else: ?>
                                 window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=3';
                             <?php endif; ?>

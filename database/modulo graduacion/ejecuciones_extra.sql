@@ -223,7 +223,8 @@ INSERT INTO `accion` (`cod_accion`, `nombre`) VALUES
   (167, 'Generar acta de examen general'),
   (168, 'Generar acta de examen general (POST)'),
   (169, 'Guardar madrina/padrino'),
-  (170, 'Configurar madrina/padrino')
+  (170, 'Configurar madrina/padrino'),
+  (172, 'Cancelar proceso graduacion')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 

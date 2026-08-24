@@ -18,7 +18,7 @@ $this->headTitle('Revisión de papelería');
                 </a>
             </li>
             <li>
-                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>">
+                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= (int)$this->codTipoExamenFase ?>">
                     Solicitudes
                 </a>
             </li>
@@ -27,11 +27,22 @@ $this->headTitle('Revisión de papelería');
     </div>
 </div>
 
+<?php
+    $esPrivado     = (int) ($this->proceso['tipo_cod_examen'] ?? 0) !== 99;
+    $noCancelado   = (int) ($this->proceso['cancelado'] ?? 0) === 0;
+    $mostrarCancelar = $esPrivado && $noCancelado;
+?>
+
 <div class="row" style="margin-bottom: 15px;">
-    <div class="col-lg-12">
-        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn btn-default" style="font-size: 14px;">
+    <div class="col-lg-12" style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= (int)$this->codTipoExamenFase ?>" class="btn btn-default" style="font-size: 14px;">
             <i class="fa fa-arrow-left"></i> Regresar
         </a>
+        <?php if ($mostrarCancelar): ?>
+        <button type="button" class="btn btn-danger" id="btnCancelarProceso" style="font-size: 14px;" data-proceso="<?= (int) $this->proceso['cod_proceso'] ?>">
+            <i class="fa fa-times-circle"></i> Cancelar proceso
+        </button>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -611,8 +622,88 @@ $this->headTitle('Revisión de papelería');
     }
 </style>
 
+<?php if ($mostrarCancelar): ?>
+<!-- Modal Cancelar Proceso -->
+<div class="modal fade" id="modalCancelarProceso" tabindex="-1" role="dialog" aria-labelledby="modalCancelarLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #d9534f; color: white;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar" style="color: white; opacity: 1;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalCancelarLabel">
+                    <i class="fa fa-exclamation-triangle"></i> Cancelar proceso de examen privado
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p>Esta acción <strong>no se puede deshacer</strong>. El estudiante deberá iniciar un nuevo proceso desde cero.</p>
+                <div class="form-group">
+                    <label for="motivoCancelacion">Motivo de cancelación <small>(opcional)</small></label>
+                    <textarea class="form-control" id="motivoCancelacion" rows="3" maxlength="500" placeholder="Ingrese el motivo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarCancelacion">
+                    <i class="fa fa-times-circle"></i> Confirmar cancelación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Script vacío - funcionalidad eliminada
+(function () {
+    var btn   = document.getElementById('btnCancelarProceso');
+    var modal = $('#modalCancelarProceso');
+    var confirmBtn = document.getElementById('btnConfirmarCancelacion');
+    var motivoInput = document.getElementById('motivoCancelacion');
+
+    btn.addEventListener('click', function () {
+        modal.modal('show');
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        var codProceso = btn.getAttribute('data-proceso');
+        var motivo = motivoInput.value.trim();
+
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Procesando...';
+
+        $.ajax({
+            url: '<?= $this->url('cancelar-proceso-privado') ?>',
+            type: 'POST',
+            data: {
+                cod_proceso: codProceso,
+                motivo: motivo
+            },
+            dataType: 'json',
+            success: function (res) {
+                modal.modal('hide');
+                if (res.status === 'success') {
+                    ToastService.success(res.message);
+                    setTimeout(function () {
+                        window.location.href = '<?= $this->url('examen', ['action' => 'solicitudes']) ?>?cod_tipo_examen=<?= (int)$this->codTipoExamenFase ?>';
+                    }, 1500);
+                } else {
+                    ToastService.error('Error: ' + res.message);
+                }
+            },
+            error: function (xhr) {
+                modal.modal('hide');
+                var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                          ? xhr.responseJSON.message
+                          : 'Ocurrió un error inesperado.';
+                ToastService.error('Error: ' + msg);
+            },
+            complete: function () {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fa fa-times-circle"></i> Confirmar cancelación';
+            }
+        });
+    });
+})();
 </script>
+<?php endif; ?>
 
 </div><!-- /.padding container -->

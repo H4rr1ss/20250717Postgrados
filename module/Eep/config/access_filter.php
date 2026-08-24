@@ -659,6 +659,10 @@ return [
             'code' => 160,
             'roles' => [Role::DIRECTOR, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
+        'cancelarProcesoPrivado' => [
+            'code' => 172,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::UDICA_JEFE]
+        ],
         'actaExamenPrivado' => [
             'code' => 161,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]

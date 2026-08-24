@@ -435,12 +435,16 @@ class ExamenManager
             // Filtrar por tipo de examen basado en la fase actual del paso
             // Tipo 99 (Público General) = fase examen_general
             // Tipos 1-2 (Privado) = fase examen_privado
+            // Los procesos finalizados/cancelados tienen cod_paso_actual = NULL,
+            // por lo que epc.fase es NULL; debemos incluirlos mediante ep.cod_tipo_examen.
             if ($codTipoExamen == self::TIPO_PUBLICO_GENERAL) {
-                $whereTipo = 'AND epc.fase = :fase_tipo';
+                $whereTipo = 'AND ((ep.cod_paso_actual IS NOT NULL AND epc.fase = :fase_tipo) OR ((ep.cod_paso_actual IS NULL OR ep.cancelado = 1) AND ep.cod_tipo_examen = :cod_tipo_examen))';
                 $params['fase_tipo'] = 'examen_general';
+                $params['cod_tipo_examen'] = self::TIPO_PUBLICO_GENERAL;
             } else {
-                $whereTipo = 'AND epc.fase = :fase_tipo AND ep.cod_tipo_examen = :cod_tipo_examen';
+                $whereTipo = 'AND ((ep.cod_paso_actual IS NOT NULL AND epc.fase = :fase_tipo AND ep.cod_tipo_examen = :cod_tipo_examen) OR ((ep.cod_paso_actual IS NULL OR ep.cancelado = 1) AND ep.cod_tipo_examen = :cod_tipo_examen))';
                 $params['fase_tipo'] = 'examen_privado';
+                $params['cod_tipo_examen'] = $codTipoExamen;
             }
         }
 
@@ -480,6 +484,7 @@ class ExamenManager
                     epc.numero_orden,
                     epc.fase AS fase_actual,
                     CASE
+                        WHEN ep.cancelado = 1 THEN 'cancelado'
                         WHEN ep.cod_paso_actual IS NULL THEN 'completado'
                         ELSE COALESCE(epp.estado, 'pendiente')
                     END AS estado_paso,
@@ -511,8 +516,8 @@ class ExamenManager
         if ($estado) {
             $params['estado'] = $estado;
         }
-        // Solo agregar cod_tipo_examen cuando el filtro lo usa (no para tipo 99 que usa solo fase)
-        if ($codTipoExamen && $codTipoExamen != self::TIPO_PUBLICO_GENERAL) {
+        // Asegurar que cod_tipo_examen esté siempre en params cuando se filtra por tipo
+        if ($codTipoExamen) {
             $params['cod_tipo_examen'] = $codTipoExamen;
         }
         if ($numeroPaso !== null) {
@@ -2442,5 +2447,66 @@ class ExamenManager
         );
 
         return (int) $this->adapter->getDriver()->getLastGeneratedValue();
+    }
+
+    /**
+     * Cancela un proceso de examen privado.
+     *
+     * Reglas:
+     * - Debe existir, no estar ya cancelado y ser examen privado.
+     * - No debe tener acta generada (numero_acta IS NULL).
+     * - La evaluación no debe haber sido abierta (hora_apertura_evaluacion IS NULL).
+     *
+     * @param int    $codProceso  Código del proceso a cancelar.
+     * @param string $motivo      Motivo de cancelación (opcional).
+     * @param int    $codUsuario  Usuario que realiza la cancelación.
+     * @return bool
+     * @throws \RuntimeException
+     */
+    public function cancelarProcesoPrivado(int $codProceso, string $motivo, int $codUsuario): bool
+    {
+        $sql = 'SELECT cod_tipo_examen, cancelado, numero_acta, hora_apertura_evaluacion
+                FROM examen_proceso
+                WHERE cod_proceso = :proceso
+                LIMIT 1';
+        $row = $this->execute($sql, ['proceso' => $codProceso]);
+
+        if (empty($row)) {
+            throw new \RuntimeException('Proceso no encontrado.');
+        }
+
+        $proceso = $row[0];
+
+        if ((int) $proceso['cancelado'] === 1) {
+            throw new \RuntimeException('El proceso ya se encuentra cancelado.');
+        }
+
+        if ((int) $proceso['cod_tipo_examen'] === self::TIPO_PUBLICO_GENERAL) {
+            throw new \RuntimeException('No se puede cancelar un examen público general desde esta funcionalidad.');
+        }
+
+        if ($proceso['numero_acta'] !== null) {
+            throw new \RuntimeException('No se puede cancelar un proceso que ya tiene acta generada.');
+        }
+
+        if ($proceso['hora_apertura_evaluacion'] !== null) {
+            throw new \RuntimeException('No se puede cancelar un proceso cuya evaluación ya fue abierta.');
+        }
+
+        $update = "UPDATE examen_proceso
+                   SET cancelado            = 1,
+                       fecha_cancelacion    = NOW(),
+                       motivo_cancelacion   = :motivo,
+                       cod_paso_actual      = NULL,
+                       updated_at           = NOW()
+                   WHERE cod_proceso = :proceso
+                     AND cancelado = 0";
+
+        $this->adapter->createStatement($update, [
+            'motivo'  => $motivo,
+            'proceso' => $codProceso,
+        ])->execute();
+
+        return true;
     }
 }

@@ -178,6 +178,18 @@ VALUES ('625161003725', '20263725', 'Patricia', 'Rios', '2001-07-29', '55514725'
 INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
 VALUES ('726272003826', '20263826', 'Sebastian', 'Vargas', '2002-11-05', '55514826', 'sebastian.vargas26@email.com', '$2y$10$7gQvR6sT8bU9vW0xYzZaBcCdEfGhIjKlMnOpQrStUvWxYzAbCdEf', 73, 'H', 'Bachiller', CURDATE(), 'Sebastian Vargas');
 
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('827383003927', '20263927', 'Gabriela', 'Ortiz', '2000-03-14', '55514927', 'gabriela.ortiz27@email.com', '$2y$10$8hIjKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdE', 73, 'M', 'Bachiller', CURDATE(), 'Gabriela Ortiz');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('928494004028', '20264028', 'Francisco', 'Mejia', '2001-08-20', '55515028', 'francisco.mejia28@email.com', '$2y$10$9iJkLmNoPqRsUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfG', 73, 'H', 'Bachiller', CURDATE(), 'Francisco Mejia');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('029505004129', '20264129', 'Silvia', 'Reyes', '2002-06-09', '55515129', 'silvia.reyes29@email.com', '$2y$10$0jKlMnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGh', 73, 'M', 'Bachiller', CURDATE(), 'Silvia Reyes');
+
+INSERT INTO usuario (cui, registro_academico, nombres, apellidos, fecha_nacimiento, telefono, correo, contrasenia, cod_pais, sexo, grado_academico, fecha_creacion, nombre_completo)
+VALUES ('130616004230', '20264230', 'Marco', 'Silva', '2000-11-17', '55515230', 'marco.silva30@email.com', '$2y$10$1kLmNoPqRsUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYzAbCdEfGhIj', 73, 'H', 'Bachiller', CURDATE(), 'Marco Silva');
+
 -- ASIGNACION DE ROLES PARA LOS NUEVOS USUARIOS
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (21,6,CURDATE());
 INSERT INTO usuario_rol (cod_usuario, cod_rol, fecha_inicio) VALUES (22,6,CURDATE());
