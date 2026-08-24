@@ -4,19 +4,28 @@
 -- Ejecutar en entornos nuevos o para reconstruir el módulo desde cero.
 -- ============================================
 
-
--- Eliminar tablas antiguas si existen
-DROP TABLE IF EXISTS respuesta_campo;
-DROP TABLE IF EXISTS respuesta_aspirante;
-DROP TABLE IF EXISTS campo_formulario;
-DROP TABLE IF EXISTS formulario_admision;
-DROP TABLE IF EXISTS aspirante;
-DROP PROCEDURE IF EXISTS CrearCamposPredefinidos;
-
-
 -- ============================================
 -- CREAR TABLAS
 -- ============================================
+
+-- ------------------------------------------------------------------
+-- SECCIONES ACTIVAS DEL FORMULARIO (columna `seccion` en campo_formulario)
+-- ------------------------------------------------------------------
+-- Valores permitidos actualmente:
+--   - 'personal'   => Datos personales del aspirante
+--   - 'contacto'   => Información de contacto
+--   - 'admin'      => Campos administrativos (visibles solo para admins)
+--   - 'laboral'    => Información laboral
+--   - 'academico'  => Información académica
+--   - 'adicional'  => Campos adicionales / motivación
+--
+-- ⚠️ REGLA IMPORTANTE:
+--    Si se agrega una NUEVA sección en este script, se DEBE agregar
+--    también en el FRONTEND (vistas .phtml / JS) para que se renderice
+--    correctamente en el formulario público y en el panel admin.
+--    De lo contrario, los campos de la nueva sección quedarán ocultos
+--    o sin estilo en la interfaz.
+-- ------------------------------------------------------------------
 
 CREATE TABLE formulario_admision (
     id_formulario INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,7 +36,7 @@ CREATE TABLE formulario_admision (
     activo tinyint(1) DEFAULT 1,
     creado_por INT,
     FOREIGN KEY (creado_por) REFERENCES usuario(cod_usuario)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE INDEX idx_formulario_activo ON formulario_admision(activo, fecha_creacion);
 
@@ -40,7 +49,7 @@ CREATE TABLE campo_formulario (
     requerido BOOLEAN DEFAULT FALSE,
     orden_campo INT DEFAULT 0,
     seccion VARCHAR(20) DEFAULT 'adicional'
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE INDEX idx_campo_orden ON campo_formulario(orden_campo);
 
@@ -49,7 +58,7 @@ CREATE TABLE respuesta_aspirante (
     id_formulario INT NOT NULL,
     fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_formulario) REFERENCES formulario_admision(id_formulario) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE INDEX idx_respuesta_formulario ON respuesta_aspirante(id_formulario, fecha_envio);
 
@@ -62,7 +71,7 @@ CREATE TABLE respuesta_campo (
     FOREIGN KEY (id_respuesta) REFERENCES respuesta_aspirante(id_respuesta) ON DELETE CASCADE,
     FOREIGN KEY (id_campo) REFERENCES campo_formulario(id_campo) ON DELETE RESTRICT,
     UNIQUE KEY unique_respuesta_campo (id_respuesta, id_campo)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE INDEX idx_respuesta_campo_respuesta ON respuesta_campo(id_respuesta, id_campo);
 
@@ -107,3 +116,4 @@ INSERT INTO campo_formulario (nombre_campo, etiqueta, tipo_campo, opciones, requ
 ('municipio', 'Municipio', 'texto', NULL, 0, 32, 'contacto'),
 ('departamento', 'Departamento', 'texto', NULL, 0, 33, 'contacto'),
 ('motivo_estudio', 'Motivación para estudiar el postgrado', 'textarea', NULL, 0, 34, 'adicional');
+
