@@ -465,6 +465,7 @@ return [
 //        'not_found_template'       => 'error/404',
 //        'exception_template'       => 'error/index',
         'template_map' => [
+            'layout/layout' => __DIR__ . '/../view/layout/layout.phtml',
             'eep/layout' => __DIR__ . '/../view/layout/layout.phtml',
             'eep/empty-layout' => __DIR__ . '/../view/layout/empty.phtml',
             'eep/msg' => __DIR__ . '/../view/partial/msg.phtml',
