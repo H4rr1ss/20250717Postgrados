@@ -1765,6 +1765,10 @@ class ExamenController extends AbstractActionController {
             'cod_tipo_examen' => $codTipoExamen,
         ]);
 
+        $nombreTipoExamen = $codTipoExamen
+            ? $this->examenManager->getNombreTipoExamen($codTipoExamen)
+            : null;
+
         return new ViewModel([
             'procesos'   => $procesos['procesos'],
             'paginacion' => [
@@ -1777,7 +1781,8 @@ class ExamenController extends AbstractActionController {
                 'estado'          => $estado,
                 'carne'           => $carne,
                 'cod_tipo_examen' => $codTipoExamen,
-            ]
+            ],
+            'nombreTipoExamen' => $nombreTipoExamen,
         ]);
     }
 
