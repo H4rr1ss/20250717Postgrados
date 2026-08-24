@@ -43,7 +43,7 @@ $this->headTitle('Actas de Examen General');
 
                 <!-- Filtros de tabla -->
                 <div class="row" style="margin-bottom: 15px;">
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <div class="input-group">
                             <span class="input-group-addon"><i class="fa fa-search"></i></span>
                             <input type="text" class="form-control" id="buscarActa"
@@ -51,12 +51,20 @@ $this->headTitle('Actas de Examen General');
                                 value="<?= $this->escapeHtmlAttr($this->busqueda ?? '') ?>">
                         </div>
                     </div>
-                    <div class="col-md-3 col-md-offset-3">
+                    <div class="col-md-3">
                         <select class="form-control" id="filtroEstadoActa">
                             <option value="">Estado de acta</option>
                             <option value="generada" <?= ($this->estado_acta ?? '') === 'generada' ? 'selected' : '' ?>>Generada</option>
                             <option value="pendiente" <?= ($this->estado_acta ?? '') === 'pendiente' ? 'selected' : '' ?>>Pendiente</option>
                         </select>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <button type="button" class="btn btn-primary" onclick="aplicarFiltros();">
+                            <i class="fa fa-search"></i> Filtrar
+                        </button>
+                        <button type="button" class="btn btn-default" onclick="limpiarFiltros();">
+                            <i class="fa fa-eraser"></i> Limpiar
+                        </button>
                     </div>
                 </div>
 
@@ -179,15 +187,21 @@ $this->headTitle('Actas de Examen General');
 </style>
 
 <script>
-$(document).ready(function() {
-    function aplicarFiltros() {
-        var busqueda = $('#buscarActa').val();
-        var estado   = $('#filtroEstadoActa').val();
-        var url      = '<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>';
-        window.location.href = url + '?busqueda=' + encodeURIComponent(busqueda) + '&estado_acta=' + encodeURIComponent(estado);
-    }
+function aplicarFiltros() {
+    var busqueda = $('#buscarActa').val();
+    var estado   = $('#filtroEstadoActa').val();
+    var url      = '<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>';
+    window.location.href = url + '?busqueda=' + encodeURIComponent(busqueda) + '&estado_acta=' + encodeURIComponent(estado);
+}
 
-    $('#filtroEstadoActa').on('change', aplicarFiltros);
+function limpiarFiltros() {
+    $('#buscarActa').val('');
+    $('#filtroEstadoActa').val('');
+    var url = '<?= $this->url('examen', ['action' => 'actas-examen-general']) ?>';
+    window.location.href = url;
+}
+
+$(document).ready(function() {
     $('#buscarActa').on('keypress', function(e) {
         if (e.which == 13) aplicarFiltros();
     });
