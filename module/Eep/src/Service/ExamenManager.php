@@ -1512,28 +1512,19 @@ class ExamenManager
     public function getMatrizTipos(): array
     {
         return $this->execute(
-            'SELECT cod_matriz_tipo, nombre, descripcion, activo FROM examen_matriz_tipo WHERE activo = 1 ORDER BY nombre'
+            'SELECT cod_carrera, nombre_actual as nombre FROM carrera ORDER BY nombre_actual'
         );
     }
 
-    public function getMatrizPreguntas(int $codMatrizTipo): array
+    public function getMatrizPreguntas(int $codCarrera): array
     {
         return $this->execute(
-            'SELECT cod_pregunta, cod_matriz_tipo, numero_orden, texto_pregunta, tipo_campo, punteo_maximo
+            'SELECT cod_pregunta, cod_carrera, numero_orden, texto_pregunta, tipo_campo, punteo_maximo
              FROM examen_matriz_pregunta
-             WHERE cod_matriz_tipo = :tipo AND activo = 1
+             WHERE cod_carrera = :carrera AND activo = 1
              ORDER BY numero_orden ASC',
-            ['tipo' => $codMatrizTipo]
-        );
-    }
-
-    public function getMatrizTipoPorCarrera(int $codCarrera): ?int
-    {
-        $result = $this->execute(
-            'SELECT cod_matriz_tipo FROM examen_matriz_tipo WHERE cod_carrera = :carrera AND activo = 1 LIMIT 1',
             ['carrera' => $codCarrera]
         );
-        return !empty($result) ? (int) $result[0]['cod_matriz_tipo'] : null;
     }
 
     public function getTemaTesis(int $codProceso): ?string

@@ -2263,14 +2263,10 @@ class ExamenController extends AbstractActionController {
         $terna = $this->examenManager->getTerna($codProceso, 'examen_privado');
         $temaTesis = $this->examenManager->getTemaTesis($codProceso);
 
-        $codMatrizTipo = null;
         $preguntas = [];
         $codCarrera = (int) ($estudiante['cod_carrera'] ?? 0);
         if ($codCarrera > 0) {
-            $codMatrizTipo = $this->examenManager->getMatrizTipoPorCarrera($codCarrera);
-            if ($codMatrizTipo) {
-                $preguntas = $this->examenManager->getMatrizPreguntas($codMatrizTipo);
-            }
+            $preguntas = $this->examenManager->getMatrizPreguntas($codCarrera);
         }
 
         $evaluaciones = $this->examenManager->getResumenEvaluaciones($codProceso);
@@ -2440,14 +2436,10 @@ class ExamenController extends AbstractActionController {
                 ], ['query' => ['cod' => $codigo]]);
             }
 
-            $codMatrizTipo = null;
             $preguntas = [];
             $codCarrera = (int) ($estudiante['cod_carrera'] ?? 0);
             if ($codCarrera > 0) {
-                $codMatrizTipo = $this->examenManager->getMatrizTipoPorCarrera($codCarrera);
-                if ($codMatrizTipo) {
-                    $preguntas = $this->examenManager->getMatrizPreguntas($codMatrizTipo);
-                }
+                $preguntas = $this->examenManager->getMatrizPreguntas($codCarrera);
             }
 
             $evaluacion = $this->examenManager->getMatrizEvaluacion($codProceso, $posicion);
@@ -2458,7 +2450,7 @@ class ExamenController extends AbstractActionController {
                 'terna'         => $terna,
                 'posicion'      => $posicion,
                 'codigo'        => $codigo,
-                'codMatrizTipo' => $codMatrizTipo,
+                'codCarrera'    => $codCarrera,
                 'preguntas'     => $preguntas,
                 'evaluacion'    => $evaluacion,
             ]);
