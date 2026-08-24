@@ -1,0 +1,414 @@
+<?php
+$this->headTitle('Iniciar Proceso de Graduación');
+
+$mensajesError = $this->flashMessenger()->getErrorMessages();
+$mensajesExito = $this->flashMessenger()->getSuccessMessages();
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li class="active">Iniciar Proceso de Graduación</li>
+        </ol>
+    </div>
+</div>
+
+<!-- Mensajes flash -->
+<?php foreach ($mensajesError as $msg): ?>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-danger" style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa fa-exclamation-circle"></i>
+            <?= $this->escapeHtml($msg) ?>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>
+<?php foreach ($mensajesExito as $msg): ?>
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-success" style="display: flex; align-items: center; gap: 10px;">
+            <i class="fa fa-check-circle"></i>
+            <?= $this->escapeHtml($msg) ?>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">
+            <i class="fa fa-plus-circle"></i> Iniciar Proceso de Graduación
+        </h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                <i class="fa fa-search"></i> Buscar Estudiante
+            </div>
+            <div style="padding: 20px;">
+
+                <!-- Buscador -->
+                <div class="form-group">
+                    <label for="inputBusqueda" style="font-weight: 600; font-size: 14px; color: #333;">
+                        Buscar por registro académico o nombre
+                    </label>
+                    <div style="position: relative;">
+                        <input type="text" class="form-control" id="inputBusqueda"
+                               placeholder="Ej: 200915000 o Juan Pérez"
+                               autocomplete="off"
+                               style="padding-right: 40px;">
+                        <i class="fa fa-search" id="iconoBusqueda"
+                           style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <i class="fa fa-spinner fa-spin" id="iconoCargando"
+                           style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999; display: none;"></i>
+                    </div>
+                    <p class="help-block" style="margin-top: 5px; font-size: 12px; color: #999;">
+                        Escriba al menos 2 caracteres para iniciar la búsqueda
+                    </p>
+                </div>
+
+                <!-- Resultados de búsqueda -->
+                <div id="resultadosBusqueda" style="display: none; margin-top: 15px;">
+                    <h5 style="font-weight: 600; margin-bottom: 10px; color: #555;">
+                        <i class="fa fa-users"></i> Resultados
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" style="font-size: 13px;">
+                            <thead style="background: #f5f5f5;">
+                                <tr>
+                                    <th style="width: 15%;">Registro</th>
+                                    <th style="width: 30%;">Nombre</th>
+                                    <th style="width: 30%;">Carrera</th>
+                                    <th style="width: 15%;">Correo</th>
+                                    <th style="width: 10%; text-align: center;">Seleccionar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaResultados">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sin resultados -->
+                <div id="sinResultados" style="display: none; margin-top: 15px; text-align: center; padding: 30px; color: #999;">
+                    <i class="fa fa-inbox fa-2x" style="display: block; margin-bottom: 10px;"></i>
+                    No se encontraron estudiantes con ese criterio de búsqueda.
+                </div>
+
+                <!-- Estudiante seleccionado + Formulario -->
+                <div id="seccionFormulario" style="display: none; margin-top: 25px; border-top: 2px solid #5f9876; padding-top: 20px;">
+                    <h5 style="font-weight: 600; margin-bottom: 15px; color: #5f9876;">
+                        <i class="fa fa-user-check"></i> Estudiante Seleccionado
+                    </h5>
+
+                    <div id="infoEstudiante" style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #e0e0e0; margin-bottom: 20px;">
+                    </div>
+
+                    <form method="post" action="<?= $this->url('examen', ['action' => 'iniciar-proceso']) ?>" id="formIniciarProceso">
+                        <input type="hidden" name="cod_usuario" id="codUsuarioSeleccionado" value="">
+
+                        <div class="form-group">
+                            <label for="selectTipoExamen" style="font-weight: 600; font-size: 14px; color: #333;">
+                                Tipo de Examen Privado
+                            </label>
+                            <select class="form-control" name="cod_tipo_examen" id="selectTipoExamen" required
+                                    style="max-width: 400px;">
+                                <option value="" disabled selected>-- Seleccionar tipo de examen --</option>
+                                <?php foreach ($this->tiposExamen as $tipo): ?>
+                                    <?php
+                                        // Solo mostrar tipos de examen privado (excluir Público General)
+                                        if ((int) $tipo['cod_tipo_examen'] === \Eep\Service\ExamenManager::TIPO_PUBLICO_GENERAL) {
+                                            continue;
+                                        }
+                                    ?>
+                                    <option value="<?= (int) $tipo['cod_tipo_examen'] ?>">
+                                        <?= $this->escapeHtml($tipo['nombre']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="help-block" style="margin-top: 5px; font-size: 12px; color: #999;">
+                                Seleccione el tipo de examen privado. El examen general (Público) se asigna automáticamente en la fase correspondiente.
+                            </p>
+                        </div>
+
+                        <div style="text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="margin-right: 10px;">
+                                <i class="fa fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success" id="btnIniciarProceso">
+                                <i class="fa fa-play-circle"></i> Iniciar Proceso de Graduación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div><!-- /padding -->
+        </div><!-- /panel -->
+    </div>
+
+    <!-- Panel lateral informativo -->
+    <div class="col-lg-4">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                <i class="fa fa-info-circle"></i> Información
+            </div>
+            <div style="padding: 20px; font-size: 13px; line-height: 1.8; color: #555;">
+                <p><strong>Flujo del proceso de graduación:</strong></p>
+                <ol style="padding-left: 18px;">
+                    <li><strong>Examen Privado</strong>
+                        <ul style="list-style: disc; padding-left: 15px; color: #777;">
+                            <li>Revisión de papelería</li>
+                            <li>Entrega de documentación</li>
+                            <li>Asignación de terna</li>
+                            <li>Notificación al estudiante</li>
+                        </ul>
+                    </li>
+                    <li><strong>Carta de Examinadores</strong></li>
+                    <li><strong>Autorización de Impresión</strong></li>
+                    <li><strong>Examen General (Público)</strong>
+                        <ul style="list-style: disc; padding-left: 15px; color: #777;">
+                            <li>Revisión de papelería</li>
+                            <li>Entrega de documentación</li>
+                            <li>Programación de fecha/hora</li>
+                            <li>Notificación al estudiante</li>
+                        </ul>
+                    </li>
+                </ol>
+                <hr style="margin: 15px 0;">
+                <p style="color: #888;">
+                    <i class="fa fa-exclamation-triangle" style="color: #e6a817;"></i>
+                    Un estudiante solo puede tener <strong>un proceso activo</strong> a la vez.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /.padding-container -->
+
+<!-- Loader overlay para asignar proceso -->
+<div id="loaderAsignarProceso" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+    <i class="fa fa-spinner fa-spin fa-3x" style="color: #6B8E23; margin-bottom: 15px;"></i>
+    <p style="font-size: 16px; color: #555; font-weight: 600;">Asignando proceso de graduación...</p>
+    <p style="font-size: 13px; color: #888;">Por favor espere un momento</p>
+</div>
+
+<style>
+    .panel-verde-tabla {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .panel-verde-heading-tabla {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+
+    #tablaResultados tr {
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+
+    #tablaResultados tr:hover {
+        background-color: #e8f5e9;
+    }
+
+    #tablaResultados tr.seleccionado {
+        background-color: #c8e6c9;
+        font-weight: 600;
+    }
+
+    .btn-seleccionar {
+        background-color: #5f9876;
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .btn-seleccionar:hover {
+        background-color: #4a7d5e;
+    }
+</style>
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+<script>
+$(document).ready(function() {
+    var timerBusqueda = null;
+    var estudianteSeleccionado = null;
+
+    // ── Búsqueda con debounce ──────────────────────────────────
+    $('#inputBusqueda').on('input', function() {
+        var termino = $(this).val().trim();
+        clearTimeout(timerBusqueda);
+
+        if (termino.length < 2) {
+            $('#resultadosBusqueda').hide();
+            $('#sinResultados').hide();
+            return;
+        }
+
+        timerBusqueda = setTimeout(function() {
+            buscarEstudiantes(termino);
+        }, 400);
+    });
+
+    function buscarEstudiantes(termino) {
+        $('#iconoBusqueda').hide();
+        $('#iconoCargando').show();
+
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "buscar-estudiante"]) ?>',
+            type: 'GET',
+            dataType: 'json',
+            data: { q: termino },
+            success: function(response) {
+                $('#iconoCargando').hide();
+                $('#iconoBusqueda').show();
+
+                if (response.status === 'success' && response.data.length > 0) {
+                    mostrarResultados(response.data);
+                } else {
+                    $('#resultadosBusqueda').hide();
+                    $('#sinResultados').show();
+                }
+            },
+            error: function() {
+                $('#iconoCargando').hide();
+                $('#iconoBusqueda').show();
+                ToastService.error('Error al buscar estudiantes.');
+            }
+        });
+    }
+
+    function mostrarResultados(estudiantes) {
+        var tbody = $('#tablaResultados');
+        tbody.empty();
+        $('#sinResultados').hide();
+
+        $.each(estudiantes, function(i, est) {
+            var fila = $('<tr>')
+                .attr('data-cod-usuario', est.cod_usuario)
+                .attr('data-registro', est.registro_academico || '')
+                .attr('data-nombre', est.nombre_completo || '')
+                .attr('data-carrera', est.carrera || 'N/A')
+                .attr('data-correo', est.correo || '')
+                .attr('data-cui', est.cui || '');
+
+            fila.append('<td>' + (est.registro_academico || '-') + '</td>');
+            fila.append('<td>' + escapeHtml(est.nombre_completo || '-') + '</td>');
+            fila.append('<td>' + escapeHtml(est.carrera || 'N/A') + '</td>');
+            fila.append('<td>' + escapeHtml(est.correo || '-') + '</td>');
+            fila.append('<td style="text-align:center;"><button type="button" class="btn-seleccionar"><i class="fa fa-check"></i></button></td>');
+
+            tbody.append(fila);
+        });
+
+        $('#resultadosBusqueda').show();
+    }
+
+    // ── Seleccionar estudiante ─────────────────────────────────
+    $(document).on('click', '#tablaResultados tr, #tablaResultados .btn-seleccionar', function(e) {
+        e.stopPropagation();
+        var fila = $(this).closest('tr');
+        var cod = fila.data('cod-usuario');
+        var nombre = fila.data('nombre');
+        var registro = fila.data('registro');
+        var carrera = fila.data('carrera');
+        var correo = fila.data('correo');
+        var cui = fila.data('cui');
+
+        // Marcar fila como seleccionada
+        $('#tablaResultados tr').removeClass('seleccionado');
+        fila.addClass('seleccionado');
+
+        // Llenar datos
+        $('#codUsuarioSeleccionado').val(cod);
+        estudianteSeleccionado = cod;
+
+        $('#infoEstudiante').html(
+            '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+            '  <div>' +
+            '    <p style="margin: 0 0 5px; font-size: 15px; font-weight: 700; color: #333;">' + escapeHtml(nombre) + '</p>' +
+            '    <p style="margin: 0 0 3px; font-size: 13px; color: #555;"><strong>Registro:</strong> ' + (registro || '-') + '</p>' +
+            '    <p style="margin: 0 0 3px; font-size: 13px; color: #555;"><strong>CUI:</strong> ' + (cui || '-') + '</p>' +
+            '    <p style="margin: 0 0 3px; font-size: 13px; color: #555;"><strong>Carrera:</strong> ' + escapeHtml(carrera) + '</p>' +
+            '    <p style="margin: 0; font-size: 13px; color: #555;"><strong>Correo:</strong> ' + escapeHtml(correo || '-') + '</p>' +
+            '  </div>' +
+            '  <div>' +
+            '    <button type="button" class="btn btn-sm btn-default" id="btnCambiarEstudiante" title="Cambiar estudiante">' +
+            '      <i class="fa fa-exchange"></i> Cambiar' +
+            '    </button>' +
+            '  </div>' +
+            '</div>'
+        );
+
+        // Mostrar formulario
+        $('#seccionFormulario').slideDown(300);
+    });
+
+    // ── Cambiar estudiante ─────────────────────────────────────
+    $(document).on('click', '#btnCambiarEstudiante', function() {
+        estudianteSeleccionado = null;
+        $('#codUsuarioSeleccionado').val('');
+        $('#seccionFormulario').slideUp(200);
+        $('#tablaResultados tr').removeClass('seleccionado');
+        $('#inputBusqueda').focus();
+    });
+
+    // ── Confirmar envío ────────────────────────────────────────
+    $('#formIniciarProceso').on('submit', function(e) {
+        if (!estudianteSeleccionado) {
+            e.preventDefault();
+            ToastService.warning('Debe seleccionar un estudiante.');
+            return false;
+        }
+
+        var tipo = $('#selectTipoExamen').val();
+        if (!tipo) {
+            e.preventDefault();
+            ToastService.warning('Debe seleccionar un tipo de examen.');
+            return false;
+        }
+
+        e.preventDefault();
+        ConfirmService.confirm('¿Confirma que desea iniciar el proceso de graduación para este estudiante?', function() {
+            $('#loaderAsignarProceso').css('display', 'flex');
+            $('#formIniciarProceso').off('submit').submit();
+        });
+    });
+
+    // ── Utilidad ───────────────────────────────────────────────
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+});
+</script>

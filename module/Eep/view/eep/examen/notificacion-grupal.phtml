@@ -1,0 +1,533 @@
+<?php
+$estudiantes = $this->estudiantes ?? [];
+?>
+<div class="row" style="margin-bottom: 15px;">
+    <div class="col-lg-12">
+        <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+            <i class="fa fa-arrow-left"></i> Regresar
+        </a>
+    </div>
+</div>
+
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <h3 style="color: #6B8E23; margin-bottom: 20px; font-weight: 400;">
+            <i class="fa fa-envelope"></i> Notificación Grupal — Acto de Graduación
+        </h3>
+        <div class="panel-revision">
+            <div class="panel-revision-body" style="padding: 20px;">
+
+                <?php if (empty($estudiantes)): ?>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i> No hay estudiantes con el proceso de examen general completado.
+                    </div>
+                <?php else: ?>
+
+                <div class="alert alert-warning" style="margin-bottom: 15px;">
+                    <i class="fa fa-exclamation-circle" style="font-size: 18px; margin-right: 8px;"></i>
+                    <strong style="font-size: 15px;">Importante:</strong>
+                    <span style="font-size: 14px;">
+                        Los estudiantes con la etiqueta <span class="label label-warning" style="font-size: 11px;"><i class="fa fa-exclamation-circle"></i> <strong>Falta configurar</strong></span>
+                        aún no han registrado su <strong>Madrina o Padrino</strong> de graduación.
+                        Deben completar este dato desde su panel de <em>Proceso de Graduación</em> antes de que se pueda enviar la notificación del acto.
+                    </span>
+                </div>
+
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i> <strong>Seleccione los estudiantes a notificar y complete la información del acto de graduación.</strong>
+                </div>
+
+                <!-- Tabla de estudiantes -->
+                <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <table class="table table-bordered table-striped" style="font-size: 13px; margin-bottom: 0;">
+                        <thead style="background: #f5f5f5;">
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="seleccionarTodos">
+                                </th>
+                                <th>Carné</th>
+                                <th>Nombre</th>
+                                <th>Carrera</th>
+                                <th>Madrina/Padrino</th>
+                                <th>Fecha completado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($estudiantes as $est): ?>
+                            <?php $tieneMadrina = (bool) ($est['tiene_madrina'] ?? 0); ?>
+                            <tr>
+                                <td style="text-align: center;">
+                                    <input type="checkbox" class="sel-estudiante" value="<?= (int)$est['cod_proceso'] ?>"
+                                           data-tiene-madrina="<?= $tieneMadrina ? '1' : '0' ?>">
+                                </td>
+                                <td><?= htmlspecialchars($est['registro_academico'] ?? '-') ?></td>
+                                <td>
+                                    <?= htmlspecialchars(($est['apellidos'] ?? '') . ', ' . ($est['nombres'] ?? '')) ?>
+                                    <?php if (!$tieneMadrina): ?>
+                                        <span class="label label-warning"
+                                              style="margin-left: 6px; font-size: 11px; font-weight: bold; cursor: help;"
+                                              title="Este estudiante aún no ha registrado su Madrina o Padrino de graduación. Debe completar este dato en su panel de Proceso de Graduación antes de poder enviar la notificación del acto.">
+                                            <i class="fa fa-exclamation-circle"></i> Falta configurar
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="label label-success" style="margin-left: 6px; font-size: 11px;">
+                                            <i class="fa fa-check-circle"></i> Configurado
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($est['carrera'] ?? '-') ?></td>
+                                <td>
+                                    <?php if ($tieneMadrina): ?>
+                                        <?php
+                                            $mTexto = ($est['madrina_titulo'] ?? '')
+                                                ? $est['madrina_titulo'] . ' ' . $est['madrina_nombre']
+                                                : $est['madrina_nombre'];
+                                        ?>
+                                        <?= $this->escapeHtml($mTexto) ?>
+                                        <div style="font-size: 11px; color: #666; text-transform: capitalize;">
+                                            <?= $this->escapeHtml($est['madrina_tipo'] ?? '') ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="text-muted" style="font-size: 12px;">— Pendiente —</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= !empty($est['fecha_completado']) ? date('d/m/Y g:i A', strtotime($est['fecha_completado'])) : '-' ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Formulario de envío -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                    <h5 style="font-weight: 600; margin-bottom: 15px;">Información del Acto de Graduación</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Fecha del acto <span style="color:red">*</span></label>
+                                <input type="date" class="form-control" id="ngFecha" min="<?= date('Y-m-d') ?>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Hora del acto <span style="color:red">*</span></label>
+                                <input type="time" class="form-control" id="ngHora">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Lugar del acto <span style="color:red">*</span></label>
+                                <input type="text" class="form-control" id="ngLugar" placeholder="Ej: Auditorio Universidad, Ciudad de Guatemala">
+                                <p class="help-block" style="margin-top: 6px; font-size: 12px; color: #31708f;">
+                                    <i class="fa fa-info-circle"></i>
+                                    Este lugar aparecerá en el <strong>acta de examen general</strong> y en la notificación enviada a los estudiantes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos de docentes para JS -->
+                    <script>
+                        var docentesData = <?= json_encode(array_map(function($d) {
+                            return [
+                                'id' => (int) $d['cod_usuario'],
+                                'userCode' => (int) $d['cod_usuario'],
+                                'nombre' => $d['nombre_completo'] ?? '',
+                                'correo' => $d['correo'] ?? '',
+                                'titulo' => $d['titulo'] ?? '',
+                                'colegiado' => $d['colegiado'] ?? ''
+                            ];
+                        }, $this->docentes ?? [])) ?>;
+                        var urlBaseEditUser = '<?= $this->url('user', ['action' => 'editUser']) ?>';
+                    </script>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 1 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador1">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div id="info-examinador-1" class="examinador-info" style="margin-top: 8px; display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 2 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador2">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div id="info-examinador-2" class="examinador-info" style="margin-top: 8px; display: none;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Examinador 3 <span style="color:red">*</span></label>
+                                <select class="form-control" id="ngExaminador3">
+                                    <option value="" disabled selected>Seleccionar docente...</option>
+                                    <?php foreach ($this->docentes as $doc): ?>
+                                        <option value="<?= (int) $doc['cod_usuario'] ?>">
+                                            <?= $this->escapeHtml($doc['nombre_completo']) ?> (Colegiado: <?= $this->escapeHtml($doc['colegiado'] ?? 'N/A') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div id="info-examinador-3" class="examinador-info" style="margin-top: 8px; display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" style="margin-bottom: 15px; padding: 10px 14px; font-size: 13px;">
+                        <i class="fa fa-info-circle"></i> <strong>Nota:</strong> Los correos de los 3 examinadores seleccionados se agregarán automáticamente al campo CC.
+                    </div>
+
+                    <div class="form-group">
+                        <label>Correos adicionales (CC)</label>
+                        <div class="input-group" style="max-width: 500px;">
+                            <input type="email" class="form-control" id="ngCorreoInput" placeholder="correo@ejemplo.com">
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-info" id="btnAgregarCorreo">
+                                    <i class="fa fa-plus"></i> Agregar
+                                </button>
+                            </span>
+                        </div>
+                        <div id="ngCorreosTags" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
+                            <!-- Los tags se generan aquí dinámicamente -->
+                        </div>
+                        <input type="hidden" id="ngCorreosCcHidden">
+                        <p class="text-muted" style="font-size: 12px; margin-top: 6px;">
+                            <i class="fa fa-info-circle"></i> Ingrese un correo válido y presione <strong>Agregar</strong> o <strong>Enter</strong>.
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Información adicional</label>
+                        <textarea class="form-control" id="ngInfoExtra" rows="4" placeholder="Indicaciones, vestimenta, documentos requeridos, etc."></textarea>
+                    </div>
+
+                    <div class="text-right">
+                        <button type="button" class="btn btn-info btn-lg" id="btnVistaPreviaGrupal">
+                            <i class="fa fa-eye"></i> Vista previa del correo
+                        </button>
+                        <button type="button" class="btn btn-success btn-lg" id="btnEnviarNotificacionGrupal">
+                            <i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Vista Previa -->
+                <div class="modal fade" id="modalVistaPreviaGrupal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                                <h4 class="modal-title">Vista previa del correo</h4>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Asunto:</strong> <span id="previewAsuntoGrupal"></span></p>
+                                <div id="previewCcGrupal" style="display:none; margin-bottom:12px; padding:10px 14px; background:#d9edf7; border:1px solid #bce8f1; border-radius:4px; color:#31708f;">
+                                    <i class="fa fa-users" style="margin-right:6px;"></i>
+                                    <strong>Copia a:</strong> <span id="previewCcGrupalTexto"></span>
+                                </div>
+                                <div id="previewCuerpoGrupal" style="border:1px solid #ddd; padding:20px; background:#fff; border-radius:4px;">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen -->
+                <div id="resumenNotificacion" style="display: none; margin-top: 20px;"></div>
+
+                <?php endif; ?>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+$(document).ready(function() {
+    // Seleccionar/deseleccionar todos
+    $('#seleccionarTodos').on('change', function() {
+        $('.sel-estudiante').prop('checked', $(this).is(':checked'));
+    });
+
+    // ── Gestión de correos CC como tags ───────────────
+    var $input = $('#ngCorreoInput');
+    var $tagsContainer = $('#ngCorreosTags');
+    var $hidden = $('#ngCorreosCcHidden');
+    var correos = [];
+
+    function emailRegex() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/; }
+
+    function renderTags() {
+        $tagsContainer.empty();
+        correos.forEach(function(c, idx) {
+            var tag = $('<span style="font-size: 13px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:3px; background:#51A0B8; color:#fff; font-weight:600;">')
+                .text(c)
+                .append(
+                    $('<i class="fa fa-times" style="cursor:pointer; margin-left:4px; opacity:0.9;">').on('click', function() {
+                        correos.splice(idx, 1);
+                        renderTags();
+                    })
+                );
+            $tagsContainer.append(tag);
+        });
+        $hidden.val(correos.join(','));
+    }
+
+    function agregarCorreo() {
+        var val = $input.val().trim();
+        if (!val) return;
+        if (!emailRegex().test(val)) {
+            ToastService.error('El correo "' + val + '" no tiene formato válido.');
+            return;
+        }
+        if (correos.indexOf(val) !== -1) {
+            ToastService.warning('El correo "' + val + '" ya está agregado.');
+            $input.val('').focus();
+            return;
+        }
+        correos.push(val);
+        $input.val('').focus();
+        renderTags();
+    }
+
+    $('#btnAgregarCorreo').on('click', agregarCorreo);
+    $input.on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            agregarCorreo();
+        }
+    });
+
+    function obtenerCorreosCc() {
+        return correos.join(',');
+    }
+
+    // ── Mostrar info del examinador seleccionado ────
+    function mostrarInfoExaminador(selectId, containerId) {
+        var $sel = $('#' + selectId);
+        var $container = $('#' + containerId);
+        var id = parseInt($sel.val(), 10);
+
+        if (!id) {
+            $container.hide();
+            return;
+        }
+
+        var doc = docentesData.find(function(d) { return d.id === id; });
+        if (!doc) {
+            $container.hide();
+            return;
+        }
+
+        var faltantes = [];
+        if (!doc.correo) faltantes.push('correo');
+        if (!doc.titulo) faltantes.push('título profesional');
+
+        var html = '<div style="padding: 10px 12px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 13px;">';
+        html += '<strong style="font-size: 14px;">' + doc.nombre + '</strong><br>';
+        html += '<span style="color: #666;"><strong>Título prof.:</strong> ' + (doc.titulo || '<em class="text-muted">Sin título profesional</em>') + '</span><br>';
+        html += '<span style="color: #666;"><strong>Correo:</strong> ' + (doc.correo || '<em class="text-muted">Sin correo</em>') + '</span><br>';
+        html += '<span style="color: #666;"><strong>Colegiado:</strong> ' + (doc.colegiado || '<em class="text-muted">Sin colegiado</em>') + '</span>';
+
+        if (faltantes.length > 0) {
+            html += '<div class="alert alert-warning" style="margin: 8px 0 0; padding: 6px 10px; font-size: 12px;">';
+            html += '<i class="fa fa-exclamation-triangle"></i> <strong>Falta:</strong> ' + faltantes.join(', ') + '. ';
+            html += '<a href="' + urlBaseEditUser + '/' + doc.userCode + '" target="_blank" style="text-decoration: underline;">Ir a editar usuario <i class="fa fa-external-link" style="font-size: 10px;"></i></a>';
+            html += '</div>';
+        } else {
+            html += '<div class="alert alert-success" style="margin: 8px 0 0; padding: 6px 10px; font-size: 12px;">';
+            html += '<i class="fa fa-check-circle"></i> Información completa';
+            html += '</div>';
+        }
+
+        html += '</div>';
+        $container.html(html).show();
+    }
+
+    ['ngExaminador1', 'ngExaminador2', 'ngExaminador3'].forEach(function(selId, idx) {
+        var containerId = 'info-examinador-' + (idx + 1);
+        $('#' + selId).on('change', function() {
+            mostrarInfoExaminador(selId, containerId);
+        });
+    });
+
+    // ── Helpers comunes ─────────────────────────────
+    function obtenerDatosFormulario() {
+        return {
+            fecha: $('#ngFecha').val(),
+            hora: $('#ngHora').val(),
+            lugar: $('#ngLugar').val().trim(),
+            examinador_1: $('#ngExaminador1').val(),
+            examinador_2: $('#ngExaminador2').val(),
+            examinador_3: $('#ngExaminador3').val(),
+            info_extra: $('#ngInfoExtra').val()
+        };
+    }
+
+    function validarFormulario(datos) {
+        if (!datos.fecha || !datos.hora || !datos.lugar) {
+            ToastService.warning('Fecha, hora y lugar son obligatorios.');
+            return false;
+        }
+        if (!datos.examinador_1 || !datos.examinador_2 || !datos.examinador_3) {
+            ToastService.warning('Debe seleccionar los tres examinadores.');
+            return false;
+        }
+        if (datos.examinador_1 === datos.examinador_2 ||
+            datos.examinador_1 === datos.examinador_3 ||
+            datos.examinador_2 === datos.examinador_3) {
+            ToastService.warning('Los tres examinadores deben ser personas diferentes.');
+            return false;
+        }
+        var hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        var partes = datos.fecha.split('-');
+        var fechaSel = new Date(partes[0], partes[1] - 1, partes[2]);
+        if (fechaSel < hoy) {
+            ToastService.warning('La fecha no puede ser anterior al día de hoy.');
+            return false;
+        }
+        return true;
+    }
+
+    // ── Vista previa del correo ──────────────────────
+    $('#btnVistaPreviaGrupal').on('click', function() {
+        var datos = obtenerDatosFormulario();
+        if (!validarFormulario(datos)) return;
+
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Cargando...');
+
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "preview-notificacion-grupal"]) ?>',
+            method: 'POST',
+            data: datos,
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.success && resp.html) {
+                    $('#previewAsuntoGrupal').text(resp.asunto || '');
+                    $('#previewCuerpoGrupal').html(resp.html);
+
+                    if (correos.length > 0) {
+                        $('#previewCcGrupalTexto').text(correos.join(', '));
+                        $('#previewCcGrupal').show();
+                    } else {
+                        $('#previewCcGrupal').hide();
+                    }
+
+                    $('#modalVistaPreviaGrupal').modal('show');
+                } else {
+                    ToastService.error(resp.message || 'No se pudo generar la vista previa.');
+                }
+            },
+            error: function() {
+                ToastService.error('Error de conexión al obtener la vista previa.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-eye"></i> Vista previa del correo');
+            }
+        });
+    });
+
+    // ── Enviar notificación grupal ───────────────────
+    $('#btnEnviarNotificacionGrupal').on('click', function() {
+        var btn = $(this);
+        var seleccionados = [];
+        var sinMadrina = [];
+
+        $('.sel-estudiante:checked').each(function() {
+            var $chk = $(this);
+            seleccionados.push($chk.val());
+
+            if ($chk.data('tiene-madrina') === 0 || $chk.data('tiene-madrina') === '0') {
+                var nombre = $chk.closest('tr').find('td:nth-child(3)').text().trim();
+                sinMadrina.push(nombre);
+            }
+        });
+
+        if (seleccionados.length === 0) {
+            ToastService.warning('Debe seleccionar al menos un estudiante.');
+            return;
+        }
+
+        if (sinMadrina.length > 0) {
+            ToastService.error(
+                'No se puede enviar la notificación. Los siguientes estudiantes aún no han configurado su madrina/padrino: ' +
+                sinMadrina.join(', ') + '. Solicíteles que completen este dato desde su panel de Proceso de Graduación.'
+            );
+            return;
+        }
+
+        var datos = obtenerDatosFormulario();
+        if (!validarFormulario(datos)) return;
+
+        ConfirmService.confirm('¿Confirma que desea enviar la notificación a ' + seleccionados.length + ' estudiante(s)?', function() {
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando...');
+
+        $.ajax({
+            url: '<?= $this->url("examen", ["action" => "enviar-notificacion-grupal"]) ?>',
+            method: 'POST',
+            data: {
+                cod_procesos: seleccionados,
+                fecha: datos.fecha,
+                hora: datos.hora,
+                lugar: datos.lugar,
+                examinador_1: datos.examinador_1,
+                examinador_2: datos.examinador_2,
+                examinador_3: datos.examinador_3,
+                info_extra: datos.info_extra,
+                correos_cc: obtenerCorreosCc()
+            },
+            dataType: 'json',
+            success: function(resp) {
+                if (resp.success) {
+                    var html = '<div class="alert alert-success">' +
+                        '<h4><i class="fa fa-check-circle"></i> ' + resp.message + '</h4>' +
+                        '<p><strong>Enviados:</strong> ' + resp.enviados + '</p>' +
+                        '<p><strong>Fallidos:</strong> ' + resp.fallidos + '</p>';
+                    if (resp.errores && resp.errores.length > 0) {
+                        html += '<ul>';
+                        resp.errores.forEach(function(err) {
+                            html += '<li>' + err + '</li>';
+                        });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                    $('#resumenNotificacion').html(html).show();
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    ToastService.error(resp.message || 'Error al enviar la notificación.');
+                }
+            },
+            error: function() {
+                ToastService.error('Error de conexión. Inténtelo de nuevo.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-paper-plane"></i> Enviar Notificación a Seleccionados');
+            }
+        });
+        });
+    });
+});
+</script>

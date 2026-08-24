@@ -1,0 +1,739 @@
+<?php
+$this->headTitle('Ver Matriz de Evaluación');
+$examinadores = $this->terna['examinadores'] ?? [];
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li><a href="<?= $this->url('home') ?>"><i class="fa fa-home"></i> Inicio</a></li>
+            <li><a href="<?= $this->url('examen') ?>">Gestión de Exámenes</a></li>
+            <li><a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>">Evaluación Examen Privado</a></li>
+            <li class="active">Ver Matriz</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0; font-weight: 400;">Resumen de Evaluación del Examen Privado</h3>
+            <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
+                <i class="fa fa-arrow-left"></i> Regresar a evaluaciones
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Datos del estudiante -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading" style="font-weight: 700; background-color: #f5f5f5;">Datos del Estudiante</div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Estudiante:</strong><br>
+                        <?= $this->escapeHtml(($this->estudiante['nombre_completo'] ?? '-')) ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Registro:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['registro_academico'] ?? '-') ?></p>
+                    </div>
+                    <div class="col-md-3">
+                        <p><strong>Maestría:</strong><br>
+                        <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-2">
+                        <p><strong>Tipo:</strong><br>
+                        <?= $this->escapeHtml($this->proceso['tipo_examen'] ?? '-') ?></p>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-md-4">
+                        <p><strong>Inicio de Evaluación:</strong><br>
+                        <?= $this->escapeHtml($this->proceso['hora_apertura_evaluacion'] ? date('d/m/Y H:i', strtotime($this->proceso['hora_apertura_evaluacion'])) : 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Cierre de Evaluación:</strong><br>
+                        <?= $this->escapeHtml($this->proceso['hora_cierre_evaluacion'] ? date('d/m/Y H:i', strtotime($this->proceso['hora_cierre_evaluacion'])) : 'N/A') ?></p>
+                    </div>
+                    <div class="col-md-4">
+                        <?php
+                        $fechaEx = $this->proceso['fecha_examen_privado'] ?? null;
+                        $horaEx  = $this->proceso['hora_examen_privado'] ?? null;
+                        if ($fechaEx && $horaEx) {
+                            $prog = date('d/m/Y', strtotime($fechaEx)) . ' ' . date('h:i A', strtotime($horaEx));
+                        } elseif ($fechaEx) {
+                            $prog = date('d/m/Y', strtotime($fechaEx));
+                        } else {
+                            $prog = 'No programado';
+                        }
+                        ?>
+                        <p><strong>Programación del Examen Privado:</strong><br>
+                        <?= $this->escapeHtml($prog) ?></p>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-md-12">
+                        <p><strong>Tema del Trabajo de Graduación:</strong><br>
+                        <?= $this->escapeHtml($this->temaTesis ?? 'Sin registrar') ?></p>
+                    </div>
+                </div>
+                <?php
+                $codigoEval = $this->estado['codigo_evaluacion'] ?? null;
+                $horaApertura = $this->estado['hora_apertura_evaluacion'] ?? null;
+                $horaCierre = $this->estado['hora_cierre_evaluacion'] ?? null;
+                $numReprog = (int) ($this->estado['numero_reprogramacion'] ?? 0);
+                $ex1Comp = (int) ($this->estado['ex1_completado'] ?? 0);
+                $ex2Comp = (int) ($this->estado['ex2_completado'] ?? 0);
+                $ex3Comp = (int) ($this->estado['ex3_completado'] ?? 0);
+                $completadasMatriz = $ex1Comp + $ex2Comp + $ex3Comp;
+                $abierta = !empty($codigoEval) && !empty($horaApertura) && empty($horaCierre);
+                $yaCerrada = !empty($horaCierre);
+                $codProceso = (int) ($this->proceso['cod_proceso'] ?? 0);
+                ?>
+                <?php $evaluacionEnCurso = $abierta; ?>
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-6 text-left">
+                        <?php if ($numReprog < 2 && !$evaluacionEnCurso): ?>
+                            <button class="btn btn-danger btn-reprogramar"
+                                    data-proceso="<?= $codProceso ?>"
+                                    data-reprogramaciones="<?= $numReprog ?>"
+                                    title="Reprogramar examen">
+                                <i class="fa fa-refresh"></i> Reprogramar exámen (<?= 2 - $numReprog ?> restante<?= (2 - $numReprog) > 1 ? 's' : '' ?>)
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <?php if (!$yaCerrada): ?>
+                            <button class="btn btn-info btn-previsualizar-acta"
+                                    data-url="<?= $this->url('previsualizar-acta', ['id' => $codProceso]) ?>"
+                                    title="Previsualizar acta de examen">
+                                <i class="fa fa-eye"></i> Previsualizar Acta
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($abierta): ?>
+                            <button class="btn btn-default btn-ver-link"
+                                    data-proceso="<?= $codProceso ?>"
+                                    data-codigo="<?= $this->escapeHtml($codigoEval) ?>"
+                                    title="Ver link para compartir con examinadores">
+                                <i class="fa fa-link"></i> Link de evaluación
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($abierta): ?>
+                            <button class="btn btn-warning btn-cerrar-eval"
+                                    data-proceso="<?= $codProceso ?>"
+                                    title="Cerrar evaluación">
+                                <i class="fa fa-lock"></i> Cerrar Exámen
+                            </button>
+                        <?php elseif ($yaCerrada && $completadasMatriz >= 2): ?>
+                            <span class="label label-info" style="font-size: 14px; padding: 8px 12px;">
+                                <i class="fa fa-check-circle"></i> Evaluación completada
+                            </span>
+                        <?php elseif ($yaCerrada): ?>
+                            <span class="label label-default" style="font-size: 14px; padding: 8px 12px;">
+                                <i class="fa fa-check-circle"></i> Evaluación cerrada
+                            </span>
+                        <?php else: ?>
+                            <button class="btn btn-success btn-abrir-eval"
+                                    data-proceso="<?= $codProceso ?>"
+                                    title="Abrir evaluación">
+                                <i class="fa fa-unlock"></i> Abrir Exámen
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php if (empty($this->preguntas)): ?>
+    <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i> No se encontró una matriz de evaluación configurada para esta maestría.
+    </div>
+<?php else: ?>
+
+<?php
+// Detectar si realmente hay evaluaciones registradas (respuestas u observaciones con contenido)
+$hayEvaluaciones = false;
+$hayObservaciones = false;
+for ($i = 1; $i <= 3; $i++) {
+    $eval = $this->evaluaciones[$i] ?? null;
+    if ($eval && !empty($eval['respuestas'])) {
+        foreach ($eval['respuestas'] as $r) {
+            if (($r['punteo'] !== null && $r['punteo'] !== '') || !empty($r['respuesta_texto'])) {
+                $hayEvaluaciones = true;
+                break 2;
+            }
+        }
+    }
+    if ($eval && !empty($eval['observaciones_generales'])) {
+        $hayObservaciones = true;
+    }
+}
+?>
+
+<!-- Resumen comparativo -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="alert alert-info" style="margin-bottom: 20px;">
+            <i class="fa fa-info-circle" style="font-size: 18px; margin-right: 8px;"></i>
+            <strong>Evaluación con 2 examinadores:</strong>
+            Si por alguna razón solo se presentan 2 examinadores al examen privado, la evaluación sigue siendo válida.
+            La nota final se calculará como el promedio simple de las 2 evaluaciones presentadas, siempre que ambas sean aprobatorias.
+            <hr style="margin: 10px 0; border-top-color: #bce8f1;">
+            <strong>¿Cómo manejar este escenario?</strong>
+            <ol style="margin: 8px 0 0 20px; padding-left: 15px;">
+                <li>Verifique en esta matriz que las 2 evaluaciones existan y estén completas.</li>
+                <li>Cierre la evaluación presionando <strong>"Cerrar Exámen"</strong> (solo si las 2 notas son aprobatorias).</li>
+                <li>Al generar el acta, el sistema calculará automáticamente el promedio de las 2 evaluaciones.</li>
+                <li>El acta reflejará únicamente a los 2 examinadores que evaluaron; el tercero no aparecerá.</li>
+                <li>Guarde el acta y continúe con el proceso de graduación normalmente.</li>
+            </ol>
+        </div>
+        <div class="panel panel-green">
+            <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fa fa-list-alt"></i> Comparativo de Evaluaciones</span>
+                <?php if (!$yaCerrada): ?>
+                <button type="button" class="btn btn-primary btn-sm" onclick="location.reload(true);" title="Recargar datos de evaluaciones" style="font-weight: bold; padding: 10px 18px; font-size: 16px;">
+                    <i class="fa fa-refresh"></i> Recargar datos de evaluaciones
+                </button>
+                <?php endif; ?>
+            </div>
+            <div class="panel-body" style="overflow-x: auto;">
+                <?php if (!$hayEvaluaciones): ?>
+                    <div class="alert alert-warning" style="margin-bottom: 15px;">
+                        <i class="fa fa-info-circle" style="font-size: 20px; margin-right: 10px; vertical-align: middle;"></i>
+                        <strong style="font-size: 15px;">Aún no hay evaluaciones registradas para este proceso.</strong>
+                        <p style="margin: 8px 0 0 30px; font-size: 13px; color: #777;">
+                            Las evaluaciones de los examinadores aparecerán aquí una vez que hayan sido completadas.
+                            Presione <strong>"Abrir Exámen"</strong> para generar el link de evaluación y compartirlo con los examinadores.
+                        </p>
+                    </div>
+                <?php endif; ?>
+
+                <table class="table table-bordered table-striped" style="min-width: 800px;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 35%;">Criterio / Pregunta</th>
+                            <th style="width: 21.6%;">Examinador 1</th>
+                            <th style="width: 21.6%;">Examinador 2</th>
+                            <th style="width: 21.6%;">Examinador 3</th>
+                        </tr>
+                        <tr>
+                            <th class="text-muted" style="font-weight: 400;">Nombre</th>
+                            <?php for ($i = 1; $i <= 3; $i++): ?>
+                                <?php $ex = $examinadores[$i - 1] ?? []; $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'No asignado'); ?>
+                                <th>
+                                    <?= $this->escapeHtml($nombreEx) ?>
+                                    <?php if ($this->isSecretario && $this->evaluacionPendiente): ?>
+                                        <br>
+                                        <button class="btn btn-xs btn-warning btn-sustituir-examinador"
+                                                data-proceso="<?= $codProceso ?>"
+                                                data-posicion="<?= $i ?>"
+                                                data-nombre="<?= $this->escapeHtml($nombreEx) ?>"
+                                                data-cod-usuario="<?= $ex['cod_usuario'] ?? '' ?>"
+                                                title="Sustituir examinador">
+                                            <i class="fa fa-exchange"></i> Sustituir
+                                        </button>
+                                    <?php endif; ?>
+                                </th>
+                            <?php endfor; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($this->preguntas as $pregunta): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= (int) $pregunta['numero_orden'] ?>.</strong>
+                                    <?= $this->escapeHtml($pregunta['texto_pregunta']) ?>
+                                    <br>
+                                    <small class="text-muted"><?= $pregunta['tipo_campo'] === 'numero' ? 'Punteo ' . $this->escapeHtml($pregunta['punteo_maximo']) : 'Texto libre' ?></small>
+                                </td>
+                                <?php for ($i = 1; $i <= 3; $i++): ?>
+                                    <?php
+                                    $eval = $this->evaluaciones[$i] ?? null;
+                                    $valor = '-';
+                                    if ($eval && !empty($eval['respuestas'])) {
+                                        foreach ($eval['respuestas'] as $r) {
+                                            if ((int) $r['cod_pregunta'] === (int) $pregunta['cod_pregunta']) {
+                                                if ($pregunta['tipo_campo'] === 'numero') {
+                                                    $valor = ($r['punteo'] !== null && $r['punteo'] !== '') ? number_format((float) $r['punteo'], 2) : '-';
+                                                } else {
+                                                    $valor = nl2br($this->escapeHtml($r['respuesta_texto'] ?? '-'));
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                    <td style="vertical-align: middle;">
+                                        <?php if ($pregunta['tipo_campo'] === 'numero'): ?>
+                                            <span class="label label-primary" style="font-size: 14px;"><?= $valor ?></span>
+                                        <?php else: ?>
+                                            <div style="max-height: 100px; overflow-y: auto; font-size: 13px;"><?= $valor ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endfor; ?>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Observaciones generales -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading" style="background-color: #f9f9f9;">Observaciones Generales por Examinador</div>
+            <div class="panel-body">
+                <?php if (empty($examinadores)): ?>
+                    <div class="alert alert-warning" style="margin: 0;">
+                        <i class="fa fa-info-circle" style="font-size: 18px; margin-right: 10px; vertical-align: middle;"></i>
+                        <strong>Aún no hay observaciones registradas.</strong>
+                        <p style="margin: 6px 0 0 28px; font-size: 13px; color: #777;">
+                            Las observaciones de los examinadores aparecerán aquí una vez que completen sus evaluaciones.
+                        </p>
+                    </div>
+                <?php else: ?>
+                <div class="row">
+                    <?php for ($i = 1; $i <= 3; $i++): ?>
+                        <?php $ex = $examinadores[$i - 1] ?? []; $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'Examinador ' . $i); ?>
+                        <?php
+                        $eval = $this->evaluaciones[$i] ?? null;
+                        $obs = ($eval && !empty($eval['observaciones_generales'])) ? $eval['observaciones_generales'] : null;
+                        ?>
+                        <div class="col-md-4">
+                            <h5 style="font-weight: 700;"><?= $this->escapeHtml($nombreEx) ?></h5>
+                            <?php if ($obs): ?>
+                                <p style="font-size: 13px; color: #555;"><?= nl2br($this->escapeHtml($obs)) ?></p>
+                            <?php else: ?>
+                                <p class="text-muted" style="font-size: 13px;">—</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endfor; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12 text-right" style="margin-bottom: 30px;">
+        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado'], ['query' => ['t' => time()]]) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Volver al listado
+        </a>
+    </div>
+</div>
+
+<?php endif; ?>
+
+<!-- Modal Link -->
+<div class="modal fade" id="modalLink" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-share-alt"></i> Link para Examinadores</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" style="margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i> <strong>Link de acceso para los examinadores</strong><br>
+                    Comparta este link con los 3 examinadores (internos y externos) para que accedan a la evaluación.
+                </div>
+                <div class="input-group">
+                    <input type="text" id="inputLink" class="form-control" readonly>
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" type="button" id="btnCopiarLink">Copiar link</button>
+                    </span>
+                </div>
+                <p style="margin-top: 10px; color: #666; font-size: 12px;">
+                    <i class="fa fa-clock-o"></i> Este link estará activo hasta que cierre la evaluación.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(function() {
+    $('.btn-abrir-eval').on('click', function() {
+        var codProceso = $(this).data('proceso');
+        ConfirmService.confirm('¿Abrir evaluación? Se generará un link para los 3 examinadores.', function() {
+            $.post('/examen/abrir-evaluacion', { cod_proceso: codProceso }, function(res) {
+                if (res.status === 'success') {
+                    var urlCompleta = window.location.origin + '/eval-privado/' + codProceso + '?cod=' + res.codigo;
+                    ToastService.success('Evaluación abierta correctamente. Link para compartir con los examinadores: ' + urlCompleta);
+                    location.reload();
+                } else {
+                    ToastService.error('Error: ' + res.message);
+                }
+            });
+        });
+    });
+
+    $('.btn-cerrar-eval').on('click', function() {
+        var codProceso = $(this).data('proceso');
+        var msg = '¿Cerrar evaluación?';
+        ConfirmService.confirm(msg, function() {
+            $.post('/examen/cerrar-evaluacion', { cod_proceso: codProceso }, function(res) {
+                if (res.status === 'success') {
+                    location.reload();
+                } else {
+                    ToastService.error('Error: ' + res.message);
+                }
+            });
+        });
+    });
+
+    $('.btn-ver-link').on('click', function() {
+        var codProceso = $(this).data('proceso');
+        var codigo = $(this).data('codigo');
+
+        if (!codigo) {
+            ToastService.warning('Debe presionar "Abrir examen" primero para generar el link de evaluación.');
+            return;
+        }
+
+        var url = window.location.origin + '/eval-privado/' + codProceso + '?cod=' + codigo;
+        $('#inputLink').val(url);
+        $('#modalLink').modal('show');
+    });
+
+    $('#btnCopiarLink').on('click', function() {
+        var input = document.getElementById('inputLink');
+        input.select();
+        document.execCommand('copy');
+        $(this).text('Copiado!');
+        setTimeout(function() { $('#btnCopiarLink').text('Copiar link'); }, 2000);
+    });
+
+    var codProcesoReprog = null;
+
+    $('.btn-reprogramar').on('click', function() {
+        codProcesoReprog = $(this).data('proceso');
+        var reprog = $(this).data('reprogramaciones');
+        var restantes = 2 - reprog;
+        $('#reprog-contador').text('Reprogramación #' + (reprog + 1) + ' de 2. Quedan ' + restantes + ' intento' + (restantes > 1 ? 's' : '') + '.');
+        $('#inputFechaReprog').val('');
+        $('#inputHoraReprog').val('');
+        $('#modalReprogramar').modal('show');
+    });
+
+        $('#btnConfirmarReprog').on('click', function() {
+        if (!codProcesoReprog) return;
+
+        var fecha = $('#inputFechaReprog').val();
+        var hora = $('#inputHoraReprog').val();
+
+        if (!fecha) {
+            ToastService.warning('Debe ingresar la fecha del examen.');
+            return;
+        }
+        if (!hora) {
+            ToastService.warning('Debe ingresar la hora del examen.');
+            return;
+        }
+
+        var btn = $(this);
+        btn.prop('disabled', true).text('Procesando...');
+
+        $.post('/examen/reprogramar-examen-privado', {
+            cod_proceso: codProcesoReprog,
+            fecha_examen: fecha,
+            hora_examen: hora
+        }, function(res) {
+            btn.prop('disabled', false).text('Reprogramar');
+            $('#modalReprogramar').modal('hide');
+            if (res.status === 'success') {
+                ToastService.success(res.message);
+                location.reload();
+            } else {
+                ToastService.error('Error: ' + res.message);
+            }
+        }).fail(function() {
+            btn.prop('disabled', false).text('Reprogramar');
+            ToastService.error('Error de conexión al reprogramar el examen.');
+        });
+    });
+
+    // === Sustituir Examinador ===
+    var codProcesoSustituir = null;
+    var posicionSustituir = null;
+    var docentesInternos = [];
+
+    // Cargar lista de docentes internos
+    function cargarDocentes() {
+        var $btn = $('#btnRecargarDocentes');
+        $btn.prop('disabled', true).find('i').addClass('fa-spin');
+
+        $.get('/examen/lista-docentes', function(res) {
+            if (res.status === 'success' && res.docentes) {
+                docentesInternos = res.docentes;
+                var $select = $('#selectDocente');
+                $select.empty().append('<option value="">-- Seleccione --</option>');
+                res.docentes.forEach(function(d) {
+                    $select.append('<option value="' + d.cod_usuario + '" data-colegiado="' + (d.colegiado || '') + '" data-titulo="' + (d.titulo || '') + '" data-correo="' + (d.correo || '') + '">' + d.nombre_completo + '</option>');
+                });
+
+                // Limpiar estado actual
+                $('#selectDocente').val('');
+                $('#datosDocenteSeleccionado').hide();
+                $('#alertaDatosIncompletos').hide();
+                $('#btnConfirmarSustituir').prop('disabled', true);
+            }
+        }).always(function() {
+            $btn.prop('disabled', false).find('i').removeClass('fa-spin');
+        }).fail(function() {
+            ToastService.error('Error al recargar la lista de docentes.');
+        });
+    }
+
+    cargarDocentes();
+
+    $('#btnRecargarDocentes').on('click', function() {
+        cargarDocentes();
+    });
+
+    $('.btn-previsualizar-acta').on('click', function() {
+        var url = $(this).data('url');
+        $('#iframePrevisualizarActa').attr('src', url);
+        $('#modalPrevisualizarActa').modal('show');
+    });
+
+    $('#modalPrevisualizarActa').on('hidden.bs.modal', function() {
+        $('#iframePrevisualizarActa').attr('src', '');
+    });
+
+    $('.btn-sustituir-examinador').on('click', function() {
+        codProcesoSustituir = $(this).data('proceso');
+        posicionSustituir = $(this).data('posicion');
+        var nombre = $(this).data('nombre');
+        $('#sustituir-nombre-actual').text(nombre);
+        $('#selectDocente').val('');
+        $('#datosDocenteSeleccionado').hide();
+        $('#alertaColegiado').hide();
+        $('#btnConfirmarSustituir').prop('disabled', true);
+        $('#modalSustituir').modal('show');
+    });
+
+    $('#selectDocente').on('change', function() {
+        var codUsuario = parseInt($(this).val(), 10);
+        if (!codUsuario) {
+            $('#datosDocenteSeleccionado').hide();
+            $('#alertaDatosIncompletos').hide();
+            $('#btnConfirmarSustituir').prop('disabled', true);
+            return;
+        }
+
+        var $opt = $(this).find('option:selected');
+        var colegiado = $opt.data('colegiado') || '';
+        var titulo = $opt.data('titulo') || '';
+        var correo = $opt.data('correo') || '';
+        var nombre = $opt.text();
+
+        $('#docente-nombre').text(nombre);
+        $('#docente-colegiado').text(colegiado || '—');
+        $('#docente-titulo').text(titulo || '—');
+        $('#docente-correo').text(correo || '—');
+        $('#datosDocenteSeleccionado').show();
+
+        var faltantes = [];
+        if (!colegiado) faltantes.push('número de colegiado');
+        if (!titulo) faltantes.push('título profesional');
+        if (!correo) faltantes.push('correo electrónico');
+        if (!nombre || nombre === '-- Seleccione --') faltantes.push('nombre completo');
+
+        if (faltantes.length > 0) {
+            var mensaje = 'El docente o secretario seleccionado no puede ser examinador sustituto porque le falta: ' + faltantes.join(', ') + '.';
+            $('#mensajeDatosIncompletos').text(mensaje);
+            $('#alertaDatosIncompletos').show();
+            $('#btnConfirmarSustituir').prop('disabled', true);
+        } else {
+            $('#alertaDatosIncompletos').hide();
+            $('#btnConfirmarSustituir').prop('disabled', false);
+        }
+    });
+
+    $('#btnConfirmarSustituir').on('click', function() {
+        if (!codProcesoSustituir || !posicionSustituir) return;
+
+        var codUsuario = parseInt($('#selectDocente').val(), 10);
+        if (!codUsuario) {
+            ToastService.warning('Debe seleccionar un docente o secretario.');
+            return;
+        }
+
+        var $opt = $('#selectDocente option:selected');
+        var colegiado = $opt.data('colegiado') || '';
+        var titulo = $opt.data('titulo') || '';
+        var correo = $opt.data('correo') || '';
+        var nombre = $opt.text();
+
+        var faltantes = [];
+        if (!colegiado) faltantes.push('número de colegiado');
+        if (!titulo) faltantes.push('título profesional');
+        if (!correo) faltantes.push('correo electrónico');
+        if (!nombre || nombre === '-- Seleccione --') faltantes.push('nombre completo');
+
+        if (faltantes.length > 0) {
+            ToastService.error('El docente o secretario seleccionado no puede ser examinador sustituto porque le falta: ' + faltantes.join(', ') + '. Edite el usuario antes de continuar.');
+            return;
+        }
+
+        // Validar que no esté duplicado en la terna actual
+        var duplicado = false;
+        $('.btn-sustituir-examinador[data-proceso="' + codProcesoSustituir + '"]').each(function() {
+            var codExistente = parseInt($(this).data('cod-usuario'), 10);
+            if (codExistente && codExistente === codUsuario) {
+                duplicado = true;
+                return false; // break
+            }
+        });
+        if (duplicado) {
+            ToastService.error('El docente o secretario seleccionado ya es examinador de este proceso. No puede haber duplicados en la terna.');
+            return;
+        }
+
+        var datos = {
+            cod_proceso: codProcesoSustituir,
+            posicion: posicionSustituir,
+            tipo: 'interno',
+            cod_usuario: codUsuario,
+            colegiado: colegiado,
+            titulo: titulo,
+            correo: correo
+        };
+
+        var btn = $(this);
+        btn.prop('disabled', true).text('Sustituyendo...');
+
+        $.post('/examen/sustituir-examinador', datos, function(res) {
+            btn.prop('disabled', false).text('Sustituir');
+            $('#modalSustituir').modal('hide');
+            if (res.status === 'success') {
+                ToastService.success(res.message);
+                location.reload();
+            } else {
+                ToastService.error('Error: ' + res.message);
+            }
+        }).fail(function() {
+            btn.prop('disabled', false).text('Sustituir');
+            ToastService.error('Error de conexión al sustituir el examinador.');
+        });
+    });
+});
+</script>
+
+<!-- Modal Reprogramar -->
+<div class="modal fade" id="modalReprogramar" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #f0ad4e; color: white;">
+                <h5 class="modal-title"><i class="fa fa-refresh"></i> Reprogramar Examen Privado</h5>
+                <button type="button" class="close" data-dismiss="modal" style="color: white;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning" style="margin-bottom: 15px;">
+                    <i class="fa fa-exclamation-triangle"></i> <strong>Atención</strong><br>
+                    Se eliminarán las evaluaciones anteriores. Esta acción no se puede deshacer.
+                </div>
+                <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">
+                    <i class="fa fa-info-circle"></i> <span id="reprog-contador"></span>
+                </p>
+                <div class="form-group">
+                    <label>Nueva fecha del examen:</label>
+                    <input type="date" id="inputFechaReprog" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Nueva hora del examen:</label>
+                    <input type="time" id="inputHoraReprog" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarReprog">Reprogramar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- Modal Previsualizar Acta -->
+<div class="modal fade" id="modalPrevisualizarActa" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document" style="width: 90%; max-width: 900px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #5bc0de; color: white;">
+                <h5 class="modal-title"><i class="fa fa-eye"></i> Previsualización del Acta</h5>
+                <button type="button" class="close" data-dismiss="modal" style="color: white;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <iframe id="iframePrevisualizarActa" style="width: 100%; height: 600px; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sustituir Examinador -->
+<div class="modal fade" id="modalSustituir" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: #f0ad4e; color: white;">
+                <h5 class="modal-title"><i class="fa fa-exchange"></i> Sustituir Examinador</h5>
+                <button type="button" class="close" data-dismiss="modal" style="color: white;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning" style="margin-bottom: 15px;">
+                    <i class="fa fa-exclamation-triangle"></i> <strong>Atención</strong><br>
+                    Se sustituirá <strong id="sustituir-nombre-actual">el examinador</strong>. Esta acción no se puede deshacer.
+                </div>
+                <div class="form-group">
+                    <label>Seleccionar docente interno o secretario:</label>
+                    <div class="input-group">
+                        <select id="selectDocente" class="form-control">
+                            <option value="">-- Seleccione --</option>
+                        </select>
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default" id="btnRecargarDocentes" title="Recargar información de docentes">
+                                <i class="fa fa-refresh"></i> Recargar
+                            </button>
+                        </span>
+                    </div>
+                </div>
+                <div id="datosDocenteSeleccionado" style="display: none;">
+                    <div class="panel panel-default" style="margin-bottom: 15px;">
+                        <div class="panel-body" style="padding: 10px 15px;">
+                            <p style="margin-bottom: 5px;"><strong>Nombre:</strong> <span id="docente-nombre"></span></p>
+                            <p style="margin-bottom: 5px;"><strong>Colegiado:</strong> <span id="docente-colegiado"></span></p>
+                            <p style="margin-bottom: 5px;"><strong>Título:</strong> <span id="docente-titulo"></span></p>
+                            <p style="margin-bottom: 0;"><strong>Correo:</strong> <span id="docente-correo"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertaDatosIncompletos" class="alert alert-danger" style="display: none; margin-bottom: 15px;">
+                    <i class="fa fa-times-circle"></i> <strong>No elegible como examinador sustituto</strong><br>
+                    <span id="mensajeDatosIncompletos"></span>
+                    <a href="<?= $this->url('user', ['action' => 'edit-user']) ?>" target="_blank">Edite el usuario</a> para agregar la información faltante antes de poder usarlo como examinador sustituto.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarSustituir" disabled>Sustituir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>

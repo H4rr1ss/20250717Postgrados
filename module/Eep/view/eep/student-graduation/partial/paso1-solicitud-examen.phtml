@@ -1,0 +1,598 @@
+<?php
+$this->headTitle('Solicitud de Examen ' . $this->escapeHtml($proceso['tipo_examen']));
+
+/**
+ * Función para determinar el estado y metadatos de un documento
+ * basado en las columnas de la consulta SQL
+ */
+function determinarEstadoDocumento($req) {
+    $codDocumento = $req['cod_documento'];
+    $estadoRevision = $req['estado_revision'];
+    $fechaRevision = $req['fecha_revision'];
+    
+    // Sin documento subido
+    if ($codDocumento === null) {
+        return [
+            'estado' => 'PENDIENTE DE SUBIR',
+            'clase' => 'badge-pendiente',
+            'icono' => 'fa-paperclip',
+            'botones' => ['subir'],
+            'fecha' => null
+        ];
+    }
+    
+    // Documento enviado pero pendiente de revisión
+    if ($estadoRevision === null) {
+        return [
+            'estado' => 'PENDIENTE DE REVISIÓN',
+            'clase' => 'badge-pendiente-revision',
+            'icono' => 'fa-clock-o',
+            'botones' => ['ver'],
+            'fecha' => null
+        ];
+    }
+    
+    // Documento rechazado
+    if ($estadoRevision === 'rechazado') {
+        return [
+            'estado' => 'RECHAZADO',
+            'clase' => 'badge-rechazado',
+            'icono' => 'fa-times-circle',
+            'botones' => ['razon', 'subir'],
+            'fecha' => null
+        ];
+    }
+    
+    // Documento aceptado/aprobado
+    if ($estadoRevision === 'aprobado' || $estadoRevision === 'aceptado') {
+        $fechaFormateada = $fechaRevision ? date('d/m/Y', strtotime($fechaRevision)) : null;
+        return [
+            'estado' => 'ACEPTADO',
+            'clase' => 'badge-aceptado',
+            'icono' => 'fa-check-circle',
+            'botones' => ['ver'],
+            'fecha' => $fechaFormateada
+        ];
+    }
+    
+    // Estado desconocido
+    return [
+        'estado' => 'DESCONOCIDO',
+        'clase' => 'badge-pendiente',
+        'icono' => 'fa-question-circle',
+        'botones' => [],
+        'fecha' => null
+    ];
+}
+
+// Procesar requisitos de la base de datos
+$documentos = [];
+if (!empty($requisitos)) {
+    foreach ($requisitos as $req) {
+        $metadatos = determinarEstadoDocumento($req);
+        
+        $documentos[] = [
+            'cod_requisito' => $req['cod_requisito'],
+            'cod_documento' => $req['cod_documento'],
+            'titulo' => $req['nombre_requisito'],
+            'desc' => $req['descripcion'],
+            'estado' => $metadatos['estado'],
+            'clase' => $metadatos['clase'],
+            'icono' => $metadatos['icono'],
+            'botones' => $metadatos['botones'],
+            'fecha' => $metadatos['fecha'],
+            'motivo_rechazo' => $req['motivo_rechazo'] ?? null,
+            'url_ver' => $req['url_ver'] ?? null,
+            'formatos_permitidos' => $req['formatos_permitidos'],
+            'tamano_max_mb' => $req['tamano_max_mb'],
+            'archivo_apoyo' => $req['archivo_apoyo'] ?? null
+        ];
+    }
+}
+
+// Procesar documentos de referencia del paso anterior (para pasos físicos)
+$documentosReferencia = [];
+$esPasoFisico = $this->esPasoFisico ?? false;
+$requisitosReferencia = $this->requisitosReferencia ?? [];
+
+if ($esPasoFisico && !empty($requisitosReferencia)) {
+    foreach ($requisitosReferencia as $req) {
+        $metadatos = determinarEstadoDocumento($req);
+        
+        $documentosReferencia[] = [
+            'cod_requisito' => $req['cod_requisito'],
+            'cod_documento' => $req['cod_documento'],
+            'titulo' => $req['nombre_requisito'],
+            'desc' => $req['descripcion'],
+            'estado' => $metadatos['estado'],
+            'clase' => $metadatos['clase'],
+            'icono' => $metadatos['icono'],
+            'botones' => ['ver'], // Solo permitir ver, no subir
+            'fecha' => $metadatos['fecha'],
+            'motivo_rechazo' => $req['motivo_rechazo'] ?? null,
+            'url_ver' => $req['url_ver'] ?? null,
+            'formatos_permitidos' => $req['formatos_permitidos'],
+            'tamano_max_mb' => $req['tamano_max_mb']
+        ];
+    }
+}
+?>
+
+<div class="col-lg-12">
+    <!-- Breadcrumb -->
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb">
+                <li>
+                    <a href="<?= $this->url('home') ?>">
+                        <i class="fa fa-home"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= $this->url('student-graduation') ?>">Proceso de Graduación</a>
+                </li>
+                <li class="active">Solicitud de Examen <?= $this->escapeHtml($proceso['tipo_examen']) ?></li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Botón regresar -->
+    <div style="margin-bottom: 14px;">
+        <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-default">
+            <i class="fa fa-arrow-left"></i> Regresar al proceso de graduación
+        </a>
+    </div>
+
+    <div class="panel panel-blue">
+        <div class="panel-heading">Examen <?= $this->escapeHtml($proceso['tipo_examen']) ?></div>
+        <div class="panel-body">
+
+            <h4 style="font-weight: 700; letter-spacing: 1px; margin-bottom: 20px;">Solicitud de Examen <?= $this->escapeHtml($proceso['tipo_examen']) ?></h4>
+
+            <?php if ($this->pasoCompletado): ?>
+            <div class="alert alert-success" style="margin-bottom: 25px;">
+                <i class="fa fa-check-circle" style="font-size: 24px; margin-right: 10px; vertical-align: middle;"></i>
+                <strong style="font-size: 16px;">¡Este paso ya fue completado!</strong>
+                <p style="margin: 10px 0 0 0; font-size: 14px;">
+                    Ya entregaste la papelería solicitada. Ahora debes esperar a que la secretaría revise tus documentos. 
+                    Una vez aprobados, podrás continuar con el siguiente paso del proceso de graduación.
+                </p>
+                <div style="margin-top: 15px;">
+                    <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-success">
+                        <i class="fa fa-arrow-left"></i> Regresar al proceso de graduación
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Mensaje importante -->
+            <?php if ($esPasoFisico): ?>
+                <div style="padding: 14px 18px; margin-bottom: 20px; font-size: 16px; color: #1a3c6b; background: #e8f0fe; border-radius: 6px; border-left: 4px solid #1a3c6b; font-weight: 600;">
+                    <i class="fa fa-info-circle" style="margin-right: 8px; font-size: 18px; color: #1a3c6b;"></i>
+                    <span>
+                        Entregar documentación física en la oficina de Postgrados. Horario: 8:00 – 16:00 hrs. (Lun – Vie).
+                    </span>
+                </div>
+
+                <?php if (!empty($this->instruccionesEntrega)): ?>
+                <div style="padding: 16px 20px; margin-bottom: 28px; font-size: 13px; color: #856404; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; border-left: 4px solid #e67e22;">
+                    <i class="fa fa-exclamation-circle" style="margin-right: 10px; font-size: 16px; color: #e67e22;"></i>
+                    <strong style="font-size: 14px;">Instrucciones especiales para documentos físicos:</strong>
+                    <span style="display: block; margin-top: 8px; font-size: 14px; line-height: 1.6; white-space: pre-line;">
+                        <?= nl2br($this->escapeHtml($this->instruccionesEntrega)) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Documentos de referencia del paso anterior -->
+                <?php if (!empty($documentosReferencia)): ?>
+                <div style="margin-bottom: 20px;">
+                    <h5 style="font-weight: 700; color: #1a3c6b; margin-bottom: 15px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
+                        <i class="fa fa-list-check" style="margin-right: 8px;"></i>
+                        Documentos aprobados digitalmente (referencia para entrega física)
+                    </h5>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+                        Estos son los documentos que aprobó en el paso anterior. Debe llevar <strong>físicamente</strong> los originales o copias impresas de:
+                    </p>
+                </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div style="padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: #333;">
+                    <strong>Importante:</strong> Asegúrese de cargar el total de archivos solicitados, hasta ese momento se enviará su solicitud a Control Académico.
+                </div>
+            <?php endif; ?>
+
+            <?php if (empty($documentos) && !$esPasoFisico): ?>
+            <!-- Mensaje cuando no hay requisitos y NO es paso físico -->
+            <div class="alert alert-warning" style="margin: 20px;">
+                <i class="fa fa-exclamation-triangle"></i> 
+                <strong>Atención:</strong> No se encontraron requisitos configurados para este paso o no tiene un proceso activo.
+            </div>
+            <?php elseif (empty($documentos) && $esPasoFisico && empty($documentosReferencia)): ?>
+            <!-- Paso físico sin documentos de referencia -->
+            <div class="alert alert-info" style="margin: 20px;">
+                <i class="fa fa-info-circle"></i> 
+                <strong>Entrega Física:</strong> Este paso no requiere subir documentos digitales. Por favor, entregue la documentación físicamente en la oficina de Postgrados.
+            </div>
+            <?php endif; ?>
+            
+            <!-- Mostrar documentos de referencia cuando es paso físico -->
+            <?php if ($esPasoFisico && !empty($documentosReferencia)): ?>
+            <!-- Grid de documentos de referencia -->
+            <div class="row">
+                <?php foreach ($documentosReferencia as $doc): ?>
+                <div class="col-sm-4" style="margin-bottom: 24px; padding-left: 12px; padding-right: 12px;">
+                    <div class="doc-card <?= $doc['clase'] ?>-card">
+
+                        <!-- Icono + Badge estado -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div class="icono-box <?= $doc['clase'] ?>-icono">
+                                <i class="fa <?= $doc['icono'] ?>"></i>
+                            </div>
+                            <span class="badge-estado <?= $doc['clase'] ?>"><?= $doc['estado'] ?></span>
+                        </div>
+
+                        <!-- Título -->
+                        <p class="doc-titulo"><?= $doc['titulo'] ?></p>
+
+                        <!-- Descripción -->
+                        <p class="doc-descripcion"><?= $doc['desc'] ?></p>
+
+                        <!-- Botones (solo ver) -->
+                        <div style="margin-top: auto;">
+                            <?php if (in_array('ver', $doc['botones']) && !empty($doc['url_ver'])): ?>
+                            <button type="button" 
+                                    class="btn btn-block btn-doc-ver btn-ver-documento" 
+                                    style="font-size: 12px; margin-bottom: 6px;"
+                                    data-documento="<?= $doc['cod_documento'] ?>"
+                                    data-link="<?= htmlspecialchars($doc['url_ver'] ?? '') ?>">
+                                <i class="fa fa-eye"></i> Ver documento aprobado
+                            </button>
+                            <?php else: ?>
+                            <div class="alert alert-warning" style="padding: 8px; font-size: 11px; margin: 0;">
+                                <i class="fa fa-exclamation-triangle"></i> Documento no disponible
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($documentos)): ?>
+            <!-- Grid de documentos -->
+            <div class="row">
+                <?php foreach ($documentos as $doc): ?>
+                <div class="col-sm-4" style="margin-bottom: 24px; padding-left: 12px; padding-right: 12px;">
+                    <?php $tieneAdjunto = !empty($doc['archivo_apoyo']); ?>
+                    <div class="doc-card <?= $doc['clase'] ?>-card">
+
+                        <!-- Icono + Badge estado -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div class="icono-box <?= $doc['clase'] ?>-icono">
+                                <i class="fa <?= $doc['icono'] ?>"></i>
+                            </div>
+                            <span class="badge-estado <?= $doc['clase'] ?>"><?= $doc['estado'] ?></span>
+                        </div>
+
+                        <!-- Título -->
+                        <p class="doc-titulo"><?= $doc['titulo'] ?></p>
+
+                        <!-- Descripción -->
+                        <p class="doc-descripcion"><?= $doc['desc'] ?></p>
+
+                        <!-- Archivo de apoyo -->
+                        <?php if ($tieneAdjunto): ?>
+                        <div style="margin-bottom: 14px;">
+                            <a href="<?= $this->url('examen', ['action' => 'descargar-requisito-apoyo']) ?>?file=<?= urlencode($doc['archivo_apoyo']) ?>" target="_blank" class="btn btn-info btn-sm btn-block" style="font-weight: 700; letter-spacing: 0.3px;">
+                                <i class="fa fa-paperclip" style="margin-right: 6px;"></i>Documento de apoyo
+                            </a>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- Botones -->
+                        <div style="margin-top: auto;">
+                            <?php if (in_array('razon', $doc['botones'])): ?>
+                            <div class="recuadro-rechazo">
+                                <i class="fa fa-times-circle"></i>
+                                <span><?= htmlspecialchars($doc['motivo_rechazo'] ?? 'No se especificó motivo') ?></span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" 
+                                        class="btn btn-doc-ver btn-ver-documento" 
+                                        style="flex: 1; font-size: 12px;"
+                                        data-documento="<?= $doc['cod_documento'] ?>"
+                                        data-link="<?= htmlspecialchars($doc['url_ver'] ?? '') ?>">
+                                    <i class="fa fa-eye"></i> Ver
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-doc-resubir btn-subir-documento" 
+                                        style="flex: 1.6; font-size: 12px;"
+                                        data-requisito="<?= $doc['cod_requisito'] ?>"
+                                        data-formatos="<?= htmlspecialchars($doc['formatos_permitidos']) ?>">
+                                    <i class="fa fa-upload"></i> Re-subir
+                                </button>
+                            </div>
+                            <?php elseif (in_array('ver', $doc['botones'])): ?>
+                            <button type="button" 
+                                    class="btn btn-block btn-doc-ver btn-ver-documento" 
+                                    style="font-size: 12px; margin-bottom: 6px;"
+                                    data-documento="<?= $doc['cod_documento'] ?>"
+                                    data-link="<?= htmlspecialchars($doc['url_ver'] ?? '') ?>">
+                                <i class="fa fa-eye"></i> Ver archivo validado
+                            </button>
+                            <?php if (!empty($doc['fecha'])): ?>
+                            <p style="font-size: 10px; color: #aaa; text-align: center; margin: 0; letter-spacing: 0.5px; text-transform: uppercase;">VALIDADO EL <?= $doc['fecha'] ?></p>
+                            <?php endif; ?>
+                            <?php elseif (in_array('subir', $doc['botones'])): ?>
+                            <button type="button" 
+                                    class="btn btn-block btn-doc-subir btn-subir-documento" 
+                                    style="font-size: 12px;"
+                                    data-requisito="<?= $doc['cod_requisito'] ?>"
+                                    data-formatos="<?= htmlspecialchars($doc['formatos_permitidos']) ?>">
+                                <i class="fa fa-paperclip"></i> Subir archivo
+                            </button>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+        </div><!-- /panel-body -->
+    </div><!-- /panel-blue -->
+
+</div><!-- /col-lg-12 -->
+
+<style>
+    /* --- Badges de estado --- */
+    .badge-estado {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .badge-aceptado  { background-color: #e6f7ee; color: #1a7a3f; border: 1px solid #b2dfca; }
+    .badge-rechazado { background-color: #fce8e8; color: #c0392b; border: 1px solid #f4b8b8; }
+    .badge-pendiente { background-color: #f5f5f5; color: #888;    border: 1px solid #ddd; }
+    .badge-pendiente-revision { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+
+    /* --- Tarjeta de documento --- */
+    .doc-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        height: 100%;
+        min-height: 270px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.07);
+    }
+    .badge-aceptado-card,
+    .badge-rechazado-card,
+    .badge-pendiente-revision-card  { border: 1px solid #c8c8c8; }
+    .badge-pendiente-card  { border: 1.5px dashed #aaa; box-shadow: none; }
+
+    /* --- Caja de icono --- */
+    .icono-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+    .badge-aceptado-icono  { background-color: #e6f7ee; color: #2e7d32; }
+    .badge-rechazado-icono { background-color: #f5f5f5; color: #aaa; }
+    .badge-pendiente-icono { background-color: #f5f5f5; color: #bbb; }
+    .badge-pendiente-revision-icono { background-color: #fff3cd; color: #856404; }
+
+    /* --- Tipografía tarjeta --- */
+    .doc-titulo {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+    .doc-descripcion {
+        font-size: 12px;
+        color: #888;
+        flex: 1;
+        margin-bottom: 18px;
+        line-height: 1.6;
+    }
+
+    /* --- Recuadro razón de rechazo --- */
+    .recuadro-rechazo {
+        background: #fce8e8;
+        color: #c0392b;
+        border: 1px solid #f4b8b8;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        line-height: 1.4;
+    }
+    .recuadro-rechazo .fa { margin-top: 2px; flex-shrink: 0; }
+
+    /* --- Botones --- */
+    .btn-doc-outline {
+        background: #fff;
+        color: #555;
+        border: 1px solid #d5d5d5;
+        border-radius: 6px;
+        padding: 7px 12px;
+        font-weight: 600;
+    }
+    .btn-doc-outline:hover, .btn-doc-outline:focus { background: #f5f5f5; color: #333; }
+
+    .btn-doc-ver {
+        background: #fff;
+        color: #2c5f9e;
+        border: 1px solid #c0d3ed;
+        border-radius: 6px;
+        padding: 7px 12px;
+        font-weight: 600;
+    }
+    .btn-doc-ver:hover, .btn-doc-ver:focus { background: #f0f5fb; color: #1a3c6b; }
+
+    .btn-doc-subir {
+        background: #fff;
+        color: #666;
+        border: 1.5px dashed #bbb;
+        border-radius: 6px;
+        padding: 7px 12px;
+        font-weight: 600;
+    }
+    .btn-doc-subir:hover, .btn-doc-subir:focus { background: #fafafa; color: #444; }
+
+    .btn-doc-resubir {
+        background: #1a3c6b;
+        color: #fff;
+        border: 1px solid #152f56;
+        border-radius: 6px;
+        padding: 7px 12px;
+        font-weight: 600;
+    }
+    .btn-doc-resubir:hover, .btn-doc-resubir:focus { background: #152f56; color: #fff; }
+</style>
+
+<script>
+$(document).ready(function() {
+    
+    // Ver documento
+    $('.btn-ver-documento').on('click', function() {
+        const link = $(this).data('link');
+        
+        if (!link) {
+            ConfirmService.alert('ERROR: No se encontró el enlace del documento');
+            return;
+        }
+        
+        // Abrir en nueva pestaña
+        window.open(link, '_blank');
+    });
+    
+    // Subir documento
+    $('.btn-subir-documento').on('click', function() {
+        const $btn = $(this);
+        const formatos = $btn.data('formatos');
+        const codRequisito = $btn.data('requisito');
+        
+        // Crear input file dinámicamente
+        const $fileInput = $('<input type="file" style="display:none">');
+        
+        // Asegurar que las extensiones tengan punto
+        const formatosConPunto = formatos.split(',').map(f => {
+            const ext = f.trim();
+            return ext.startsWith('.') ? ext : '.' + ext;
+        }).join(',');
+        
+        $fileInput.attr('accept', formatosConPunto);
+        
+        // Agregar al DOM
+        $('body').append($fileInput);
+        
+        // Manejar selección de archivo
+        $fileInput.on('change', function() {
+            const file = this.files[0];
+            
+            if (!file) {
+                $(this).remove();
+                return;
+            }
+            
+            // Validar extensión
+            const nombreArchivo = file.name.toLowerCase();
+            const formatosArray = formatos.toLowerCase().split(',').map(f => f.trim());
+            const extension = '.' + nombreArchivo.split('.').pop();
+            
+            let formatoValido = false;
+            for (let i = 0; i < formatosArray.length; i++) {
+                const formato = formatosArray[i];
+                if (formato.includes('/')) {
+                    // Es un MIME type (ej: image/png)
+                    if (file.type === formato) {
+                        formatoValido = true;
+                        break;
+                    }
+                } else {
+                    // Es una extensión (ej: .pdf)
+                    if (extension === formato || nombreArchivo.endsWith(formato)) {
+                        formatoValido = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!formatoValido) {
+                ConfirmService.alert(`Formato no permitido.\nFormatos aceptados: ${formatos}\nArchivo seleccionado: ${file.name}`);
+                $(this).remove();
+                return;
+            }
+
+            // Si todo está bien, confirmar subida
+            ConfirmService.confirm(`¿Desea subir el archivo "${file.name}"?`, function() {
+                subirDocumento(file, codRequisito);
+            });
+            
+            // Remover input
+            $(this).remove();
+        });
+        
+        // Trigger click para abrir selector
+        $fileInput.trigger('click');
+    });
+    
+    // Función para subir documento vía AJAX
+    function subirDocumento(file, codRequisito) {
+        const formData = new FormData();
+        formData.append('archivo', file);
+        formData.append('cod_requisito', codRequisito);
+        
+        // Crear overlay de carga
+        const $overlay = $('<div id="upload-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;"></div>');
+        const $loader = $('<div style="background:#fff;padding:30px 50px;border-radius:10px;text-align:center;"><i class="fa fa-spinner fa-spin fa-3x" style="color:#1a3c6b;margin-bottom:15px;"></i><p style="margin:0;font-size:16px;color:#333;">Subiendo documento...<br><small>Por favor espere</small></p></div>');
+        $overlay.append($loader);
+        $('body').append($overlay);
+        
+        // Realizar petición AJAX
+        $.ajax({
+            url: '<?= $this->url("student-graduation", ["action" => "subir-documento"]) ?>',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                $overlay.remove();
+                console.log("Respuesta del servidor:", response);
+                if (response.success) {
+                    location.reload();
+                } else {
+                    ConfirmService.alert('✗ ERROR\n\n' + (response.message || 'No se pudo subir el documento'));
+                }
+            },
+            error: function(xhr, status, error) {
+                $overlay.remove();
+                ConfirmService.alert('✗ ERROR DE SERVIDOR\n\nOcurrió un error al subir el documento:\n' + error);
+            }
+        });
+    }
+
+});
+</script>

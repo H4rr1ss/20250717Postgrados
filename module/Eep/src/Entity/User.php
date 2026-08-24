@@ -24,6 +24,7 @@ class User {
     private $pasaporte;
     private $registroAcademico;
     private $registroPersonal;
+    private $numeroColegiado;
     private $nombres;
     private $apellidos;
     private $nombreCompleto;
@@ -32,6 +33,7 @@ class User {
     private $correo;
     private $contrasenia;
     private $gradoAcademico;
+    private $tituloProfesional;
     private $fechaCreacion;
     private $codInfoLaboral;
     private $sexo;
@@ -55,6 +57,7 @@ class User {
         $this->pasaporte = !empty($data['pasaporte']) ? $data['pasaporte'] : $this->pasaporte;
         $this->registroAcademico = !empty($data['registro_academico']) ? $data['registro_academico'] : $this->registroAcademico;
         $this->registroPersonal = !empty($data['registro_personal']) ? $data['registro_personal'] : $this->registroPersonal;
+        $this->numeroColegiado = !empty($data['numero_colegiado']) ? $data['numero_colegiado'] : $this->numeroColegiado;
         $this->nombres = ($data['nombres']) ?? $this->nombres;
         $this->apellidos = ($data['apellidos']) ?? $this->apellidos;
         $this->fechaNacimiento = ($data['fecha_nacimiento']) ?? $this->fechaNacimiento;
@@ -65,6 +68,7 @@ class User {
         $this->pais = $data['pais'] ?? $this->pais;
         $this->sexo = ($data['sexo']) ?? $this->sexo;
         $this->gradoAcademico = ($data['grado_academico']) ?? $this->gradoAcademico;
+        $this->tituloProfesional = ($data['titulo_profesional']) ?? $this->tituloProfesional;
         $this->fechaCreacion = ($data['fecha_creacion']) ?? $this->fechaCreacion;
         $this->codInfoLaboral = ($data['cod_info_laboral']) ?? $this->codInfoLaboral;
         $auxFullName = (empty($this->apellidos) ? '' : $this->apellidos . ' ') . $this->nombres;
@@ -90,6 +94,10 @@ class User {
 
     function getRegistroPersonal() {
         return $this->registroPersonal;
+    }
+
+    function getNumeroColegiado() {
+        return $this->numeroColegiado;
     }
 
     function getNombres() {
@@ -118,6 +126,10 @@ class User {
 
     function getGradoAcademico() {
         return $this->gradoAcademico;
+    }
+
+    function getTituloProfesional() {
+        return $this->tituloProfesional;
     }
 
     function getFechaCreacion() {
@@ -180,6 +192,10 @@ class User {
         $this->registroPersonal = $registroPersonal;
     }
 
+    function setNumeroColegiado($numeroColegiado) {
+        $this->numeroColegiado = $numeroColegiado;
+    }
+
     function setNombres($nombres) {
         $this->nombres = $nombres;
     }
@@ -206,6 +222,10 @@ class User {
 
     function setGradoAcademico($gradoAcademico) {
         $this->gradoAcademico = $gradoAcademico;
+    }
+
+    function setTituloProfesional($tituloProfesional) {
+        $this->tituloProfesional = $tituloProfesional;
     }
 
     function setFechaCreacion($fechaCreacion) {

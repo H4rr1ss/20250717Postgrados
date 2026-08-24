@@ -45,6 +45,8 @@ class PluginHandler extends AbstractPlugin {
         //GETTING ACTION/CONTROLLER DETAIL
         $controllerName = $this->getController()->params('controller');
         $actionName = $this->getController()->params('action');
+        // Normalizar kebab-case (guiones) a camelCase para que coincida con access_filter.php
+        $actionName = lcfirst(str_replace(' ', '', ucwords(str_replace('-', ' ', $actionName))));
         $this->logManager->addLog($controllerName, $actionName, $actionType, $detail, $ip, $resultStatus, $roleCode, $internalSystem);
     }
 

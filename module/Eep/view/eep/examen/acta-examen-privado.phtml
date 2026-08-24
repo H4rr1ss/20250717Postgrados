@@ -1,0 +1,201 @@
+<?php
+$this->headTitle('Acta de Examen Privado');
+
+$proceso    = $this->proceso ?? [];
+$estudiante = $this->estudiante ?? [];
+$terna      = $this->terna ?? [];
+$estado     = $this->estado ?? [];
+
+$examinadores = $terna['examinadores'] ?? [];
+$programacion = $terna['programacion'] ?? [];
+
+$nombreEstudiante = trim($estudiante['nombre_completo'] ?? '');
+$carrera = $estudiante['carrera'] ?? 'N/A';
+$temaTesis = $proceso['tema_tesis'] ?? '';
+$fechaExamen = !empty($programacion['fecha']) ? date('d/m/Y', strtotime($programacion['fecha'])) : '';
+// Hora real de inicio: cuando se abrió la evaluación (hora_apertura_evaluacion)
+$horaRealInicio = !empty($proceso['hora_apertura_evaluacion']) ? date('g:i A', strtotime($proceso['hora_apertura_evaluacion'])) : '';
+// Fallback a la hora programada si no hay hora real
+$horaExamen = $horaRealInicio ?: (!empty($programacion['hora']) ? date('g:i A', strtotime($programacion['hora'])) : '');
+
+$formData = $this->formData ?? [];
+$decano = $this->decano ?? 'Decano';
+$secretario = $this->secretario ?? 'Secretario Académico';
+$numeroActa = $proceso['numero_acta'] ?? null;
+
+// Acta privada ya generada en la tabla dedicada
+$actaPrivado = $this->actaPrivado ?? null;
+if ($actaPrivado !== null) {
+    $numeroActa = $actaPrivado['numero_acta'];
+}
+
+// DEBUG temporal - ver estructura de datos
+if (empty($nombreEstudiante) || empty($temaTesis)) {
+    echo '<div class="alert alert-danger"><strong>DEBUG:</strong><br>';
+    echo 'Estudiante keys: ' . implode(', ', array_keys($estudiante)) . '<br>';
+    echo 'Proceso keys: ' . implode(', ', array_keys($proceso)) . '<br>';
+    echo '</div>';
+}
+?>
+
+<div class="col-lg-1"></div>
+<div class="col-lg-10">
+    <div class="panel panel-green">
+        <div class="panel-heading">
+            <i class="fa fa-file-text-o"></i> Acta de Examen Privado
+        </div>
+        <div class="panel-body pan">
+
+            <?php if ($actaPrivado !== null): ?>
+            <div class="alert alert-success">
+                <i class="fa fa-check-circle"></i> Este proceso ya cuenta con un acta generada.
+                <strong>Número de acta: <?= $this->escapeHtml($actaPrivado['numero_acta']) ?></strong>
+                (generada el <?= date('d/m/Y H:i', strtotime($actaPrivado['fecha_generacion'])) ?>).
+                <br>Al generar nuevamente se reutilizará el mismo número.
+            </div>
+            <?php else: ?>
+            <div class="alert alert-info">
+                <i class="fa fa-info-circle"></i> Complete los campos para generar el acta del examen privado.
+            </div>
+            <?php endif; ?>
+
+            <form action="<?= $this->url('examen', ['action' => 'generar-acta-examen-privado', 'id' => $proceso['cod_proceso'] ?? 0]) ?>" method="post" class="form-body pal">
+                
+                <!-- Datos del estudiante (solo lectura) -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Estudiante</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($nombreEstudiante) ?>" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Maestría / Carrera</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($carrera) ?>" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Tema del Proyecto de Graduación</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($temaTesis) ?>" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fecha y hora del examen -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Fecha de realización del examen</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($fechaExamen) ?>" readonly>
+                            <input type="hidden" name="fecha_examen" value="<?= $this->escapeHtml($fechaExamen) ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Hora de inicio del examen</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($horaExamen) ?>" readonly>
+                            <input type="hidden" name="hora_examen" value="<?= $this->escapeHtml($horaExamen) ?>">
+                            <?php if (!empty($horaRealInicio)): ?>
+                                <small class="text-muted"><i class="fa fa-clock-o"></i> Hora real de inicio (cuando se abrió la evaluación)</small>
+                            <?php else: ?>
+                                <small class="text-warning"><i class="fa fa-calendar"></i> Hora programada (la evaluación aún no se ha abierto)</small>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terna examinadora -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                            <i class="fa fa-users"></i> Terna Examinadora
+                        </h4>
+                        <?php 
+                        $notasExaminadores = $this->notasExaminadores ?? [];
+                        foreach ($examinadores as $i => $ex): 
+                            $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'No asignado');
+                            $posicion = $i + 1; // Las notas están indexadas por posición (1, 2, 3)
+                            $evaluado = isset($notasExaminadores[$posicion]) && $notasExaminadores[$posicion] !== null;
+                        ?>
+                            <div class="form-group">
+                                <label>
+                                    Examinador <?= $i + 1 ?>
+                                    <?php if (!$evaluado): ?>
+                                        <span style="color: #a94442; font-weight: normal;">
+                                            <i class="fa fa-exclamation-triangle"></i> No se presentó
+                                        </span>
+                                    <?php endif; ?>
+                                </label>
+                                <input type="text" class="form-control" value="<?= $this->escapeHtml($nombreEx) ?>" readonly>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Campos editables para el acta -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                            <i class="fa fa-edit"></i> Datos del Acta
+                        </h4>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Número de Recibo <span style="color:red">*</span></label>
+                            <input type="text" class="form-control" name="recibo" placeholder="Ej. 735816401"
+                                value="<?= $this->escapeHtml($formData['recibo'] ?? ($actaPrivado['recibo'] ?? '')) ?>"
+                                <?= $actaPrivado !== null ? 'readonly' : 'required' ?>>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Decano</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($decano) ?>" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Secretario Académico</label>
+                            <input type="text" class="form-control" value="<?= $this->escapeHtml($secretario) ?>" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Justificación de modalidad del examen <span style="color: red;">*</span></label>
+                            <textarea class="form-control" name="justificacion_modalidad" rows="3" placeholder="Texto dinámico para justificar la modalidad del examen privado" required><?= $this->escapeHtml($formData['justificacion_modalidad'] ?? ($actaPrivado['justificacion_modalidad'] ?? '')) ?></textarea>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="row">
+                    <div class="col-md-12 text-right" style="margin-top: 20px;">
+                        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
+                            <i class="fa fa-arrow-left"></i> Volver
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fa fa-file-pdf-o"></i> Generar acta
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+<div class="col-lg-1"></div>

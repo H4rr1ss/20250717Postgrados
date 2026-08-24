@@ -1,0 +1,436 @@
+<?php
+$this->headTitle('Gestión de Requisitos de Papelería');
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li class="active">Requisitos de Papelería</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #6B8E23; margin: 0 0 15px 0; font-weight: 400;">Gestión de Papelería para <strong><?= $this->escapeHtml($this->nombreExamen) ?></strong></h3>
+            <a href="<?= $this->url('examen') ?>" class="btn btn-default" style="font-size: 14px;">
+                <i class="fa fa-arrow-left"></i> Regresar
+            </a>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;"><strong>Información</strong></p>
+            <ul style="list-style-type: disc; margin-left: 20px; font-size: 14px; line-height: 1.6; color: #666;">
+                <li>En esta sección puedes gestionar los requisitos de papelería necesarios para el proceso de examen.</li>
+                <li>Puedes crear nuevos requisitos, editar los existentes o eliminarlos según sea necesario.</li>
+                <li>Estos requisitos serán visibles para los estudiantes durante el proceso de solicitud de examen.</li>
+            </ul>
+        </div>
+    </div>
+
+<!-- Sección de Requisitos -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-verde-tabla">
+            <div class="panel-verde-heading-tabla">
+                <span>Gestión de Requisitos de Papelería</span>
+                <button class="btn btn-blanco" id="btnCrearRequisito">
+                    <i class="fa fa-plus-circle"></i> Crear requisito
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-custom" id="tablaRequisitos">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Título</th>
+                            <th style="width: 60%;">Descripción</th>
+                            <th style="width: 15%; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($this->requisitos as $req): ?>
+                        <tr data-id="<?= $req['cod_requisito'] ?>">
+                            <td>
+                                <?= $this->escapeHtml($req['nombre']) ?>
+                                <?php if (!empty($req['archivo_apoyo'])): ?>
+                                    <span style="display:inline-block; background:#31708f; color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:10px; margin-left:8px; vertical-align:middle;">
+                                        <i class="fa fa-paperclip" style="margin-right:4px;"></i>DOCUMENTO ADJUNTO
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= $this->escapeHtml($req['descripcion']) ?></td>
+                            <td style="text-align: center;">
+                                <button class="btn-accion btn-editar-accion" title="Editar" 
+                                    data-id="<?= $req['cod_requisito'] ?>"
+                                    data-nombre="<?= $this->escapeHtmlAttr($req['nombre']) ?>"
+                                    data-descripcion="<?= $this->escapeHtmlAttr($req['descripcion']) ?>"
+                                    data-archivo="<?= $this->escapeHtmlAttr($req['archivo_apoyo'] ?? '') ?>">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button class="btn-accion btn-eliminar-accion" title="Eliminar" data-id="<?= $req['cod_requisito'] ?>">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instrucciones generales para entrega física -->
+<div class="row" style="margin-top: 30px;">
+    <div class="col-lg-12">
+        <div class="panel panel-info" style="border: 2px solid #31708f; border-radius: 4px;">
+            <div class="panel-heading" style="background-color: #31708f; color: white; padding: 12px 20px; font-size: 15px; font-weight: normal;">
+                <i class="fa fa-info-circle"></i> Instrucciones para entrega de documentos físicos
+            </div>
+            <div class="panel-body" style="padding: 20px; background: #fff;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+                    Utilice este espacio para indicar al estudiante instrucciones especiales sobre documentos de vigencia corta, restricciones, o cualquier indicación relevante para la entrega física.
+                </p>
+                <textarea class="form-control" id="instruccionesEntregaFisica" rows="6" placeholder="Ej: Los documentos de pago (orden de SIIF) tienen vigencia de 24 horas. El estudiante debe entregarlos el mismo día de su generación..."><?= $this->escapeHtml($this->instrucciones ?? '') ?></textarea>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button class="btn btn-primary" id="btnGuardarInstrucciones">
+                        <i class="fa fa-save"></i> Guardar instrucciones
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Requisito -->
+<div class="modal fade" id="modalCrearRequisito" tabindex="-1" role="dialog" aria-labelledby="modalCrearRequisitoLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalCrearRequisitoLabel">Crear Requisito</h4>
+            </div>
+            <div class="modal-body">
+                <form id="formRequisito" enctype="multipart/form-data">
+                    <input type="hidden" id="idRequisito" name="id">
+                    <input type="hidden" name="cod_tipo_examen" value="<?= (int) $this->codTipoExamen ?>">
+                    <div class="form-group">
+                        <label for="titulo">Título</label>
+                        <div class="input-icon">
+                            <i class="fa fa-money"></i>
+                            <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Ej: ORDEN DE PAGO PARA EXAMEN" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <div class="input-icon">
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4" placeholder="Ej: Valor Q. 250.00 generado desde su usuario de SIIF..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="archivo_apoyo">
+                            <i class="fa fa-paperclip" style="color:#5b9bd5;"></i> Archivo de apoyo (opcional)
+                        </label>
+                        <input type="file" class="form-control" id="archivo_apoyo" name="archivo_apoyo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <small class="text-muted">Sube formularios, instructivos o cualquier documento de apoyo que el estudiante deba usar para este requisito. Formatos: PDF, Word, JPG, PNG. Máx: 10 MB.</small>
+                        <div id="archivoActualContainer" style="margin-top: 8px; display: none;">
+                            <span style="font-size: 12px; color: #666;">Archivo actual:</span>
+                            <a id="archivoActualLink" href="#" target="_blank" style="font-size: 12px;"></a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarRequisito">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<style>
+    /* Panel verde con estilo de la imagen */
+    .panel-verde {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        background-color: white;
+        margin-bottom: 20px;
+    }
+    
+    .panel-verde-heading {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+    
+    .panel-verde-body {
+        padding: 25px;
+        background-color: white;
+    }
+    
+    /* Panel para tabla con header verde */
+    .panel-verde-tabla {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    
+    .panel-verde-heading-tabla {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    /* Botón blanco dentro del header verde */
+    .btn-blanco {
+        background-color: white;
+        color: #5f9876;
+        border: none;
+        padding: 6px 15px;
+        border-radius: 3px;
+        font-size: 13px;
+    }
+    
+    .btn-blanco:hover {
+        background-color: #f0f0f0;
+        color: #5f9876;
+    }
+    
+    /* Botón azul */
+    .btn-azul {
+        background-color: #5b9bd5;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+    }
+    
+    .btn-azul:hover {
+        background-color: #4a8bc2;
+        color: white;
+    }
+    
+    /* Tabla personalizada */
+    .table-custom {
+        margin-bottom: 0;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    .table-custom thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: normal;
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        border-top: none;
+    }
+    
+    .table-custom tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        border-top: 1px solid #ddd;
+    }
+    
+    .table-custom tbody tr:nth-child(even) {
+        background-color: #e8e8e8;
+    }
+    
+    .table-custom tbody tr:nth-child(odd) {
+        background-color: white;
+    }
+    
+    /* Botones de acción - Estilo de la imagen */
+    .btn-accion {
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .btn-editar-accion {
+        background-color: #5b9bd5;
+    }
+    
+    .btn-editar-accion:hover {
+        background-color: #4a8bc2;
+    }
+    
+    .btn-eliminar-accion {
+        background-color: #c9524e;
+    }
+    
+    .btn-eliminar-accion:hover {
+        background-color: #a84440;
+    }
+    
+    /* Formularios */
+    .form-control {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus {
+        border-color: #5f9876;
+        box-shadow: 0 0 0 0.2rem rgba(95, 152, 118, 0.25);
+    }
+    
+    label {
+        color: #333;
+        font-weight: normal;
+        margin-bottom: 5px;
+    }
+</style>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+$(document).ready(function() {
+    // Extraer cod_tipo_examen desde la URL: /examen/papeleria/{cod_tipo_examen}
+    var urlParts      = window.location.pathname.split('/');
+    var codTipoExamen = urlParts[urlParts.length - 1];
+
+    // Abrir modal para crear requisito
+    $('#btnCrearRequisito').on('click', function() {
+        $('#formRequisito')[0].reset();
+        $('#idRequisito').val('');
+        // Asegurar que el campo siempre lleve el código de la URL
+        $('input[name="cod_tipo_examen"]').val(codTipoExamen);
+        $('#modalCrearRequisitoLabel').text('Crear Requisito');
+        $('#modalCrearRequisito').modal('show');
+    });
+
+    // Guardar nuevo requisito o actualizar (con archivo de apoyo)
+    $('#btnGuardarRequisito').on('click', function() {
+        var form = $('#formRequisito');
+        var btn = $(this);
+        
+        if (form[0].checkValidity()) {
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+            
+            $('input[name="cod_tipo_examen"]').val(codTipoExamen);
+            
+            var formData = new FormData(form[0]);
+            
+            $.ajax({
+                url: '<?= $this->url('examen', ['action' => 'guardarRequisito']) ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        location.reload();
+                    } else {
+                        ToastService.error('Error: ' + response.message);
+                        btn.prop('disabled', false).html('Guardar');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', status, error);
+                    console.error('Response Text:', xhr.responseText);
+                    var msg = 'Error de comunicación con el servidor.';
+                    if (xhr.responseText && xhr.responseText.indexOf('<') !== 0) {
+                        try {
+                            var resp = JSON.parse(xhr.responseText);
+                            if (resp.message) msg = resp.message;
+                        } catch(e) {}
+                    }
+                    ToastService.error(msg + ' (Status: ' + xhr.status + ')');
+                    btn.prop('disabled', false).html('Guardar');
+                }
+            });
+        } else {
+            form[0].reportValidity();
+        }
+    });
+
+    // Editar requisito
+    $(document).on('click', '.btn-editar-accion', function() {
+        var id = $(this).data('id');
+        var nombre = $(this).data('nombre');
+        var descripcion = $(this).data('descripcion');
+        var archivo = $(this).data('archivo') || '';
+        
+        $('#idRequisito').val(id);
+        $('#titulo').val(nombre);
+        $('#descripcion').val(descripcion);
+        $('#archivo_apoyo').val('');
+        
+        if (archivo) {
+            var nombreArchivo = archivo.split('/').pop();
+            $('#archivoActualLink').attr('href', '<?= $this->url('examen', ['action' => 'descargar-requisito-apoyo']) ?>?file=' + encodeURIComponent(nombreArchivo)).text(nombreArchivo);
+            $('#archivoActualContainer').show();
+        } else {
+            $('#archivoActualContainer').hide();
+        }
+        
+        $('#modalCrearRequisitoLabel').text('Editar Requisito');
+        $('#modalCrearRequisito').modal('show');
+    });
+
+    // Eliminar requisito
+    $(document).on('click', '.btn-eliminar-accion', function() {
+        var id = $(this).data('id');
+        ConfirmService.confirm('¿Está seguro de que desea eliminar este requisito?', function() {
+            $.post('<?= $this->url('examen', ['action' => 'eliminarRequisito']) ?>', {id: id}, function(response) {
+                if (response.status === 'success') {
+                    location.reload();
+                } else {
+                    ToastService.error('Error: ' + response.message);
+                }
+            }, 'json');
+        });
+    });
+
+    // Guardar instrucciones generales de entrega física
+    $('#btnGuardarInstrucciones').on('click', function() {
+        var btn = $(this);
+        var instrucciones = $('#instruccionesEntregaFisica').val();
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        
+        $.post('<?= $this->url('examen', ['action' => 'guardarInstrucciones']) ?>', {
+            cod_tipo_examen: codTipoExamen,
+            instrucciones: instrucciones
+        }, function(response) {
+            if (response.status === 'success') {
+                ToastService.success('Instrucciones guardadas correctamente');
+            } else {
+                alert('Error: ' + response.message);
+            }
+        }, 'json')
+        .always(function() {
+            btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar instrucciones');
+        });
+    });
+});
+</script>

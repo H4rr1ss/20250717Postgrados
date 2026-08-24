@@ -7,6 +7,7 @@ use Zend\Authentication\AuthenticationService;
 use Zend\Session\SessionManager;
 use Eep\Entity\Role;
 use Eep\ValueObject\Menu;
+use Eep\ValueObject\MenuGroup;
 use Zend\Db\TableGateway\TableGateway;
 use Eep\Entity\Result as R;
 use Zend\Db\Sql\Predicate\Expression;
@@ -102,15 +103,62 @@ class AuthManager extends Manager {
         } else {
             //GETTING USER ROLE
             $view = isset($this->config['access_filter'][$controllerName][$actionName]['view']) ? $this->config['access_filter'][$controllerName][$actionName]['view'] : '';
-            //$controllerName = strtolower(str_replace('Controller', '', substr($controllerName, strrpos($controllerName, '\\', -1) + 1)));
+
+            // Acumula ítems agrupados: ['group_key' => ['meta' => [...], 'items' => [Menu, ...]]]
+            $groups = [];
+            // Posición en la que apareció el primer ítem del grupo (para mantener orden)
+            $groupPositions = [];
+            // Lista de ítems finales (mix de Menu y string placeholder de grupo)
+            $flatItems = [];
+
             foreach ($this->config['menus'] as $key => $value) {
-                if (isset($value['roles'])) {
-                    $roles = $value['roles'];
-                    //IF USER CAN SEE THE MENU, ADD TO MENUS STACK
-                    if ($this->isRoleAuth($roles, $role)) {
-                        $menu = new Menu($value['icon'], $value['text'], $value['controller'], $value['action'], $key == $view);
-                        array_push($menus, $menu);
+                if (!isset($value['roles'])) {
+                    continue;
+                }
+                if (!$this->isRoleAuth($value['roles'], $role)) {
+                    continue;
+                }
+
+                $isActive = ($key == $view);
+
+                if (isset($value['group'])) {
+                    $gKey = $value['group']['key'];
+                    if (!isset($groups[$gKey])) {
+                        $groups[$gKey] = [
+                            'meta'   => $value['group'],
+                            'items'  => [],
+                            'active' => false,
+                        ];
+                        $groupPositions[$gKey] = count($flatItems);
+                        $flatItems[] = '__group:' . $gKey;
                     }
+                    if ($isActive) {
+                        $groups[$gKey]['active'] = true;
+                    }
+                    $groups[$gKey]['items'][] = new Menu(
+                        $value['icon'], $value['text'],
+                        $value['controller'], $value['action'],
+                        $isActive
+                    );
+                } else {
+                    $menu = new Menu($value['icon'], $value['text'], $value['controller'], $value['action'], $isActive);
+                    $flatItems[] = $menu;
+                }
+            }
+
+            // Construir el array final sustituyendo los placeholders por MenuGroup
+            foreach ($flatItems as $item) {
+                if (is_string($item) && strpos($item, '__group:') === 0) {
+                    $gKey = substr($item, strlen('__group:'));
+                    $g = $groups[$gKey];
+                    $menus[] = new MenuGroup(
+                        $g['meta']['icon'],
+                        $g['meta']['text'],
+                        $g['items'],
+                        $g['active']
+                    );
+                } else {
+                    $menus[] = $item;
                 }
             }
         }
@@ -147,7 +195,7 @@ class AuthManager extends Manager {
 
             $roleTable = new TableGateway(['ur' => 'usuario_rol'], $this->dbAdapter);
             $select = $roleTable->getSql()->select();
-            $select->columns(['rol' => 'cod_rol'])
+            $select->columns(['rol' => 'cod_rol', 'cod_usuario' => 'cod_usuario'])
                     ->where(['cod_usuario' => $id])
                     ->where('fecha_inicio <= curdate()')
                     ->where('(fecha_fin >= curdate() OR fecha_fin is NULL)');

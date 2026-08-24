@@ -365,4 +365,51 @@ class AssignmentManager extends Manager {
         return $res;
     }
 
+    public function getUserCourseStaff($userCode) {
+        $table = new TableGateway(['a' => 'asignacion'], $this->dbAdapter);
+        $select = $table->getSql()->select();
+        $select->columns([]);
+        $select->quantifier(Select::QUANTIFIER_DISTINCT);
+
+        $select->join(
+            ['h' => 'horario'],
+            'h.cod_horario = a.cod_horario',
+            [
+                'cod_horario',
+                'cod_usuario_coordinador',
+                'cod_usuario_catedratico',
+                'seccion',
+                'fecha_inicio',
+                'fecha_fin',
+                'mes',
+                'anio'
+            ]
+        );
+        $select->join(
+            ['cp' => 'curso_pensum'],
+            'cp.cod_pensum = h.cod_pensum AND cp.cod_curso = h.cod_curso',
+            ['nombre_curso' => 'nombre']
+        );
+        $select->join(
+            ['coord' => 'usuario'],
+            'coord.cod_usuario = h.cod_usuario_coordinador',
+            ['nombres_coordinador' => 'nombres', 'apellidos_coordinador' => 'apellidos'],
+            Select::JOIN_LEFT
+        );
+        $select->join(
+            ['cat' => 'usuario'],
+            'cat.cod_usuario = h.cod_usuario_catedratico',
+            ['nombres_catedratico' => 'nombres', 'apellidos_catedratico' => 'apellidos'],
+            Select::JOIN_LEFT
+        );
+
+        $select->where([
+            'a.cod_usuario' => $userCode,
+            'a.valida' => 1
+        ]);
+        $select->order('h.fecha_inicio DESC');
+
+        return $table->selectWith($select)->toArray();
+    }
+
 }

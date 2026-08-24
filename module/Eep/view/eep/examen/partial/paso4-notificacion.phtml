@@ -1,0 +1,286 @@
+<?php
+$programacion  = $terna['programacion'] ?? [];
+$examinadores  = $terna['examinadores'] ?? [];
+$fechaExamen   = !empty($programacion['fecha']) ? date('d/m/Y', strtotime($programacion['fecha'])) : null;
+$horaExamen    = !empty($programacion['hora'])  ? date('g:i A', strtotime($programacion['hora']))  : null;
+$codProceso    = (int)($proceso['cod_proceso'] ?? 0);
+$fase          = $this->fase ?? 'examen_privado';
+$etiquetaFase  = $this->etiquetaFase ?? 'Examen Privado';
+$etiquetaFechaExamen = ($fase === 'examen_general')
+    ? 'Programación del Examen General (Público)'
+    : 'Programación del Examen Privado';
+?>
+<!-- Paso 4: Notificación al Estudiante -->
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Notificación al Estudiante — <?= $this->escapeHtml($etiquetaFase) ?>
+            </div>
+            <div class="panel-revision-body" style="padding: 20px;">
+
+                <div class="alert alert-success" style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa fa-check-circle fa-2x"></i>
+                    <div>
+                        <strong>Proceso listo para notificar.</strong>
+                        Confirme los datos del examen y haga clic en "Notificar Estudiante" para enviar la información al estudiante.
+                    </div>
+                </div>
+
+                <!-- Datos del estudiante -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Datos del Estudiante</h5>
+                        <table class="table table-bordered" style="font-size: 13px;">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 25%; background: #f5f5f5;">Nombre</th>
+                                    <td><?= htmlspecialchars(($proceso['nombres'] ?? '') . ' ' . ($proceso['apellidos'] ?? '')) ?></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Carné</th>
+                                    <td><?= htmlspecialchars($proceso['registro_academico'] ?? '-') ?></td>
+                                </tr>
+                                <?php if (!empty($proceso['carrera'])): ?>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Carrera</th>
+                                    <td><?= htmlspecialchars($proceso['carrera']) ?></td>
+                                </tr>
+                                <?php endif; ?>
+                                <?php if (!empty($proceso['tipo_examen'])): ?>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Tipo de Examen</th>
+                                    <td><?= htmlspecialchars($proceso['tipo_examen']) ?></td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Programación del examen -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;"><?= $this->escapeHtml($etiquetaFechaExamen) ?></h5>
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <?php if ($fechaExamen): ?>
+                                <p style="margin: 0 0 6px;"><i class="fa fa-calendar" style="width:18px;"></i> <strong>Fecha:</strong> <?= $fechaExamen ?></p>
+                            <?php else: ?>
+                                <p style="margin: 0 0 6px; color: #999;"><i class="fa fa-calendar" style="width:18px;"></i> Fecha: <em>Por definir</em></p>
+                            <?php endif; ?>
+                            <?php if ($horaExamen): ?>
+                                <p style="margin: 0;"><i class="fa fa-clock-o" style="width:18px;"></i> <strong>Hora:</strong> <?= $horaExamen ?></p>
+                            <?php else: ?>
+                                <p style="margin: 0; color: #999;"><i class="fa fa-clock-o" style="width:18px;"></i> Hora: <em>Por definir</em></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terna de examinadores -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">Terna de Examinadores</h5>
+                        <?php if (empty($examinadores)): ?>
+                            <div class="alert alert-warning">
+                                <i class="fa fa-exclamation-triangle"></i> La terna aún no ha sido asignada.
+                            </div>
+                        <?php else: ?>
+                            <table class="table table-bordered" style="font-size: 13px;">
+                                <thead style="background: #f5f5f5;">
+                                    <tr>
+                                        <th style="width: 5%;">#</th>
+                                        <th style="width: 10%;">Título profesional</th>
+                                        <th>Nombre</th>
+                                        <th style="width: 15%;">Tipo</th>
+                                        <th style="width: 15%;">No. Colegiado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($examinadores as $ex): ?>
+                                    <tr>
+                                        <td><?= (int)($ex['posicion'] ?? 0) ?></td>
+                                        <td><?= htmlspecialchars($ex['titulo'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($ex['nombre'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars(ucfirst($ex['tipo'] ?? '-')) ?></td>
+                                        <td><?= htmlspecialchars($ex['colegiado'] ?? '-') ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Información adicional para el correo -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-md-12">
+                        <h5 style="font-weight: 600; margin-bottom: 10px;">
+                            <i class="fa fa-envelope-o"></i> Información Adicional para el Correo
+                        </h5>
+                        <div style="background: #f8f9fa; padding: 18px; border-radius: 4px; border: 1px solid #e0e0e0;">
+
+                            <div class="alert alert-info" style="margin-bottom: 15px;">
+                                <i class="fa fa-info-circle"></i> <strong>Importante:</strong> La lista de examinadores asignados se incluirá automáticamente en el correo. No es necesario escribirlos en el texto.
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ubicacionExamen">Ubicación del examen <small class="text-primary">(obligatorio)</small></label>
+                                <textarea class="form-control" id="ubicacionExamen" name="ubicacion" rows="3"
+                                          placeholder="Ej: salón A-11 del Edificio T-2 de Arquitectura" required></textarea>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="infoExtra">Información adicional</label>
+                                <textarea class="form-control" id="infoExtra" name="info_extra" rows="6"
+                                          placeholder="Escriba aquí toda la información adicional que se enviará al estudiante en el correo (vestimenta, documentos requeridos, instrucciones, etc.)..."></textarea>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones notificar / preview -->
+                <div class="row" style="margin-top: 25px;">
+                    <div class="col-md-12 text-right">
+                        <button type="button" id="btnVistaPrevia" class="btn btn-info btn-lg"
+                                <?= (empty($examinadores) || !$fechaExamen) ? 'disabled title="Complete la terna y la fecha antes de previsualizar"' : '' ?>>
+                            <i class="fa fa-eye"></i> Vista previa del correo
+                        </button>
+                        <button type="button" id="btnNotificarEstudiante" class="btn btn-success btn-lg"
+                                data-cod-proceso="<?= $codProceso ?>"
+                                <?= (empty($examinadores) || !$fechaExamen) ? 'disabled title="Complete la terna y la fecha antes de notificar"' : '' ?>>
+                            <i class="fa fa-envelope"></i> Notificar Estudiante
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /panel-revision-body -->
+        </div><!-- /panel-revision -->
+    </div>
+</div>
+
+<!-- Modal Vista Previa del Correo -->
+<div class="modal fade" id="modalVistaPrevia" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">Vista previa del correo</h4>
+            </div>
+            <div class="modal-body">
+                <p><strong>Asunto:</strong> <span id="previewAsunto"></span></p>
+                <div id="previewCuerpo" style="border:1px solid #ddd; padding:20px; background:#fff; border-radius:4px;">
+                    <!-- Aquí se inyecta el HTML del correo -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+<script>
+$(document).ready(function () {
+    // ── Validar ubicación obligatoria ──────────────────────────
+    function obtenerUbicacion() {
+        var val = $('#ubicacionExamen').val().trim();
+        return val;
+    }
+
+    function validarUbicacion() {
+        var u = obtenerUbicacion();
+        if (!u) {
+            ToastService.warning('Debe ingresar la ubicación del examen antes de continuar.');
+            $('#ubicacionExamen').focus();
+            return false;
+        }
+        return true;
+    }
+
+    // ── Vista previa del correo ──────────────────────────────
+    $('#btnVistaPrevia').on('click', function () {
+        var codProceso = $('#btnNotificarEstudiante').data('cod-proceso');
+        if (!codProceso) return;
+        if (!validarUbicacion()) return;
+
+        var infoExtra = $('#infoExtra').val();
+        var ubicacion = obtenerUbicacion();
+        var btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Cargando...');
+
+        $.ajax({
+            url: '/examen/preview-notificacion',
+            method: 'POST',
+            data: {
+                cod_proceso: codProceso,
+                info_extra: infoExtra,
+                ubicacion: ubicacion
+            },
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.success && resp.html) {
+                    $('#previewAsunto').text(resp.asunto || '');
+                    $('#previewCuerpo').html(resp.html);
+                    $('#modalVistaPrevia').modal('show');
+                } else {
+                    ToastService.error(resp.message || 'No se pudo generar la vista previa.');
+                }
+            },
+            error: function () {
+                ToastService.error('Error de conexión al obtener la vista previa.');
+            },
+            complete: function () {
+                btn.prop('disabled', false).html('<i class="fa fa-eye"></i> Vista previa del correo');
+            }
+        });
+    });
+
+    // ── Notificar estudiante ─────────────────────────────────
+    $('#btnNotificarEstudiante').on('click', function () {
+        var codProceso = $(this).data('cod-proceso');
+        if (!codProceso) return;
+        if (!validarUbicacion()) return;
+
+        var btn = $(this);
+        ConfirmService.confirm('¿Confirma que desea notificar al estudiante sobre su examen de graduación?', function() {
+            var infoExtra = $('#infoExtra').val();
+            var ubicacion = obtenerUbicacion();
+        
+        // Mostrar loader mientras se procesa
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enviando notificación...');
+
+        $.ajax({
+            url: '/examen/notificar-estudiante',
+            method: 'POST',
+            data: {
+                cod_proceso: codProceso,
+                info_extra: infoExtra,
+                ubicacion: ubicacion
+            },
+            dataType: 'json',
+            success: function (resp) {
+                console.log('Respuesta del servidor:', resp);
+                if (resp.success) {
+                    ToastService.success('Estudiante notificado correctamente.');
+                    window.location.href = '/examen';
+                } else {
+                    ToastService.error(resp.message || 'Error al notificar al estudiante.');
+                }
+            },
+            error: function () {
+                ToastService.error('Error de conexión. Inténtelo de nuevo.');
+            },
+            complete: function () {
+                // Restaurar el botón solo si no se redirigió exitosamente
+                btn.prop('disabled', false).html('<i class="fa fa-envelope"></i> Notificar Estudiante');
+            }
+        });
+        });
+    });
+});
+</script>

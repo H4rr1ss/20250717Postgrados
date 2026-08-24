@@ -1,0 +1,476 @@
+<?php
+$this->headTitle('Progreso del Proceso de Graduación');
+?>
+
+<div class="col-lg-12" style="padding-left: 40px; padding-right: 40px;">
+
+    <!-- Breadcrumb -->
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb">
+                <li>
+                    <a href="<?= $this->url('home') ?>">
+                        <i class="fa fa-home"></i> Inicio
+                    </a>
+                </li>
+                <li class="active">Proceso de Graduación</li>
+            </ol>
+        </div>
+    </div>
+
+    <?php if ($proceso && empty($proceso['cod_paso_actual']) && empty($proceso['fecha_examen_general'])): ?>
+    <!-- Aviso: pendiente notificación grupal para examen general (PRIMERO, no se debe perder) -->
+    <div class="panel" style="border: 2px solid #f0ad4e; border-radius: 8px; margin-bottom: 24px;">
+        <div class="panel-heading" style="background: #fcf8e3; color: #8a6d3b; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #faebcc;">
+            <i class="fa fa-clock-o"></i>&nbsp; Pendiente de notificación para el Examen General
+        </div>
+        <div class="panel-body" style="background: #fdfcf7; padding: 22px 28px;">
+            <p style="font-size: 15px; color: #8a6d3b; margin-bottom: 14px;">
+                <strong>Has completado tu proceso de graduación.</strong> Ahora debes esperar la notificación por parte de la coordinación de postgrados con la fecha, hora y lugar del Examen General.
+            </p>
+            <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                <i class="fa fa-envelope" style="color: #f0ad4e; margin-right: 8px;"></i>Revisa tu bandeja de entrada y también la carpeta de <strong>spam/correo no deseado</strong>.
+            </p>
+            <p style="font-size: 13px; color: #777; margin-bottom: 0;">
+                <i class="fa fa-info-circle" style="color: #f0ad4e; margin-right: 6px;"></i>La coordinación se pondrá en contacto contigo cuando se programe el acto de graduación. Si tienes dudas, contacta a la coordinación de postgrados.
+            </p>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($proceso): ?>
+        <?php
+            $pasoActualOrden = $proceso['paso_actual_orden'] ?? 0;
+            $procesoFinalizado = empty($proceso['cod_paso_actual']);
+            $faseActual = $proceso['fase_paso_actual'] ?? '';
+            $madrinaPadrino = $proceso['madrina_nombre'] ?? '';
+            $tieneMadrina = (bool) ($proceso['tiene_madrina'] ?? 0);
+
+            // Nombres formales para las fases
+            $nombresFase = [
+                'examen_privado'         => 'Examen Privado',
+                'carta_examinadores'     => 'Carta de Examinadores',
+                'autorizacion_impresion' => 'Autorización de Impresión',
+                'examen_general'         => 'Examen General',
+            ];
+        ?>
+
+        <?php if ($faseActual === 'examen_general' && !$tieneMadrina): ?>
+        <!-- Alerta prominente: dato obligatorio pendiente -->
+        <div class="alert" style="background-color: #fff3cd; border: 2px solid #ffc107; border-left: 6px solid #ffc107; color: #856404; margin-bottom: 24px; padding: 18px 20px; border-radius: 6px; display: flex; align-items: center; gap: 14px;">
+            <div style="flex-shrink: 0;">
+                <i class="fa fa-exclamation-triangle" style="font-size: 32px; color: #ffc107;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 17px; font-weight: 700; margin-bottom: 4px;">
+                    Dato obligatorio pendiente
+                </div>
+                <div style="font-size: 14px; line-height: 1.5; margin-bottom: 12px;">
+                    Debe registrar el nombre de su <strong>madrina o padrino</strong> para el acta de examen público general. Este dato es necesario para continuar con su proceso de graduación.
+                </div>
+                <a href="<?= $this->url('student-graduation', ['action' => 'configurar-madrina-padrino']) ?>"
+                   class="btn btn-warning btn-lg"
+                   style="font-size: 16px; font-weight: 700; padding: 12px 24px;">
+                    <i class="fa fa-user"></i> Configurar Madrina / Padrino
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($faseActual === 'examen_general' && $tieneMadrina): ?>
+        <!-- Panel informativo: madrina/padrino registrado -->
+        <div class="panel panel-default" style="border: 2px solid #5f9876; margin-bottom: 20px;">
+            <div class="panel-heading" style="background-color: #5f9876; color: white; font-weight: 700;">
+                <i class="fa fa-user"></i> Datos de Madrina / Padrino
+                <span style="margin-left: 8px; font-size: 13px; background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px;">
+                    <i class="fa fa-check-circle"></i> Registrado
+                </span>
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px 15px; border-radius:6px; border:1px solid #e9ecef;">
+                    <div style="flex:1;">
+                        <div style="font-size:11px; color:#6c757d; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">Nombre registrado</div>
+                        <div style="font-size:16px; font-weight:600; color:#333;">
+                            <?php
+                                $tipoMadrina   = $proceso['madrina_tipo'] ?? '';
+                                $nombreMadrina = $proceso['madrina_nombre'] ?? '';
+                                $tituloMadrina = $proceso['madrina_titulo'] ?? '';
+                                if ($tituloMadrina) {
+                                    echo $this->escapeHtml($tituloMadrina) . ' ' . $this->escapeHtml($nombreMadrina);
+                                } else {
+                                    echo $this->escapeHtml($nombreMadrina);
+                                }
+                            ?>
+                        </div>
+                        <div style="font-size:13px; color:#6c757d; margin-top:2px; text-transform:capitalize;">
+                            <?= $this->escapeHtml($tipoMadrina) ?>
+                        </div>
+                    </div>
+                    <a href="<?= $this->url('student-graduation', ['action' => 'configurar-madrina-padrino']) ?>"
+                       class="btn btn-sm btn-primary" title="Editar" style="margin-left:10px;">
+                        <i class="fa fa-pencil"></i> Editar
+                    </a>
+                </div>
+                <p class="help-block" style="margin-top:10px; font-size:12px; color:#5cb85c;">
+                    <i class="fa fa-check-circle"></i> Este dato se utilizará para generar el acta de examen público general.
+                </p>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!$procesoFinalizado): ?>
+        <!-- Panel azul: fases de progreso -->
+        <div class="panel panel-blue">
+            <div class="panel-heading">Progreso del Proceso de Graduación - <?= $this->escapeHtml($proceso['tipo_examen']) ?></div>
+            <div class="panel-body">
+
+                <p style="color: #555; font-size: 14px; padding: 12px 15px;">
+                    Durante el desarrollo del proceso de graduación se visualizan las siguientes fases por las cuales el estudiante debe completar el 100% del progreso
+                    la carrera universitaria dentro de la Facultad de Ingeniería de la Universidad de San Carlos de Guatemala.
+                </p>
+
+                <div class="row" style="margin-bottom: 10px; padding: 40px 15px;">
+
+                    <?php foreach ($proceso['pasos'] as $paso): ?>
+                        <?php
+                            // Ocultar el paso administrativo de notificación al estudiante
+                            if (strpos($paso['template_parcial'] ?? '', 'notificacion') !== false) {
+                                continue;
+                            }
+
+                            // Pasos visibles por fase: Papelería, Documentación, Terna, Carta de Examinadores
+                            $totalPasos = 4;
+                            $colClass = 'col-sm-' . (12 / min($totalPasos, 4));
+                            
+                            // Determinar el color de la barra según el estado
+                            $colorBarra = '#3a87e0'; // Azul por defecto
+                            if ($paso['estado'] === 'completado') {
+                                $colorBarra = '#28a745'; // Verde
+                            } elseif ($paso['estado'] === 'en_progreso') {
+                                $colorBarra = '#ffc107'; // Amarillo
+                            } elseif ($paso['estado'] === 'rechazado') {
+                                $colorBarra = '#dc3545'; // Rojo
+                            }
+                            
+                            $progresoPaso = $paso['progreso'];
+                        ?>
+                        <!-- <?= $this->escapeHtml($paso['nombre']) ?> -->
+                        <div class="<?= $colClass ?>" style="text-align: center; margin-bottom: 20px;">
+                            <p style="font-size: 16px; margin-bottom: 16px;"><?= $this->escapeHtml($paso['nombre']) ?></p>
+                            <div class="progress" style="height: 22px; border-radius: 3px; margin-bottom: 16px; border: 1px solid #b0c4de;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: <?= $progresoPaso ?>%; background-color: <?= $colorBarra ?>; font-size: 12px; line-height: 22px;">
+                                    <?= $progresoPaso ?>%
+                                </div>
+                            </div>
+                            
+                            <?php
+                                // Mapear por template_parcial en lugar de numero_orden
+                                // para que pasos 1 y 6 (mismo template) funcionen igual
+                                $accionesPorTemplate = [
+                                    'paso1-papeleria'              => 'paso1-solicitud-examen',
+                                    'paso2-documentacion'          => 'paso1-solicitud-examen',
+                                    'paso3-terna'                  => 'paso2-terna',
+                                    'paso5-carta-examinadores'     => 'paso5-carta-examinadores',
+                                    'paso6-autorizacion-impresion' => 'paso6-autorizacion-impresion',
+                                ];
+                                $accionPaso = $accionesPorTemplate[$paso['template_parcial'] ?? ''] ?? null;
+
+                                // El botón de terna permanece activo también en el paso 4 (notificación)
+                                // SOLO si estamos en la fase examen_privado
+                                $esTerna = ($paso['template_parcial'] ?? '') === 'paso3-terna';
+                                $esAutorizacionImpresion = ($paso['template_parcial'] ?? '') === 'paso6-autorizacion-impresion';
+                                $pasoActualOrdenActual = (int)($proceso['paso_actual_orden'] ?? 0);
+                                $faseActual = $proceso['fase_paso_actual'] ?? 'examen_privado';
+                                $fasePaso = $paso['fase'] ?? 'examen_privado'; // Fase a la que pertenece este paso específico
+                                
+                                // Botón activo si:
+                                // 1. Es el paso actual, O
+                                // 2. Es la terna y estamos en paso 4 (notificación) DENTRO de examen_privado, O
+                                // 3. Es autorización de impresión (siempre disponible, documentos requeridos para examen público)
+                                // 4. NO es papelería si no tiene tema de tesis registrado
+                                $esPapeleria = ($paso['template_parcial'] ?? '') === 'paso1-papeleria';
+                                $tieneTema = !empty($proceso['tema_tesis'] ?? '');
+                                $bloqueadoPorTema = ($esPapeleria && !$tieneTema);
+                                
+                                $botonActivo = $accionPaso && !$bloqueadoPorTema && (
+                                    $paso['cod_paso'] == $proceso['cod_paso_actual']
+                                    || ($esTerna && $pasoActualOrdenActual === 4 && $faseActual === 'examen_privado' && $fasePaso === 'examen_privado')
+                                    || ($esAutorizacionImpresion && ($paso['estado'] === 'completado' || $paso['estado'] === 'en_progreso' || $faseActual === 'autorizacion_impresion' || $faseActual === 'examen_general'))
+                                );
+                            ?>
+                            <?php if ($botonActivo): ?>
+                                <a href="<?= $this->url('student-graduation', ['action' => $accionPaso]) ?>" class="btn btn-blue btn-sm" style="min-width: 90px;">
+                                    <i class="fa fa-sticky-note"></i> Resumen
+                                </a>
+                            <?php elseif ($bloqueadoPorTema): ?>
+                                <span class="btn btn-default btn-sm" style="min-width: 90px; cursor: not-allowed; opacity: 0.7;" 
+                                      title="Debe registrar el título de su trabajo de graduación antes de acceder a este paso.">
+                                    <i class="fa fa-lock" style="color: #d9534f;"></i> Bloqueado
+                                </span>
+                            <?php else: ?>
+                                <a class="btn btn-default btn-sm" style="min-width: 90px;" disabled>
+                                    <i class="fa fa-sticky-note"></i> Resumen
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+
+                </div>
+
+
+            </div><!-- /panel-body -->
+        </div><!-- /panel-blue -->
+        <?php endif; ?>
+
+        <?php if ((int)($proceso['paso_actual_orden'] ?? 0) === 4): ?>
+        <!-- Aviso informativo: paso administrativo de notificación -->
+        <div class="panel" style="border: 2px solid #31708f; border-radius: 8px; margin-bottom: 24px;">
+            <div class="panel-heading" style="background: #d9edf7; color: #31708f; font-size: 16px; font-weight: 700; border-radius: 6px 6px 0 0; border-bottom: 1px solid #bce8f1;">
+                <i class="fa fa-info-circle"></i>&nbsp; Tu proceso está en revisión — próximamente recibirás una notificación oficial
+            </div>
+            <div class="panel-body" style="background: #f4faff; padding: 22px 28px;">
+                <p style="font-size: 15px; color: #31708f; margin-bottom: 14px;">
+                    <strong>¡Tu terna examinadora ya ha sido asignada!</strong> En este momento la coordinación está preparando la
+                    notificación oficial que indica que tu proceso de graduación ha sido formalmente programado.
+                </p>
+                <p style="font-size: 14px; color: #555; margin-bottom: 10px;">
+                    Dentro de esa notificación encontrarás:
+                </p>
+                <ul style="font-size: 14px; color: #555; line-height: 1.8; margin-bottom: 14px;">
+                    <li><i class="fa fa-calendar" style="color: #31708f; width: 18px;"></i> La <strong>fecha y hora</strong> confirmada de tu examen.</li>
+                    <li><i class="fa fa-map-marker" style="color: #31708f; width: 18px;"></i> El <strong>lugar o salón</strong> donde se llevará a cabo.</li>
+                    <li><i class="fa fa-list-ul" style="color: #31708f; width: 18px;"></i> Las <strong>instrucciones y requisitos</strong> para el día del examen.</li>
+                    <li><i class="fa fa-users" style="color: #31708f; width: 18px;"></i> Los <strong>miembros de la terna</strong> que te evaluarán.</li>
+                </ul>
+                <p style="font-size: 13px; color: #777; margin-bottom: 0;">
+                    <i class="fa fa-clock-o"></i> Por favor ten paciencia. Una vez que la coordinación emita la notificación, el proceso avanzará automáticamente al siguiente paso y podrás consultarlo aquí mismo.
+                </p>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php
+        // Verificar si está en fase 1 (revisión de papelería) para permitir edición
+        $pasoActualOrden = (int) ($proceso['paso_actual_orden'] ?? 0);
+        $esFase1 = ($pasoActualOrden === 1 && $faseActual === 'examen_privado');
+        $temaTesis = $proceso['tema_tesis'] ?? '';
+        $tieneTema = !empty($temaTesis);
+        ?>
+
+        <?php if (!$tieneTema): ?>
+        <!-- Alerta: bloqueo de progreso -->
+        <div class="alert alert-danger" style="border-left: 5px solid #d9534f; margin-bottom: 20px;">
+            <i class="fa fa-lock" style="font-size: 20px; margin-right: 10px;"></i>
+            <strong>Proceso bloqueado:</strong> Debe registrar el título de su trabajo de graduación antes de continuar con cualquier otra actividad del proceso de graduación.
+        </div>
+        <?php endif; ?>
+
+        <!-- Panel de Título de Trabajo de Graduación -->
+        <div class="panel panel-default" style="border: 2px solid #5f9876; margin-bottom: 20px;">
+            <div class="panel-heading" style="background-color: #5f9876; color: white; font-weight: 700;">
+                <i class="fa fa-book"></i> Título del Trabajo de Graduación
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <table class="table table-bordered" style="margin-bottom: 0;">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="width: 30%; text-align: center; font-size: 14px;">Actividad</th>
+                            <th style="width: 70%; text-align: center; font-size: 14px;">Definición</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="vertical-align: middle; font-weight: 600;">
+                                Título de trabajo de graduación
+                                <?php if (!$tieneTema): ?>
+                                    <span style="color: #d9534f; font-size: 12px; display: block; margin-top: 5px;">
+                                        <i class="fa fa-exclamation-circle"></i> Requerido
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($esFase1 && !$tieneTema): ?>
+                                    <div class="input-group">
+                                        <input type="text" id="temaTesis" class="form-control"
+                                               placeholder="Ingrese el título de su trabajo de graduación..."
+                                               value="">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-success" id="btnGuardarTema" type="button">
+                                                <i class="fa fa-save"></i> Guardar
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <small style="color: #4B5563; display: block; margin-top: 5px;">
+                                        Este es el primer paso. Debe registrar su título antes de continuar con el proceso. Coloque el título tal y como se reflejará en los documentos generados para todo el proceso de graduación.
+                                    </small>
+                                <?php else: ?>
+                                    <div style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                                        <?= $this->escapeHtml($temaTesis ?: 'No registrado') ?>
+                                    </div>
+                                    <?php if (!$tieneTema): ?>
+                                        <small class="text-muted" style="display: block; margin-top: 5px;">
+                                            Espere a que la coordinación active su proceso para poder registrar el título.
+                                        </small>
+                                    <?php else: ?>
+                                        <small class="text-success" style="display: block; margin-top: 5px;">
+                                            <i class="fa fa-check-circle"></i> Título registrado correctamente.
+                                        </small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+        <!-- Panel verde: tabla resumen -->
+        <div class="panel panel-green">
+            <div class="panel-heading">Resumen del Proceso</div>
+            <div class="panel-body" style="padding: 0;">
+                <table class="table table-hover table-bordered table-condensed" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">#</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fase</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Paso</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Estado</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fecha Inicio</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fecha Completado</th>
+                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($proceso['pasos'] as $paso):
+                            // Ocultar el paso administrativo de notificación al estudiante
+                            if (strpos($paso['template_parcial'] ?? '', 'notificacion') !== false) {
+                                continue;
+                            }
+
+                            switch ($paso['estado']) {
+                                case 'completado':
+                                    $rowClass    = 'success';
+                                    $badgeClass  = 'label-success';
+                                    $estadoLabel = 'Completado';
+                                    break;
+                                case 'en_progreso':
+                                    $rowClass    = 'warning';
+                                    $badgeClass  = 'label-warning';
+                                    $estadoLabel = 'En Progreso';
+                                    break;
+                                case 'rechazado':
+                                    $rowClass    = 'danger';
+                                    $badgeClass  = 'label-danger';
+                                    $estadoLabel = 'Rechazado';
+                                    break;
+                                case 'pendiente':
+                                    $rowClass    = '';
+                                    $badgeClass  = 'label-default';
+                                    $estadoLabel = 'Pendiente';
+                                    break;
+                                default:
+                                    $rowClass    = '';
+                                    $badgeClass  = 'label-default';
+                                    $estadoLabel = ucfirst(str_replace('_', ' ', $paso['estado']));
+                                    break;
+                            }
+                        ?>
+                            <tr class="<?= $rowClass ?>">
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;"><?= $paso['numero_orden'] ?></td>
+                                <td style="padding: 14px 15px; font-size: 14px; text-align: center;">
+                                    <span><?= $this->escapeHtml($nombresFase[$paso['fase']] ?? $paso['fase']) ?></span>
+                                </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <?= $this->escapeHtml($paso['nombre']) ?>
+                                    <?php if ($paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
+                                        <i class="fa fa-arrow-right text-primary" title="Paso Actual"></i>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <span class="label <?= $badgeClass ?>" style="font-size: 13px; font-weight: 700; padding: 5px 10px;"><?= $estadoLabel ?></span>
+                                </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <?= $paso['fecha_inicio'] ? date('d/m/Y', strtotime($paso['fecha_inicio'])) : '-' ?>
+                                </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <?= $paso['fecha_completado'] ? date('d/m/Y', strtotime($paso['fecha_completado'])) : '-' ?>
+                                </td>
+                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
+                                    <?php if (($paso['template_parcial'] ?? '') === 'paso5-carta-examinadores' && !empty($carta)): ?>
+                                        <a href="<?= $this->url('student-graduation', ['action' => 'descargar-carta']) ?>?p=<?= (int) $proceso['cod_proceso'] ?>"
+                                           class="btn btn-success"
+                                           style="font-weight: bold; font-size: 15px; padding: 8px 14px;">
+                                            <i class="fa fa-download" style="font-size: 16px; margin-right: 5px;"></i> Descargar carta
+                                        </a>
+                                    <?php else: ?>
+                                        &mdash;
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div><!-- /panel-green -->
+
+    <?php else: ?>
+        <!-- Mensaje cuando no hay proceso activo -->
+        <div class="panel panel-warning">
+            <div class="panel-heading">No hay proceso activo</div>
+            <div class="panel-body">
+                <p style="font-size: 16px; padding: 20px; text-align: center;">
+                    <i class="fa fa-info-circle fa-3x" style="display: block; margin-bottom: 15px;"></i>
+                    Actualmente no tienes un proceso de graduación activo. 
+                    Por favor, contacta con la coordinación para iniciar tu proceso.
+                </p>
+            </div>
+        </div>
+    <?php endif; ?>
+
+</div><!-- /col-lg-12 -->
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+<script>
+$(document).ready(function() {
+    // ── Guardar tema de tesis ─────────────────────────────────────
+    $('#btnGuardarTema').on('click', function() {
+        const tema = $('#temaTesis').val().trim();
+        const btn = $(this);
+        
+        if (!tema) {
+            ToastService.warning('Debe ingresar el título de su trabajo de graduación.');
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+        
+        $.ajax({
+            url: '<?= $this->url("student-graduation", ["action" => "guardar-tema-tesis"]) ?>',
+            type: 'POST',
+            data: { tema_tesis: tema },
+            success: function(response) {
+                if (response.success) {
+                    ToastService.success(response.message);
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    ToastService.error(response.message);
+                }
+            },
+            error: function() {
+                ToastService.error('Error de comunicación con el servidor.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar');
+            }
+        });
+    });
+
+});
+</script>

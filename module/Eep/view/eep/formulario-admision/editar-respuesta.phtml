@@ -1,0 +1,440 @@
+<?php
+$this->headTitle('Gestionar Respuesta de Aspirante');
+$role = $this->layout()->role;
+
+// Asegurar que respuesta es un array plano
+$respuestasCampos = [];
+if (isset($respuesta) && is_array($respuesta)) {
+    $respuestasCampos = $respuesta;
+}
+
+// Determinar si el formulario está activo (modo edición vs solo lectura)
+$formularioActivo = isset($formulario) && is_object($formulario) ? $formulario->getActivo() : false;
+$modoSoloLectura = !$formularioActivo;
+
+// ID de respuesta para descargas
+$idRespuesta = !empty($respuestasCampos) && isset($respuestasCampos[0]['id_respuesta']) ? $respuestasCampos[0]['id_respuesta'] : 0;
+
+// Función para parsear opciones de select
+function parsearOpciones($opciones) {
+    if (empty($opciones)) return [];
+
+    $resultado = [];
+    if (strpos($opciones, '|') !== false) {
+        $resultado = explode('|', $opciones);
+    } elseif (strpos($opciones, ',') !== false) {
+        $resultado = explode(',', $opciones);
+    } else {
+        $resultado = [$opciones];
+    }
+
+    // Limpiar espacios y filtrar vacíos
+    return array_filter(array_map('trim', $resultado));
+}
+
+// Mapear tipos del formulario a tipos HTML válidos
+function mapTipoHtml($tipoCampo) {
+    $map = [
+        'texto' => 'text',
+        'email' => 'email',
+        'telefono' => 'tel',
+        'fecha' => 'date',
+        'time' => 'time',
+        'textarea' => 'textarea',
+        'boolean' => 'radio',
+        'select' => 'select',
+        'archivo' => 'file',
+        'multicheckbox' => 'checkbox',
+    ];
+    return $map[$tipoCampo] ?? 'text';
+}
+
+// Helper para renderizar un campo en modo edición o solo lectura
+function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [], $degrees = [], $careers = [], $cohorts = []) {
+    $valor = isset($campo['valor_respuesta']) ? $campo['valor_respuesta'] : '';
+    $tipo = isset($campo['tipo_campo']) ? $campo['tipo_campo'] : 'texto';
+    $idCampo = isset($campo['id_campo']) ? $campo['id_campo'] : 0;
+    $nombreCampo = isset($campo['nombre_campo']) ? $campo['nombre_campo'] : '';
+    $etiqueta = isset($campo['etiqueta']) ? $campo['etiqueta'] : '';
+    $requerido = !empty($campo['requerido']);
+    $opciones = isset($campo['opciones']) ? $campo['opciones'] : '';
+    $archivoAdjunto = isset($campo['archivo_adjunto']) ? $campo['archivo_adjunto'] : '';
+    $idResp = isset($campo['id_respuesta']) ? $campo['id_respuesta'] : 0;
+
+    if ($modoSoloLectura) {
+        // Modo Solo Lectura
+        if ($tipo === 'boolean') {
+            echo '<p class="form-control-static">';
+            echo '<span class="label label-' . ($valor === 'yes' ? 'success' : 'default') . '">';
+            echo ($valor === 'yes' ? 'Sí' : 'No');
+            echo '</span></p>';
+        } elseif ($tipo === 'archivo') {
+            if ($archivoAdjunto) {
+                if ($nombreCampo === 'photo_dpi') {
+                    echo '<p class="form-control-static text-success"><i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong></p>';
+                }
+                echo '<p class="form-control-static">';
+                echo '<a href="' . $view->url('formulario-admision', ['action' => 'descargar', 'id' => $idResp], ['query' => ['campo' => $nombreCampo]]) . '" target="_blank" class="btn btn-sm btn-default">';
+                echo '<i class="fa fa-file"></i> ' . $view->escapeHtml($archivoAdjunto);
+                echo '</a></p>';
+            } else {
+                echo '<p class="form-control-static text-muted"><i>No se adjuntó archivo</i></p>';
+            }
+        } elseif ($tipo === 'textarea') {
+            echo '<div class="well well-sm" style="margin-bottom: 0; background-color: #f9f9f9;">';
+            echo nl2br($view->escapeHtml($valor ?: 'Sin información'));
+            echo '</div>';
+        } elseif ($nombreCampo === 'nacionalidad' && !empty($nationalities)) {
+            $nombrePais = 'Sin información';
+            foreach ($nationalities as $pais) {
+                if (isset($pais['cod_pais']) && $pais['cod_pais'] == $valor) {
+                    $nombrePais = $pais['nombre'] ?? 'País #' . $valor;
+                    break;
+                }
+            }
+            echo '<p class="form-control-static">' . $view->escapeHtml($nombrePais) . '</p>';
+        } else {
+            echo '<p class="form-control-static">' . $view->escapeHtml($valor ?: 'Sin información') . '</p>';
+        }
+    } else {
+        // Modo Edición
+        $htmlTipo = mapTipoHtml($tipo);
+        $reqAttr = $requerido ? 'required' : '';
+        $nameAttr = 'campo_' . $idCampo;
+
+        if ($tipo === 'select') {
+            echo '<select name="' . $nameAttr . '" class="form-control" ' . $reqAttr . '>';
+            echo '<option value="">Seleccione una opción</option>';
+
+            if ($nombreCampo === 'nacionalidad' && !empty($nationalities)) {
+                foreach ($nationalities as $pais) {
+                    $cod = $pais['cod_pais'] ?? '';
+                    $nom = $pais['nombre'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'grado_a_ingresar' && !empty($degrees)) {
+                foreach ($degrees as $grado) {
+                    $cod = $grado['cod_grado'] ?? '';
+                    $nom = $grado['nombre'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'carrera_a_ingresar' && !empty($careers)) {
+                foreach ($careers as $carrera) {
+                    $cod = $carrera['cod_carrera'] ?? '';
+                    $nom = $carrera['alias_actual'] ?? '';
+                    $selected = ($valor == $cod) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($cod) . '" ' . $selected . '>' . $view->escapeHtml($nom) . '</option>';
+                }
+            } elseif ($nombreCampo === 'cohorte' && !empty($cohorts)) {
+                foreach ($cohorts as $cohorte) {
+                    $fecha = $cohorte['fecha_cohorte'] ?? '';
+                    $label = !empty($fecha) ? date('d/m/Y', strtotime($fecha)) : '';
+                    $selected = ($valor == $fecha) ? 'selected' : '';
+                    echo '<option value="' . $view->escapeHtml($fecha) . '" ' . $selected . '>' . $view->escapeHtml($label) . '</option>';
+                }
+                // Opción especial de curso de actualización
+                $selectedUpg = ($valor == '(Cursos de Actualización)') ? 'selected' : '';
+                echo '<option value="(Cursos de Actualización)" ' . $selectedUpg . '>(Cursos de Actualización)</option>';
+            } else {
+                $opcionesArray = parsearOpciones($opciones);
+                foreach ($opcionesArray as $opcion) {
+                    $selected = ($valor === $opcion) ? 'selected' : '';
+                    echo '<option value="' . $opcion . '" ' . $selected . '>' . $view->escapeHtml($opcion) . '</option>';
+                }
+            }
+            echo '</select>';
+        } elseif ($tipo === 'textarea') {
+            echo '<textarea name="' . $nameAttr . '" class="form-control" rows="3" ' . $reqAttr . '>' . $view->escapeHtml($valor) . '</textarea>';
+        } elseif ($tipo === 'fecha') {
+            echo '<input type="date" name="' . $nameAttr . '" class="form-control" value="' . $view->escapeHtml($valor) . '" ' . $reqAttr . '>';
+        } elseif ($tipo === 'boolean') {
+            echo '<div class="radio-list">';
+            $checkedYes = ($valor === 'yes') ? 'checked' : '';
+            $checkedNo  = ($valor === 'no') ? 'checked' : '';
+            echo '<label class="radio-inline"><input type="radio" name="' . $nameAttr . '" value="yes" ' . $checkedYes . ' ' . $reqAttr . '> Sí</label>';
+            echo '<label class="radio-inline"><input type="radio" name="' . $nameAttr . '" value="no" ' . $checkedNo . ' ' . $reqAttr . '> No</label>';
+            echo '</div>';
+        } elseif ($tipo === 'archivo') {
+            if ($archivoAdjunto) {
+                if ($nombreCampo === 'photo_dpi') {
+                    echo '<p class="form-control-static text-success"><i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong></p>';
+                }
+                echo '<p class="form-control-static">Archivo actual: <a href="' . $view->url('formulario-admision', ['action' => 'descargar', 'id' => $idResp], ['query' => ['campo' => $nombreCampo]]) . '" target="_blank">' . $view->escapeHtml($archivoAdjunto) . '</a></p>';
+            }
+            echo '<p class="text-muted small">Los documentos adjuntos no son editables.</p>';
+        } elseif ($tipo === 'multicheckbox') {
+            $diasSeleccionados = !empty($valor) ? explode(',', $valor) : [];
+            $diasOpciones = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            echo '<div class="checkbox-list">';
+            foreach ($diasOpciones as $dia) {
+                $checked = in_array($dia, $diasSeleccionados) ? 'checked' : '';
+                echo '<label class="checkbox-inline" style="margin-right: 15px;">';
+                echo '<input type="checkbox" name="' . $nameAttr . '[]" value="' . $dia . '" ' . $checked . '> ' . ucfirst($dia);
+                echo '</label>';
+            }
+            echo '</div>';
+        } else {
+            // text, email, tel, time, y cualquier otro tipo
+            echo '<input type="' . $htmlTipo . '" name="' . $nameAttr . '" class="form-control" value="' . $view->escapeHtml($valor) . '" ' . $reqAttr . '>';
+        }
+    }
+}
+?>
+
+<div class="col-md-12">
+    <div class="panel panel-<?= $modoSoloLectura ? 'info' : (($role->hasAdminRole()) ? 'green' : 'blue') ?>">
+        <div class="panel-heading">
+            <i class="fa fa-<?= $modoSoloLectura ? 'eye' : 'edit' ?>"></i>
+            <?= $modoSoloLectura ? 'Ver Respuesta del Formulario' : 'Editar Respuesta del Formulario' ?>
+            <small>
+                (<?= $this->escapeHtml($formulario->getNombre()) ?>)
+            </small>
+            <div class="pull-right" style="margin-top: -2px;">
+                <?php if ($modoSoloLectura): ?>
+                    <span class="label label-warning" style="margin-right: 8px;">
+                        <i class="fa fa-lock"></i> SOLO LECTURA
+                    </span>
+                <?php endif; ?>
+                <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
+                   class="btn btn-default btn-xs">
+                    <i class="fa fa-arrow-left"></i> Regresar
+                </a>
+            </div>
+        </div>
+        <div class="panel-body">
+            <?php if ($modoSoloLectura): ?>
+                <div class="note note-info">
+                    <h4 class="box-heading"><i class="fa fa-lock"></i> Modo de solo lectura</h4>
+                    <p>Este formulario está inactivo. No es posible editar ni eliminar las respuestas. Solo puede visualizarlas.</p>
+                </div>
+            <?php endif; ?>
+
+            <?= $this->partial('eep/msg', ['msg' => $message ?? null]) ?>
+
+            <div class="row">
+                <!-- Panel izquierdo: Formulario de datos -->
+                <div class="col-md-9">
+                    <form method="post" enctype="multipart/form-data" id="form-respuesta">
+                        <!-- Pestañas de navegación -->
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li role="presentation" class="active">
+                                <a href="#datos-principales" aria-controls="datos-principales" role="tab" data-toggle="tab">
+                                    <i class="fa fa-user"></i> Datos Principales
+                                </a>
+                            </li>
+                            <li role="presentation">
+                                <a href="#datos-adicionales" aria-controls="datos-adicionales" role="tab" data-toggle="tab">
+                                    <i class="fa fa-list"></i> Información Adicional
+                                </a>
+                            </li>
+                        </ul>
+
+                        <!-- Contenido de las pestañas -->
+                        <div class="tab-content" style="padding-top: 20px;">
+
+                            <!-- Pestaña: Datos Principales (todas las secciones excepto adicional) -->
+                            <div role="tabpanel" class="tab-pane active" id="datos-principales">
+                                <div class="row">
+                                    <?php foreach ($respuestasCampos as $campo): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') !== 'adicional'): ?>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="control-label">
+                                                        <?= $this->escapeHtml($campo['etiqueta']) ?>
+                                                        <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
+                                                            <span class="text-danger">*</span>
+                                                        <?php endif; ?>
+                                                    </label>
+                                                    <?php renderCampoEditor($campo, $modoSoloLectura, $this, $nationalities ?? [], $degrees ?? [], $careers ?? [], $cohorts ?? []); ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- Pestaña: Información Adicional (sección adicional) -->
+                            <div role="tabpanel" class="tab-pane" id="datos-adicionales">
+                                <div class="row">
+                                    <?php foreach ($respuestasCampos as $campo): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') === 'adicional'): ?>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="control-label">
+                                                        <?= $this->escapeHtml($campo['etiqueta']) ?>
+                                                        <?php if ($campo['requerido'] && !$modoSoloLectura): ?>
+                                                            <span class="text-danger">*</span>
+                                                        <?php endif; ?>
+                                                    </label>
+                                                    <?php renderCampoEditor($campo, $modoSoloLectura, $this, $nationalities ?? [], $degrees ?? [], $careers ?? [], $cohorts ?? []); ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Botones de acción (dinámicos según estado del formulario) -->
+                        <div class="form-actions text-right" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
+                               class="btn btn-default">
+                                <i class="fa fa-arrow-left"></i> Volver al Listado
+                            </a>
+
+                            <?php if (!$modoSoloLectura): ?>
+                                <!-- Edición: Botón Guardar Cambios -->
+                                <button type="submit" name="guardar_cambios" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> Guardar Cambios
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Panel derecho: Documento del DPI -->
+                <div class="col-md-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-id-card-o"></i> Documento del DPI
+                        </div>
+                        <div class="panel-body text-center">
+                            <?php
+                            // Buscar el campo de foto DPI
+                            $photoDpi = null;
+                            $photoDpiResp = 0;
+                            foreach ($respuestasCampos as $campo) {
+                                if ($campo['nombre_campo'] === 'photo_dpi' && !empty($campo['archivo_adjunto'])) {
+                                    $photoDpi = $campo['archivo_adjunto'];
+                                    $photoDpiResp = $campo['id_respuesta'];
+                                    break;
+                                }
+                            }
+                            $photoDpiUrl = $photoDpi ? $this->url('formulario-admision', ['action' => 'descargar', 'id' => $photoDpiResp], ['query' => ['campo' => 'photo_dpi']]) : null;
+                            $esImagen = $photoDpi ? in_array(strtolower(pathinfo($photoDpi, PATHINFO_EXTENSION)), ['jpg','jpeg','png','gif']) : false;
+                            ?>
+                            <?php if ($photoDpi): ?>
+                                <?php if ($esImagen): ?>
+                                    <img src="<?= $photoDpiUrl ?>"
+                                         class="img-responsive img-thumbnail"
+                                         alt="Foto DPI"
+                                         style="max-height: 300px;">
+                                    <br><br>
+                                    <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                        <i class="fa fa-external-link"></i> Ver en tamaño completo
+                                    </a>
+                                <?php else: ?>
+                                    <div style="padding: 30px 10px;">
+                                        <i class="fa fa-file-pdf-o" style="font-size: 64px; color: #d9534f; margin-bottom: 15px;"></i>
+                                        <p class="text-success" style="font-size: 14px; margin-bottom: 15px;">
+                                            <i class="fa fa-check-circle"></i> <strong>Se cargó un documento.</strong>
+                                        </p>
+                                        <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                            <i class="fa fa-download"></i> Descargar documento
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <div class="note note-warning">
+                                    <h4 class="box-heading"><i class="fa fa-exclamation-triangle"></i> Documento no adjunto</h4>
+                                    <p>No se ha subido documento del DPI.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Panel de información adicional -->
+                    <div class="panel panel-info">
+                        <div class="panel-heading">
+                            <i class="fa fa-info-circle"></i> Información
+                        </div>
+                        <div class="panel-body">
+                            <?php
+                            // Obtener datos principales de los campos
+                            $cui = $nombres = $correo = '';
+                            foreach ($respuestasCampos as $campo) {
+                                switch ($campo['nombre_campo']) {
+                                    case 'cui':
+                                        $cui = $campo['valor_respuesta'];
+                                        break;
+                                    case 'nombres':
+                                        $nombres = $campo['valor_respuesta'];
+                                        break;
+                                    case 'correo_electronico':
+                                        $correo = $campo['valor_respuesta'];
+                                        break;
+                                }
+                            }
+                            ?>
+
+                            <p><strong>Nombre:</strong><br>
+                               <?= $this->escapeHtml($nombres) ?></p>
+
+                            <p><strong>CUI:</strong><br>
+                               <?= $this->escapeHtml($cui) ?></p>
+
+                            <p><strong>Correo:</strong><br>
+                                <a href="mailto:<?= $correo ?>">
+                                    <?= $this->escapeHtml($correo) ?>
+                                </a></p>
+
+                            <hr>
+                            
+                            <p><strong>Formulario:</strong><br>
+                               <span class="label label-<?= $formularioActivo ? 'success' : 'warning' ?>">
+                                   <i class="fa fa-<?= $formularioActivo ? 'check' : 'lock' ?>"></i>
+                                   <?= $formularioActivo ? 'ACTIVO' : 'INACTIVO' ?>
+                               </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para modo solo lectura */
+.form-control-static {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    margin-bottom: 0;
+    min-height: 34px;
+}
+
+/* Estilos para impresión */
+@media print {
+    .btn, .panel-heading .label, .nav-tabs, .alert {
+        display: none !important;
+    }
+    .panel {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .col-md-9 {
+        width: 70%;
+        float: left;
+    }
+    .col-md-3 {
+        width: 30%;
+        float: right;
+    }
+}
+</style>
+
+<script>
+// Deshabilitar envío de formulario si está en modo solo lectura
+<?php if ($modoSoloLectura): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('form-respuesta').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Este formulario está en modo de solo lectura. No se pueden realizar cambios.');
+        return false;
+    });
+});
+<?php endif; ?>
+</script>

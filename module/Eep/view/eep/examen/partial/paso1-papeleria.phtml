@@ -1,0 +1,494 @@
+<!-- Paso 1: Revisión de Papelería -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+?>
+<div class="row" style="margin-top: 20px;">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Requisitos de Papelería — <?= $this->escapeHtml($etiquetaFase) ?>
+            </div>
+            <div class="panel-revision-body" style="padding: 10px;">
+                <div class="alert alert-info" style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fa fa-info-circle"></i>
+                    <strong>Información importante:</strong>
+                    Debe aceptar todos los documentos de la papelería para poder habilitar el siguiente paso de <strong>Entrega de Documentación</strong>.
+                </div>
+                <div class="tabla-requisitos-revision">
+                    <table class="table table-bordered table-requisitos">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Nombre</th>
+                                <th style="width: 15%;">Última revisión</th>
+                                <th style="width: 12%;">Estado</th>
+                                <th style="width: 28%;">Razón rechazo</th>
+                                <th style="width: 10%; text-align: center;">Ver documento</th>
+                                <th style="width: 10%; text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($this->docsDigitales)): ?>
+                                <tr><td colspan="6" class="text-center">No hay requisitos configurados para este paso.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($this->docsDigitales as $doc): 
+                                    $estado = $doc['estado_revision'];
+
+                                    if ($estado === null) {
+                                        if ($doc['cod_documento'] === null) {
+                                            $estado = 'Sin entregar';
+                                        } else {
+                                            $estado = 'pendiente';
+                                        }
+                                    }
+
+                                    $claseFila = ($estado == 'rechazado') 
+                                    ? 'fila-rechazada' 
+                                    : (($estado == 'pendiente') ? 'fila-pendiente' : '');
+
+                                    $claseBadge = 'estado-pendiente';
+                                    if ($estado == 'aprobado') $claseBadge = 'estado-aceptado';
+                                    if ($estado == 'rechazado') $claseBadge = 'estado-rechazado';
+                                ?>
+                                <tr class="<?= $claseFila ?>" data-cod-requisito="<?= $doc['cod_requisito'] ?>" data-cod-documento="<?= $doc['cod_documento'] ?? '' ?>" data-dirty="false">
+                                    <!-- Nombre -->
+                                    <td><?= $this->escapeHtml($doc['nombre_requisito']) ?></td>
+                                    <!-- Ultima revisión -->
+                                    <td><?= !empty($doc['fecha_revision']) ? date('d/m/Y', strtotime($doc['fecha_revision'])) : 'Sin revisión' ?></td>
+                                    <!-- Estado -->
+                                    <td><span class="estado-badge <?= $claseBadge ?>"><?= ucfirst($estado) ?></span></td>
+                                    <!-- Razon de rechazo -->
+                                    <td><?= $this->escapeHtml($doc['motivo_rechazo'] ?? '') ?></td>
+                                    <!-- ver documento -->
+                                    <td style="text-align: center;">
+                                        <?php if (!empty($doc['url_ver'])): ?>
+                                            <a href="<?= $this->escapeHtml($doc['url_ver']) ?>" target="_blank" class="btn-ver-documento" title="Ver documento">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                        <?php else: ?>
+                                            <i class="fa fa-minus text-muted"></i>
+                                        <?php endif; ?>
+                                    </td>
+                                    <!-- acciones -->
+                                    <td style="text-align: center;">
+                                        <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
+
+                                            <?php if (!empty($doc['url_ver'])): ?>
+                                                <div class="acciones-grupo">
+                                                    <button class="btn-accion btn-aceptar <?= $estado == 'aprobado' ? 'active' : '' ?>" title="Aceptar" data-valor="aprobado">
+                                                        <i class="fa fa-check"></i>
+                                                    </button>
+                                                    <button class="btn-accion btn-rechazar <?= $estado == 'rechazado' ? 'active' : '' ?>" title="Rechazar" data-valor="rechazado">
+                                                        <i class="fa fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted"><i class="fa fa-upload"></i> Sin documento</span>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="text-muted"><i class="fa fa-lock"></i> Cerrado</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 15px; padding: 15px 0 5px 0;">
+                    <div id="alertaRecordatorioGuardar" class="alerta-recordatorio-interna">
+                        <i class="fa fa-warning"></i> * No olvides guardar tus cambios
+                    </div>
+                    <?php if ((int)$this->paso == (int)$this->proceso['numero_orden']): ?>
+                        <div style="text-align: right; padding: 15px 0 5px 0; border-top: 1px solid #eee; margin-top: 20px;">
+                            <button class="btn btn-primary" id="btnGuardarCambios">
+                                <i class="fa fa-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div><!-- /.panel-revision-body -->
+        </div><!-- /.panel-revision -->
+    </div>
+</div>
+
+<!-- Modal para razón de rechazo -->
+<div class="modal fade" id="modalRazonRechazo" tabindex="-1" role="dialog" aria-labelledby="modalRazonRechazoLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalRazonRechazoLabel">
+                    <i class="fa fa-times-circle text-danger"></i> Razón de Rechazo
+                </h4>
+            </div>
+            <div class="modal-body">
+                <p><strong>Requisito:</strong> <span id="nombreRequisito"></span></p>
+                <div class="form-group">
+                    <label for="razonRechazo">Especifique la razón del rechazo:</label>
+                    <textarea class="form-control" id="razonRechazo" rows="4" placeholder="Ingrese la razón detallada del rechazo..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmarRechazo">
+                    <i class="fa fa-check"></i> Confirmar Rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fila-rechazada {
+        background-color: #fff5f5;
+    }
+
+    .fila-aceptada {
+        background-color: #f0fff4;
+    }
+
+    .fila-pendiente {
+        background-color: #fff9e6;
+    }
+
+    .estado-pendiente {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    /* Estilos para los botones de acción */
+    .acciones-grupo {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+    }
+
+    .btn-accion {
+        border: none;
+        border-radius: 4px;
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+        opacity: 0.4;
+        position: relative;
+    }
+
+    .btn-accion:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-accion.active {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .btn-aceptar {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-aceptar:hover {
+        background-color: #218838;
+    }
+
+    .btn-rechazar {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-rechazar:hover {
+        background-color: #c82333;
+    }
+
+    .btn-accion.active::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid currentColor;
+        border-radius: 6px;
+        opacity: 0.3;
+    }
+
+    /* Estilos para el modal */
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-title {
+        color: #333;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #555;
+    }
+
+    #razonRechazo {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+    }
+
+    #razonRechazo:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    .alerta-recordatorio-interna {
+        padding: 8px 15px;
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        border-radius: 50px;
+        display: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+</style>
+
+    <script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+    <script>
+$(document).ready(function() {
+    let filaActual = null;
+    let botonActual = null;
+
+    // ── Acciones de revisión en la tabla ───────────────────────────────────────
+    $('.btn-accion').on('click', function() {
+        const boton = $(this);
+        const grupo = boton.parent();
+        const estadoSeleccionado = boton.data('valor');
+        const fila  = boton.closest('tr');
+
+        if (boton.hasClass('active')) {
+            aplicarEstadoPendiente(fila, grupo);
+            return;
+        }
+
+        if (estadoSeleccionado === 'aprobado') {
+            aplicarEstadoAceptado(fila, boton, grupo);
+        } else if (estadoSeleccionado === 'rechazado') {
+            filaActual  = fila;
+            botonActual = boton;
+            $('#nombreRequisito').text(fila.find('td:first').text());
+            $('#razonRechazo').val(fila.find('td').eq(3).text());
+            $('#modalRazonRechazo').modal('show');
+        }
+    });
+
+    //* Limpiar backdrop al ocultar el modal (respaldo garantizado)
+    $('#modalRazonRechazo').on('hidden.bs.modal', function() {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    });
+
+    //* Confirmar razón de rechazo
+    $('#confirmarRechazo').on('click', function() {
+        const razonRechazo = $('#razonRechazo').val().trim();
+        if (razonRechazo === '') {
+            ToastService.warning('Por favor, ingrese una razón para el rechazo.');
+            return;
+        }
+        try {
+            aplicarEstadoRechazado(filaActual, botonActual, razonRechazo);
+        } catch (e) {
+            console.error('[confirmarRechazo] Error al aplicar estado:', e);
+        }
+        filaActual  = null;
+        botonActual = null;
+        // Cerrar modal de forma forzada compatible con Bootstrap 3
+        $('#modalRazonRechazo').modal('hide');
+        setTimeout(function() {
+            $('#modalRazonRechazo').removeClass('in').css('display', 'none').attr('aria-hidden', 'true');
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        }, 300);
+    });
+
+    // ── Funciones de estado ────────────────────────────────────────────────────
+    // ── Dirty tracking ─────────────────────────────────────────────────────────
+    function marcarDirty(fila) {
+        fila.attr('data-dirty', 'true');
+    }
+
+    function resetDirty(filas) {
+        filas.attr('data-dirty', 'false');
+    }
+
+    function aplicarEstadoAceptado(fila, boton, grupo) {
+        fila.removeClass('fila-rechazada fila-pendiente').addClass('fila-aceptada');
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        fila.find('td').eq(3).text('');
+        fila.find('.estado-badge')
+            .removeClass('estado-rechazado estado-pendiente')
+            .addClass('estado-aceptado').text('Aprobado');
+        marcarDirty(fila);
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function aplicarEstadoRechazado(fila, boton, razonRechazo) {
+        const grupo = boton.parent();
+        fila.removeClass('fila-aceptada fila-pendiente').addClass('fila-rechazada');
+        grupo.find('.btn-accion').removeClass('active');
+        boton.addClass('active');
+        fila.find('td').eq(3).text(razonRechazo);
+        fila.find('.estado-badge')
+            .removeClass('estado-aceptado estado-pendiente')
+            .addClass('estado-rechazado').text('Rechazado');
+        marcarDirty(fila);
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function aplicarEstadoPendiente(fila, grupo) {
+        fila.removeClass('fila-aceptada fila-rechazada').addClass('fila-pendiente');
+        grupo.find('.btn-accion').removeClass('active');
+        fila.find('td').eq(3).text('');
+        fila.find('.estado-badge')
+            .removeClass('estado-aceptado estado-rechazado')
+            .addClass('estado-pendiente').text('Pendiente');
+        marcarDirty(fila);
+        actualizarEstadoAvance();
+        mostrarAlertaGuardar();
+    }
+
+    function mostrarAlertaGuardar() {
+        $('#alertaRecordatorioGuardar').fadeIn(400);
+    }
+
+    // ── Estado de avance (todos aprobados?) ────────────────────────────────────
+    function actualizarEstadoAvance() {
+        const filas     = $('.table-requisitos tbody tr[data-cod-requisito]');
+        const total     = filas.length;
+        const aceptados = filas.filter('.fila-aceptada').length;
+        const todosAceptados = total > 0 && total === aceptados;
+
+        const pasoActual = <?= (int)$this->paso ?>;
+        $('.timeline-link').each(function() {
+            const pasoLink = parseInt($(this).attr('href').split('paso=')[1]) || 0;
+            if (pasoLink > pasoActual) {
+                if (!todosAceptados) {
+                    $(this).css({ 'opacity': '0.5', 'pointer-events': 'none' });
+                } else {
+                    $(this).css({ 'opacity': '1', 'pointer-events': '' });
+                }
+            }
+        });
+
+        return todosAceptados;
+    }
+
+    // ── Inicializar colores al cargar ──────────────────────────────────────────
+    $('.table-requisitos tbody tr[data-cod-requisito]').each(function() {
+        const estado = $(this).find('.estado-badge').text().trim().toLowerCase();
+        if (estado === 'aprobado') {
+            $(this).addClass('fila-aceptada');
+        } else if (estado === 'rechazado') {
+            $(this).addClass('fila-rechazada');
+        } else {
+            $(this).addClass('fila-pendiente');
+        }
+    });
+    setTimeout(actualizarEstadoAvance, 300);
+
+    // ── Guardar cambios (AJAX) ─────────────────────────────────────────────────
+    $('#btnGuardarCambios').on('click', function() {
+        const btn          = $(this);
+        const originalText = btn.text();
+        const requisitos   = [];
+
+        const filasModificadas = $('.table-requisitos tbody tr[data-cod-requisito][data-dirty="true"]');
+
+        filasModificadas.each(function() {
+            const fila   = $(this);
+            const activo = fila.find('.btn-accion.active');
+            const estado = activo.length ? activo.data('valor') : 'pendiente';
+            requisitos.push({
+                cod_requisito:     fila.data('cod-requisito'),
+                cod_documento:     fila.data('cod-documento') || null,
+                estado_evaluacion: estado,
+                observacion:       fila.find('td').eq(3).text().trim()
+            });
+        });
+
+        if (requisitos.length === 0) {
+            ToastService.warning('No hay cambios pendientes por guardar.');
+            return;
+        }
+
+        btn.prop('disabled', true).text('Guardando...');
+
+        // ── DEBUG: revisar payload antes de enviar ─────────────────────────────
+        const payload = {
+            cod_proceso:     '<?= $this->proceso["cod_proceso"] ?>',
+            cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?>',
+            requisitos:      requisitos
+        };
+        console.log('[DEBUG guardarRevision] payload:', JSON.stringify(payload, null, 2));
+        // ──────────────────────────────────────────────────────────────────────
+
+        $.ajax({
+            url:      '<?= $this->url("examen", ["action" => "guardarRevision"]) ?>',
+            type:     'POST',
+            dataType: 'json',
+            async:    true,
+            timeout:  10000,
+            data: {
+                cod_proceso:     '<?= $this->proceso["cod_proceso"] ?? null ?>',
+                cod_paso_actual: '<?= $this->proceso["cod_paso_actual"] ?? null ?>',
+                cod_tipo_examen: '<?= $this->proceso["tipo_cod_examen"] ?? null ?>',
+                fase:            '<?= $fase ?>',
+                requisitos:      requisitos ?? []
+            },
+            success: function(data) {
+                btn.prop('disabled', false).text(originalText);
+                $('#alertaRecordatorioGuardar').fadeOut(300);
+                
+                if (!data.hasOwnProperty('status')) {
+                    ToastService.error('No se obtuvo una respuesta correcta del servidor.');
+                    btn.prop('disabled', false).text(originalText);
+                } else {
+                    if (!data.status) {
+                        // ! ESTO PUEDE BORRARSE AL MOMENTO DE TENER TODA LA INTEGRACION
+                        ToastService.error('Error: ' + (data.error || 'No se pudieron guardar los cambios.'));
+                        btn.prop('disabled', false).text(originalText);
+                    } else {
+                        if (data.avanzado) {
+                            // Todos aprobados → paso avanzado
+                            ToastService.success(data.message);
+                            setTimeout(function() {
+                                window.location.href = '<?= $this->url("examen", ["action" => "solicitudes", "id" => $this->proceso["cod_proceso"]]) ?>?paso=2';
+                            }, 1000);
+                        } else {
+                            // Hay rechazados: guardado pero sin avance
+                            ToastService.success(data.message);
+                            resetDirty(filasModificadas);
+                            $('#alertaRecordatorioGuardar').fadeOut(300);
+                            btn.prop('disabled', false).text(originalText);
+                        }
+                    }
+                }
+            },
+            error: function(xmlhttprequest, textstatus, message) {
+                if (textstatus === 'timeout') {
+                    alert('Tiempo de espera de solicitud agotado.');
+                } else {
+                    alert('Error en solicitud: ' + message);
+                }
+                btn.prop('disabled', false).text(originalText);
+                $('#alertaRecordatorioGuardar').fadeOut(300);
+            }
+        });
+    });
+});
+</script>

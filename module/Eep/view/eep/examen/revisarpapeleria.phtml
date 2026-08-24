@@ -1,0 +1,618 @@
+<?php
+$this->headTitle('Revisión de papelería');
+?>
+
+<div style="padding: 5px 50px;">
+
+<div class="row">
+    <div class="col-lg-12">
+        <ol class="breadcrumb">
+            <li>
+                <a href="<?= $this->url('home') ?>">
+                    <i class="fa fa-home"></i> Inicio
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen') ?>">
+                    Gestión de Exámenes
+                </a>
+            </li>
+            <li>
+                <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>">
+                    Solicitudes
+                </a>
+            </li>
+            <li class="active">Revisión de papelería</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row" style="margin-bottom: 15px;">
+    <div class="col-lg-12">
+        <a href="<?= $this->url('examen', ['action' => 'solicitudes']) ?>" class="btn btn-default" style="font-size: 14px;">
+            <i class="fa fa-arrow-left"></i> Regresar
+        </a>
+    </div>
+</div>
+
+<!-- Información del Estudiante y Estados -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel-revision">
+            <div class="panel-revision-heading">
+                Información del Estudiante
+            </div>
+            <div class="panel-revision-body">
+            <div class="row" style="display: flex; justify-content: space-between;">
+                <!-- Columna Izquierda: Información del Estudiante -->
+                <div class="col-5 col-lg-8 col-xl-9">
+                    <div class="seccion-estudiante">
+                        <h4 style="font-weight: 600; margin-bottom: 15px; font-size: 16px;"><?= $this->escapeHtml($this->estudiante['nombre_completo']) ?></h4>
+                        <div class="info-estudiante">
+                            <p><strong>Registro académico:</strong> <?= $this->escapeHtml($this->estudiante['registro_academico']) ?></p>
+                            <p><strong>CUI:</strong> <?= $this->escapeHtml($this->estudiante['cui']) ?></p>
+                            <p><strong>Carrera:</strong> <?= $this->escapeHtml($this->estudiante['carrera'] ?? 'N/A') ?></p>
+                            <p><strong>Pensum:</strong> <?= $this->escapeHtml($this->estudiante['pensum_nombre'] ?? 'N/A') ?></p>
+                        </div>
+                        <div class="tipo-examen">
+                            <p style="margin-bottom: 5px;"><strong>Tipo de examen:</strong></p>
+                            <p style="font-weight: 600;"><?= $this->escapeHtml($this->proceso['tipo_examen'] ?? 'N/A') ?></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Columna Derecha: Estados -->
+                <div class="col-7 col-lg-4 col-xl-3">
+                    <!-- <div class="estados-header">
+                        <h5 class="estados-titulo">Estados del Proceso</h5>
+                    </div> -->
+                    <div class="timeline-estados">
+                        <?php foreach ($this->estados as $numPaso => $estado): ?>
+                        <?php 
+                            $pasoEstudiante = (int) ($this->proceso['numero_orden'] ?? 1);
+
+                            // Estado real del estudiante (independiente del paso que se esté viendo)
+                            $esActual     = ($numPaso == $pasoEstudiante);
+                            $esCompletado = ($numPaso < $pasoEstudiante);
+
+                            // Paso que el admin está viendo actualmente
+                            $esViendo = ($numPaso == $this->paso);
+
+                            // Bloquear pasos que el estudiante aún no ha alcanzado
+                            $bloqueado = ($numPaso > $pasoEstudiante);
+
+                            // Construir URL con parámetro paso
+                            $urlPaso = $this->url('examen', ['action' => 'solicitudes', 'id' => $this->proceso['cod_proceso']]) . '?paso=' . $numPaso;
+                        ?>
+                        <?php if ($bloqueado): ?>
+                        <span class="timeline-link timeline-link-bloqueado">
+                            <div class="timeline-item">
+                                <div class="timeline-icono timeline-icono-pending">
+                                    <i class="fa fa-lock"></i>
+                                </div>
+                                <div class="timeline-contenido">
+                                    <p class="timeline-titulo" style="color:#aaa;"><?= $estado['titulo'] ?></p>
+                                    <div class="timeline-row">
+                                        <p class="timeline-subtitulo"><?= $estado['subtitulo'] ?></p>
+                                        <span class="timeline-badge badge-pendiente-tl">Bloqueado</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
+                        <?php else: ?>
+                        <a href="<?= $urlPaso ?>" class="timeline-link <?= $esViendo ? 'timeline-link-viendo' : '' ?>">
+                            <div class="timeline-item <?= $esActual ? 'timeline-activo' : '' ?> <?= $esCompletado ? 'timeline-completado' : '' ?>">
+                                <div class="timeline-icono <?= $esCompletado ? 'timeline-icono-completed' : '' ?>">
+                                    <?php if ($esCompletado): ?>
+                                        <i class="fa fa-check"></i>
+                                    <?php elseif ($esActual): ?>
+                                        <i class="fa fa-circle"></i>
+                                    <?php else: ?>
+                                        <i class="fa fa-clock-o"></i>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="timeline-contenido">
+                                    <p class="timeline-titulo"><?= $estado['titulo'] ?></p>
+                                    <div class="timeline-row">
+                                        <p class="timeline-subtitulo"><?= $estado['subtitulo'] ?></p>
+                                        <?php if ($esActual): ?>
+                                            <span class="timeline-badge badge-en-proceso">En proceso</span>
+                                        <?php elseif ($esCompletado): ?>
+                                            <span class="timeline-badge badge-completado">Completado</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        <?php endif; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-info" style="margin: 15px 0 0 0; border-left: 5px solid #31708f; font-size: 14px;">
+                <i class="fa fa-info-circle"></i> 
+                <strong>Nota:</strong> cada vez que edite y guarde cambios, se le notificará por correo electrónico al estudiante.
+            </div>
+            </div><!-- /.panel-revision-body -->
+        </div>
+    </div>
+</div>
+
+<!-- Indicador de la fase actual del proceso -->
+<?php
+    $fase = $this->fase ?? 'examen_privado';
+    $etiquetaFase = $this->etiquetaFase ?? 'Examen Privado';
+    $esFaseGeneral = ($fase === 'examen_general');
+?>
+<?php if ($esFaseGeneral): ?>
+<div class="row" style="margin-top: 5px;">
+    <div class="col-lg-12">
+        <div class="alert" style="background-color: #fff3cd; border: 1px solid #ffc107; border-left: 5px solid #ffc107; color: #856404; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa fa-graduation-cap fa-lg"></i>
+            <div>
+                <strong>Fase actual: <?= $this->escapeHtml($etiquetaFase) ?></strong>
+                &mdash; Los datos de esta fase (documentos, fecha y hora del examen) son independientes del examen privado.
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Contenido Dinámico según el Paso Actual -->
+<?php 
+    // Cargar el partial correspondiente al paso actual
+    $partialActual = $this->estados[$this->paso]['partial'] ?? 'eep/examen/partial/paso1-papeleria';
+    echo $this->partial($partialActual, [
+        'proceso'               => $this->proceso,
+        'estudiante'            => $this->estudiante,
+        'paso'                  => $this->paso,
+        'fase'                  => $fase,
+        'etiquetaFase'          => $etiquetaFase,
+        'estados'               => $this->estados,
+        'docsDigitales'         => $this->docsDigitales,
+        'docsFisicos'           => $this->docsFisicos ?? [],
+        'terna'                 => $this->terna ?? ['examinadores' => [], 'programacion' => ['fecha' => null, 'hora' => null]],
+        'docentes'              => $this->docentes ?? [],
+        'instruccionesEntrega'  => $this->instruccionesEntrega ?? null
+    ]);
+?>
+
+<style>
+    /* Panel de revisión */
+    .panel-revision {
+        border: 3px solid #5f9876;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+
+    .panel-revision-heading {
+        background-color: #5f9876;
+        color: white;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+
+    .panel-revision-body {
+        padding: 20px;
+        background-color: #ffffff;
+    }
+
+    .seccion-estudiante {
+        padding-right: 20px;
+    }
+
+    .info-estudiante p {
+        margin: 8px 0;
+        font-size: 13px;
+        color: #444;
+    }
+
+    .info-estudiante strong {
+        color: #333;
+        font-weight: 600;
+    }
+
+    .tipo-examen {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .tipo-examen p {
+        font-size: 13px;
+        color: #444;
+        margin: 0;
+    }
+
+    /* Timeline de estados */
+    .estados-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .estados-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .timeline-estados {
+        display: flex;
+        flex-direction: column;
+        padding-top: 5px;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        position: relative;
+        padding-bottom: 28px;
+    }
+
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 16px;
+        top: 34px;
+        width: 2px;
+        bottom: 0;
+        background-color: #d0d0d0;
+    }
+
+    .timeline-icono {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+
+    .timeline-icono-pending {
+        background-color: #ffffff;
+        border: 2px solid #d0d0d0;
+        color: #aaa;
+    }
+
+    .timeline-contenido {
+        flex: 1;
+        padding-top: 4px;
+    }
+
+    .timeline-titulo {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 2px 0;
+    }
+
+    .timeline-subtitulo {
+        font-size: 12px;
+        color: #888;
+        white-space: nowrap;
+        width: 90px;
+    }
+
+    .timeline-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+    }
+
+    .timeline-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-en-proceso {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+    }
+
+    .badge-pendiente-tl {
+        background-color: #f1f1f1;
+        color: #888;
+    }
+
+    .badge-completado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    /* Estilos para enlaces del timeline */
+    .timeline-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .timeline-link:hover {
+        text-decoration: none;
+    }
+
+    .timeline-link:hover .timeline-item {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        margin: -5px;
+        padding: 5px;
+        padding-bottom: 23px;
+    }
+
+    /* Paso que el admin está viendo actualmente */
+    .timeline-link-viendo .timeline-item {
+        background-color: #eef3fa;
+        border-radius: 10px;
+        padding: 5px;
+        padding-bottom: 23px;
+    }
+
+    /* Paso bloqueado (el estudiante aún no llegó) */
+    .timeline-link-bloqueado {
+        display: block;
+        cursor: not-allowed;
+        opacity: 0.45;
+        text-decoration: none;
+        color: inherit;
+    }
+    .timeline-link-bloqueado .timeline-item {
+        pointer-events: none;
+    }
+
+
+    /* Estado completado del timeline */
+    .timeline-icono-completed {
+        background-color: #28a745;
+        border: none;
+        color: white;
+    }
+
+    .timeline-completado .timeline-titulo {
+        color: #28a745;
+    }
+
+    .timeline-completado:not(:last-child)::after {
+        background-color: #28a745;
+    }
+
+    /* Ajustes para 10 pasos */
+    .timeline-item {
+        padding-bottom: 18px;
+    }
+
+    .timeline-icono {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .timeline-item:not(:last-child)::after {
+        left: 13px;
+        top: 28px;
+    }
+
+    .timeline-titulo {
+        font-size: 13px;
+    }
+
+    .timeline-subtitulo {
+        font-size: 11px;
+        margin: 0;
+    }
+
+    .timeline-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+
+    /* Scroll para el contenedor del timeline */
+    .timeline-estados {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .timeline-estados::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .timeline-estados::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .timeline-estados::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+
+    .timeline-estados::-webkit-scrollbar-thumb:hover {
+        background: #a1a1a1;
+    }
+
+    /* Tabla de requisitos */
+    .tabla-requisitos-revision {
+        background-color: white;
+        border-radius: 0;
+        overflow: hidden;
+        box-shadow: none;
+    }
+
+    .table-requisitos {
+        margin-bottom: 0;
+        font-size: 13px;
+    }
+
+    .table-requisitos thead {
+        background-color: #f5f5f5;
+    }
+
+    .table-requisitos thead th {
+        background-color: #f5f5f5;
+        color: #333;
+        font-weight: 600;
+        padding: 12px 10px;
+        border-bottom: 2px solid #ddd;
+        font-size: 12px;
+    }
+
+    .table-requisitos tbody td {
+        padding: 12px 10px;
+        vertical-align: middle;
+        color: #444;
+        border-color: #e0e0e0;
+    }
+
+    .fila-rechazada {
+        background-color: #fff5f5;
+    }
+
+    /* Estados de requisitos */
+    .estado-badge {
+        padding: 5px 12px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .estado-aceptado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .estado-rechazado {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Botón ver documento */
+    .btn-ver-documento {
+        background-color: transparent;
+        border: none;
+        color: #666;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 5px 10px;
+        transition: color 0.2s;
+    }
+
+    .btn-ver-documento:hover {
+        color: #333;
+    }
+
+    /* Toggle Switch */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #5cb85c;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    /* Botón guardar cambios */
+    .btn-guardar-cambios {
+        background-color: #f5f5f5;
+        border: 2px solid #d0d0d0;
+        color: #333;
+        padding: 10px 25px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-guardar-cambios:hover {
+        background-color: #e8e8e8;
+        border-color: #bbb;
+    }
+
+    .btn-guardar-cambios i {
+        margin-right: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .estados-papeleria {
+            margin-top: 20px;
+        }
+
+        .table-requisitos {
+            font-size: 12px;
+        }
+
+        .switch {
+            width: 40px;
+            height: 20px;
+        }
+
+        .slider:before {
+            height: 14px;
+            width: 14px;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    }
+</style>
+
+<script>
+// Script vacío - funcionalidad eliminada
+</script>
+
+</div><!-- /.padding container -->

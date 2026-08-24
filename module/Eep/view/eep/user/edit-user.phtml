@@ -107,6 +107,28 @@ $form->prepare(); //EDIT USER FORM
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(EUF::TITULO_PROFESIONAL)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-graduation-cap"></i>
+                                <?= $this->formElement($form->get(EUF::TITULO_PROFESIONAL)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(EUF::TITULO_PROFESIONAL)) ?> </font>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <?= $this->formLabel($form->get(EUF::NUMERO_COLEGIADO)) ?>
+                            <div class="input-icon">
+                                <i class="fa fa-id-card"></i>
+                                <?= $this->formElement($form->get(EUF::NUMERO_COLEGIADO)) ?>
+                            </div>
+                            <font color="red"><?= $this->formElementErrors($form->get(EUF::NUMERO_COLEGIADO)) ?> </font>
+                        </div>
+                    </div>
+                </div>
                 <hr/>
                 <div class="row">
                     <div class="col-md-12">

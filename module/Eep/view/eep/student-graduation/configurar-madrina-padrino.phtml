@@ -1,0 +1,191 @@
+<?php
+$this->headTitle('Configurar Madrina / Padrino');
+?>
+
+<div class="col-lg-12" style="padding-left: 40px; padding-right: 40px;">
+
+    <!-- Breadcrumb -->
+    <div class="row">
+        <div class="col-lg-12">
+            <ol class="breadcrumb">
+                <li>
+                    <a href="<?= $this->url('home') ?>">
+                        <i class="fa fa-home"></i> Inicio
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>">
+                        Proceso de Graduación
+                    </a>
+                </li>
+                <li class="active">Configurar Madrina / Padrino</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="panel panel-default" style="border: 2px solid #5f9876;">
+                <div class="panel-heading" style="background-color: #5f9876; color: white; font-weight: 700; font-size: 16px;">
+                    <i class="fa fa-user"></i> Datos de Madrina / Padrino
+                </div>
+                <div class="panel-body" style="padding: 30px;">
+
+                    <div style="margin-bottom: 20px;">
+                        <p style="font-size: 15px; color: #555; margin-bottom: 15px;">
+                            <i class="fa fa-info-circle" style="color: #5f9876;"></i>
+                            Ingrese los datos de su <strong>madrina o padrino</strong> para el acta de examen público general.
+                        </p>
+                    </div>
+
+                    <!-- Vista de visualización (cuando ya tiene valor) -->
+                    <div id="madrinaDisplay" style="<?= $madrina['tiene_madrina'] ? '' : 'display:none;' ?>">
+                        <div style="background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid #e9ecef; margin-bottom:20px;">
+                            <div style="font-size:12px; color:#6c757d; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Nombre registrado</div>
+                            <div style="font-size:18px; font-weight:600; color:#333;" id="madrinaTexto">
+                                <?php if ($madrina['titulo_profesional']): ?>
+                                    <?= $this->escapeHtml($madrina['titulo_profesional']) ?> <?= $this->escapeHtml($madrina['nombre']) ?>
+                                <?php else: ?>
+                                    <?= $this->escapeHtml($madrina['nombre']) ?>
+                                <?php endif; ?>
+                            </div>
+                            <div style="font-size:13px; color:#6c757d; margin-top:4px; text-transform:capitalize;">
+                                <?= $this->escapeHtml($madrina['tipo'] ?: '') ?>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; justify-content:center;">
+                            <button type="button" class="btn btn-primary" id="btnEditarMadrina">
+                                <i class="fa fa-pencil"></i> Editar datos
+                            </button>
+                            <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-default">
+                                <i class="fa fa-arrow-left"></i> Volver al proceso
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Vista de edición -->
+                    <div id="madrinaEdit" style="<?= $madrina['tiene_madrina'] ? 'display:none;' : '' ?>">
+                        <form id="formMadrinaPadrino">
+                            <div class="form-group">
+                                <label style="font-size: 14px; font-weight: 600; color: #333;">
+                                    Tipo <span style="color:red">*</span>
+                                </label>
+                                <select id="inputTipo" class="form-control" style="font-size: 15px; height: 44px; margin-top: 8px;">
+                                    <option value="">— Seleccione —</option>
+                                    <option value="madrina" <?= ($madrina['tipo'] === 'madrina') ? 'selected' : '' ?>>Madrina</option>
+                                    <option value="padrino" <?= ($madrina['tipo'] === 'padrino') ? 'selected' : '' ?>>Padrino</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label style="font-size: 14px; font-weight: 600; color: #333;">
+                                    Nombre completo <span style="color:red">*</span>
+                                </label>
+                                <input type="text"
+                                       id="inputNombre"
+                                       class="form-control"
+                                       placeholder="Ingrese el nombre completo..."
+                                       value="<?= $this->escapeHtml($madrina['nombre'] ?? '') ?>"
+                                       style="font-size: 15px; height: 44px; margin-top: 8px;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label style="font-size: 14px; font-weight: 600; color: #333;">
+                                    Título profesional <span style="color:red">*</span>
+                                </label>
+                                <input type="text"
+                                       id="inputTitulo"
+                                       class="form-control"
+                                       placeholder="Ej: Abogada y Notaria, Licenciada en..."
+                                       value="<?= $this->escapeHtml($madrina['titulo_profesional'] ?? '') ?>"
+                                       style="font-size: 15px; height: 44px; margin-top: 8px;">
+                            </div>
+
+                            <p class="help-block" style="font-size: 13px; color: #777; margin-bottom: 20px; margin-top: 10px;">
+                                Este dato se utilizará para generar el acta de examen público general.
+                            </p>
+
+                            <div style="display:flex; gap:10px; justify-content:center;">
+                                <button class="btn btn-success btn-lg" type="button" id="btnConfirmarMadrina" style="min-width: 160px;">
+                                    <i class="fa fa-check"></i> Guardar
+                                </button>
+                                <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-default btn-lg" style="min-width: 160px;">
+                                    <i class="fa fa-arrow-left"></i> Volver
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Toast Service -->
+<script src="<?= $this->basePath('js/toast-service.js') ?>"></script>
+
+<script>
+$(document).ready(function() {
+
+    function guardarMadrinaPadrino() {
+        const tipo   = $('#inputTipo').val().trim();
+        const nombre = $('#inputNombre').val().trim();
+        const titulo = $('#inputTitulo').val().trim();
+
+        if (!tipo) {
+            ToastService.warning('Debe seleccionar si es madrina o padrino.');
+            return;
+        }
+        if (!nombre) {
+            ToastService.warning('Debe ingresar el nombre.');
+            return;
+        }
+        if (!titulo) {
+            ToastService.warning('Debe ingresar el título profesional.');
+            return;
+        }
+
+        const $confirmBtn = $('#btnConfirmarMadrina');
+        $confirmBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+
+        $.post('<?= $this->url("student-graduation", ["action" => "guardar-madrina-padrino"]) ?>', {
+            tipo: tipo,
+            nombre: nombre,
+            titulo_profesional: titulo
+        }, function(res) {
+            $confirmBtn.prop('disabled', false).html('<i class="fa fa-check"></i> Guardar');
+            if (res.success) {
+                const texto = titulo
+                    ? titulo + ' ' + nombre
+                    : nombre;
+                $('#madrinaTexto').text(texto);
+                $('#madrinaEdit').hide();
+                $('#madrinaDisplay').show();
+                ToastService.success(res.message || 'Datos guardados correctamente.');
+            } else {
+                ToastService.error(res.message || 'No se pudo guardar.');
+            }
+        }).fail(function() {
+            $confirmBtn.prop('disabled', false).html('<i class="fa fa-check"></i> Guardar');
+            ToastService.error('Error de conexión al guardar.');
+        });
+    }
+
+    $('#btnConfirmarMadrina').on('click', guardarMadrinaPadrino);
+
+    $('#inputNombre, #inputTitulo').on('keydown', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            guardarMadrinaPadrino();
+        }
+    });
+
+    $('#btnEditarMadrina').on('click', function() {
+        $('#madrinaDisplay').hide();
+        $('#madrinaEdit').show();
+        $('#inputTipo').focus();
+    });
+});
+</script>
