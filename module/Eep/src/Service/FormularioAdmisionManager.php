@@ -250,7 +250,9 @@ class FormularioAdmisionManager extends Manager {
                     }
                 }
 
-                $resultado[] = new RespuestaAspirante($datosRespuesta);
+                $respuestaObj = new RespuestaAspirante($datosRespuesta);
+                $respuestaObj->setRespuestasCampos($campos);
+                $resultado[] = $respuestaObj;
             }
 
             $res->success();

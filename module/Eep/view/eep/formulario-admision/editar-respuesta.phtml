@@ -238,7 +238,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                             <div role="tabpanel" class="tab-pane active" id="datos-principales">
                                 <div class="row">
                                     <?php foreach ($respuestasCampos as $campo): ?>
-                                        <?php if (($campo['seccion'] ?? 'adicional') !== 'adicional'): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') !== 'adicional' && !in_array($campo['nombre_campo'] ?? '', ['grado_a_ingresar', 'carrera_a_ingresar'])): ?>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="control-label">
@@ -259,7 +259,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                             <div role="tabpanel" class="tab-pane" id="datos-adicionales">
                                 <div class="row">
                                     <?php foreach ($respuestasCampos as $campo): ?>
-                                        <?php if (($campo['seccion'] ?? 'adicional') === 'adicional'): ?>
+                                        <?php if (($campo['seccion'] ?? 'adicional') === 'adicional' && !in_array($campo['nombre_campo'] ?? '', ['grado_a_ingresar', 'carrera_a_ingresar'])): ?>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="control-label">
@@ -354,7 +354,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                         <div class="panel-body">
                             <?php
                             // Obtener datos principales de los campos
-                            $cui = $nombres = $correo = '';
+                            $cui = $nombres = $correo = $gradoAcademico = $maestriaSolicitada = '';
                             foreach ($respuestasCampos as $campo) {
                                 switch ($campo['nombre_campo']) {
                                     case 'cui':
@@ -365,6 +365,12 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                                         break;
                                     case 'correo_electronico':
                                         $correo = $campo['valor_respuesta'];
+                                        break;
+                                    case 'grado_academico_posee':
+                                        $gradoAcademico = $campo['valor_respuesta'];
+                                        break;
+                                    case 'maestria_solicitada':
+                                        $maestriaSolicitada = $campo['valor_respuesta'];
                                         break;
                                 }
                             }
@@ -381,8 +387,14 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                                     <?= $this->escapeHtml($correo) ?>
                                 </a></p>
 
+                            <p><strong>Grado académico:</strong><br>
+                                <?= $this->escapeHtml($gradoAcademico) ?></p>
+
+                            <p><strong>Maestría solicitada:</strong><br>
+                                <?= $this->escapeHtml($maestriaSolicitada) ?></p>
+
                             <hr>
-                            
+
                             <p><strong>Formulario:</strong><br>
                                <span class="label label-<?= $formularioActivo ? 'success' : 'warning' ?>">
                                    <i class="fa fa-<?= $formularioActivo ? 'check' : 'lock' ?>"></i>

@@ -6,19 +6,25 @@ $role = $this->layout()->role;
 $formularioActivo = $formulario->getActivo();
 ?>
 
+<div class="col-md-12" style="margin-bottom: 15px;">
+    <a href="<?= $this->url('formulario-admision')?>" class="btn btn-default">
+        <i class="fa fa-arrow-left"></i> Volver a Formularios
+    </a>
+</div>
+
 <div class="col-md-12">
     <div class="panel panel-<?= ($role->hasAdminRole()) ? 'green' : 'blue' ?>">
         <div class="panel-heading">
-            <i class="fa fa-users"></i> 
-            <?= $this->escapeHtml($formulario->getNombre()) ?>
-            <small class="text-muted" style="color: #fff;">
-                (Período: <?= $formulario->getPeriodoFormateado() ?>)
-            </small>
             <?php if (!$formularioActivo): ?>
                 <span class="label label-warning pull-right" style="margin-top: 2px; font-weight: bold; font-size: 16px;">
                     <i class="fa fa-lock"></i> INACTIVO
                 </span>
             <?php endif; ?>
+            <i class="fa fa-users"></i> 
+            <?= $this->escapeHtml($formulario->getNombre()) ?>
+            <small class="text-muted" style="color: #fff;">
+                (Período: <?= $formulario->getPeriodoFormateado() ?>)
+            </small>
         </div>
         <div class="panel-body">
             <div class="note note-info">
@@ -121,6 +127,7 @@ $formularioActivo = $formulario->getActivo();
                                 <th>Nombre Completo</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
+                                <th>Maestría Solicitada</th>
                                 <th class="text-center">Fecha Envío</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -150,6 +157,9 @@ $formularioActivo = $formulario->getActivo();
                                     </td>
                                     <td>
                                         <?= $this->escapeHtml($respuesta->getTelefonoAspirante()) ?>
+                                    </td>
+                                    <td>
+                                        <?= $this->escapeHtml($respuesta->getRespuestaPorCampo('maestria_solicitada') ?: '—') ?>
                                     </td>
                                     <td class="text-center">
                                         <small><?= $respuesta->getFechaEnvioFormateada() ?></small>
@@ -240,13 +250,7 @@ $formularioActivo = $formulario->getActivo();
                 </div>
             <?php endif; ?>
             
-            <div class="row">
-                <div class="col-md-12 text-right">
-                    <a href="<?= $this->url('formulario-admision')?>" class="btn btn-default">
-                        <i class="fa fa-arrow-left"></i> Volver a Formularios
-                    </a>
-                </div>
-            </div>
+
         </div>
     </div>
 </div>

@@ -57,6 +57,16 @@ if (isset($formulario)) {
         </div>
         <div class="panel-body">
             <?= $this->partial('partial/msg', ['msg' => $message ?? null]) ?>
+
+            <!-- Título y descripción del formulario -->
+            <div class="alert alert-info" style="background-color: #e8f4f8; border-color: #bce8f1; color: #31708f; margin-bottom: 25px;">
+                <p style="margin-bottom: 0;">
+                    Bienvenido al formulario de admisiones de la Escuela de Postgrados.
+                    Este formulario le permite registrar su solicitud para ingresar a los programas de maestría ofrecidos por la facultad.
+                    Asegúrese de completar todos los campos requeridos y verificar la información antes de enviar su solicitud.
+                </p>
+            </div>
+
             <!-- Agrupación de campos por sección -->
 <?php
 $seccionMap = [
