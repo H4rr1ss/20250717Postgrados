@@ -308,8 +308,8 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                     <?php if ($tieneTema): ?>
                                         <div id="displayTemaTesis" style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
                                             <span id="textoTemaTesis"><?= $this->escapeHtml($temaTesis) ?></span>
-                                            <button class="btn btn-default btn-sm" id="btnEditarTema" type="button">
-                                                <i class="fa fa-edit"></i> Editar
+                                            <button class="btn btn-sm btn-primary" id="btnEditarTema" type="button" title="Editar" style="margin-left:10px;">
+                                                <i class="fa fa-pencil"></i> Editar
                                             </button>
                                         </div>
                                         <div id="editTemaContainer" style="display: none; margin-top: 8px;">
@@ -355,8 +355,6 @@ $this->headTitle('Progreso del Proceso de Graduación');
                 <table class="table table-hover table-bordered table-condensed" style="margin-bottom: 0;">
                     <thead>
                         <tr>
-                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">#</th>
-                            <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fase</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Paso</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Estado</th>
                             <th style="padding: 12px 15px; font-size: 18px; text-align: center;">Fecha Inicio</th>
@@ -400,10 +398,6 @@ $this->headTitle('Progreso del Proceso de Graduación');
                             }
                         ?>
                             <tr class="<?= $rowClass ?>">
-                                <td style="padding: 14px 15px; font-size: 16px; text-align: center;"><?= $paso['numero_orden'] ?></td>
-                                <td style="padding: 14px 15px; font-size: 14px; text-align: center;">
-                                    <span><?= $this->escapeHtml($nombresFase[$paso['fase']] ?? $paso['fase']) ?></span>
-                                </td>
                                 <td style="padding: 14px 15px; font-size: 16px; text-align: center;">
                                     <?= $this->escapeHtml($paso['nombre']) ?>
                                     <?php if ($paso['cod_paso'] == $proceso['cod_paso_actual']): ?>
