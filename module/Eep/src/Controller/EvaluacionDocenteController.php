@@ -245,6 +245,14 @@ class EvaluacionDocenteController extends AbstractActionController {
         }
 
         $evaluaciones = is_array($detalleResult->getObj()) ? $detalleResult->getObj() : [];
+
+        $reporteResult = $this->evaluacionDocenteManager->getReportePorDocente($anio, $mes, $docente, $curso);
+        $notasFinales = [];
+        if ($reporteResult->get() && is_array($reporteResult->getObj())) {
+            foreach ($reporteResult->getObj() as $r) {
+                $notasFinales[(int) $r['cod_horario']] = $r['nota_final_100'] ?? null;
+            }
+        }
         $nombresMeses = [
             1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
             5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
@@ -257,6 +265,7 @@ class EvaluacionDocenteController extends AbstractActionController {
         foreach ($columnasPregunta as $col) {
             $headers[] = $col['texto'];
         }
+        $headers[] = 'Nota Final / 100';
 
         $output = fopen('php://temp', 'r+');
         fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
@@ -286,6 +295,10 @@ class EvaluacionDocenteController extends AbstractActionController {
                     $row[] = '';
                 }
             }
+
+            $codHorario = (int) ($ev['cod_horario'] ?? 0);
+            $notaFinal = $notasFinales[$codHorario] ?? null;
+            $row[] = $notaFinal !== null ? number_format($notaFinal, 2) : 'N/A';
 
             fputcsv($output, $row, "\t");
         }

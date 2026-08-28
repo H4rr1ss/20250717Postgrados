@@ -98,6 +98,10 @@ $renderPregunta = function ($pregunta) use ($curso, $renderer) {
         <td class="label">Total de Evaluaciones</td>
         <td><strong><?= (int) ($curso['total_evaluaciones'] ?? 0) ?></strong></td>
     </tr>
+    <tr>
+        <td class="label">Nota Final / 100</td>
+        <td><strong><?= (isset($curso['nota_final_100']) && $curso['nota_final_100'] !== null) ? $this->escapeHtml(number_format($curso['nota_final_100'], 2)) : 'N/A' ?></strong></td>
+    </tr>
 </table>
 
 <?php if (!empty($curso['preguntas'])): ?>

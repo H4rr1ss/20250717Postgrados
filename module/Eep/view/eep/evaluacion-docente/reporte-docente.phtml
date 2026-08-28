@@ -104,6 +104,7 @@ ksort($meses);
                                 <th class="text-center">Sección</th>
                                 <th class="text-center">Período del Curso</th>
                                 <th class="text-center">Evaluaciones</th>
+                                <th class="text-center">Nota Final / 100</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -123,6 +124,29 @@ ksort($meses);
                                         <span class="text-info" style="margin-left: 8px; font-size: 13px;">
                                             <i class="fa fa-bar-chart"></i> Ver resultados
                                         </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <?php if (isset($item['nota_final_100']) && $item['nota_final_100'] !== null): ?>
+                                            <?php
+                                            $nota = (float) $item['nota_final_100'];
+                                            if ($nota >= 90) {
+                                                $badgeColor = '#5cb85c';
+                                            } elseif ($nota >= 70) {
+                                                $badgeColor = '#5bc0de';
+                                            } elseif ($nota >= 60) {
+                                                $badgeColor = '#f0ad4e';
+                                            } else {
+                                                $badgeColor = '#d9534f';
+                                            }
+                                            ?>
+                                            <span style="font-size: 16px; font-weight: bold; color: #000;">
+                                                <?= number_format($nota, 2) ?>
+                                            </span>
+                                            <br/>
+                                            <small class="text-info"><?= $this->escapeHtml($item['mensaje_rendimiento'] ?? '') ?></small>
+                                        <?php else: ?>
+                                            <span class="text-info">N/A</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

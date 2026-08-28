@@ -346,6 +346,34 @@ class EvaluacionDocenteManager extends Manager {
                 ];
             }
 
+            foreach ($reporte as $key => &$item) {
+                $suma = 0;
+                $count = 0;
+                foreach ($item['preguntas'] as $pregunta) {
+                    if ($pregunta['tipo'] === 'escala10' && $pregunta['promedio'] !== null) {
+                        $suma += $pregunta['promedio'];
+                        $count++;
+                    }
+                }
+                if ($count > 0) {
+                    $nota = round(($suma / $count) * 10, 2);
+                    $item['nota_final_100'] = $nota;
+                    if ($nota >= 90) {
+                        $item['mensaje_rendimiento'] = 'Sobresaliente';
+                    } elseif ($nota >= 70) {
+                        $item['mensaje_rendimiento'] = 'Satisfactorio';
+                    } elseif ($nota >= 60) {
+                        $item['mensaje_rendimiento'] = 'Regular';
+                    } else {
+                        $item['mensaje_rendimiento'] = 'Necesita mejora';
+                    }
+                } else {
+                    $item['nota_final_100'] = null;
+                    $item['mensaje_rendimiento'] = 'Sin evaluación numérica';
+                }
+            }
+            unset($item);
+
             $res->success();
             $res->setObj(array_values($reporte));
         } catch (\Exception $ex) {
@@ -366,6 +394,7 @@ class EvaluacionDocenteManager extends Manager {
                 SELECT
                     er.id,
                     er.fecha_evaluacion,
+                    h.cod_horario,
                     h.anio,
                     h.mes,
                     h.seccion,
@@ -399,6 +428,7 @@ class EvaluacionDocenteManager extends Manager {
                     $evaluaciones[$id] = [
                         'id' => $id,
                         'fecha_evaluacion' => $row['fecha_evaluacion'],
+                        'cod_horario' => (int) $row['cod_horario'],
                         'nombre_docente' => $row['nombre_docente'] ?? 'Docente no asignado',
                         'nombre_curso' => $row['nombre_curso'],
                         'seccion' => $row['seccion'],

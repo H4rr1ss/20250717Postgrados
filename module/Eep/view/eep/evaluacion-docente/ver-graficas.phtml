@@ -73,6 +73,37 @@ $cursoJson = json_encode($curso, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | 
                                 </p>
                             </div>
                         </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-12">
+                                <?php if (isset($curso['nota_final_100']) && $curso['nota_final_100'] !== null): ?>
+                                    <?php
+                                    $nota = (float) $curso['nota_final_100'];
+                                    if ($nota >= 90) {
+                                        $bgColor = '#5cb85c';
+                                        $label = 'Sobresaliente';
+                                    } elseif ($nota >= 70) {
+                                        $bgColor = '#5bc0de';
+                                        $label = 'Satisfactorio';
+                                    } elseif ($nota >= 60) {
+                                        $bgColor = '#f0ad4e';
+                                        $label = 'Regular';
+                                    } else {
+                                        $bgColor = '#d9534f';
+                                        $label = 'Necesita mejora';
+                                    }
+                                    ?>
+                                    <div class="alert" style="background-color: <?= $bgColor ?>; color: #fff; border: none; text-align: center; margin-bottom: 0;">
+                                        <span style="font-size: 12px; display: block; opacity: 0.9;">Nota Final / 100</span>
+                                        <strong style="font-size: 28px; display: block;"><?= number_format($nota, 2) ?></strong>
+                                        <span style="font-size: 14px; font-weight: bold;"><?= $this->escapeHtml($label) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="alert alert-warning text-center" style="margin-bottom: 0;">
+                                        <i class="fa fa-exclamation-circle"></i> No hay preguntas numéricas para calcular la nota final.
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
