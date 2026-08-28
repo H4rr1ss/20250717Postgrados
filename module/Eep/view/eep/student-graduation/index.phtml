@@ -305,16 +305,37 @@ $this->headTitle('Progreso del Proceso de Graduación');
                                         Este es el primer paso. Debe registrar su título antes de continuar con el proceso. Coloque el título tal y como se reflejará en los documentos generados para todo el proceso de graduación.
                                     </small>
                                 <?php else: ?>
-                                    <div style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
-                                        <?= $this->escapeHtml($temaTesis ?: 'No registrado') ?>
-                                    </div>
-                                    <?php if (!$tieneTema): ?>
+                                    <?php if ($tieneTema): ?>
+                                        <div id="displayTemaTesis" style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                                            <span id="textoTemaTesis"><?= $this->escapeHtml($temaTesis) ?></span>
+                                            <button class="btn btn-default btn-sm" id="btnEditarTema" type="button">
+                                                <i class="fa fa-edit"></i> Editar
+                                            </button>
+                                        </div>
+                                        <div id="editTemaContainer" style="display: none; margin-top: 8px;">
+                                            <div class="input-group">
+                                                <input type="text" id="temaTesisEdit" class="form-control"
+                                                       value="<?= $this->escapeHtmlAttr($temaTesis) ?>">
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-success" id="btnGuardarTemaEdit" type="button">
+                                                        <i class="fa fa-save"></i> Guardar
+                                                    </button>
+                                                    <button class="btn btn-default" id="btnCancelarTemaEdit" type="button">
+                                                        <i class="fa fa-times"></i> Cancelar
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-warning" style="margin-top: 10px; margin-bottom: 0;">
+                                            <i class="fa fa-exclamation-triangle"></i>
+                                            <strong>Importante:</strong> El título debe ser exactamente el mismo que se trabajó en el protocolo. Cualquier modificación debe ser notificada a la coordinación.
+                                        </div>
+                                    <?php else: ?>
+                                        <div style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                                            <?= $this->escapeHtml($temaTesis ?: 'No registrado') ?>
+                                        </div>
                                         <small class="text-muted" style="display: block; margin-top: 5px;">
                                             Espere a que la coordinación active su proceso para poder registrar el título.
-                                        </small>
-                                    <?php else: ?>
-                                        <small class="text-success" style="display: block; margin-top: 5px;">
-                                            <i class="fa fa-check-circle"></i> Título registrado correctamente.
                                         </small>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -441,14 +462,60 @@ $(document).ready(function() {
     $('#btnGuardarTema').on('click', function() {
         const tema = $('#temaTesis').val().trim();
         const btn = $(this);
-        
+
         if (!tema) {
             ToastService.warning('Debe ingresar el título de su trabajo de graduación.');
             return;
         }
-        
+
         btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
-        
+
+        $.ajax({
+            url: '<?= $this->url("student-graduation", ["action" => "guardar-tema-tesis"]) ?>',
+            type: 'POST',
+            data: { tema_tesis: tema },
+            success: function(response) {
+                if (response.success) {
+                    ToastService.success(response.message);
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    ToastService.error(response.message);
+                }
+            },
+            error: function() {
+                ToastService.error('Error de comunicación con el servidor.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa fa-save"></i> Guardar');
+            }
+        });
+    });
+
+    // ── Editar tema de tesis ────────────────────────────────────
+    $('#btnEditarTema').on('click', function() {
+        $('#displayTemaTesis').hide();
+        $('#editTemaContainer').show();
+        $('#temaTesisEdit').focus();
+    });
+
+    $('#btnCancelarTemaEdit').on('click', function() {
+        $('#editTemaContainer').hide();
+        $('#displayTemaTesis').show();
+    });
+
+    $('#btnGuardarTemaEdit').on('click', function() {
+        const tema = $('#temaTesisEdit').val().trim();
+        const btn = $(this);
+
+        if (!tema) {
+            ToastService.warning('Debe ingresar el título de su trabajo de graduación.');
+            return;
+        }
+
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
+
         $.ajax({
             url: '<?= $this->url("student-graduation", ["action" => "guardar-tema-tesis"]) ?>',
             type: 'POST',
