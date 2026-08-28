@@ -2301,7 +2301,7 @@ class ExamenController extends AbstractActionController {
         }
 
         $estudiante = $this->examenManager->getEstudiantePorProceso($codProceso);
-        $terna = $this->examenManager->getTerna($codProceso, 'examen_privado');
+        $terna = $this->examenManager->getTerna($codProceso);
         $temaTesis = $this->examenManager->getTemaTesis($codProceso);
 
         $preguntas = [];
@@ -3038,6 +3038,379 @@ class ExamenController extends AbstractActionController {
             $_SESSION['acta_examen_privado_form'] = $this->params()->fromPost();
             $this->pg()->log('Error al generar el acta de examen privado del proceso ' . $idProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
             return $this->redirect()->toRoute('examen', ['action' => 'acta-examen-privado', 'id' => $idProceso]);
+        }
+    }
+
+    /**
+     * Descarga la matriz de evaluación del examen privado en formato DOCX.
+     * Incluye una columna por examinador que haya evaluado y sección de firmas.
+     * Solo disponible cuando la evaluación está cerrada y al menos 2 examinadores completaron.
+     */
+    public function descargarMatrizEvaluacionAction()
+    {
+        $codProceso = (int) $this->params()->fromRoute('id', 0);
+        error_log("[DESCARGAR-MATRIZ] Inicio codProceso={$codProceso}");
+
+        if ($codProceso <= 0) {
+            error_log("[DESCARGAR-MATRIZ] Proceso no valido");
+            $this->flashMessenger()->addErrorMessage('Proceso no válido');
+            return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+        }
+
+        try {
+            $proceso = $this->examenManager->getProceso($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Proceso=" . ($proceso ? 'OK' : 'NULL'));
+            if (!$proceso) {
+                $this->flashMessenger()->addErrorMessage('Proceso no encontrado.');
+                return $this->redirect()->toRoute('examen', ['action' => 'evaluacion-privado']);
+            }
+
+            $estado = $this->examenManager->getEstadoEvaluacion($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Estado=" . print_r($estado, true));
+            $yaCerrada = !empty($estado['hora_cierre_evaluacion']);
+            $completadas = (int) ($estado['ex1_completado'] ?? 0)
+                + (int) ($estado['ex2_completado'] ?? 0)
+                + (int) ($estado['ex3_completado'] ?? 0);
+
+            if (!$yaCerrada || $completadas < 2) {
+                error_log("[DESCARGAR-MATRIZ] No cerrada o <2 completadas. cerrada={$yaCerrada} completadas={$completadas}");
+                $this->flashMessenger()->addErrorMessage(
+                    'La matriz solo puede descargarse cuando la evaluación esté cerrada y al menos 2 examinadores hayan completado.'
+                );
+                return $this->redirect()->toRoute('examen', ['action' => 'ver-matriz', 'id' => $codProceso]);
+            }
+
+            error_log("[DESCARGAR-MATRIZ] Obtener estudiante...");
+            $estudiante = $this->examenManager->getEstudiantePorProceso($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Estudiante=" . print_r($estudiante, true));
+
+            error_log("[DESCARGAR-MATRIZ] Obtener terna...");
+            $terna = $this->examenManager->getTerna($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Terna examinadores count=" . count($terna['examinadores'] ?? []));
+
+            error_log("[DESCARGAR-MATRIZ] Obtener tema tesis...");
+            $temaTesis = $this->examenManager->getTemaTesis($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Tema tesis=" . ($temaTesis ?? 'NULL'));
+
+            error_log("[DESCARGAR-MATRIZ] Obtener preguntas...");
+            $preguntas = [];
+            $codCarrera = (int) ($estudiante['cod_carrera'] ?? 0);
+            if ($codCarrera > 0) {
+                $preguntas = $this->examenManager->getMatrizPreguntas($codCarrera);
+            }
+            error_log("[DESCARGAR-MATRIZ] Preguntas count=" . count($preguntas));
+
+            error_log("[DESCARGAR-MATRIZ] Obtener evaluaciones...");
+            $evaluaciones = $this->examenManager->getResumenEvaluaciones($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Evaluaciones=" . print_r($evaluaciones, true));
+
+            error_log("[DESCARGAR-MATRIZ] Obtener notas...");
+            $notas = $this->examenManager->getNotasExaminadores($codProceso);
+            error_log("[DESCARGAR-MATRIZ] Notas=" . print_r($notas, true));
+
+            $examinadores = $terna['examinadores'] ?? [];
+
+            $nombreEstudiante = trim($estudiante['nombre_completo'] ?? '');
+            $carrera = (string) ($estudiante['carrera'] ?? 'N/A');
+            $registro = (string) ($estudiante['registro_academico'] ?? '');
+            $fechaExamen = $proceso['fecha_examen_privado'] ?? '';
+            $fechaExamenFormato = '';
+            if (!empty($fechaExamen)) {
+                $dt = \DateTime::createFromFormat('Y-m-d', $fechaExamen);
+                if (!$dt) {
+                    $dt = \DateTime::createFromFormat('d/m/Y', $fechaExamen);
+                }
+                if ($dt) {
+                    $fechaExamenFormato = $dt->format('d/m/Y');
+                }
+            }
+
+            $temaTesis = (string) ($temaTesis ?? 'Sin registrar');
+            error_log("[DESCARGAR-MATRIZ] datos listos. nombre={$nombreEstudiante} carrera={$carrera} fecha={$fechaExamenFormato}");
+
+            error_log("[DESCARGAR-MATRIZ] Creando PHPWord...");
+            $phpWord = new \PhpOffice\PhpWord\PhpWord();
+            $phpWord->setDefaultFontName('Arial');
+            $phpWord->setDefaultFontSize(11);
+            error_log("[DESCARGAR-MATRIZ] PHPWord creado OK");
+
+            error_log("[DESCARGAR-MATRIZ] addSection...");
+            $section = $phpWord->addSection([
+                'paperSize'    => 'Letter',
+                'marginTop'    => 0,
+                'marginBottom' => 1134,
+                'marginLeft'   => 1134,
+                'marginRight'  => 1134,
+                'headerHeight' => 0,
+            ]);
+            error_log("[DESCARGAR-MATRIZ] addSection OK");
+
+            // Encabezado con logos (repite en todas las páginas)
+            error_log("[DESCARGAR-MATRIZ] addHeader...");
+            $header = $section->addHeader();
+            $headerTable = $header->addTable([
+                'borderSize'  => 0,
+                'borderColor' => 'FFFFFF',
+                'cellMargin'  => 0,
+                'width'       => 100,
+                'alignment'   => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+            ]);
+            $headerTable->addRow();
+            $logoUsacPath = '/var/www/public/img/logos/logousac.jpg';
+            $logoFaPath   = '/var/www/public/img/logos/logo_color_usac2.png';
+            $cellLeft = $headerTable->addCell(4500, ['valign' => 'top']);
+            if (file_exists($logoUsacPath)) {
+                $cellLeft->addImage($logoUsacPath, ['width' => 150, 'alignment' => 'left']);
+            }
+            $cellRight = $headerTable->addCell(4500, ['valign' => 'top']);
+            if (file_exists($logoFaPath)) {
+                $cellRight->addImage($logoFaPath, ['width' => 150, 'alignment' => 'right']);
+            }
+            error_log("[DESCARGAR-MATRIZ] addHeader OK");
+
+            error_log("[DESCARGAR-MATRIZ] addText titulo 1...");
+            $section->addText(
+                'Examen Privado de la escuela de Postgrados',
+                ['size' => 14],
+                ['alignment' => 'center']
+            );
+            error_log("[DESCARGAR-MATRIZ] addText titulo 2...");
+            $section->addText(
+                'Resultado de Matriz de evaluación',
+                ['bold' => true, 'size' => 14],
+                ['alignment' => 'center']
+            );
+            error_log("[DESCARGAR-MATRIZ] addTextBreak...");
+            $section->addTextBreak(1);
+
+            error_log("[DESCARGAR-MATRIZ] addTextRun...");
+            $subRun = $section->addTextRun(['alignment' => 'center']);
+            $subRun->addText('Correspondiente al examen privado de maestría en ' . $carrera);
+            $subRun->addText(', realizado el ' . $fechaExamenFormato . ' por el estudiante:');
+            $section->addTextBreak(1);
+
+            $section->addText(
+                $nombreEstudiante . ', Registro Académico ' . $registro,
+                ['bold' => true, 'size' => 12],
+                ['alignment' => 'center']
+            );
+
+            $section->addText('Tesis: ' . $temaTesis, [], ['alignment' => 'center']);
+            $section->addTextBreak(1);
+
+            error_log("[DESCARGAR-MATRIZ] Determinando examinadores...");
+            $examinadoresEvaluaron = [];
+            for ($i = 1; $i <= 3; $i++) {
+                if (isset($notas[$i]) && $notas[$i] !== null) {
+                    $ex = $examinadores[$i - 1] ?? [];
+                    $nombreEx = ($ex['titulo'] ?? '')
+                        ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? ''))
+                        : ($ex['nombre'] ?? 'Examinador ' . $i);
+                    $examinadoresEvaluaron[$i] = $nombreEx;
+                }
+            }
+            error_log("[DESCARGAR-MATRIZ] Examinadores evaluaron count=" . count($examinadoresEvaluaron));
+
+            $numExaminadores = count($examinadoresEvaluaron);
+            if ($numExaminadores === 0) {
+                error_log("[DESCARGAR-MATRIZ] Sin examinadores evaluaron");
+                $this->flashMessenger()->addErrorMessage('No hay evaluaciones registradas para descargar.');
+                return $this->redirect()->toRoute('examen', ['action' => 'ver-matriz', 'id' => $codProceso]);
+            }
+
+            error_log("[DESCARGAR-MATRIZ] addTable...");
+            $tableStyle = [
+                'borderSize'  => 6,
+                'borderColor' => '000000',
+                'cellMargin'  => 50,
+                'width'       => 100,
+                'alignment'   => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+            ];
+            $table = $section->addTable($tableStyle);
+            error_log("[DESCARGAR-MATRIZ] addTable OK");
+
+            error_log("[DESCARGAR-MATRIZ] addRow encabezados...");
+            $table->addRow();
+            $table->addCell(500, ['valign' => 'center'])
+                ->addText('No.', [], ['alignment' => 'center']);
+            $table->addCell(3500, ['valign' => 'center'])
+                ->addText('Pregunta', [], ['alignment' => 'center']);
+            $table->addCell(1200, ['valign' => 'center'])
+                ->addText('Ponderación', [], ['alignment' => 'center']);
+            foreach ($examinadoresEvaluaron as $pos => $nombreEx) {
+                $table->addCell(1800, ['valign' => 'center'])
+                    ->addText($nombreEx, ['size' => 10], ['alignment' => 'center']);
+            }
+            error_log("[DESCARGAR-MATRIZ] encabezados OK");
+
+            error_log("[DESCARGAR-MATRIZ] filas de preguntas...");
+            $totales = [];
+            foreach ($examinadoresEvaluaron as $pos => $nombreEx) {
+                $totales[$pos] = 0;
+            }
+
+            foreach ($preguntas as $pregunta) {
+                $table->addRow();
+                $table->addCell(500)
+                    ->addText((string) $pregunta['numero_orden'], null, ['alignment' => 'center']);
+                $table->addCell(3500)
+                    ->addText((string) ($pregunta['texto_pregunta'] ?? ''), ['size' => 10]);
+                $ponderacion = (string) ($pregunta['punteo_maximo'] ?? '-');
+                if (strpos($ponderacion, '-') !== false) {
+                    $partes = explode('-', $ponderacion);
+                    $ponderacion = trim(end($partes));
+                }
+                $table->addCell(1200)
+                    ->addText($ponderacion, null, ['alignment' => 'center']);
+
+                foreach ($examinadoresEvaluaron as $pos => $nombreEx) {
+                    $valor = '-';
+                    $eval = $evaluaciones[$pos] ?? null;
+                    if ($eval && !empty($eval['respuestas'])) {
+                        foreach ($eval['respuestas'] as $r) {
+                            if ((int) $r['cod_pregunta'] === (int) $pregunta['cod_pregunta']) {
+                                if (($pregunta['tipo_campo'] ?? '') === 'numero') {
+                                    $punteo = ($r['punteo'] !== null && $r['punteo'] !== '')
+                                        ? (float) $r['punteo']
+                                        : null;
+                                    if ($punteo !== null) {
+                                        $valor = number_format($punteo, 2);
+                                        $totales[$pos] += $punteo;
+                                    }
+                                } else {
+                                    $valor = (string) ($r['respuesta_texto'] ?? '-');
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    $table->addCell(1800)
+                        ->addText((string) $valor, null, ['alignment' => 'center']);
+                }
+            }
+            error_log("[DESCARGAR-MATRIZ] filas de preguntas OK");
+
+            error_log("[DESCARGAR-MATRIZ] fila totales...");
+            $table->addRow();
+            $table->addCell(500)->addText('');
+            $table->addCell(3500)
+                ->addText('TOTAL', ['bold' => true], ['alignment' => 'right']);
+            $table->addCell(1200)->addText('');
+            foreach ($examinadoresEvaluaron as $pos => $nombreEx) {
+                $table->addCell(1800)
+                    ->addText(number_format($totales[$pos], 2), ['bold' => true], ['alignment' => 'center']);
+            }
+            error_log("[DESCARGAR-MATRIZ] fila totales OK");
+
+            $section->addTextBreak(1);
+
+            error_log("[DESCARGAR-MATRIZ] textos totales individuales...");
+            $promedio = 0;
+            $totalExaminadores = count($totales);
+            if ($totalExaminadores > 0) {
+                $promedio = array_sum($totales) / $totalExaminadores;
+            }
+            $section->addText(
+                'Obteniendo una puntuación total de ' . number_format($promedio, 2) . ' puntos.',
+                [],
+                ['alignment' => 'center']
+            );
+
+            $section->addTextBreak(2);
+
+            $firmaCellStyle = ['valign' => 'top'];
+            $firmaTextStyle = ['alignment' => 'center'];
+
+            $firmaTable = $section->addTable([
+                'borderSize'  => 0,
+                'borderColor' => 'FFFFFF',
+                'cellMargin'  => 80,
+                'width'       => 140,
+                'alignment'   => \PhpOffice\PhpWord\SimpleType\JcTable::CENTER,
+            ]);
+
+            $firmaTable->addRow();
+            $isFirst = true;
+            foreach ($examinadoresEvaluaron as $pos => $nombreEx) {
+                if (!$isFirst) {
+                    $sepCell = $firmaTable->addCell(60, $firmaCellStyle);
+                    $sepCell->addText('', [], $firmaTextStyle);
+                }
+                $isFirst = false;
+                $cell = $firmaTable->addCell(3600, $firmaCellStyle);
+                $cell->addText('', [], $firmaTextStyle);
+                $cell->addText('', [], $firmaTextStyle);
+                $cell->addText('', [], $firmaTextStyle);
+                $cell->addText('_____________________________', [], $firmaTextStyle);
+                $run = $cell->addTextRun($firmaTextStyle);
+                $run->addText('Examinador: ', []);
+                $run->addText($nombreEx, ['bold' => true]);
+                $fechaEval = $evaluaciones[$pos]['fecha_evaluacion'] ?? null;
+                if ($fechaEval) {
+                    $cell->addText(
+                        date('d/m/Y h:i A', strtotime($fechaEval)),
+                        [],
+                        $firmaTextStyle
+                    );
+                }
+            }
+            error_log("[DESCARGAR-MATRIZ] firmas OK");
+
+            $filename = 'Matriz_Evaluacion_Privado_' . $codProceso . '.docx';
+            error_log("[DESCARGAR-MATRIZ] tempnam...");
+
+            $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
+            if ($tempFile === false) {
+                throw new \RuntimeException('No se pudo crear un archivo temporal en el directorio de temporales.');
+            }
+            $tempFile .= '.docx';
+            error_log("[DESCARGAR-MATRIZ] tempFile={$tempFile}");
+
+            error_log("[DESCARGAR-MATRIZ] createWriter...");
+            $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+            error_log("[DESCARGAR-MATRIZ] save...");
+            $objWriter->save($tempFile);
+            error_log("[DESCARGAR-MATRIZ] save OK");
+
+            if (!file_exists($tempFile) || filesize($tempFile) === 0) {
+                throw new \RuntimeException('El archivo DOCX generado está vacío o no se pudo escribir.');
+            }
+
+            error_log("[DESCARGAR-MATRIZ] file_get_contents...");
+            $fileContent = file_get_contents($tempFile);
+            unlink($tempFile);
+
+            if ($fileContent === false || strlen($fileContent) === 0) {
+                throw new \RuntimeException('No se pudo leer el contenido del archivo generado.');
+            }
+            error_log("[DESCARGAR-MATRIZ] content size=" . strlen($fileContent));
+
+            error_log("[DESCARGAR-MATRIZ] enviando headers...");
+            $response = $this->getResponse();
+            $response->setContent($fileContent);
+            $headers = $response->getHeaders();
+            $headers->clearHeaders();
+            $headers->addHeaderLine('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            $headers->addHeaderLine('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            $headers->addHeaderLine('Content-Length', strlen($fileContent));
+            $headers->addHeaderLine('Pragma', 'public');
+            $headers->addHeaderLine('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
+            $response->setHeaders($headers);
+
+            try {
+                $this->pg()->log('Se descargó la matriz de evaluación del examen privado del estudiante ' . $nombreEstudiante . '.', LM::SUCCESS, LM::READ);
+            } catch (\Throwable $logEx) {
+                error_log('Log fallo en descargarMatrizEvaluacion: ' . $logEx->getMessage());
+            }
+            return $response;
+        } catch (\Throwable $e) {
+            $this->flashMessenger()->addErrorMessage('Error al generar la matriz: ' . $e->getMessage());
+            try {
+                $this->pg()->log('Error al generar la matriz de evaluación del proceso ' . $codProceso . ': ' . $e->getMessage(), LM::FAILURE, LM::CREATE);
+            } catch (\Throwable $logEx) {
+                error_log('Log fallo en descargarMatrizEvaluacion error: ' . $logEx->getMessage());
+            }
+            return $this->redirect()->toRoute('examen', ['action' => 'ver-matriz', 'id' => $codProceso]);
         }
     }
 

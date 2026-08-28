@@ -88,12 +88,12 @@ $this->headTitle('Evaluación Examen Privado');
                             <th style="width: 120px;">Registro</th>
                             <th>Estudiante</th>
                             <th>Carrera / Maestría</th>
-                            <th style="width: 130px;">Programación</th>
+                            <th style="width: 80px;">Programación</th>
                             <th style="width: 100px;">Estado</th>
                             <th style="width: 50px;" class="text-center">Ex1</th>
                             <th style="width: 50px;" class="text-center">Ex2</th>
                             <th style="width: 50px;" class="text-center">Ex3</th>
-                            <th style="width: 220px;">Acciones</th>
+                            <th style="width: 300px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -168,14 +168,14 @@ $this->headTitle('Evaluación Examen Privado');
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <a href="<?= $this->url('examen', ['action' => 'ver-matriz', 'id' => $codProceso]) ?>"
-                                           class="btn btn-sm btn-info" title="Ver resumen">
+                                         <a href="<?= $this->url('examen', ['action' => 'ver-matriz', 'id' => $codProceso]) ?>"
+                                            class="btn btn-sm" style="background-color: #0E7C7B; border-color: #0A5F5E; color: white;" title="Ver resumen">
                                             <i class="fa fa-eye"></i> Evaluar
-                                        </a>
-                                        <?php if (!empty($horaCierre) && ($ex1 + $ex2 + $ex3) >= 2): ?>
+                                         </a>
+                                         <?php if (!empty($horaCierre) && ($ex1 + $ex2 + $ex3) >= 2): ?>
                                             <a href="<?= $this->url('examen', ['action' => 'acta-examen-privado', 'id' => $codProceso]) ?>"
-                                               class="btn btn-sm btn-success" title="Generar acta de examen privado">
-                                                <i class="fa fa-check-circle"></i> Generar acta
+                                               class="btn btn-sm btn-primary" title="Generación de documentos">
+                                                <i class="fa fa-file-text-o"></i> Generar Documentos
                                             </a>
                                         <?php endif; ?>
                                     </td>

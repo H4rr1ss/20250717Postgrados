@@ -683,6 +683,11 @@ return [
             'code' => 165,
             'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
         ],
+        'descargarMatrizEvaluacion' => [
+            'code' => 173,
+            'view' => View::EVALUACION_PRIVADO,
+            'roles' => [Role::DIRECTOR, Role::ASISTENTE, Role::SECRETARIO_EXAMEN_PRIVADO]
+        ],
         'actasExamenGeneral' => [
             'code' => 166,
             'view' => View::ACTAS_EXAMEN_GENERAL,

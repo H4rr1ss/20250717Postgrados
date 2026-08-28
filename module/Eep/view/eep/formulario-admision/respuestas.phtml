@@ -60,55 +60,61 @@ $formularioActivo = $formulario->getActivo();
                 <form method="post" action="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()], ['query' => ['page' => $page]]) ?>" id="formRegistrarAspirantes">
                     
                     <?php if ($formularioActivo): ?>
-                        <!-- Panel de asignación masiva -->
-                        <div class="well well-sm" style="margin-bottom: 15px;">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <h5 style="margin-top: 0;"><i class="fa fa-users"></i> Asignación Masiva</h5>
-                                </div>
+                        <!-- Panel de asignación masiva (proceso aparte) -->
+                        <div class="panel" style="margin-bottom: 20px; border-color: #0E7C7B;">
+                            <div class="panel-heading" style="background-color: #0E7C7B; color: white; border-color: #0E7C7B;">
+                                <i class="fa fa-users"></i> <strong>Asignación Masiva</strong>
+                                <small style="color: #e0f7f7;">(Proceso independiente de filtros)</small>
                             </div>
-                            <div class="row">
-                                <div class="col-md-3">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="grado_a_ingresar" class="control-label" style="font-size: 12px;">Grado Académico</label>
-                                        <select name="grado_a_ingresar" id="grado_a_ingresar" class="form-control input-sm">
-                                            <option value="">-- Seleccione --</option>
-                                            <?php foreach ($degrees as $degree): ?>
-                                                <option value="<?= $this->escapeHtml($degree['cod_grado']) ?>">
-                                                    <?= $this->escapeHtml($degree['nombre']) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
+                            <div class="panel-body">
+                                <div class="alert alert-info" style="font-size: 13px; margin-bottom: 15px;">
+                                    <i class="fa fa-info-circle"></i> 
+                                    <strong>¿Qué es esto?</strong> Use esta sección para asignar el grado, carrera y cohorte a los aspirantes seleccionados. 
+                                    Se usa para registrar en bloque a los aspirantes aprobados en un programa específico.
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="carrera_a_ingresar" class="control-label" style="font-size: 12px;">Carrera</label>
-                                        <select name="carrera_a_ingresar" id="carrera_a_ingresar" class="form-control input-sm">
-                                            <option value="">-- Seleccione primero el grado --</option>
-                                        </select>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="grado_a_ingresar" class="control-label" style="font-size: 12px;">Grado Académico</label>
+                                            <select name="grado_a_ingresar" id="grado_a_ingresar" class="form-control input-sm">
+                                                <option value="">-- Seleccione --</option>
+                                                <?php foreach ($degrees as $degree): ?>
+                                                    <option value="<?= $this->escapeHtml($degree['cod_grado']) ?>">
+                                                        <?= $this->escapeHtml($degree['nombre']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label for="cohorte" class="control-label" style="font-size: 12px;">Cohorte</label>
-                                        <select name="cohorte" id="cohorte" class="form-control input-sm">
-                                            <option value="">-- Seleccione --</option>
-                                            <?php foreach ($cohorts as $cohort): ?>
-                                                <option value="<?= $this->escapeHtml($cohort['fecha_cohorte']) ?>">
-                                                    <?= date('d/m/Y', strtotime($cohort['fecha_cohorte'])) ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                            <option value="0000-01-01">(Cursos de Actualización)</option>
-                                        </select>
+                                    <div class="col-md-3">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="carrera_a_ingresar" class="control-label" style="font-size: 12px;">Carrera</label>
+                                            <select name="carrera_a_ingresar" id="carrera_a_ingresar" class="form-control input-sm">
+                                                <option value="">-- Seleccione primero el grado --</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label class="control-label" style="font-size: 12px;">&nbsp;</label>
-                                        <button type="button" class="btn btn-success btn-sm btn-block" onclick="registrarAspirantesSeleccionados()">
-                                            <i class="fa fa-user-plus"></i> Registrar Seleccionados
-                                        </button>
+                                    <div class="col-md-3">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="cohorte" class="control-label" style="font-size: 12px;">Cohorte</label>
+                                            <select name="cohorte" id="cohorte" class="form-control input-sm">
+                                                <option value="">-- Seleccione --</option>
+                                                <?php foreach ($cohorts as $cohort): ?>
+                                                    <option value="<?= $this->escapeHtml($cohort['fecha_cohorte']) ?>">
+                                                        <?= date('d/m/Y', strtotime($cohort['fecha_cohorte'])) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                                <option value="0000-01-01">(Cursos de Actualización)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="control-label" style="font-size: 12px;">&nbsp;</label>
+                                            <button type="button" class="btn btn-success btn-sm btn-block" onclick="registrarAspirantesSeleccionados()">
+                                                <i class="fa fa-user-plus"></i> Registrar Seleccionados
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -119,8 +125,8 @@ $formularioActivo = $formulario->getActivo();
                         <thead>
                             <tr>
                                 <?php if ($formularioActivo): ?>
-                                    <th class="text-center" style="width: 30px;">
-                                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Seleccionar todos">
+                                    <th class="text-center" style="width: 40px;">
+                                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" title="Seleccionar todos" style="width: 22px; height: 22px; cursor: pointer; accent-color: #0E7C7B; border: 2px solid #000;">
                                     </th>
                                 <?php endif; ?>
                                 <th>CUI</th>
@@ -137,8 +143,8 @@ $formularioActivo = $formulario->getActivo();
                                 <?php $estaRegistrado = !empty($yaRegistrados[$respuesta->getIdRespuesta()]); ?>
                                 <tr <?= $estaRegistrado ? 'class="success"' : '' ?>>
                                     <?php if ($formularioActivo): ?>
-                                        <td class="text-center">
-                                            <input type="checkbox" name="aspirantes[]" value="<?= $respuesta->getIdRespuesta() ?>" class="aspirante-checkbox" <?= $estaRegistrado ? 'disabled' : '' ?>>
+                                        <td class="text-center" style="vertical-align: middle;">
+                                            <input type="checkbox" name="aspirantes[]" value="<?= $respuesta->getIdRespuesta() ?>" class="aspirante-checkbox" <?= $estaRegistrado ? 'disabled' : '' ?> style="width: 20px; height: 20px; cursor: pointer; accent-color: #0E7C7B; border: 2px solid #000;">
                                         </td>
                                     <?php endif; ?>
                                     <td>

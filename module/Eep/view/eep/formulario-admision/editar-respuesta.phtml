@@ -183,6 +183,13 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
 }
 ?>
 
+<div class="col-md-12" style="margin-bottom: 15px;">
+    <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
+       class="btn btn-default">
+        <i class="fa fa-arrow-left"></i> Regresar al listado
+    </a>
+</div>
+
 <div class="col-md-12">
     <div class="panel panel-<?= $modoSoloLectura ? 'info' : (($role->hasAdminRole()) ? 'green' : 'blue') ?>">
         <div class="panel-heading">
@@ -197,10 +204,6 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                         <i class="fa fa-lock"></i> SOLO LECTURA
                     </span>
                 <?php endif; ?>
-                <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
-                   class="btn btn-default btn-xs">
-                    <i class="fa fa-arrow-left"></i> Regresar
-                </a>
             </div>
         </div>
         <div class="panel-body">

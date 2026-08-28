@@ -39,7 +39,9 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
 ?>
 
 <div class="col-lg-1"></div>
-<div class="col-lg-10">
+
+<!-- Panel principal: Acta de Examen Privado -->
+<div class="col-lg-7">
     <div class="panel panel-green">
         <div class="panel-heading">
             <i class="fa fa-file-text-o"></i> Acta de Examen Privado
@@ -115,13 +117,17 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
                         <h4 style="margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                             <i class="fa fa-users"></i> Terna Examinadora
                         </h4>
-                        <?php 
-                        $notasExaminadores = $this->notasExaminadores ?? [];
-                        foreach ($examinadores as $i => $ex): 
-                            $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'No asignado');
-                            $posicion = $i + 1; // Las notas están indexadas por posición (1, 2, 3)
-                            $evaluado = isset($notasExaminadores[$posicion]) && $notasExaminadores[$posicion] !== null;
-                        ?>
+                    </div>
+                </div>
+                <div class="row">
+                    <?php
+                    $notasExaminadores = $this->notasExaminadores ?? [];
+                    foreach ($examinadores as $i => $ex):
+                        $nombreEx = ($ex['titulo'] ?? '') ? trim($ex['titulo'] . ' ' . ($ex['nombre'] ?? '')) : ($ex['nombre'] ?? 'No asignado');
+                        $posicion = $i + 1; // Las notas están indexadas por posición (1, 2, 3)
+                        $evaluado = isset($notasExaminadores[$posicion]) && $notasExaminadores[$posicion] !== null;
+                    ?>
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label>
                                     Examinador <?= $i + 1 ?>
@@ -133,8 +139,8 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
                                 </label>
                                 <input type="text" class="form-control" value="<?= $this->escapeHtml($nombreEx) ?>" readonly>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
 
                 <!-- Campos editables para el acta -->
@@ -181,8 +187,6 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
                     </div>
                 </div>
 
-
-
                 <div class="row">
                     <div class="col-md-12 text-right" style="margin-top: 20px;">
                         <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
@@ -198,4 +202,27 @@ if (empty($nombreEstudiante) || empty($temaTesis)) {
         </div>
     </div>
 </div>
+
+<!-- Panel lateral: Matriz de Evaluación (documento separado) -->
+<div class="col-lg-3">
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <i class="fa fa-table"></i> Matriz de Evaluación
+        </div>
+        <div class="panel-body pan">
+            <div class="form-body pal">
+                <div class="alert alert-info" style="font-size: 13px;">
+                    <i class="fa fa-info-circle"></i> Descargue la matriz de evaluación del examen privado con las calificaciones registradas por los examinadores.
+                </div>
+                <div class="text-center" style="margin-top: 15px;">
+                    <a href="<?= $this->url('examen', ['action' => 'descargar-matriz-evaluacion', 'id' => $proceso['cod_proceso'] ?? 0]) ?>"
+                       class="btn btn-primary btn-block" target="_blank">
+                        <i class="fa fa-download"></i> Descargar matriz
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="col-lg-1"></div>

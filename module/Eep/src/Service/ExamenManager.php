@@ -1738,7 +1738,7 @@ class ExamenManager
                 JOIN usuario u ON u.cod_usuario = ep.cod_usuario
                 JOIN examen_tipo et ON et.cod_tipo_examen = ep.cod_tipo_examen
                 LEFT JOIN carrera c ON c.cod_carrera = et.cod_carrera
-                JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
+                LEFT JOIN examen_paso_catalogo epc ON epc.cod_paso = ep.cod_paso_actual
                 WHERE ep.cancelado = 0
                   AND EXISTS (
                       SELECT 1 FROM examen_proceso_paso epp4

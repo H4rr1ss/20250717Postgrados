@@ -397,6 +397,19 @@ return [
                     ],
                 ],
             ],
+            'descargar-matriz-evaluacion' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route' => '/examen/descargar-matriz-evaluacion/:id',
+                    'constraints' => [
+                        'id' => '[0-9]+',
+                    ],
+                    'defaults' => [
+                        'controller' => ExamenController::class,
+                        'action' => 'descargarMatrizEvaluacion',
+                    ],
+                ],
+            ],
             'eval-privado' => [
                 'type' => Segment::class,
                 'options' => [
