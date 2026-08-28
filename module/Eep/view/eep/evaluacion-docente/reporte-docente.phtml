@@ -24,6 +24,34 @@ rsort($anios);
 ksort($meses);
 ?>
 <div class="col-lg-12">
+    <div class="panel panel-default" style="margin-bottom: 20px;">
+        <div class="panel-heading" style="background-color: #f5f5f5; color: #333;">
+            <i class="fa fa-info-circle"></i> <strong>Escala de Calificación — Nota Final / 100</strong>
+        </div>
+        <div class="panel-body">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <span style="font-size: 18px; font-weight: bold; color: #000;">90 – 100</span>
+                    <p class="text-muted" style="margin-top: 4px;"><strong>Sobresaliente</strong></p>
+                </div>
+                <div class="col-md-3">
+                    <span style="font-size: 18px; font-weight: bold; color: #000;">70 – 89</span>
+                    <p class="text-muted" style="margin-top: 4px;"><strong>Satisfactorio</strong></p>
+                </div>
+                <div class="col-md-3">
+                    <span style="font-size: 18px; font-weight: bold; color: #000;">60 – 69</span>
+                    <p class="text-muted" style="margin-top: 4px;"><strong>Regular</strong></p>
+                </div>
+                <div class="col-md-3">
+                    <span style="font-size: 18px; font-weight: bold; color: #000;">0 – 59</span>
+                    <p class="text-muted" style="margin-top: 4px;"><strong>Necesita mejora</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-lg-12">
     <div class="panel panel-green">
         <div class="panel-heading">
             Reporte de Evaluación Docente
@@ -80,10 +108,7 @@ ksort($meses);
                            class="btn btn-default">
                             <i class="fa fa-eraser"></i> Limpiar
                         </a>
-                        <a href="<?= $this->url('evaluacion-docente', ['action' => 'descargar-reporte-docente'], ['query' => ['anio' => $anio, 'mes' => $mes, 'docente' => $docente]]) ?>"
-                           class="btn btn-success">
-                            <i class="fa fa-download"></i> Descargar excel
-                        </a>
+
                     </div>
                 </form>
             </div>
@@ -103,8 +128,8 @@ ksort($meses);
                                 <th>Curso</th>
                                 <th class="text-center">Sección</th>
                                 <th class="text-center">Período del Curso</th>
-                                <th class="text-center">Evaluaciones</th>
                                 <th class="text-center">Nota Final / 100</th>
+                                <th class="text-center">Evaluaciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -117,14 +142,6 @@ ksort($meses);
                                     <td><?= $this->escapeHtml($item['nombre_curso']) ?></td>
                                     <td class="text-center"><?= $this->escapeHtml($item['seccion']) ?></td>
                                     <td class="text-center"><?= $this->escapeHtml($item['anio'] . ' - ' . ($nombresMeses[(int) $item['mes']] ?? 'Mes ' . $item['mes'])) ?></td>
-                                    <td class="text-center">
-                                        <span class="badge" style="background-color: #5bc0de;">
-                                            <?= $this->escapeHtml($item['total_evaluaciones']) ?>
-                                        </span>
-                                        <span class="text-info" style="margin-left: 8px; font-size: 13px;">
-                                            <i class="fa fa-bar-chart"></i> Ver resultados
-                                        </span>
-                                    </td>
                                     <td class="text-center">
                                         <?php if (isset($item['nota_final_100']) && $item['nota_final_100'] !== null): ?>
                                             <?php
@@ -147,6 +164,14 @@ ksort($meses);
                                         <?php else: ?>
                                             <span class="text-info">N/A</span>
                                         <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge" style="background-color: #5bc0de; font-weight: bold; color: #000;">
+                                            <?= $this->escapeHtml($item['total_evaluaciones']) ?>
+                                        </span>
+                                        <span class="text-info" style="margin-left: 8px; font-size: 13px;">
+                                            <i class="fa fa-bar-chart"></i> Ver resultados
+                                        </span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
