@@ -42,26 +42,26 @@ VALUES (3568, 11, CURDATE());
 -- 1.2 Tipos de examen — 20 tipos privados con cod_carrera vinculado (alineado con matriz_evaluacion_completo.sql)
 -- ------------------------------------------------------------
 INSERT INTO examen_tipo (cod_tipo_examen, cod_carrera, nombre, descripcion, activo) VALUES
-(1, 18, 'Examen Privado — Patrimonio Cultural (Conservación)', 'Examen privado para Maestría en Patrimonio Cultural — Conservación', 1),
-(2, 24, 'Examen Privado — Gerencia de Proyectos Arquitectónicos', 'Examen privado para Maestría en Gerencia de Proyectos Arquitectónicos', 1),
-(3, 13, 'Examen Privado — Gestión para la Reducción del Riesgo', 'Examen privado para Maestría en Gestión para la Reducción del Riesgo', 1),
-(4, 22, 'Examen Privado — Enseñanza Virtual de Arquitectura y Diseño', 'Examen privado para Maestría en Enseñanza Virtual de la Arquitectura y el Diseño', 1),
-(5, 17, 'Examen Privado — Mercadeo para el Diseño', 'Examen privado para Maestría en Mercadeo para el Diseño', 1),
-(6, 15, 'Examen Privado — Arquitectura para la Salud', 'Examen privado para Maestría en Arquitectura para la Salud', 1),
-(7, 9,  'Examen Privado — Asentamientos Humanos y Vivienda', 'Examen privado para Maestría en Planificación de Asentamientos Humanos y Vivienda', 1),
-(8, 10, 'Examen Privado — Restauración de Monumentos', 'Examen privado para Maestría en Restauración de Monumentos, Especialidad en Bienes Inmuebles y Centros Históricos', 1),
-(9, 11, 'Examen Privado — Diseño, Planificación y Manejo Ambiental', 'Examen privado para Maestría en Diseño, Planificación y Manejo Ambiental', 1),
-(10, 12, 'Examen Privado — Diseño Arquitectónico', 'Examen privado para Maestría en Diseño Arquitectónico', 1),
-(11, 14, 'Examen Privado — Desarrollo Urbano y Territorio', 'Examen privado para Maestría en Desarrollo Urbano y Territorio', 1),
-(12, 16, 'Examen Privado — Planificación y Diseño del Paisaje', 'Examen privado para Maestría en Planificación y Diseño del Paisaje', 1),
-(13, 19, 'Examen Privado — Patrimonio Cultural (Gestión)', 'Examen privado para Maestría en Patrimonio Cultural para el Desarrollo — Gestión', 1),
-(14, 20, 'Examen Privado — Análisis y Reducción de Riesgo', 'Examen privado para Especialización en Análisis y Reducción de Riesgo de Desastres', 1),
-(15, 21, 'Examen Privado — Arquitectura y Construcción Sostenible', 'Examen privado para Especialización en Arquitectura y Construcción Sostenible', 1),
-(16, 23, 'Examen Privado — Diseño Interactivo Digital', 'Examen privado para Maestría en Diseño Interactivo Digital', 1),
-(17, 25, 'Examen Privado — Gestión Integrada', 'Examen privado para Maestría en Gestión Integrada: Medio Ambiente, Calidad y Prevención', 1),
-(18, 26, 'Examen Privado — Diseño y Gestión de Proyectos Tecnológicos', 'Examen privado para Maestría en Diseño y Gestión de Proyectos Tecnológicos', 1),
-(19, 28, 'Examen Privado — Dirección y Producción de Cine', 'Examen privado para Especialización en Dirección y Producción de Cine, Video y Televisión', 1),
-(20, 80, 'Examen Privado — Doctorado en Arquitectura', 'Examen privado para Doctorado en Arquitectura', 1);
+(1, 9, 'Maestría en Planificación de Asentamientos Humanos y Vivienda', 'Maestría en Asentamientos Humanos', 1),
+(2, 10, 'Maestría en Restauración de Monumentos, Especialidad en Bienes Inmuebles y Centros Históricos', 'Maestría en Restauración de Monumentos', 1),
+(3, 11, 'Maestría en Diseño, Planficación y Manejo Ambiental', 'Maestría en Diseño, Planficación y Manejo Ambiental', 1),
+(4, 12, 'Maestría en Diseño Arquitectonico', 'Maestría en Diseño Arquitectónico', 1),
+(5, 13, 'Maestría en Gestión para la Reducción del Riesgo', 'Maestría en Gestión de Riesgo', 1),
+(6, 14, 'Maestría en Desarrollo Urbano y Territorio', 'Maestría en Desarrollo Urbano y Territorio', 1),
+(7, 15, 'Maestría en Arquitectura para la Salud', 'Maestría en Arquitectura para la Salud', 1),
+(8, 16, 'Maestría en Planificación y Diseño del Paisaje', 'Maestría en Planificación y Diseño del Paisaje', 1),
+(9, 17, 'Maestría en Mercadeo para el Diseño', 'Maestría en Mercadeo para el Diseño', 1),
+(10, 18, 'Maestría en Patrimonio Cultural para el Desarrollo con Énfasis en Conservación', 'Maestría en Patrimonio Cultural para el Desarrollo con Énfasis en Conservación', 1),
+(11, 19, 'Maestría en Patrimonio Cultural para el Desarrollo con Énfasis en Gestión', 'Maestría en Patrimonio Cultural para el Desarrollo con Énfasis en Gestión', 1),
+(12, 20, 'Especialización en Análisis y Reducción de Riesgo de Desastres en Procesos de Desarrollo', 'Especialización en Análisis y Reducción de Riesgo de Desastre', 1),
+(13, 21, 'Especialización en Arquitectura y Construcción Sostenible por medio de modelo de Evaluación Verde, MIEV, para Edificios en Guatemala', 'Especialización en Arquitectura y Construcción Sostenible', 1),
+(14, 22, 'Maestría en Enseñanza Virtual de la Arquitectura y el Diseño', 'Maestría en Enseñanza Virtual de la Arquitectura y el Diseño', 1),
+(15, 23, 'Maestría en Diseño Interactivo Digital', 'Maestría en Diseño Interactivo Digital', 1),
+(16, 24, 'Maestría en Gerencia de Proyectos Arquitectónicos', 'Maestría en Gerencia de Proyectos Arquitectónicos', 1),
+(17, 25, 'Maestría en Gestión Integrada: Medio Ambiente, Calidad y Prevención', 'Maestría en Gestión Integrada: Medio Ambiente, Calidad y Prevención', 1),
+(18, 26, 'Maestría en Diseño y Gestión de Proyectos Tecnológicos', 'Maestría en Diseño y Gestión de Proyectos Tecnológicos', 1),
+(19, 28, 'Especialización en Dirección y Producción de Cine, Video y Televisión', 'Especialización en Dirección y Producción de Cine, Video y Televisión', 1),
+(20, 80, 'Doctorado en Arquitectura', 'Doctorado en Arquitectura', 1);
 
 -- Tipo público general (sin carrera específica)
 INSERT INTO `examen_tipo` (`cod_tipo_examen`, `cod_carrera`, `nombre`, `descripcion`, `activo`) VALUES
