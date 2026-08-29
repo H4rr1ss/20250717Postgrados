@@ -61,15 +61,31 @@ CREATE TABLE `evaluacion_respuesta_detalle` (
 -- ========================================================
 
 INSERT INTO `evaluacion_seccion` (`nombre`, `orden`, `activa`) VALUES
-('Desempeño Académico', 1, 1),
-('Comunicación y Recursos', 2, 1),
-('Comentarios Generales', 3, 1);
+('Técnico Administrativo', 1, 1),
+('Didáctico Andrológico', 2, 1),
+('Profesional', 3, 1);
 
 INSERT INTO `evaluacion_pregunta` (`id_seccion`, `texto`, `tipo`, `orden`, `activa`) VALUES
-(1, '¿El Docente demostró dominio del tema de contenidos de clase según el programa de clase?', 'escala10', 1, 1),
-(1, '¿El docente durante clases aplicó contenidos programáticos de clase a la problemática de la sociedad guatemalteca (ejemplos, casos, etc)?', 'escala10', 2, 1),
-(2, '¿Considera que la comunicación entre profesor y estudiantes fue adecuada durante el curso?', 'escala10', 1, 1),
-(2, '¿El docente compartió con estudiantes archivos de documentos relevantes y actualizados al curso?', 'boolean', 2, 1),
-(3, 'Comentario: ¿Qué aspectos considera que son recomendables al docente para mejorar los aprendizajes en curso?', 'texto', 1, 1);
+(1, '¿El docente entregó programa de clase en la primera sesión de clase?', 'boolean', 1, 1),
+(1, '¿Se cumplió con el horario de clase en todas las sesiones que corresponden al curso?', 'boolean', 2, 1),
+(1, '¿Se cumplió con lo planificado en programa de clase?', 'boolean', 3, 1),
+(1, '¿Docente conoce y aplica normativas y regulaciones universitarias durante el desarrollo del programa del curso?', 'boolean', 4, 1),
+(1, '¿Docente promueve en contenidos del curso la aplicación de principios éticos y normas jurídicas legislativas nacionales?', 'boolean', 5, 1),
+
+(2, '¿Fue oportuna, veraz, útil y clara la retroalimentación de docente a los resultados de evaluación de ejercicios, trabajos y exámenes de estudiantes durante el curso?', 'boolean', 6, 1),
+(2, '¿Docente demuestra vocación, interés y actitud de compartir conocimientos e incrementar aprendizajes de estudiantes?', 'boolean', 7, 1),
+(2, '¿Considera que el docente estimula la participación de estudiantes en clase?', 'escala10', 8, 1),
+(2, '¿Considera que fue adecuado al curso el uso de recursos audiovisuales, técnicas didácticas, herramientas de la enseñanza virtual?', 'escala10', 9, 1),
+(2, '¿Considera que se alcanzo objetivos y consolidación de aprendizajes fundamentales de acuerdo al programa de clase?', 'escala10', 10, 1),
+(2, '¿Opina usted que la evaluación y retroalimentación fue oportuna y con carácter orientadora respecto contenidos de programa de clase?', 'escala10', 11, 1),
+(2, '¿El docente estimulo en los estudiantes su interés por aprendizajes de contenidos de clase?', 'escala10', 12, 1),
+(2, '¿Como le parece la metodología de enseñanza aplicadas por el docente en el desarrollo del curso?', 'escala10', 13, 1),
+(2, '¿Como considera el aporte del docente en su formación de maestría a nivel de educación universitaria?', 'escala10', 14, 1),
+
+(3, 'Comentario: ¿Qué aspectos considera que son recomendables al docente para mejorar los aprendizajes en curso?', 'texto', 15, 1),
+(3, '¿El Docente demostró dominio del tema de contenidos de clase según el programa de clase?', 'escala10', 16, 1),
+(3, '¿Considera que la comunicación entre profesor y estudiantes fue adecuada durante el curso?', 'escala10', 17, 1),
+(3, '¿Docente durante clases aplico contenidos programáticos de clase a la problemática de la sociedad guatemalteca (ejemplos, casos, etc)?', 'escala10', 18, 1),
+(3, '¿El docente compartió con estudiantes archivos de documentos relevantes y actualizados al curso?', 'boolean', 19, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
