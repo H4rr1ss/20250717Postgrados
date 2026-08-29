@@ -291,19 +291,20 @@ $this->headTitle('Progreso del Proceso de Graduación');
                             </td>
                             <td>
                                 <?php if ($esFase1 && !$tieneTema): ?>
-                                    <div class="input-group">
-                                        <input type="text" id="temaTesis" class="form-control"
-                                               placeholder="Ingrese el título de su trabajo de graduación..."
-                                               value="">
-                                        <span class="input-group-btn">
-                                            <button class="btn btn-success" id="btnGuardarTema" type="button">
-                                                <i class="fa fa-save"></i> Guardar
-                                            </button>
-                                        </span>
-                                    </div>
-                                    <small style="color: #4B5563; display: block; margin-top: 5px;">
-                                        Este es el primer paso. Debe registrar su título antes de continuar con el proceso. Coloque el título tal y como se reflejará en los documentos generados para todo el proceso de graduación.
-                                    </small>
+                                     <div class="input-group">
+                                         <input type="text" id="temaTesis" class="form-control"
+                                                placeholder="Ingrese el título de su trabajo de graduación..."
+                                                value="">
+                                         <span class="input-group-btn">
+                                             <button class="btn btn-success" id="btnGuardarTema" type="button">
+                                                 <i class="fa fa-save"></i> Guardar
+                                             </button>
+                                         </span>
+                                     </div>
+                                     <div class="alert alert-warning" style="margin-top: 10px; margin-bottom: 0;">
+                                         <i class="fa fa-exclamation-triangle"></i>
+                                         <strong>Importante:</strong> El título debe ser exactamente el mismo que se trabajó en el protocolo. Cualquier modificación debe ser notificada a la coordinación.
+                                     </div>
                                 <?php else: ?>
                                     <?php if ($tieneTema): ?>
                                         <div id="displayTemaTesis" style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
