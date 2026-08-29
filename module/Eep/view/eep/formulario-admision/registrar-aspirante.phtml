@@ -185,7 +185,7 @@ $esImagenDpi = $photoDpiNombre ? in_array(strtolower(pathinfo($photoDpiNombre, P
             <h3 style="margin: 0; display: inline-block;">
                 <i class="fa fa-user-plus" style="color: #5cb85c;"></i> Registrar Aspirante como Estudiante
             </h3>
-            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $idFormulario]) ?>" class="btn btn-default btn-sm pull-right">
+            <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $idFormulario]) ?>" class="btn btn-primary btn-sm pull-right">
                 <i class="fa fa-arrow-left"></i> Volver a Respuestas
             </a>
             <div class="clearfix"></div>
@@ -289,7 +289,7 @@ $esImagenDpi = $photoDpiNombre ? in_array(strtolower(pathinfo($photoDpiNombre, P
                         <div class="photo-dpi-container">
                             <?php if ($esImagenDpi): ?>
                                 <img src="<?= $photoDpiUrl ?>" class="img-responsive center-block" alt="Foto DPI">
-                                <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fa fa-external-link"></i> Ver en tamaño completo
                                 </a>
                             <?php else: ?>

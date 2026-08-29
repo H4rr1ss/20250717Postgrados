@@ -43,7 +43,7 @@ $this->headTitle('Evaluación de Examen Privado');
 
 <?php if (!empty($this->posicion)): ?>
 <div style="padding: 20px 20px 10px;">
-    <a href="<?= $this->url('eval-privado', ['cod_proceso' => $this->proceso['cod_proceso']], ['query' => ['cod' => $this->codigo]]) ?>" class="btn btn-default" style="padding: 12px 20px; font-size: 15px;">
+    <a href="<?= $this->url('eval-privado', ['cod_proceso' => $this->proceso['cod_proceso']], ['query' => ['cod' => $this->codigo]]) ?>" class="btn btn-primary" style="padding: 12px 20px; font-size: 15px;">
         <i class="fa fa-arrow-left"></i> Regresar a selección de examinador
     </a>
 </div>

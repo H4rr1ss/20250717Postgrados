@@ -7,7 +7,7 @@ $examinadores = $this->terna['examinadores'] ?? [];
 
 <div class="row">
     <div style="display: flex; justify-content: flex-start; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-default">
+        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado']) ?>" class="btn btn-primary">
             <i class="fa fa-arrow-left"></i> Regresar a evaluaciones
         </a>
     </div>
@@ -108,7 +108,7 @@ $examinadores = $this->terna['examinadores'] ?? [];
                             </button>
                         <?php endif; ?>
                         <?php if ($abierta): ?>
-                            <button class="btn btn-default btn-ver-link"
+                            <button class="btn btn-primary btn-ver-link"
                                     data-proceso="<?= $codProceso ?>"
                                     data-codigo="<?= $this->escapeHtml($codigoEval) ?>"
                                     title="Ver link para compartir con examinadores">
@@ -326,7 +326,7 @@ for ($i = 1; $i <= 3; $i++) {
 
 <div class="row">
     <div class="col-lg-12 text-left" style="margin-bottom: 30px;">
-        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado'], ['query' => ['t' => time()]]) ?>" class="btn btn-default">
+        <a href="<?= $this->url('examen', ['action' => 'evaluacion-privado'], ['query' => ['t' => time()]]) ?>" class="btn btn-primary">
             <i class="fa fa-arrow-left"></i> Volver al listado
         </a>
     </div>
@@ -704,7 +704,7 @@ $(function() {
                             <option value="">-- Seleccione --</option>
                         </select>
                         <span class="input-group-btn">
-                            <button type="button" class="btn btn-default" id="btnRecargarDocentes" title="Recargar información de docentes">
+                            <button type="button" class="btn btn-primary" id="btnRecargarDocentes" title="Recargar información de docentes">
                                 <i class="fa fa-refresh"></i> Recargar
                             </button>
                         </span>

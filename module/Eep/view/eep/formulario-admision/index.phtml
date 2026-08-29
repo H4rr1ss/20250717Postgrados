@@ -74,7 +74,7 @@ $role = $this->layout()->role;
                         <div class="input-group input-group-sm" style="max-width: 500px;">
                             <input type="text" class="form-control" value="<?= $this->escapeHtml($linkPublico) ?>" id="link-formulario" readonly>
                             <span class="input-group-btn">
-                                <button class="btn btn-default" type="button" onclick="copiarLinkFormulario()" title="Copiar enlace">
+                                <button class="btn btn-primary" type="button" onclick="copiarLinkFormulario()" title="Copiar enlace">
                                     <i class="fa fa-copy"></i> Copiar
                                 </button>
                             </span>
@@ -132,7 +132,7 @@ $role = $this->layout()->role;
                                 </td>
                                 <td class="text-center">
                                     <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>" 
-                                       class="btn btn-default btn-sm" title="Ver Respuestas">
+                                       class="btn btn-primary btn-sm" title="Ver Respuestas">
                                         <i class="fa fa-eye"></i> Solo Lectura
                                    </a>
                                    <form method="POST" action="<?= $this->url('formulario-admision', ['action' => 'eliminar', 'id' => $formulario->getIdFormulario()]) ?>" style="display:inline; margin-left:5px;" class="form-eliminar" data-respuestas="<?= $formulario->getTotalRespuestas() ?>">

@@ -185,7 +185,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
 
 <div class="col-md-12" style="margin-bottom: 15px;">
     <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
-       class="btn btn-default">
+       class="btn btn-primary">
         <i class="fa fa-arrow-left"></i> Regresar al listado
     </a>
 </div>
@@ -284,7 +284,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                         <!-- Botones de acción (dinámicos según estado del formulario) -->
                         <div class="form-actions text-right" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
                             <a href="<?= $this->url('formulario-admision', ['action' => 'respuestas', 'id' => $formulario->getIdFormulario()]) ?>"
-                               class="btn btn-default">
+                               class="btn btn-primary">
                                 <i class="fa fa-arrow-left"></i> Volver al Listado
                             </a>
 
@@ -326,7 +326,7 @@ function renderCampoEditor($campo, $modoSoloLectura, $view, $nationalities = [],
                                          alt="Foto DPI"
                                          style="max-height: 300px;">
                                     <br><br>
-                                    <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-default">
+                                    <a href="<?= $photoDpiUrl ?>" target="_blank" class="btn btn-sm btn-primary">
                                         <i class="fa fa-external-link"></i> Ver en tamaño completo
                                     </a>
                                 <?php else: ?>

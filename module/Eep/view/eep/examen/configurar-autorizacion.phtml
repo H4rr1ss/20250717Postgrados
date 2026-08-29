@@ -181,11 +181,11 @@ if ($subPaso === 1) {
                         <button type="submit" class="btn btn-info" <?= $puedeAprobar ? '' : 'disabled' ?>>
                             <i class="fa fa-arrow-right"></i> Aprobar Parte 1 - Avanzar a Parte 2
                         </button>
-                        <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-default">
-                            <i class="fa fa-arrow-left"></i> Volver al listado
-                        </a>
-                    </form>
-                <?php else: ?>
+                         <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-primary">
+                             <i class="fa fa-arrow-left"></i> Volver al listado
+                         </a>
+                     </form>
+                 <?php else: ?>
                     <!-- PARTE 2: Entrega de documentos finales -->
                     <h4><i class="fa fa-gavel"></i> Aprobar Parte 2 - Entrega de Documentos</h4>
 
@@ -204,12 +204,12 @@ if ($subPaso === 1) {
                         <button type="submit" class="btn btn-success" <?= $puedeAprobar ? '' : 'disabled' ?>>
                             <i class="fa fa-check"></i> Aprobar y Avanzar a Examen General
                         </button>
-                        <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-default">
-                            <i class="fa fa-arrow-left"></i> Volver al listado
-                        </a>
-                    </form>
-                <?php endif; ?>
-            <?php endif; ?>
+                         <a href="<?= $this->url('examen', ['action' => 'autorizacionImpresion']) ?>" class="btn btn-primary">
+                             <i class="fa fa-arrow-left"></i> Volver al listado
+                         </a>
+                     </form>
+                 <?php endif; ?>
+             <?php endif; ?>
 
         </div>
     </div>
