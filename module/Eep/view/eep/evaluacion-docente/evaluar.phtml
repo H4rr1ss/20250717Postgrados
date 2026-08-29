@@ -59,8 +59,9 @@ $preguntas = $preguntas ?? [];
                 <input type="hidden" name="cod_horario" value="<?= $this->escapeHtmlAttr($curso['cod_horario'] ?? '') ?>">
 
                 <?php if (!empty($preguntas)): ?>
+                <div style="max-width: calc(100% - 700px); min-width: 800px; margin: 0 auto; font-size: 16px;">
                 <?php foreach ($preguntas as $seccion): ?>
-                    <div class="panel panel-default">
+                    <div class="panel panel-blue">
                         <div class="panel-heading">
                             <h4 class="panel-title">
                                 <i class="fa fa-check-square-o"></i> <?= $this->escapeHtml($seccion['categoria']) ?>
@@ -68,7 +69,7 @@ $preguntas = $preguntas ?? [];
                         </div>
                         <div class="panel-body">
                             <?php foreach ($seccion['preguntas'] as $pregunta): ?>
-                                <div class="form-group">
+                                <div class="form-group" style="margin-bottom: 38px;">
                                     <label>
                                         <?= $this->escapeHtml($pregunta['texto']) ?>
                                         <span class="text-danger">*</span>
@@ -94,14 +95,14 @@ $preguntas = $preguntas ?? [];
 
                                     <?php elseif ($pregunta['tipo'] === 'boolean'): ?>
                                         <div>
-                                            <label class="radio-inline" style="display: block; margin-bottom: 5px;">
+                                            <label class="radio-inline" style="margin-right: 20px;">
                                                 <input type="radio"
                                                        name="pregunta_<?= $pregunta['id'] ?>"
                                                        value="si"
                                                        required>
                                                 Sí
                                             </label>
-                                            <label class="radio-inline" style="display: block;">
+                                            <label class="radio-inline">
                                                 <input type="radio"
                                                        name="pregunta_<?= $pregunta['id'] ?>"
                                                        value="no"
@@ -122,6 +123,7 @@ $preguntas = $preguntas ?? [];
                         </div>
                     </div>
                 <?php endforeach; ?>
+                </div>
                 <?php else: ?>
                     <div class="alert alert-info">
                         <i class="fa fa-info-circle"></i>
