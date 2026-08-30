@@ -30,7 +30,6 @@ class View {
     const OFFICIAL_COURSES = 23;
     const ORDERS_UPDATE = 24;
     const FORMULARIO_ADMISION = 25;
-    const EVALUACION_DOCENTE = 25;
     const EXAMEN = 26;
     const STUDENT_GRADUATION = 27;
     const CARTA_EXAMINADORES = 28;
@@ -38,5 +37,5 @@ class View {
     const EVALUACION_DOCENTE_REPORTE = 30;
     const EVALUACION_PRIVADO = 31;
     const ACTAS_EXAMEN_GENERAL = 32;
-
+    const EVALUACION_DOCENTE = 33;
 }

@@ -31,4 +31,20 @@ return [
          */
         'save_path' => '',
     ],
+    'mail' => [
+        'host'              => '',
+        'port'              => <port>,
+        'connection_class'  => '',
+        'connection_config' => [
+            'ssl'      => 'tls',
+            'username' => '',
+            'password' => '',
+        ],
+        'from'              => '',
+        'from_name'         => '',
+    ],
+    'decano' => [
+        'nombre' => 'Arq. Nombre decano',
+        'titulo' => 'Decano',
+    ],
 ];
