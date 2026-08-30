@@ -13,19 +13,6 @@ $form->prepare();
         <div class="panel-body pan">
             <!--            <form action="#">-->
             <?= $this->form()->openTag($form) ?>
-            <div class="form-body pal">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <div class="input-icon">
-                                <i class="fa fa-user"></i>
-                                <!--<input id="inputFirstName" type="text" placeholder="CUI" class="form-control" /> !-->
-                                <?= $this->formElement($form->get(LoginForm::USER)) ?>
-                                <font color="red"><?= $this->formElementErrors($form->get(LoginForm::USER)) ?></font>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
