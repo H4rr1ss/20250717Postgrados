@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `password_reset_token` (
     CONSTRAINT `fk_reset_token_usuario`
         FOREIGN KEY (`cod_usuario`) REFERENCES `usuario`(`cod_usuario`)
         ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
 COMMENT='Tokens de recuperación de contraseña (uso único, 30 minutos)';
 
 -- ------------------------------------------------------------
