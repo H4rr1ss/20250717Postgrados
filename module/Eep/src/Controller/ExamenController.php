@@ -1754,7 +1754,7 @@ class ExamenController extends AbstractActionController {
 
         // Listado de solicitudes (Paginado)
         $pagina        = (int) $this->params()->fromQuery('page', 1);
-        $estado        = $this->params()->fromQuery('estado', 'pendiente');
+        $estado        = $this->params()->fromQuery('estado', 'activo');
         $carne         = $this->params()->fromQuery('carne', null);
         $codTipoExamen = (int) $this->params()->fromQuery('cod_tipo_examen', 0) ?: null;
 

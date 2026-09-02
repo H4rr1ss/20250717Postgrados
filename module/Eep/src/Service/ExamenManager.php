@@ -438,7 +438,7 @@ class ExamenManager
             // Los procesos finalizados/cancelados tienen cod_paso_actual = NULL,
             // por lo que epc.fase es NULL; debemos incluirlos mediante ep.cod_tipo_examen.
             if ($codTipoExamen == self::TIPO_PUBLICO_GENERAL) {
-                $whereTipo = 'AND ((ep.cod_paso_actual IS NOT NULL AND epc.fase = :fase_tipo) OR ((ep.cod_paso_actual IS NULL OR ep.cancelado = 1) AND ep.cod_tipo_examen = :cod_tipo_examen))';
+                $whereTipo = 'AND ((ep.cod_paso_actual IS NOT NULL AND epc.fase = :fase_tipo AND ep.cod_tipo_examen = :cod_tipo_examen) OR ((ep.cod_paso_actual IS NULL OR ep.cancelado = 1) AND ep.cod_tipo_examen = :cod_tipo_examen))';
                 $params['fase_tipo'] = 'examen_general';
                 $params['cod_tipo_examen'] = self::TIPO_PUBLICO_GENERAL;
             } else {

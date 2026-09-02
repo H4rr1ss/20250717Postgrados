@@ -6,6 +6,12 @@ $horaRaw      = $programacion['hora'] ?? null;
 $horaExamen   = $horaRaw ? date('g:i A', strtotime($horaRaw)) : null;
 ?>
 
+<div style="margin-bottom: 15px;">
+    <a href="<?= $this->url('student-graduation', ['action' => 'index']) ?>" class="btn btn-primary" style="font-size: 14px;">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </a>
+</div>
+
 <div class="panel panel-green">
     <div class="panel-heading">Terna Examinadora</div>
     <div class="panel-body pan">
